@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title>Auto B-roll</title>
+    <!-- O build substitui esta marca pelo conteudo de styles.css.
+         <link rel="stylesheet"> nao carrega no UXP. -->
+    <!--ESTILOS-->
+  </head>
+  <body>
+    <header class="topo">
+      <div class="marca">
+        <span class="marca-nome">Auto B-roll</span>
+        <span class="marca-fase">Fase 1</span>
+      </div>
+      <div id="estado" class="estado">carregando</div>
+    </header>
+
+    <main class="conteudo">
+      <section class="faixa">
+        <div class="canaleta"><span class="cod">SEQ</span></div>
+        <div class="corpo">
+          <div id="seqNome" class="seq-nome" data-vazio="sim">nenhuma sequencia ativa</div>
+          <div class="fatos">
+            <div class="fato">
+              <span class="fato-rotulo">Formato</span>
+              <span id="seqFormato" class="fato-valor">—</span>
+            </div>
+            <div class="fato">
+              <span class="fato-rotulo">Frame rate</span>
+              <span id="seqFps" class="fato-valor">—</span>
+            </div>
+            <div class="fato">
+              <span class="fato-rotulo">Duracao</span>
+              <span id="seqDuracao" class="fato-valor">—</span>
+            </div>
+            <div class="fato">
+              <span class="fato-rotulo">Faixas</span>
+              <span id="seqFaixas" class="fato-valor">—</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div class="par">
+        <section class="faixa">
+          <div class="canaleta"><span class="cod cod-video">V2</span></div>
+          <div class="corpo">
+            <span class="campo-rotulo">Video do B-roll</span>
+            <sp-checkbox id="fillScreen">Preencher a tela</sp-checkbox>
+          </div>
+        </section>
+
+        <section class="faixa">
+          <div class="canaleta"><span class="cod cod-audio">A3</span></div>
+          <div class="corpo">
+            <span class="campo-rotulo">Audio do B-roll</span>
+            <sp-checkbox id="removeAudio">Remover o audio</sp-checkbox>
+          </div>
+        </section>
+      </div>
+
+      <section class="faixa">
+        <div class="canaleta"><span class="cod">SRC</span></div>
+        <div class="corpo">
+          <label class="campo">
+            <span class="campo-rotulo">Pasta de B-rolls</span>
+            <sp-textfield id="libraryPath" placeholder="C:\caminho\para\os\brolls"></sp-textfield>
+          </label>
+        </div>
+      </section>
+
+      <div class="acao">
+        <sp-button id="analisar" variant="cta">Analisar e inserir</sp-button>
+        <sp-button id="atualizar" variant="secondary">Reler</sp-button>
+      </div>
+
+      <section class="faixa faixa-log">
+        <div class="canaleta"><span class="cod">LOG</span></div>
+        <div class="corpo">
+          <div id="log" class="log"></div>
+        </div>
+      </section>
+    </main>
+
+    <!-- O build substitui esta marca pelo bundle inteiro.
+         Caminho relativo nao resolve: o UXP procura a partir da raiz do
+         plugin, nao da pasta do HTML. -->
+    <!--SCRIPT-->
+  </body>
+</html>

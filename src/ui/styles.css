@@ -1,0 +1,315 @@
+/*
+ * Restricoes do UXP, descobertas na marra ao ver o painel renderizado:
+ *
+ *  - `<link rel="stylesheet">` NAO carrega. Este arquivo e embutido como
+ *    <style> pelo scripts/build.mjs.
+ *  - CSS Grid NAO funciona. Layout inteiro em flexbox.
+ *  - `gap` e custom properties (var()) nao sao confiaveis. Margens e valores
+ *    literais, sem excecao.
+ *
+ * A responsividade sai de `flex-wrap` com `flex: 1 1 <base>`: os blocos ficam
+ * lado a lado quando ha largura e quebram sozinhos quando nao ha.
+ *
+ * O painel toma emprestada a gramatica da timeline: cada bloco e uma faixa com
+ * uma canaleta a esquerda, tingida com as cores que o Premiere da aos clipes —
+ * violeta para video, verde para audio.
+ */
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  background-color: #101216;
+  color: #e6e9ee;
+  font-family: adobe-clean, "Source Sans 3", "Segoe UI", sans-serif;
+  font-size: 13px;
+  line-height: 1.45;
+  overflow: hidden;
+  /* O UXP centraliza texto por padrao em varios contextos. Fixar aqui e
+     repetir nos rotulos, senao tudo fica no meio do bloco. */
+  text-align: left;
+}
+
+/* ------------------------------------------------------------- cabecalho */
+
+.topo {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  flex: none;
+  padding: 9px 12px;
+  background-color: #1a1e25;
+  border-bottom: 1px solid #2e343d;
+}
+
+.marca {
+  display: flex;
+  flex-direction: row;
+  align-items: baseline;
+  min-width: 0;
+}
+
+.marca-nome {
+  text-align: left;
+  font-size: 14px;
+  font-weight: 700;
+  color: #ffffff;
+  white-space: nowrap;
+}
+
+.marca-fase {
+  margin-left: 8px;
+  font-family: "Roboto Mono", Consolas, monospace;
+  font-size: 10px;
+  color: #626a76;
+  white-space: nowrap;
+}
+
+.estado {
+  font-family: "Roboto Mono", Consolas, monospace;
+  font-size: 10px;
+  color: #8b93a0;
+  padding: 2px 8px;
+  border: 1px solid #2e343d;
+  border-radius: 9px;
+  white-space: nowrap;
+}
+
+.estado[data-tom="ok"] {
+  color: #5cc38f;
+  border-color: #2c5341;
+}
+
+.estado[data-tom="erro"] {
+  color: #ff7a6b;
+  border-color: #5c3230;
+}
+
+/* ---------------------------------------------------------------- corpo */
+
+.conteudo {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 12px;
+}
+
+/* Linha que quebra sozinha: e isto que torna o painel responsivo sem grid. */
+.par {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  margin-left: -4px;
+  margin-right: -4px;
+}
+
+.par > .faixa {
+  flex: 1 1 190px;
+  margin-left: 4px;
+  margin-right: 4px;
+}
+
+/* ---------------------------------------------------------------- faixa */
+
+.faixa {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  margin-bottom: 8px;
+  background-color: #1a1e25;
+  border: 1px solid #2a303a;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.canaleta {
+  flex: none;
+  width: 44px;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 11px;
+  background-color: #22272f;
+  border-right: 1px solid #2a303a;
+}
+
+.cod {
+  font-family: "Roboto Mono", Consolas, monospace;
+  font-size: 10px;
+  font-weight: 700;
+  color: #6b7381;
+  white-space: nowrap;
+}
+
+.cod-video {
+  color: #8b97ff;
+}
+
+.cod-audio {
+  color: #5cc38f;
+}
+
+.corpo {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+/* ------------------------------------------------------------- sequencia */
+
+.seq-nome {
+  text-align: left;
+  font-size: 14px;
+  font-weight: 600;
+  color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 8px;
+}
+
+.seq-nome[data-vazio="sim"] {
+  font-size: 13px;
+  font-weight: 400;
+  color: #767e8b;
+}
+
+.fatos {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  margin-left: -6px;
+  margin-right: -6px;
+}
+
+.fato {
+  flex: 1 1 88px;
+  min-width: 0;
+  padding-left: 6px;
+  padding-right: 6px;
+  margin-bottom: 4px;
+}
+
+.fato-rotulo {
+  text-align: left;
+  display: block;
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  color: #626a76;
+  white-space: nowrap;
+}
+
+.fato-valor {
+  text-align: left;
+  display: block;
+  font-family: "Roboto Mono", Consolas, monospace;
+  font-size: 12px;
+  color: #e6e9ee;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* --------------------------------------------------------------- campos */
+
+/* `align-items: flex-start` e obrigatorio: no UXP os filhos de um flex column
+   nao esticam, encolhem e ficam centralizados — e ai `text-align` nao adianta,
+   porque a caixa do texto ja e do tamanho do texto. */
+.campo {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  min-width: 0;
+  margin-bottom: 8px;
+}
+
+.campo-rotulo {
+  display: block;
+  font-size: 11px;
+  color: #8b93a0;
+  margin-bottom: 3px;
+  text-align: left;
+}
+
+.campo sp-textfield {
+  width: 100%;
+}
+
+/* Nao mexer no `display` do sp-checkbox: ele e inline-flex por dentro, e
+   forcar block joga o rotulo para baixo da caixa. */
+.corpo sp-checkbox {
+  font-size: 12px;
+}
+
+/* --------------------------------------------------------------- acoes */
+
+.acao {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  margin-left: -4px;
+  margin-right: -4px;
+  margin-bottom: 8px;
+}
+
+.acao sp-button {
+  flex: 1 1 130px;
+  margin-left: 4px;
+  margin-right: 4px;
+  margin-bottom: 4px;
+}
+
+/* ------------------------------------------------------------------ log */
+
+.faixa-log {
+  margin-bottom: 0;
+}
+
+.faixa-log .corpo {
+  padding: 0;
+}
+
+.log {
+  height: 132px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 8px 12px;
+  font-family: "Roboto Mono", Consolas, monospace;
+  font-size: 11px;
+  line-height: 1.6;
+  color: #8b93a0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.l-ok {
+  color: #5cc38f;
+}
+
+.l-erro {
+  color: #ff7a6b;
+}
+
+.l-passo {
+  color: #c9cfd8;
+}
+
+.l-aviso {
+  color: #e0b062;
+}
+
+.l-vazio {
+  color: #565e6a;
+}

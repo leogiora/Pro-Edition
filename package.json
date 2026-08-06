@@ -1,0 +1,20 @@
+{
+  "name": "auto-broll-premiere",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "description": "Plugin UXP para Adobe Premiere Pro que insere B-rolls automaticamente a partir da transcricao da sequencia. 100% local e offline.",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "watch": "node scripts/build.mjs --watch",
+    "check": "tsc --noEmit",
+    "test": "node --test \"tests/*.test.ts\"",
+    "verify": "npm run check && npm test && npm run build"
+  },
+  "devDependencies": {
+    "@adobe/premierepro": "26.3.0",
+    "@types/node": "^24.13.3",
+    "esbuild": "^0.25.0",
+    "typescript": "^5.7.0"
+  }
+}

@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      /* Cores fixas em vez de herdadas: o painel precisa ser legivel
+         independente do tema do Premiere. */
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+      }
+      body {
+        display: flex;
+        flex-direction: column;
+        padding: 10px;
+        box-sizing: border-box;
+        background: #1f1f1f;
+        color: #e8e8e8;
+        font-family: "Segoe UI", sans-serif;
+        font-size: 13px;
+      }
+
+      h1 {
+        font-size: 14px;
+        font-weight: 600;
+        margin: 0 0 2px;
+        color: #ffffff;
+      }
+      .sub {
+        font-size: 11px;
+        color: #8f8f8f;
+        margin-bottom: 12px;
+      }
+
+      .actions {
+        margin-bottom: 10px;
+      }
+      .actions sp-button {
+        margin-right: 6px;
+        margin-bottom: 6px;
+      }
+
+      .step {
+        border: 1px solid #3a3a3a;
+        border-left: 3px solid #4a86c8;
+        border-radius: 3px;
+        padding: 8px 10px 4px;
+        margin-bottom: 10px;
+      }
+      .step.perigo {
+        border-left-color: #d98324;
+        background: #2b2317;
+      }
+      .rotulo {
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        color: #7fb6ff;
+        margin-bottom: 8px;
+      }
+      .step.perigo .rotulo {
+        color: #f0a850;
+      }
+      .nota {
+        font-size: 11px;
+        line-height: 1.45;
+        color: #9a9a9a;
+        margin-bottom: 6px;
+      }
+      .nota b {
+        color: #d0d0d0;
+      }
+
+      #log {
+        flex: 1;
+        min-height: 200px;
+        overflow: auto;
+        background: #141414;
+        border: 1px solid #3a3a3a;
+        border-radius: 3px;
+        padding: 10px;
+        font-family: Consolas, "Courier New", monospace;
+        font-size: 12px;
+        line-height: 1.55;
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
+      /* Uma linha por chamada de out(); a classe vem do prefixo. */
+      #log .ok {
+        color: #6fcf7f;
+        font-weight: 600;
+      }
+      #log .fail {
+        color: #ff7b6b;
+        font-weight: 600;
+      }
+      #log .head {
+        color: #7fb6ff;
+      }
+      #log .muted {
+        color: #8f8f8f;
+      }
+      #log .data {
+        color: #cfcfcf;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Auto B-roll — Provas de API</h1>
+    <div class="sub">Fase 0 · descoberta · nada aqui e codigo de produto</div>
+
+    <div class="step">
+      <div class="rotulo">1 — LEITURA · nao altera nada</div>
+      <div class="actions">
+        <sp-button id="runReadOnly" variant="cta">Rodar provas P0 a P4</sp-button>
+        <sp-button id="clear" variant="secondary">Limpar</sp-button>
+      </div>
+      <div class="nota">Grava <b>provas-leitura.txt</b></div>
+    </div>
+
+    <div class="step perigo">
+      <div class="rotulo">2 — ESCRITA · MODIFICA a sequencia</div>
+      <div class="actions">
+        <sp-button id="runWrite" variant="warning">Rodar provas P5 a P7 (insere em V2/A3)</sp-button>
+      </div>
+      <div class="nota">
+        Importa um arquivo e insere em <b>V2</b>, com audio em <b>A3</b>. Depois
+        inspeciona faixas de audio (P6) e escala do clipe (P7).
+        Use somente em projeto de teste. Grava <b>provas-escrita.txt</b>
+      </div>
+    </div>
+
+    <div id="log"></div>
+
+    <script src="proofs.js"></script>
+  </body>
+</html>
