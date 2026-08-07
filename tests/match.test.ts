@@ -162,6 +162,49 @@ test("casar: sinonimo alcanca 'Doutor' quando a fala diz 'medico'", () => {
   assert.equal(casar("procure um médico de confiança", conceitos)[0]?.conceito.rotulo, "Doutor");
 });
 
+test("casar: o sintoma alcanca 'Desanimado', nao so 'Viagra'", () => {
+  // Frase real da sequencia "Reels", em 10,76s. Antes so casava com Viagra.
+  const conceitos = conceitosDeArquivos(["Viagra (1).mp4", "Desanimado (1).mp4"]);
+  const rotulos = casar(
+    "Mais de 30 milhões de homens com disfunção erétil ou ejaculação precoce",
+    conceitos
+  ).map((s) => s.conceito.rotulo);
+
+  assert.ok(rotulos.includes("Desanimado"), `casou so com ${rotulos.join(", ")}`);
+  assert.ok(rotulos.includes("Viagra"), "e Viagra continua casando");
+});
+
+test("casar: 'consulta online' e Teleconsulta, nunca Doutor", () => {
+  // Frase real da sequencia "Reels". "consultorio" era sinonimo de Doutor, e a
+  // raiz por prefixo comum o casava com "consulta" — 7 letras iguais.
+  const conceitos = conceitosDeArquivos([
+    "Doutor (1).mp4",
+    "Teleconsulta (1).mp4",
+    "Consulta médica (1).mp4",
+  ]);
+  const rotulos = casar(
+    "e o proximo e voce atraves de uma consulta online e nos vamos descobrir as causas",
+    conceitos
+  ).map((s) => s.conceito.rotulo);
+
+  assert.ok(!rotulos.includes("Doutor"), `Doutor nao devia estar em ${rotulos.join(", ")}`);
+  assert.ok(rotulos.includes("Teleconsulta"), `Teleconsulta faltou em ${rotulos.join(", ")}`);
+});
+
+test("casar: quem fala 'consultorio' ainda chega em 'Consulta medica'", () => {
+  const conceitos = conceitosDeArquivos(["Consulta médica (1).mp4", "Doutor (1).mp4"]);
+  const rotulos = casar("marquei no consultorio medico ontem", conceitos).map(
+    (s) => s.conceito.rotulo
+  );
+  assert.ok(rotulos.includes("Consulta médica"), "a ligacao boa nao pode ter se perdido");
+});
+
+test("casar: 'Desanimado' nao passou a casar com qualquer frase", () => {
+  const conceitos = conceitosDeArquivos(["Desanimado (1).mp4"]);
+  assert.deepEqual(casar("bom dia pessoal tudo certo por aqui hoje", conceitos), []);
+  assert.deepEqual(casar("essa consulta custa mil reais", conceitos), []);
+});
+
 test("estaNaFrase: sinonimo tambem flexiona", () => {
   // "disfuncao" esta no dicionario; "disfuncoes" na fala deve alcancar.
   assert.equal(estaNaFrase("viagra", ["disfuncoes", "eretil"]), true);

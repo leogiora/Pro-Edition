@@ -567,6 +567,42 @@ da tela); esta foi por sobrescrita. Registrado na secao 8 das armadilhas.
 
 ---
 
+## D-027 — Dois acertos de dicionario que o aprendizado nao alcancaria (2026-08-07) — firme
+
+Os dois vieram de erro visto na timeline, e os dois tem a mesma licao: **ha
+classe de erro que so o dicionario conserta.**
+
+**1. O sintoma nao alcancava "Desanimado".** "Mais de 30 milhoes de homens com
+disfuncao eretil ou ejaculacao precoce" so casava com "Viagra"; o conceito
+"Desanimado" estava ligado apenas a cansaco e falta de energia. Quem tem o
+sintoma esta desanimado, e o B-roll cabe. Adicionados `disfuncao`, `eretil`,
+`ejaculacao`, `precoce`, `impotencia`, `libido`.
+
+Passa no criterio do D-013: sao termos **estreitos**, que so aparecem falando
+deste assunto. O que aquela armadilha proibia era palavra generica — `homem`,
+`bem`, `novo` — que casa com qualquer coisa. Ha teste garantindo que "Desanimado"
+continua nao casando com "bom dia pessoal".
+
+**2. "consulta online" puxava um B-roll de medico.** `consultorio` era sinonimo
+de "Doutor", e `mesmaRaiz` casa `consultorio` com `consulta`: 7 letras comuns,
+cobertura 0,875, bem acima do minimo. Mas consulta e consultorio nao sao a mesma
+coisa, e "consulta online" e **Teleconsulta** — que era candidata no mesmo ponto
+e perdia a vaga.
+
+Removido `consultorio` de "Doutor". Nada se perde: ele continua ligado a
+"Consulta medica", e ha teste disso.
+
+**Por que nao dava para deixar o aprendizado resolver.** O par que erra em
+"consulta online" e `Doutor|doutor` — exatamente o mesmo que acerta em "eu sou
+medico e sexologo". Punir um punia o outro. Sempre que o erro e do **caminho**
+que leva ao conceito, e nao do conceito, a contagem nao tem como separar; o
+dicionario tem.
+
+Isto reforca a pendencia 3: o dicionario precisa sair do codigo para um arquivo
+editavel, senao cada ajuste destes exige um commit.
+
+---
+
 ## D-008 — Ferramental da Fase 1: esbuild e `node --test`, nada alem (2026-08-06) — firme
 
 **Contexto.** A Fase 1 pede TypeScript, lint e testes. O caminho habitual seria

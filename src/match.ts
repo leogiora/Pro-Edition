@@ -71,11 +71,27 @@ export const SINONIMOS: ReadonlyMap<string, readonly string[]> = new Map([
   // como o assunto aparece na fala — tirados da transcricao real, nao inventados.
   ["viagra", ["disfuncao", "eretil", "impotencia", "erecao", "ereto", "remedio", "comprimido", "pilula", "azul", "potencia", "desempenho", "ejaculacao", "precoce", "libido", "rigidez"]],
   ["teleconsulta", ["telemedicina", "online", "distancia", "videochamada", "atendimento", "clicando", "botao", "link", "celular", "aplicativo"]],
-  ["doutor", ["medico", "urologista", "especialista", "profissional", "consultorio", "clinica", "andrologista"]],
+  // "consultorio" saiu daqui: a raiz por prefixo comum casa "consultorio" com
+  // "consulta" (7 letras iguais, cobertura 0,875), e isso fazia "consulta
+  // online" — que e Teleconsulta — puxar um B-roll de medico. Consulta e
+  // consultorio nao sao a mesma coisa, e o dicionario e o unico lugar onde isso
+  // se conserta: o aprendizado nao conseguiria, porque o par que erra aqui
+  // (`Doutor|doutor`) e o mesmo que acerta em "eu sou medico".
+  //
+  // Nada se perde: "consultorio" continua ligado a "Consulta medica".
+  ["doutor", ["medico", "urologista", "especialista", "profissional", "clinica", "andrologista"]],
   ["falhou", ["brochar", "brochou", "falha", "falhar", "vexame", "fracasso", "decepcionar", "perder", "ejaculacao", "precoce"]],
   ["cama", ["sexual", "sexo", "relacao", "intimidade", "transar", "desempenho", "performance", "noite"]],
   ["frustrado", ["frustracao", "vergonha", "humilhacao", "deprimido", "triste", "desanimo", "briga", "problema", "piora", "sofrimento"]],
-  ["desanimado", ["desanimo", "animo", "cansado", "abatido", "energia", "apatia"]],
+  // O quadro clinico e o estado de espirito andam juntos: quem tem disfuncao
+  // erétil ou ejaculacao precoce esta desanimado, e o B-roll "Desanimado" cabe
+  // nessas falas. Antes so havia ligacao com cansaco e falta de energia, entao
+  // toda frase sobre o sintoma so alcancava "Viagra".
+  //
+  // Passa no criterio do D-013: sao termos ESTREITOS, que so aparecem falando
+  // deste assunto. O que aquela armadilha proibia era palavra generica
+  // ("homem", "bem", "novo"), que casa com qualquer coisa.
+  ["desanimado", ["desanimo", "animo", "cansado", "abatido", "energia", "apatia", "disfuncao", "eretil", "ejaculacao", "precoce", "impotencia", "libido"]],
   ["separacao", ["divorcio", "separar", "terminar", "briga", "distanciamento", "afastamento", "traicao", "casamento"]],
   ["infarto", ["cardiaco", "coracao", "avc", "entupimento", "pressao", "risco", "derrame", "circulatorio"]],
   ["sanguineo", ["circulacao", "sangue", "arteria", "veia", "fluxo", "irrigacao", "vascular", "entupimento"]],
