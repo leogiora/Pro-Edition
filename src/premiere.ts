@@ -249,18 +249,26 @@ export async function lerClipes(videoTrackIndex = 0): Promise<
  * Serve tambem para nao contar como apagado o clipe que so foi MOVIDO de faixa.
  */
 export async function lerBrollsAcimaDeV1(): Promise<
-  Array<{ sourceName: string; startSeconds: number; videoTrackIndex: number }>
+  Array<{ sourceName: string; startSeconds: number; endSeconds: number; videoTrackIndex: number }>
 > {
   const { sequence } = await handles();
   const total = await (sequence as { getVideoTrackCount: () => Promise<number> }).getVideoTrackCount();
 
-  const saida: Array<{ sourceName: string; startSeconds: number; videoTrackIndex: number }> = [];
+  const saida: Array<{
+    sourceName: string;
+    startSeconds: number;
+    endSeconds: number;
+    videoTrackIndex: number;
+  }> = [];
   for (let i = 1; i < total; i++) {
     try {
       for (const clipe of await lerClipes(i)) {
         saida.push({
           sourceName: clipe.sourceName,
           startSeconds: clipe.startSeconds,
+          // O fim define quais palavras este B-roll cobriu — e o que permite
+          // aprender a ligacao quando o dicionario nao explica a escolha.
+          endSeconds: clipe.endSeconds,
           videoTrackIndex: i,
         });
       }

@@ -41,6 +41,11 @@ export interface EntradaAnalise {
   /** Nomes de todas as midias do projeto, para extrair os conceitos. */
   readonly biblioteca: readonly string[];
   /**
+   * Ligacoes que o usuario ensinou colocando B-roll, e que o dicionario nao tem.
+   * Conceito -> termos da fala. Ver `ligacoesFirmes` em `aprendizado.ts`.
+   */
+  readonly ligacoes?: ReadonlyMap<string, readonly string[]>;
+  /**
    * Costura de teste, nao configuracao: o painel nunca passa estes dois. Existem
    * para os testes provarem o comportamento de fronteira sem ter de fabricar uma
    * transcricao com a duracao exata do limiar.
@@ -66,6 +71,53 @@ const CONFIANCA_SUSPEITA = 0.6;
  */
 const DURACAO_MINIMA = 1.2;
 const SCORE_MINIMO = 0.5;
+
+/**
+ * Score de uma sugestao que vem do que o usuario ensinou, nao do texto.
+ *
+ * Abaixo de um casamento literal (1,0) e acima do corte do planejador (0,6):
+ * o padrao observado vale, mas nunca mais que a palavra escrita no arquivo.
+ */
+const SCORE_APRENDIDO = 0.75;
+
+/**
+ * Sugestoes que so existem porque o usuario ensinou, colocando B-roll.
+ *
+ * Entram como acrescimo, nunca alterando a pontuacao do casamento por texto —
+ * o que ja funciona continua funcionando exatamente igual. Conceito que ja veio
+ * pelo texto nao e duplicado aqui.
+ */
+function porLigacaoAprendida(
+  frase: Frase,
+  conceitos: readonly Conceito[],
+  ligacoes: ReadonlyMap<string, readonly string[]> | undefined,
+  jaSugeridos: readonly Sugestao[]
+): Sugestao[] {
+  if (ligacoes === undefined || ligacoes.size === 0) return [];
+
+  const naFrase = new Set(frase.termosNoTempo.map((t) => t.termo));
+  const vistos = new Set(jaSugeridos.map((s) => s.conceito.rotulo));
+  const extras: Sugestao[] = [];
+
+  for (const conceito of conceitos) {
+    if (vistos.has(conceito.rotulo)) continue;
+    const aprendidos = ligacoes.get(conceito.rotulo);
+    if (aprendidos === undefined) continue;
+
+    const presentes = aprendidos.filter((t) => naFrase.has(t));
+    if (presentes.length === 0) continue;
+
+    extras.push({
+      conceito,
+      score: SCORE_APRENDIDO,
+      motivo: `voce ensinou: "${presentes.join(", ")}" pede "${conceito.rotulo}"`,
+      // Os proprios termos aprendidos ancoram o corte, entao ele cai em cima da
+      // palavra que motivou a escolha — igual ao casamento por texto.
+      termosCasados: presentes,
+    });
+  }
+  return extras;
+}
 
 export function analisar(entrada: EntradaAnalise): Analise {
   const avisos: string[] = [];
@@ -93,7 +145,10 @@ export function analisar(entrada: EntradaAnalise): Analise {
   for (const frase of frases) {
     if (frase.duracao < duracaoMinima) continue;
 
-    const sugestoes = casar(frase.texto, conceitos).filter((s) => s.score >= scoreMinimo);
+    const doTexto = casar(frase.texto, conceitos).filter((s) => s.score >= scoreMinimo);
+    const sugestoes = [...doTexto, ...porLigacaoAprendida(frase, conceitos, entrada.ligacoes, doTexto)]
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 3);
     if (sugestoes.length === 0) continue;
 
     if (frase.confiancaMinima < CONFIANCA_SUSPEITA) {

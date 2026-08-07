@@ -441,6 +441,53 @@ Conceito de um termo so nao tem dispersao e nao e afetado.
 
 ---
 
+## D-022 — Botao Aprender, e ligacoes que o dicionario nao tem (2026-08-07) — provisoria
+
+**Contexto.** Duas queixas do usuario na mesma frase: (a) para ensinar o plugin
+era preciso deixar ele inserir, toda vez; (b) ele queria que o plugin entendesse
+o padrao **mesmo quando a transcricao nao bate com o nome do arquivo**.
+
+### O botao
+
+`Aprender` roda o mesmo caminho ate `julgarFaixa` e para: le a biblioteca, o
+corte de V1, a transcricao, e julga a timeline. Nao planeja e nao insere. Edite
+como quiser, clique, e ele estuda o que voce fez.
+
+Custou uma extracao — `lerContexto()` — que os dois botoes compartilham.
+
+### As ligacoes
+
+**Isto reverte a regra do D-016**, que dizia "contagem ajusta peso, nao inventa
+ligacao". O usuario pediu explicitamente o contrario, e a limitacao era real:
+colocar "Vasos sanguineos" dez vezes onde se fala em "mangueira dobrada" nao
+ensinava nada — so repetia a mesma sugestao de sinonimo faltando, dez vezes.
+
+Quando o dicionario nao explica uma colocacao manual, o plugin conta **as
+palavras que aquele B-roll cobriu** — de `inicio` a `fim` do clipe, nao a frase
+inteira. A imagem entrou em cima daquelas palavras, nao das quinze da frase.
+
+Tres travas contra aprender lixo:
+
+1. **So o trecho coberto.** Corta o ruido de ~15 termos para ~4.
+2. **Tres ocorrencias** (`LIGACAO_MINIMA`) em colocacoes diferentes. Palavra a
+   toa nao se repete junto do mesmo conceito por acaso; a palavra do assunto sim.
+3. **Entra como sugestao extra, com score proprio (0,75)**, sem tocar na
+   pontuacao do casamento por texto. Abaixo de um casamento literal (1,0) e acima
+   do corte do planejador (0,6): o padrao observado vale, mas nunca mais que a
+   palavra escrita no arquivo. Conceito que ja veio pelo texto nao e duplicado.
+
+**Sempre visivel.** Quando uma ligacao passa do minimo, o painel escreve
+*"Aprendi que 'mangueira' pede 'Vasos sanguineos' — voce ligou os dois 3 vezes"*.
+O plugin inventando dicionario nao pode acontecer em silencio. Fica em
+`ligacoes.json`, separado do resto, entao apagar o arquivo desfaz tudo sem tocar
+no aprendizado de peso.
+
+**Risco assumido:** tres coincidencias criam uma ligacao errada. O custo e uma
+sugestao ruim a 0,75, que o proprio aprendizado de peso derruba se o usuario
+apagar. Provisoria ate rodar no uso real.
+
+---
+
 ## D-008 — Ferramental da Fase 1: esbuild e `node --test`, nada alem (2026-08-06) — firme
 
 **Contexto.** A Fase 1 pede TypeScript, lint e testes. O caminho habitual seria

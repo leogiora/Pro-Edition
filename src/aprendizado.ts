@@ -161,10 +161,14 @@ export interface ColocacaoManual {
   readonly arquivo: string;
   /** Onde ele comeca na sequencia, em segundos. */
   readonly inicio: number;
+  /** Onde termina. E o que define quais palavras ele cobriu. */
+  readonly fim: number;
 }
 
 export interface CreditoManual {
   readonly memoria: Memoria;
+  /** Contagem das palavras cobertas quando o dicionario nao explicava a escolha. */
+  readonly associacoes: Associacoes;
   readonly creditados: number;
   /** Ja contado numa analise anterior: nao ha nada de errado, so nada de novo. */
   readonly jaContados: number;
@@ -213,8 +217,10 @@ export function creditarManuais(
   sequencia: string,
   manuais: readonly ColocacaoManual[],
   frases: readonly Frase[],
-  conceitos: readonly Conceito[]
+  conceitos: readonly Conceito[],
+  associacoes: Associacoes = ASSOCIACOES_VAZIAS
 ): CreditoManual {
+  let assoc = associacoes;
   const pares: Record<string, Saldo> = { ...memoria.pares };
   const arquivos: Record<string, Saldo> = { ...memoria.arquivos };
   const vistos: Record<string, true> = { ...memoria.vistos };
@@ -242,10 +248,23 @@ export function creditarManuais(
     const casados = conceito.termos.filter((t) => estaNaFrase(t, termos(frase.texto)));
 
     if (casados.length === 0) {
+      // O dicionario nao explica a escolha — mas VOCE explicou, colocando. Conta
+      // as palavras que este B-roll cobriu; a que se repetir em colocacoes
+      // diferentes deste mesmo conceito e a ligacao de verdade.
+      //
+      // So o que ele cobriu, nao a frase inteira: a imagem entrou em cima
+      // daquelas palavras, e nao das quinze da frase toda.
+      const cobertas = new Set(
+        frase.termosNoTempo
+          .filter((t) => t.inicio >= manual.inicio - FOLGA_DA_FRASE && t.inicio <= manual.fim)
+          .map((t) => t.termo)
+      );
+      for (const termo of cobertas) assoc = comAssociacao(assoc, conceito.rotulo, termo);
+
       // De proposito NAO entra em `vistos`: enquanto faltar a ligacao, a
-      // sugestao reaparece. No dia em que o sinonimo existir, isto vira credito.
+      // sugestao reaparece. No dia em que ela existir, isto vira credito.
       semLigacao.push(
-        `${relogio(manual.inicio)} voce colocou "${conceito.rotulo}" onde se diz "${frase.texto.slice(0, 60)}" — nenhum termo liga os dois. Falta sinonimo?`
+        `${relogio(manual.inicio)} voce colocou "${conceito.rotulo}" onde se diz "${frase.texto.slice(0, 60)}" — nenhum termo liga os dois. Estou contando as palavras que voce cobriu.`
       );
       continue;
     }
@@ -264,6 +283,7 @@ export function creditarManuais(
 
   return {
     memoria: { schema: 3, pares, arquivos, vistos },
+    associacoes: assoc,
     creditados,
     jaContados,
     foraDaBiblioteca,
@@ -306,6 +326,65 @@ export function comPendente(
   if (plano === null) delete porSequencia[sequencia];
   else porSequencia[sequencia] = plano;
   return { schema: 1, porSequencia };
+}
+
+// -------------------------------------------------- ligacoes aprendidas
+
+/**
+ * Quantas vezes o usuario ligou um conceito a uma palavra que o dicionario NAO
+ * liga. Chave: `conceito|termo`.
+ *
+ * Isto reverte, de proposito, a regra do D-016 ("contagem ajusta peso, nao
+ * inventa ligacao"). O que mudou: o usuario pediu que o plugin aprenda o padrao
+ * mesmo quando a transcricao nao bate com o nome do arquivo. Sem isto, colocar
+ * "Vasos sanguineos" dez vezes onde se fala em "circulacao" nao ensinava nada —
+ * so gerava a mesma sugestao de sinonimo, dez vezes.
+ */
+export interface Associacoes {
+  readonly schema: 1;
+  readonly pares: Readonly<Record<string, number>>;
+}
+
+export const ASSOCIACOES_VAZIAS: Associacoes = { schema: 1, pares: {} };
+
+/**
+ * Quantas vezes a mesma dupla precisa aparecer para virar ligacao de verdade.
+ *
+ * Uma vez nao prova nada: um B-roll cobre varias palavras, e quase todas sao
+ * irrelevantes. Tres vezes em colocacoes DIFERENTES e outra coisa — palavra a
+ * toa nao se repete junto do mesmo conceito por acaso.
+ */
+export const LIGACAO_MINIMA = 3;
+
+export function comAssociacao(atual: Associacoes, conceito: string, termo: string): Associacoes {
+  const k = chave(conceito, termo);
+  return { schema: 1, pares: { ...atual.pares, [k]: (atual.pares[k] ?? 0) + 1 } };
+}
+
+/** So as duplas que passaram do minimo: conceito -> termos da fala. */
+export function ligacoesFirmes(assoc: Associacoes): Map<string, string[]> {
+  const firmes = new Map<string, string[]>();
+  for (const [k, vezes] of Object.entries(assoc.pares)) {
+    if (vezes < LIGACAO_MINIMA) continue;
+    const corte = k.indexOf("|");
+    if (corte < 0) continue;
+    const conceito = k.slice(0, corte);
+    const termo = k.slice(corte + 1);
+    firmes.set(conceito, [...(firmes.get(conceito) ?? []), termo]);
+  }
+  return firmes;
+}
+
+export function parseAssociacoes(raw: unknown): Associacoes {
+  if (typeof raw !== "object" || raw === null) return ASSOCIACOES_VAZIAS;
+  const bruto = (raw as Record<string, unknown>).pares;
+  if (typeof bruto !== "object" || bruto === null) return ASSOCIACOES_VAZIAS;
+
+  const pares: Record<string, number> = {};
+  for (const [k, v] of Object.entries(bruto)) {
+    if (typeof v === "number" && Number.isFinite(v) && v > 0) pares[k] = Math.floor(v);
+  }
+  return { schema: 1, pares };
 }
 
 // ------------------------------------------------------------- persistencia

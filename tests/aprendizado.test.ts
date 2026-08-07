@@ -3,9 +3,13 @@ import assert from "node:assert/strict";
 
 import {
   aprender,
+  ASSOCIACOES_VAZIAS,
   chave,
   comPendente,
   creditarManuais,
+  ligacoesFirmes,
+  parseAssociacoes,
+  type Associacoes,
   fator,
   melhorArquivo,
   MEMORIA_VAZIA,
@@ -183,7 +187,7 @@ const FALA = [
 ];
 
 test("creditarManuais: credita o par conceito-palavra do que o usuario colocou", () => {
-  const r = creditarManuais(MEMORIA_VAZIA, "Reels", [{ arquivo: "Viagra (1).mp4", inicio: 11 }], FALA, CONCEITOS);
+  const r = creditarManuais(MEMORIA_VAZIA, "Reels", [{ arquivo: "Viagra (1).mp4", inicio: 11, fim: 14 }], FALA, CONCEITOS);
   assert.equal(r.creditados, 1);
   assert.deepEqual(r.memoria.pares[chave("Viagra", "viagra")], { acertos: 1, erros: 0 });
   // O take escolhido tambem ganha: e ele que o usuario quis ver.
@@ -193,12 +197,12 @@ test("creditarManuais: credita o par conceito-palavra do que o usuario colocou",
 
 test("creditarManuais: o credito muda o plano seguinte", () => {
   const antes = fator(MEMORIA_VAZIA, "Viagra", ["viagra"]);
-  const r = creditarManuais(MEMORIA_VAZIA, "Reels", [{ arquivo: "Viagra (1).mp4", inicio: 11 }], FALA, CONCEITOS);
+  const r = creditarManuais(MEMORIA_VAZIA, "Reels", [{ arquivo: "Viagra (1).mp4", inicio: 11, fim: 14 }], FALA, CONCEITOS);
   assert.ok(fator(r.memoria, "Viagra", ["viagra"]) > antes, "creditar tem de valer alguma coisa");
 });
 
 test("creditarManuais: a mesma colocacao nao e creditada duas vezes", () => {
-  const manuais = [{ arquivo: "Viagra (1).mp4", inicio: 11 }];
+  const manuais = [{ arquivo: "Viagra (1).mp4", inicio: 11, fim: 14 }];
   const uma = creditarManuais(MEMORIA_VAZIA, "Reels", manuais, FALA, CONCEITOS);
   // Segunda analise: o B-roll continua na timeline, mas ja foi contado.
   const outra = creditarManuais(uma.memoria, "Reels", manuais, FALA, CONCEITOS);
@@ -207,7 +211,7 @@ test("creditarManuais: a mesma colocacao nao e creditada duas vezes", () => {
 });
 
 test("creditarManuais: a mesma sequencia e outra nao se confundem", () => {
-  const manuais = [{ arquivo: "Viagra (1).mp4", inicio: 11 }];
+  const manuais = [{ arquivo: "Viagra (1).mp4", inicio: 11, fim: 14 }];
   const uma = creditarManuais(MEMORIA_VAZIA, "Reels", manuais, FALA, CONCEITOS);
   assert.equal(creditarManuais(uma.memoria, "Outro corte", manuais, FALA, CONCEITOS).creditados, 1);
 });
@@ -217,7 +221,7 @@ test("creditarManuais: sinonimo do dicionario conta como ligacao", () => {
   const r = creditarManuais(
     MEMORIA_VAZIA,
     "Reels",
-    [{ arquivo: "Vasos sanguineos (3).mp4", inicio: 21 }],
+    [{ arquivo: "Vasos sanguineos (3).mp4", inicio: 21, fim: 24 }],
     FALA,
     CONCEITOS
   );
@@ -229,37 +233,105 @@ test("creditarManuais: escolha que nenhum termo explica vira sugestao, nao conta
   const r = creditarManuais(
     MEMORIA_VAZIA,
     "Reels",
-    [{ arquivo: "Vasos sanguineos (3).mp4", inicio: 31 }],
+    [{ arquivo: "Vasos sanguineos (3).mp4", inicio: 31, fim: 34 }],
     FALA,
     CONCEITOS
   );
   assert.equal(r.creditados, 0);
   assert.equal(r.semLigacao.length, 1);
   assert.match(r.semLigacao[0] ?? "", /Vasos sanguineos/);
-  assert.match(r.semLigacao[0] ?? "", /sinonimo/);
-  assert.deepEqual(r.memoria.pares, {}, "sem ligacao nao ha o que contar");
+  assert.deepEqual(r.memoria.pares, {}, "sem ligacao nao ha peso a ajustar");
+});
+
+// -------------------------- ligacoes aprendidas ------------------------------
+
+/**
+ * Uma metafora: o dicionario nao liga "mangueira dobrada" a "Vasos sanguineos",
+ * e nenhum dicionario ligaria. So o usuario sabe, e so colocando ele ensina.
+ */
+const FALA_COM_TEMPO: Frase[] = [
+  {
+    texto: "a mangueira do jardim estava dobrada ontem",
+    inicio: 10,
+    fim: 17,
+    duracao: 7,
+    palavras: 7,
+    confiancaMinima: 1,
+    termosNoTempo: [
+      { termo: "mangueira", inicio: 10.4 },
+      { termo: "jardim", inicio: 11.2 },
+      { termo: "dobrada", inicio: 15.8 },
+      { termo: "ontem", inicio: 16.5 },
+    ],
+  },
+];
+
+/** O usuario poe "Vasos sanguineos" cobrindo "mangueira ... jardim". */
+function colocouVasos(assoc = ASSOCIACOES_VAZIAS): Associacoes {
+  return creditarManuais(
+    MEMORIA_VAZIA,
+    "Reels",
+    [{ arquivo: "Vasos sanguineos (3).mp4", inicio: 10.2, fim: 13 }],
+    FALA_COM_TEMPO,
+    CONCEITOS,
+    assoc
+  ).associacoes;
+}
+
+test("associacoes: conta so as palavras que o B-roll cobriu, nao a frase toda", () => {
+  const a = colocouVasos();
+  assert.equal(a.pares[chave("Vasos sanguineos", "mangueira")], 1);
+  assert.equal(a.pares[chave("Vasos sanguineos", "jardim")], 1);
+  // "dobrada" e "ontem" sao ditas depois que a imagem ja saiu.
+  assert.equal(a.pares[chave("Vasos sanguineos", "dobrada")], undefined);
+  assert.equal(a.pares[chave("Vasos sanguineos", "ontem")], undefined);
+});
+
+test("ligacoesFirmes: uma vez nao vira ligacao — tres viram", () => {
+  let a = colocouVasos();
+  assert.equal(ligacoesFirmes(a).size, 0, "uma colocacao nao prova nada");
+  a = colocouVasos(a);
+  assert.equal(ligacoesFirmes(a).size, 0);
+  a = colocouVasos(a);
+
+  const firmes = ligacoesFirmes(a);
+  assert.deepEqual(firmes.get("Vasos sanguineos")?.sort(), ["jardim", "mangueira"]);
+});
+
+test("parseAssociacoes: ida e volta, e lixo volta vazio", () => {
+  const a = colocouVasos();
+  assert.deepEqual(parseAssociacoes(JSON.parse(JSON.stringify(a))), a);
+  for (const lixo of [null, 7, "x", {}, { pares: 1 }]) {
+    assert.deepEqual(parseAssociacoes(lixo), ASSOCIACOES_VAZIAS);
+  }
 });
 
 test("creditarManuais: sugestao sem ligacao reaparece ate alguem resolver", () => {
-  const manuais = [{ arquivo: "Vasos sanguineos (3).mp4", inicio: 31 }];
+  const manuais = [{ arquivo: "Vasos sanguineos (3).mp4", inicio: 31, fim: 34 }];
   const uma = creditarManuais(MEMORIA_VAZIA, "Reels", manuais, FALA, CONCEITOS);
   assert.equal(creditarManuais(uma.memoria, "Reels", manuais, FALA, CONCEITOS).semLigacao.length, 1);
 });
 
 test("creditarManuais: B-roll sobre silencio nao ensina nada", () => {
-  const r = creditarManuais(MEMORIA_VAZIA, "Reels", [{ arquivo: "Viagra (1).mp4", inicio: 50 }], FALA, CONCEITOS);
+  const r = creditarManuais(
+    MEMORIA_VAZIA,
+    "Reels",
+    [{ arquivo: "Viagra (1).mp4", inicio: 50, fim: 53 }],
+    FALA,
+    CONCEITOS
+  );
   assert.equal(r.creditados, 0);
   assert.deepEqual(r.semLigacao, []);
 });
 
 test("creditarManuais: o corte entra um pouco antes da palavra e ainda acha a frase", () => {
   // 9,7s: o B-roll comeca antes da frase que o justifica, como o planejador faz.
-  const r = creditarManuais(MEMORIA_VAZIA, "Reels", [{ arquivo: "Viagra (1).mp4", inicio: 9.7 }], FALA, CONCEITOS);
+  const r = creditarManuais(MEMORIA_VAZIA, "Reels", [{ arquivo: "Viagra (1).mp4", inicio: 9.7, fim: 12.7 }], FALA, CONCEITOS);
   assert.equal(r.creditados, 1);
 });
 
 test("creditarManuais: arquivo de fora da biblioteca e contado a parte, nao escondido", () => {
-  const r = creditarManuais(MEMORIA_VAZIA, "Reels", [{ arquivo: "gato.mp4", inicio: 11 }], FALA, CONCEITOS);
+  const r = creditarManuais(MEMORIA_VAZIA, "Reels", [{ arquivo: "gato.mp4", inicio: 11, fim: 14 }], FALA, CONCEITOS);
   assert.equal(r.creditados, 0);
   assert.equal(r.foraDaBiblioteca, 1, "tem de sair com o proprio nome, nao como 'ja contado'");
   assert.equal(r.jaContados, 0);
@@ -271,10 +343,10 @@ test("creditarManuais: cada motivo de nao aprender tem seu proprio numero", () =
     MEMORIA_VAZIA,
     "Reels",
     [
-      { arquivo: "Viagra (1).mp4", inicio: 11 }, // aprende
-      { arquivo: "gato.mp4", inicio: 11 }, // fora da pasta
-      { arquivo: "Viagra (2).mp4", inicio: 50 }, // sobre silencio
-      { arquivo: "Vasos sanguineos (3).mp4", inicio: 31 }, // sem ligacao
+      { arquivo: "Viagra (1).mp4", inicio: 11, fim: 14 }, // aprende
+      { arquivo: "gato.mp4", inicio: 11, fim: 14 }, // fora da pasta
+      { arquivo: "Viagra (2).mp4", inicio: 50, fim: 53 }, // sobre silencio
+      { arquivo: "Vasos sanguineos (3).mp4", inicio: 31, fim: 34 }, // sem ligacao
     ],
     FALA,
     CONCEITOS
@@ -287,7 +359,7 @@ test("creditarManuais: cada motivo de nao aprender tem seu proprio numero", () =
 });
 
 test("creditarManuais: ja contado antes aparece como tal", () => {
-  const manuais = [{ arquivo: "Viagra (1).mp4", inicio: 11 }];
+  const manuais = [{ arquivo: "Viagra (1).mp4", inicio: 11, fim: 14 }];
   const uma = creditarManuais(MEMORIA_VAZIA, "Reels", manuais, FALA, CONCEITOS);
   const outra = creditarManuais(uma.memoria, "Reels", manuais, FALA, CONCEITOS);
   assert.equal(outra.jaContados, 1);

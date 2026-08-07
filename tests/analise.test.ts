@@ -124,6 +124,32 @@ test("analisar: so conta as palavras que sobreviveram ao corte", () => {
   assert.equal(a.palavras, 1);
 });
 
+test("analisar: ligacao ensinada alcanca o que o dicionario nao alcanca", () => {
+  const json = transcricao([["mangueira", 0], ["do", 0.5], ["jardim", 1], ["dobrada", 1.5, true]]);
+
+  // Sem a ligacao, nada casa: nenhum conceito fala de mangueira.
+  assert.equal(analisar(entrada(json)).oportunidades.length, 0);
+
+  const a = analisar(
+    entrada(json, { ligacoes: new Map([["Vasos sanguíneos", ["mangueira"]]]) })
+  );
+  assert.equal(a.oportunidades.length, 1);
+  const sugestao = a.oportunidades[0]?.sugestoes[0];
+  assert.equal(sugestao?.conceito.rotulo, "Vasos sanguíneos");
+  assert.match(sugestao?.motivo ?? "", /voce ensinou/);
+  // Ancora no proprio termo aprendido, para o corte cair na palavra certa.
+  assert.deepEqual(sugestao?.termosCasados, ["mangueira"]);
+});
+
+test("analisar: casamento por texto tem precedencia sobre o aprendido", () => {
+  const json = transcricao([["viagra", 0], ["resolve", 0.5], ["tudo", 1, true]]);
+  const a = analisar(entrada(json, { ligacoes: new Map([["Viagra", ["resolve"]]]) }));
+  // Nao pode virar duas sugestoes do mesmo conceito.
+  const viagra = a.oportunidades[0]?.sugestoes.filter((s) => s.conceito.rotulo === "Viagra");
+  assert.equal(viagra?.length, 1);
+  assert.equal(viagra?.[0]?.score, 1, "o texto literal continua valendo mais");
+});
+
 function transcricaoLonga(texto: string): EntradaAnalise {
   const palavras: Array<[string, number, boolean?]> = texto
     .split(" ")

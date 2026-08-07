@@ -10,11 +10,14 @@ import {
   relogio,
   type Config,
 } from "../domain.ts";
-import { analisar } from "../analise.ts";
+import { analisar, type Analise } from "../analise.ts";
 import {
   aprender,
   comPendente,
   creditarManuais,
+  LIGACAO_MINIMA,
+  ligacoesFirmes,
+  parseAssociacoes,
   parseMemoria,
   parsePendentes,
   type Memoria,
@@ -35,12 +38,14 @@ import {
   medirBiblioteca,
   readJson,
   writeJson,
+  type ArquivoBroll,
 } from "../premiere.ts";
 
 const CONFIG_FILE = "config.json";
 const MEMORIA_FILE = "aprendizado.json";
 const PENDENTES_FILE = "pendentes.json";
 const INTENSIDADE_FILE = "intensidade.json";
+const ASSOCIACOES_FILE = "ligacoes.json";
 
 // ------------------------------------------------------------------ util
 
@@ -207,7 +212,7 @@ async function julgarFaixa(
     const presentes = new Set(naTimeline.map((c) => c.sourceName));
     const manuais = naTimeline
       .filter((c) => !doPlano.has(c.sourceName))
-      .map((c) => ({ arquivo: c.sourceName, inicio: c.startSeconds }));
+      .map((c) => ({ arquivo: c.sourceName, inicio: c.startSeconds, fim: c.endSeconds }));
 
     // Nada apagado e nada colocado desde o plano anterior significa que ninguem
     // editou — provavelmente foi so um segundo clique em Analisar. Contar isso
@@ -239,8 +244,24 @@ async function julgarFaixa(
 
       // 2. O que esta na timeline sem ter vindo do plano foi voce quem pos.
       if (manuais.length > 0) {
-        const credito = creditarManuais(atual, sequencia, manuais, frases, conceitos);
+        const antes = parseAssociacoes(
+          await comLimite("ler ligacoes", readJson(ASSOCIACOES_FILE), 5000)
+        );
+        const credito = creditarManuais(atual, sequencia, manuais, frases, conceitos, antes);
         atual = credito.memoria;
+
+        if (credito.associacoes !== antes) {
+          await writeJson(ASSOCIACOES_FILE, credito.associacoes);
+          // Ligacao nova e o plugin inventando dicionario: tem de aparecer.
+          const novas = ligacoesFirmes(credito.associacoes);
+          for (const [conceito, termos] of novas) {
+            if (ligacoesFirmes(antes).has(conceito)) continue;
+            resumo.push({
+              texto: `Aprendi que "${termos.join(", ")}" pede "${conceito}" — voce ligou os dois ${LIGACAO_MINIMA} vezes.`,
+              tipo: "ok",
+            });
+          }
+        }
         // Falar mesmo quando o numero e zero: silencio se parece com falha, e foi
         // exatamente assim que este aprendizado passou por quebrado. E dizer o
         // motivo CERTO de cada um — juntar tudo em "ja contados" esconderia
@@ -283,6 +304,86 @@ function trecho(texto: string, limite = 70): string {
   return texto.length <= limite ? texto : `${texto.slice(0, limite)}...`;
 }
 
+/**
+ * Tudo o que os dois botoes precisam antes de divergir: a biblioteca no disco, o
+ * corte de V1, a transcricao reconstruida e as ligacoes ja aprendidas.
+ */
+async function lerContexto(): Promise<{
+  arquivos: ArquivoBroll[];
+  resultado: Analise;
+  nomeSequencia: string;
+}> {
+  const pasta = el<Campo>("libraryPath").value.trim();
+  if (!pasta) throw new Error("Informe a pasta de B-rolls.");
+
+  const arquivos = await comLimite("listar pasta de B-rolls", listarPastaBrolls(pasta), 30000);
+  if (arquivos.length === 0) throw new Error(`Nenhum video em ${pasta}.`);
+  registrar(`${arquivos.length} B-rolls na pasta`, "passo");
+
+  // Pasta que funcionou fica gravada: digitar uma vez basta.
+  void writeJson(CONFIG_FILE, lerFormulario()).catch(() => undefined);
+
+  const clipes = await comLimite("ler clipes de V1", lerClipes(0), 30000);
+  if (clipes.length === 0) throw new Error("V1 esta vazia. Nao ha o que analisar.");
+  registrar(`${clipes.length} clipes em V1`, "passo");
+
+  const nomes = [...new Set(clipes.map((c) => c.sourceName))];
+  const transcricoesJson = await comLimite("ler transcricoes", lerTranscricoes(nomes), 60000);
+  registrar(`${transcricoesJson.size} de ${nomes.length} midias com transcricao`, "passo");
+
+  const { name: nomeSequencia } = await comLimite("ler sequencia", getSequenceInfo());
+
+  const ligacoes = ligacoesFirmes(
+    parseAssociacoes(await comLimite("ler ligacoes", readJson(ASSOCIACOES_FILE), 5000))
+  );
+  if (ligacoes.size > 0) {
+    registrar(`${ligacoes.size} conceitos com ligacao que voce ensinou`, "passo");
+  }
+
+  const resultado = analisar({
+    clipes,
+    transcricoesJson,
+    biblioteca: arquivos.map((a) => a.name),
+    ligacoes,
+  });
+
+  registrar(
+    `${resultado.palavras} palavras · ${resultado.frases.length} frases · ${resultado.conceitos.length} conceitos`,
+    "passo"
+  );
+
+  return { arquivos, resultado, nomeSequencia };
+}
+
+/**
+ * Aprender sem inserir nada.
+ *
+ * Edite a sequencia como quiser — apague o que nao serviu, ponha o que faltava —
+ * e clique aqui. O plugin le a timeline, entende o que voce fez e guarda. Antes
+ * disto, a unica forma de ensinar era deixar ele inserir de novo.
+ */
+async function aprenderDaTimeline(): Promise<void> {
+  const botao = el<HTMLButtonElement & { disabled: boolean }>("aprender");
+  botao.disabled = true;
+  estado("aprendendo");
+  limparLog();
+
+  let resumoAprendizado: Julgamento["resumo"] = [];
+  try {
+    const { resultado, nomeSequencia } = await lerContexto();
+    const { resumo } = await julgarFaixa(nomeSequencia, resultado.frases, resultado.conceitos);
+    resumoAprendizado = resumo;
+    estado("pronto", "ok");
+  } catch (e) {
+    registrar(mensagemDeErro(e), "erro");
+    estado("falhou", "erro");
+  } finally {
+    for (const linha of resumoAprendizado) registrar(linha.texto, linha.tipo);
+    botao.disabled = false;
+    await salvarLog();
+  }
+}
+
 async function analisarSequencia(): Promise<void> {
   const botao = el<HTMLButtonElement & { disabled: boolean }>("analisar");
   botao.disabled = true;
@@ -294,37 +395,9 @@ async function analisarSequencia(): Promise<void> {
   let resumoAprendizado: Julgamento["resumo"] = [];
 
   try {
-    const pasta = el<Campo>("libraryPath").value.trim();
-    if (!pasta) throw new Error("Informe a pasta de B-rolls.");
-
-    const arquivos = await comLimite("listar pasta de B-rolls", listarPastaBrolls(pasta), 30000);
-    if (arquivos.length === 0) throw new Error(`Nenhum video em ${pasta}.`);
-    registrar(`${arquivos.length} B-rolls na pasta`, "passo");
-
-    // Pasta que funcionou fica gravada: digitar uma vez basta.
-    void writeJson(CONFIG_FILE, lerFormulario()).catch(() => undefined);
-
-    const clipes = await comLimite("ler clipes de V1", lerClipes(0), 30000);
-    if (clipes.length === 0) throw new Error("V1 esta vazia. Nao ha o que analisar.");
-    registrar(`${clipes.length} clipes em V1`, "passo");
-
-    const nomes = [...new Set(clipes.map((c) => c.sourceName))];
-    const transcricoesJson = await comLimite("ler transcricoes", lerTranscricoes(nomes), 60000);
-    registrar(`${transcricoesJson.size} de ${nomes.length} midias com transcricao`, "passo");
-
     const config = lerFormulario();
-    const { name: nomeSequencia } = await comLimite("ler sequencia", getSequenceInfo());
+    const { arquivos, resultado, nomeSequencia } = await lerContexto();
 
-    const resultado = analisar({
-      clipes,
-      transcricoesJson,
-      biblioteca: arquivos.map((a) => a.name),
-    });
-
-    registrar(
-      `${resultado.palavras} palavras · ${resultado.frases.length} frases · ${resultado.conceitos.length} conceitos`,
-      "passo"
-    );
     for (const aviso of resultado.avisos.slice(0, 6)) registrar(aviso, "aviso");
 
     // Depois da analise, de proposito: creditar o que voce colocou na mao exige
@@ -465,6 +538,9 @@ function iniciar(): void {
   // deixaria o painel inteiro inerte — sem log, sem erro, sem reacao ao clique.
   el("analisar").addEventListener("click", () => {
     void analisarSequencia();
+  });
+  el("aprender").addEventListener("click", () => {
+    void aprenderDaTimeline();
   });
   el("atualizar").addEventListener("click", () => {
     void relerSequencia();
