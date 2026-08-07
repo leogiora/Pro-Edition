@@ -233,6 +233,51 @@ score continua sendo trabalho dos pares conceito-palavra.
 
 ---
 
+## D-018 — O que voce coloca na mao tambem ensina (2026-08-07) — provisoria
+
+**Contexto.** D-016 e D-017 so ouviam metade da edicao: o plugin julgava o que
+ele mesmo inseriu. Um B-roll arrastado a mao ficava na faixa e era ignorado —
+nem acerto, nem erro. E ele e o sinal mais forte que existe: apagar diz *isto
+nao serviu*; colocar diz *era isto que faltava*, com arquivo e instante.
+
+**Decisao.** Uma leitura so da faixa de destino alimenta as duas coisas. O que
+esta na faixa e nao estava no plano foi o usuario quem pos: acha-se a frase que
+estava sendo dita naquele instante e creditam-se os pares conceito-palavra que
+ligam a fala ao conceito escolhido, mais o arquivo (era aquele take que ele
+queria ver).
+
+**A ordem do painel teve de inverter.** Analisar primeiro, julgar depois: para
+saber o que estava sendo dito no instante da colocacao e preciso ter as frases,
+e elas so existem depois da analise. O planejamento continua por ultimo, porque
+so ele depende da memoria. `Analise` passou a devolver `frases` e `conceitos`
+como listas em vez de contagens — quem conta, conta com `.length`.
+
+**O caso interessante e quando nada liga.** O usuario escolheu um conceito que o
+dicionario nao conecta com a fala. Contagem nao resolve isso: ela ajusta peso,
+nao inventa ligacao (D-016). Entao vira **sugestao escrita** — *"voce colocou
+'Vasos sanguineos' onde se diz X — falta sinonimo?"* — e essa e a materia-prima
+da pendencia 3, tirar o dicionario do codigo. De proposito essas sugestoes **nao**
+entram em `vistos`: reaparecem a cada analise ate alguem resolver, e no dia em
+que o sinonimo existir a mesma colocacao vira credito.
+
+**Consequencias e limites:**
+
+- `Memoria` vai a schema 3, com `vistos`. Um B-roll colocado a mao fica na
+  timeline para sempre; sem a marca, toda analise o creditaria de novo. Mesma
+  disciplina do plano pendente.
+- A marca e `sequencia|arquivo|segundo`. Mover o clipe de lugar cria chave nova e
+  credita outra vez — aceito: mover e reafirmar a escolha.
+- **Aproximacao conhecida:** um B-roll que o plugin inseriu, o usuario manteve, e
+  que a rodada seguinte nao replanejou aparece como manual e ganha um credito
+  extra. `vistos` limita a uma vez, e sobreviver a varias rodadas e de fato
+  endosso — nao vale mais contabilidade que isso.
+- B-roll sobre silencio e arquivo fora da biblioteca sao ignorados: nao ha fala
+  para ligar, e chutar o conceito seria pior que nao contar.
+
+Provisoria pelo mesmo motivo do D-016: nunca rodou dentro do Premiere.
+
+---
+
 ## D-008 — Ferramental da Fase 1: esbuild e `node --test`, nada alem (2026-08-06) — firme
 
 **Contexto.** A Fase 1 pede TypeScript, lint e testes. O caminho habitual seria

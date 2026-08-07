@@ -65,7 +65,7 @@ test("analisar: encontra a oportunidade e explica o motivo", () => {
 test("analisar: conta conceitos distintos, nao arquivos", () => {
   // 6 arquivos, 5 conceitos: as duas variacoes de Viagra contam uma vez.
   const a = analisar(entrada(transcricao([["oi", 0, true]])));
-  assert.equal(a.conceitos, 5);
+  assert.equal(a.conceitos.length, 5);
 });
 
 test("analisar: frase curta demais nao vira oportunidade", () => {

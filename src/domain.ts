@@ -67,6 +67,18 @@ export function formatTimecode(seconds: number, fps: number): string {
   return `${pad(Math.floor(total / 3600))}:${pad(Math.floor(total / 60) % 60)}:${pad(total % 60)}:${pad(frames)}`;
 }
 
+/**
+ * mm:ss — para apontar um instante numa lista, nao para calcular com ele.
+ *
+ * Mais legivel que timecode cheio quando o que importa e "onde na fala", e nao
+ * o frame exato. Estava duplicado em `plano.ts` e no painel.
+ */
+export function relogio(segundos: number): string {
+  const total = Math.max(0, Math.round(segundos));
+  const pad = (n: number): string => String(n).padStart(2, "0");
+  return `${pad(Math.floor(total / 60))}:${pad(total % 60)}`;
+}
+
 /*
  * A resolucao da fonte ja foi lida do XMP aqui. Nao e mais: o XMP nao traz
  * `videoFrameSize` nesta biblioteca e a leitura falhou nos arquivos reais.

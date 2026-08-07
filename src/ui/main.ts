@@ -3,17 +3,27 @@
  * Nenhuma chamada a `premierepro` mora aqui.
  */
 
-import { DEFAULT_CONFIG, formatTimecode, parseConfig, trackLabel, type Config } from "../domain.ts";
+import {
+  DEFAULT_CONFIG,
+  formatTimecode,
+  parseConfig,
+  relogio,
+  trackLabel,
+  type Config,
+} from "../domain.ts";
 import { analisar } from "../analise.ts";
 import {
   aprender,
   comPendente,
+  creditarManuais,
   parseMemoria,
   parsePendentes,
   type Memoria,
   type Pendentes,
 } from "../aprendizado.ts";
+import type { Conceito } from "../match.ts";
 import { planejar } from "../plano.ts";
+import type { Frase } from "../transcript.ts";
 import {
   comLimite,
   getSequenceInfo,
@@ -138,10 +148,9 @@ async function relerSequencia(): Promise<void> {
 
 // -------------------------------------------------------------- analisar
 
-/** mm:ss — mais legivel que timecode cheio numa lista de oportunidades. */
-function relogio(segundos: number): string {
-  const total = Math.max(0, Math.round(segundos));
-  return `${String(Math.floor(total / 60)).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
+interface Linha {
+  readonly texto: string;
+  readonly tipo: "ok" | "aviso";
 }
 
 interface Julgamento {
@@ -150,55 +159,91 @@ interface Julgamento {
   /**
    * Resumo guardado para o FIM do log, nao registrado na hora.
    *
-   * O julgamento acontece no comeco da analise, mas o log rola sozinho para o
+   * O julgamento acontece no meio da analise, mas o log rola sozinho para o
    * fim — e o painel e curto demais para mostrar as duas pontas. Medido no
    * Premiere real: a linha do aprendizado saiu da vista e o usuario concluiu
    * que a contagem nao tinha acontecido.
    */
-  readonly resumo: { readonly texto: string; readonly tipo: "ok" | "aviso" } | null;
+  readonly resumo: readonly Linha[];
 }
 
 /**
- * Julga o plano da rodada anterior antes de planejar a proxima.
+ * Le a faixa de destino uma vez e aprende as duas coisas que ela conta.
  *
- * O sinal ja esta na timeline: B-roll que continua na faixa foi acerto, o que
- * sumiu foi erro. O usuario "treina" o plugin editando normalmente — nao ha
- * botao de nota, nao ha modelo, so contagem.
+ * 1. **O que o plugin pos e o usuario manteve ou apagou.** Continuar la foi
+ *    acerto; ter sumido foi erro.
+ * 2. **O que o usuario pos por conta propria.** Esta na faixa e nao estava no
+ *    plano — logo foi escolha dele, e e o sinal mais forte que existe: diz qual
+ *    B-roll faltava e exatamente onde.
+ *
+ * O usuario "treina" o plugin editando normalmente. Nao ha botao de nota, nao ha
+ * modelo, so contagem.
  *
  * Nunca lanca: falhar em aprender nao pode impedir a analise. Quando a leitura
  * da faixa ou a gravacao falham, o plano continua pendente e sera julgado na
  * proxima rodada — melhor adiar que contar errado.
  */
-async function julgarPlanoAnterior(sequencia: string, videoTrackIndex: number): Promise<Julgamento> {
+async function julgarFaixa(
+  sequencia: string,
+  videoTrackIndex: number,
+  frases: readonly Frase[],
+  conceitos: readonly Conceito[]
+): Promise<Julgamento> {
   const memoria = parseMemoria(await comLimite("ler aprendizado", readJson(MEMORIA_FILE), 5000));
   const pendentes = parsePendentes(await comLimite("ler pendentes", readJson(PENDENTES_FILE), 5000));
-
   const pendente = pendentes.porSequencia[sequencia];
-  if (pendente === undefined || pendente.itens.length === 0) {
-    return { memoria, pendentes, resumo: null };
-  }
 
   try {
     const faixa = trackLabel("V", videoTrackIndex);
     const naFaixa = await comLimite(`ler ${faixa}`, lerClipes(videoTrackIndex), 30000);
-    const resultado = aprender(memoria, pendente, new Set(naFaixa.map((c) => c.sourceName)));
-    const julgado = comPendente(pendentes, sequencia, null);
+    const resumo: Linha[] = [];
 
-    // O pendente sai da lista na mesma rodada em que e contado. Sem isso, rodar
-    // a analise duas vezes contaria o mesmo acerto de novo.
-    await writeJson(MEMORIA_FILE, resultado.memoria);
-    await writeJson(PENDENTES_FILE, julgado);
-
-    return {
-      memoria: resultado.memoria,
-      pendentes: julgado,
-      resumo: {
-        texto: `Aprendi da rodada anterior: voce manteve ${resultado.acertos} e apagou ${resultado.erros} em ${faixa}.`,
+    // 1. Sobrevivencia do que o plugin inseriu.
+    let atual = memoria;
+    let julgado = pendentes;
+    if (pendente !== undefined && pendente.itens.length > 0) {
+      const r = aprender(atual, pendente, new Set(naFaixa.map((c) => c.sourceName)));
+      atual = r.memoria;
+      // O pendente sai da lista na mesma rodada em que e contado. Sem isso, rodar
+      // a analise duas vezes contaria o mesmo acerto de novo.
+      julgado = comPendente(pendentes, sequencia, null);
+      resumo.push({
+        texto: `Aprendi da rodada anterior: voce manteve ${r.acertos} e apagou ${r.erros} em ${faixa}.`,
         tipo: "ok",
-      },
-    };
+      });
+    }
+
+    // 2. O que sobrou na faixa sem ter vindo do plano foi voce quem pos.
+    const doPlano = new Set(pendente?.itens.map((i) => i.arquivo) ?? []);
+    const manuais = naFaixa
+      .filter((c) => !doPlano.has(c.sourceName))
+      .map((c) => ({ arquivo: c.sourceName, inicio: c.startSeconds }));
+
+    if (manuais.length > 0) {
+      const credito = creditarManuais(atual, sequencia, manuais, frases, conceitos);
+      atual = credito.memoria;
+      if (credito.creditados > 0) {
+        resumo.push({
+          texto: `Aprendi ${credito.creditados} que voce colocou em ${faixa} por conta propria.`,
+          tipo: "ok",
+        });
+      }
+      // Nao ha o que contar aqui, mas ha o que dizer: falta ligacao no dicionario.
+      for (const sugestao of credito.semLigacao.slice(0, 3)) {
+        resumo.push({ texto: sugestao, tipo: "aviso" });
+      }
+    }
+
+    await writeJson(MEMORIA_FILE, atual);
+    if (julgado !== pendentes) await writeJson(PENDENTES_FILE, julgado);
+
+    return { memoria: atual, pendentes: julgado, resumo };
   } catch (e) {
-    return { memoria, pendentes, resumo: { texto: `Aprendizado adiado: ${mensagemDeErro(e)}`, tipo: "aviso" } };
+    return {
+      memoria,
+      pendentes,
+      resumo: [{ texto: `Aprendizado adiado: ${mensagemDeErro(e)}`, tipo: "aviso" }],
+    };
   }
 }
 
@@ -210,7 +255,7 @@ async function analisarSequencia(): Promise<void> {
 
   // Sai no `finally`: assim aparece por ultimo — visivel — em qualquer saida,
   // inclusive quando a analise nao acha oportunidade ou falha no meio.
-  let resumoAprendizado: Julgamento["resumo"] = null;
+  let resumoAprendizado: Julgamento["resumo"] = [];
 
   try {
     const pasta = el<Campo>("libraryPath").value.trim();
@@ -233,11 +278,6 @@ async function analisarSequencia(): Promise<void> {
 
     const config = lerFormulario();
     const { name: nomeSequencia } = await comLimite("ler sequencia", getSequenceInfo());
-    const { memoria, pendentes, resumo } = await julgarPlanoAnterior(
-      nomeSequencia,
-      config.videoTrackIndex
-    );
-    resumoAprendizado = resumo;
 
     const resultado = analisar({
       clipes,
@@ -246,10 +286,20 @@ async function analisarSequencia(): Promise<void> {
     });
 
     registrar(
-      `${resultado.palavras} palavras · ${resultado.frases} frases · ${resultado.conceitos} conceitos`,
+      `${resultado.palavras} palavras · ${resultado.frases.length} frases · ${resultado.conceitos.length} conceitos`,
       "passo"
     );
     for (const aviso of resultado.avisos.slice(0, 6)) registrar(aviso, "aviso");
+
+    // Depois da analise, de proposito: creditar o que voce colocou na mao exige
+    // saber o que estava sendo dito naquele instante, e isso so existe agora.
+    const { memoria, pendentes, resumo } = await julgarFaixa(
+      nomeSequencia,
+      config.videoTrackIndex,
+      resultado.frases,
+      resultado.conceitos
+    );
+    resumoAprendizado = resumo;
 
     if (resultado.oportunidades.length === 0) {
       registrar("Nenhuma oportunidade de B-roll encontrada.", "vazio");
@@ -319,7 +369,7 @@ async function analisarSequencia(): Promise<void> {
     registrar(mensagemDeErro(e), "erro");
     estado("falhou", "erro");
   } finally {
-    if (resumoAprendizado !== null) registrar(resumoAprendizado.texto, resumoAprendizado.tipo);
+    for (const linha of resumoAprendizado) registrar(linha.texto, linha.tipo);
     botao.disabled = false;
     await salvarLog();
   }

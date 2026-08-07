@@ -20,8 +20,16 @@ export interface Oportunidade {
 
 export interface Analise {
   readonly palavras: number;
-  readonly frases: number;
-  readonly conceitos: number;
+  /**
+   * TODAS as frases do corte, nao so as que viraram oportunidade.
+   *
+   * Quem conta, conta com `.length`. A lista inteira e necessaria para saber o
+   * que estava sendo dito no instante em que o usuario colocou um B-roll na mao
+   * — inclusive nas frases que o casamento nao alcancou, que sao justamente as
+   * que revelam sinonimo faltando.
+   */
+  readonly frases: readonly Frase[];
+  readonly conceitos: readonly Conceito[];
   readonly oportunidades: readonly Oportunidade[];
   readonly avisos: readonly string[];
 }
@@ -96,11 +104,5 @@ export function analisar(entrada: EntradaAnalise): Analise {
     oportunidades.push({ frase, sugestoes });
   }
 
-  return {
-    palavras: palavras.length,
-    frases: frases.length,
-    conceitos: conceitos.length,
-    oportunidades,
-    avisos,
-  };
+  return { palavras: palavras.length, frases, conceitos, oportunidades, avisos };
 }

@@ -5,6 +5,7 @@ import {
   aprender,
   chave,
   comPendente,
+  creditarManuais,
   fator,
   melhorArquivo,
   MEMORIA_VAZIA,
@@ -14,6 +15,8 @@ import {
   type Memoria,
   type PlanoPendente,
 } from "../src/aprendizado.ts";
+import { conceitosDeArquivos, type Conceito } from "../src/match.ts";
+import type { Frase } from "../src/transcript.ts";
 
 function pendente(...itens: Array<[string, string, string[]]>): PlanoPendente {
   return {
@@ -128,6 +131,108 @@ test("aprender: conta o arquivo alem do par conceito-palavra", () => {
   assert.deepEqual(r.memoria.arquivos["Casal feliz (3).mp4"], { acertos: 0, erros: 1 });
 });
 
+// ------------------------------------------------- colocacao manual
+
+const CONCEITOS: Conceito[] = conceitosDeArquivos([
+  "Viagra (1).mp4",
+  "Viagra (2).mp4",
+  "Vasos sanguineos (3).mp4",
+]);
+
+function frase(texto: string, inicio: number, fim: number): Frase {
+  return { texto, inicio, fim, duracao: fim - inicio, palavras: 8, confiancaMinima: 1, termosNoTempo: [] };
+}
+
+const FALA = [
+  frase("o viagra nao resolve isso sozinho", 10, 15),
+  // O dicionario JA liga "sanguineo" a "circulacao" e "sangue": esta casa.
+  frase("depende da circulacao do sangue", 20, 25),
+  // Esta nao casa com conceito nenhum — e o caso que revela sinonimo faltando.
+  frase("quinta feira chegou rapido demais", 30, 35),
+];
+
+test("creditarManuais: credita o par conceito-palavra do que o usuario colocou", () => {
+  const r = creditarManuais(MEMORIA_VAZIA, "Reels", [{ arquivo: "Viagra (1).mp4", inicio: 11 }], FALA, CONCEITOS);
+  assert.equal(r.creditados, 1);
+  assert.deepEqual(r.memoria.pares[chave("Viagra", "viagra")], { acertos: 1, erros: 0 });
+  // O take escolhido tambem ganha: e ele que o usuario quis ver.
+  assert.deepEqual(r.memoria.arquivos["Viagra (1).mp4"], { acertos: 1, erros: 0 });
+  assert.deepEqual(r.semLigacao, []);
+});
+
+test("creditarManuais: o credito muda o plano seguinte", () => {
+  const antes = fator(MEMORIA_VAZIA, "Viagra", ["viagra"]);
+  const r = creditarManuais(MEMORIA_VAZIA, "Reels", [{ arquivo: "Viagra (1).mp4", inicio: 11 }], FALA, CONCEITOS);
+  assert.ok(fator(r.memoria, "Viagra", ["viagra"]) > antes, "creditar tem de valer alguma coisa");
+});
+
+test("creditarManuais: a mesma colocacao nao e creditada duas vezes", () => {
+  const manuais = [{ arquivo: "Viagra (1).mp4", inicio: 11 }];
+  const uma = creditarManuais(MEMORIA_VAZIA, "Reels", manuais, FALA, CONCEITOS);
+  // Segunda analise: o B-roll continua na timeline, mas ja foi contado.
+  const outra = creditarManuais(uma.memoria, "Reels", manuais, FALA, CONCEITOS);
+  assert.equal(outra.creditados, 0);
+  assert.deepEqual(outra.memoria.pares[chave("Viagra", "viagra")], { acertos: 1, erros: 0 });
+});
+
+test("creditarManuais: a mesma sequencia e outra nao se confundem", () => {
+  const manuais = [{ arquivo: "Viagra (1).mp4", inicio: 11 }];
+  const uma = creditarManuais(MEMORIA_VAZIA, "Reels", manuais, FALA, CONCEITOS);
+  assert.equal(creditarManuais(uma.memoria, "Outro corte", manuais, FALA, CONCEITOS).creditados, 1);
+});
+
+test("creditarManuais: sinonimo do dicionario conta como ligacao", () => {
+  // A fala diz "circulacao"/"sangue", o arquivo se chama "Vasos sanguineos".
+  const r = creditarManuais(
+    MEMORIA_VAZIA,
+    "Reels",
+    [{ arquivo: "Vasos sanguineos (3).mp4", inicio: 21 }],
+    FALA,
+    CONCEITOS
+  );
+  assert.equal(r.creditados, 1);
+  assert.deepEqual(r.semLigacao, []);
+});
+
+test("creditarManuais: escolha que nenhum termo explica vira sugestao, nao contagem", () => {
+  const r = creditarManuais(
+    MEMORIA_VAZIA,
+    "Reels",
+    [{ arquivo: "Vasos sanguineos (3).mp4", inicio: 31 }],
+    FALA,
+    CONCEITOS
+  );
+  assert.equal(r.creditados, 0);
+  assert.equal(r.semLigacao.length, 1);
+  assert.match(r.semLigacao[0] ?? "", /Vasos sanguineos/);
+  assert.match(r.semLigacao[0] ?? "", /sinonimo/);
+  assert.deepEqual(r.memoria.pares, {}, "sem ligacao nao ha o que contar");
+});
+
+test("creditarManuais: sugestao sem ligacao reaparece ate alguem resolver", () => {
+  const manuais = [{ arquivo: "Vasos sanguineos (3).mp4", inicio: 31 }];
+  const uma = creditarManuais(MEMORIA_VAZIA, "Reels", manuais, FALA, CONCEITOS);
+  assert.equal(creditarManuais(uma.memoria, "Reels", manuais, FALA, CONCEITOS).semLigacao.length, 1);
+});
+
+test("creditarManuais: B-roll sobre silencio nao ensina nada", () => {
+  const r = creditarManuais(MEMORIA_VAZIA, "Reels", [{ arquivo: "Viagra (1).mp4", inicio: 50 }], FALA, CONCEITOS);
+  assert.equal(r.creditados, 0);
+  assert.deepEqual(r.semLigacao, []);
+});
+
+test("creditarManuais: o corte entra um pouco antes da palavra e ainda acha a frase", () => {
+  // 9,7s: o B-roll comeca antes da frase que o justifica, como o planejador faz.
+  const r = creditarManuais(MEMORIA_VAZIA, "Reels", [{ arquivo: "Viagra (1).mp4", inicio: 9.7 }], FALA, CONCEITOS);
+  assert.equal(r.creditados, 1);
+});
+
+test("creditarManuais: arquivo de fora da biblioteca e ignorado", () => {
+  const r = creditarManuais(MEMORIA_VAZIA, "Reels", [{ arquivo: "gato.mp4", inicio: 11 }], FALA, CONCEITOS);
+  assert.equal(r.creditados, 0);
+  assert.deepEqual(r.semLigacao, []);
+});
+
 // -------------------------------------------------------------- pendentes
 
 test("comPendente: uma sequencia nao apaga o julgamento da outra", () => {
@@ -149,13 +254,14 @@ test("parse: ida e volta pelo JSON preserva tudo", () => {
   assert.deepEqual(parsePendentes(JSON.parse(JSON.stringify(p))), p);
 });
 
-test("parse: aprendizado.json do schema 1 sobrevive a atualizacao", () => {
-  // Arquivo real gravado antes da contagem por arquivo existir.
+test("parse: aprendizado.json antigo sobrevive a atualizacao", () => {
+  // Arquivo real do schema 1, gravado antes da contagem por arquivo existir.
   const antigo = { schema: 1, pares: { "Viagra|viagra": { acertos: 1, erros: 0 } } };
   const m = parseMemoria(antigo);
-  assert.equal(m.schema, 2);
-  assert.deepEqual(m.pares["Viagra|viagra"], { acertos: 1, erros: 0 });
+  assert.equal(m.schema, 3);
+  assert.deepEqual(m.pares["Viagra|viagra"], { acertos: 1, erros: 0 }, "o historico nao pode sumir");
   assert.deepEqual(m.arquivos, {});
+  assert.deepEqual(m.vistos, {});
 });
 
 test("parse: arquivo corrompido volta vazio em vez de lancar", () => {

@@ -8,6 +8,7 @@
 
 import type { Oportunidade } from "./analise.ts";
 import { fator, melhorArquivo, MEMORIA_VAZIA, type Memoria } from "./aprendizado.ts";
+import { relogio } from "./domain.ts";
 import { estaNaFrase, mesmaRaiz } from "./match.ts";
 
 export interface Colocacao {
@@ -113,7 +114,7 @@ export function planejar(
   const candidatos: Candidato[] = [];
   for (const o of oportunidades) {
     if (o.frase.duracao < regras.duracaoMinima) {
-      descartes.push(`${rotulo(o.frase.inicio)} frase curta demais (${o.frase.duracao.toFixed(1)}s)`);
+      descartes.push(`${relogio(o.frase.inicio)} frase curta demais (${o.frase.duracao.toFixed(1)}s)`);
       continue;
     }
     let algumPassou = false;
@@ -136,7 +137,7 @@ export function planejar(
     }
     if (!algumPassou) {
       descartes.push(
-        `${rotulo(o.frase.inicio)} nenhuma sugestao passou (melhor: ${porcento(o.sugestoes[0]?.score)})`
+        `${relogio(o.frase.inicio)} nenhuma sugestao passou (melhor: ${porcento(o.sugestoes[0]?.score)})`
       );
     }
   }
@@ -151,7 +152,7 @@ export function planejar(
   let fimDoAnterior = Number.NEGATIVE_INFINITY;
 
   for (const c of candidatos) {
-    const onde = `${rotulo(c.ancoraEm)} ${c.conceito}`;
+    const onde = `${relogio(c.ancoraEm)} ${c.conceito}`;
 
     if (c.ancoraEm < fimDoAnterior + regras.intervaloMinimo) {
       descartes.push(`${onde}: muito perto do B-roll anterior`);
@@ -205,11 +206,6 @@ export function planejar(
   }
 
   return { colocacoes, descartes };
-}
-
-function rotulo(segundos: number): string {
-  const total = Math.max(0, Math.round(segundos));
-  return `${String(Math.floor(total / 60)).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
 }
 
 /** "+15%" / "-30%": o motivo tem de dizer que o historico mexeu no score. */

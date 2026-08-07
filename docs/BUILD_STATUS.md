@@ -40,7 +40,8 @@ lista a pasta de B-rolls (disco, sem seletor)
   -> casa com os 32 conceitos (raiz + peso por raridade + sinonimos)
   -> planeja: ancora na palavra, duracao, diversidade, sem repetir
   -> insere em V2, apara, escala para preencher, remove o audio
-  -> guarda o plano; na proxima analise compara com V2 e aprende com o que sumiu
+  -> guarda o plano; na proxima analise le V2 e aprende das duas pontas:
+     o que voce apagou (erro) e o que voce colocou por conta propria (acerto)
 ```
 
 Medido numa sequencia real de 62s: 260 B-rolls lidos, 31 clipes em V1,
@@ -57,16 +58,16 @@ src/domain.ts       tempo, escala, timecode, caminho, config — puro
 src/mp4.ts          resolucao lida do cabecalho do arquivo — puro
 src/transcript.ts   reconstrucao do corte final + frases — puro
 src/match.ts        conceitos, sinonimos, casamento — puro
-src/aprendizado.ts  contagem acerto/erro por par conceito-palavra — puro
+src/aprendizado.ts  contagem por par conceito-palavra e por arquivo — puro
 src/plano.ts        regras de colocacao — puro
 src/analise.ts      pipeline que junta tudo — puro
 src/premiere.ts     unico ponto que fala com a API do Premiere
 src/ui/             painel
-tests/              116 testes, sem framework
+tests/              126 testes, sem framework
 proofs/             painel de provas da Fase 0 (trocar `main` no manifest para usar)
 ```
 
-`npm run verify` = tipos + 116 testes + build. **E o gate.**
+`npm run verify` = tipos + 126 testes + build. **E o gate.**
 
 Arquivos de estado, na pasta de dados do plugin (ver secao 8 das armadilhas):
 `config.json`, `ultimo-log.json`, `aprendizado.json` (contagens),
@@ -83,10 +84,10 @@ Arquivos de estado, na pasta de dados do plugin (ver secao 8 das armadilhas):
    duracao. Se falhar, os B-rolls entram com a duracao cheia do arquivo.
 3. **Dicionario de sinonimos vive no codigo** (`src/match.ts`, 37 entradas).
    Deveria ser arquivo editavel fora do codigo.
-4. **Aprendizado: mecanismo provado, numeros nao.** O ciclo rodou inteiro no
-   Premiere (ver D-016), mas o passo de 0,15 por exclusao so se valida com uso.
-   A troca de take (D-017) ainda **nao rodou dentro do aplicativo** — os
-   arquivos julgados ate agora sao anteriores a contagem por arquivo existir.
+4. **Aprendizado: so a sobrevivencia foi provada no Premiere.** O ciclo de
+   D-016 rodou inteiro, mas o passo de 0,15 por exclusao so se valida com uso.
+   A troca de take (D-017) e o credito por colocacao manual (D-018) **ainda nao
+   rodaram dentro do aplicativo**.
 5. **Cenarios dificeis nao testados**: nested, multicam, `speed != 1`, midia
    offline. O remapeamento so esta provado para o caso simples.
 6. **ESLint nao instalado** — reducao deliberada de escopo, ver D-008.
@@ -95,13 +96,20 @@ Arquivos de estado, na pasta de dados do plugin (ver secao 8 das armadilhas):
 
 ## Proximo passo exato
 
-**Ver a troca de take acontecer no Premiere** (D-017). Reiniciar o aplicativo e,
-na proxima sequencia: apagar um B-roll que nao serviu, analisar de novo e conferir
-que entrou **outra variacao do mesmo conceito**, com `· outro take, o anterior foi
-apagado` no motivo. Vale so para arquivos julgados de agora em diante — o
-`aprendizado.json` gravado antes desta versao nao tinha contagem por arquivo.
+**Rodar as duas pontas do aprendizado no Premiere.** Reiniciar o aplicativo e,
+numa sequencia:
+
+1. **Apagar** um B-roll que nao serviu. Na analise seguinte deve entrar **outra
+   variacao do mesmo conceito**, com `· outro take, o anterior foi apagado` no
+   motivo (D-017). Vale so para arquivos julgados desta versao em diante.
+2. **Colocar um na mao**, em cima de uma fala que combine. A analise seguinte
+   deve terminar com *"Aprendi N que voce colocou em V2 por conta propria"*
+   (D-018).
+3. Colocar um que **nao** combine com a fala: deve sair a sugestao
+   *"...nenhum termo liga os dois. Falta sinonimo?"* — e essa lista e a
+   materia-prima da pendencia 3.
 
 Depois disso a fila e: tirar o dicionario de sinonimos do codigo (pendencia 3),
-provar `createSetEndAction` isolada (pendencia 2), cenarios dificeis de
-remapeamento (pendencia 5). Embedding de texto local continua sendo o degrau
-seguinte, so se a contagem nao bastar.
+agora com as sugestoes reais em maos; provar `createSetEndAction` isolada
+(pendencia 2); cenarios dificeis de remapeamento (pendencia 5). Embedding de
+texto local continua sendo o degrau seguinte, so se a contagem nao bastar.
