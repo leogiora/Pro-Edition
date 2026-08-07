@@ -1,7 +1,18 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { casar, conceitosDeArquivos, estaNaFrase, mesmaRaiz, radical, termos } from "../src/match.ts";
+import {
+  casar,
+  conceitosDeArquivos,
+  estaNaFrase,
+  mesmaRaiz,
+  parseSinonimos,
+  radical,
+  sinonimosParaJson,
+  SINONIMOS_PADRAO,
+  termos,
+  usarSinonimos,
+} from "../src/match.ts";
 
 /** Nomes reais da biblioteca do usuario. */
 const ARQUIVOS = [
@@ -172,6 +183,45 @@ test("casar: o sintoma alcanca 'Desanimado', nao so 'Viagra'", () => {
 
   assert.ok(rotulos.includes("Desanimado"), `casou so com ${rotulos.join(", ")}`);
   assert.ok(rotulos.includes("Viagra"), "e Viagra continua casando");
+});
+
+// --------------------- dicionario editavel -----------------------------------
+
+test("parseSinonimos: le o arquivo do usuario", () => {
+  const lido = parseSinonimos({ schema: 1, sinonimos: { doutor: ["medico", "clinica"] } });
+  assert.deepEqual(lido?.get("doutor"), ["medico", "clinica"]);
+});
+
+test("parseSinonimos: arquivo quebrado devolve null, nunca dicionario vazio", () => {
+  // Vazio silencioso degradaria o casamento inteiro sem ninguem perceber.
+  for (const lixo of [null, 7, "x", {}, { sinonimos: 1 }, { sinonimos: {} }, { sinonimos: { a: [] } }]) {
+    assert.equal(parseSinonimos(lixo), null);
+  }
+});
+
+test("parseSinonimos: entrada malformada some, o resto fica", () => {
+  const lido = parseSinonimos({ sinonimos: { bom: ["a"], ruim: "texto", vazio: [], meio: ["b", 7] } });
+  assert.deepEqual([...(lido ?? new Map())], [["bom", ["a"]], ["meio", ["b"]]]);
+});
+
+test("sinonimosParaJson: ida e volta preserva o dicionario", () => {
+  const volta = parseSinonimos(sinonimosParaJson(SINONIMOS_PADRAO));
+  assert.equal(volta?.size, SINONIMOS_PADRAO.size);
+  assert.deepEqual(volta?.get("viagra"), SINONIMOS_PADRAO.get("viagra"));
+});
+
+test("usarSinonimos: o dicionario do disco manda no casamento", () => {
+  const conceitos = conceitosDeArquivos(["Academia (1).mp4"]);
+  assert.deepEqual(casar("preciso puxar ferro amanha", conceitos), [], "o padrao nao liga isso");
+
+  try {
+    usarSinonimos(new Map([["academia", ["ferro"]]]));
+    const rotulos = casar("preciso puxar ferro amanha", conceitos).map((s) => s.conceito.rotulo);
+    assert.deepEqual(rotulos, ["Academia"], "editar o arquivo tem de bastar");
+  } finally {
+    // Estado de modulo: devolver ao padrao para nao contaminar os outros testes.
+    usarSinonimos(SINONIMOS_PADRAO);
+  }
 });
 
 test("casar: 'consulta online' e Teleconsulta, nunca Doutor", () => {

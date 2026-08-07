@@ -603,6 +603,35 @@ editavel, senao cada ajuste destes exige um commit.
 
 ---
 
+## D-028 — O dicionario saiu do codigo (2026-08-07) — firme
+
+**Contexto.** A pendencia 3 estava aberta desde o comeco. O que a fechou nao foi
+plano: foram dois pedidos do usuario no mesmo dia — ligar "disfuncao" a
+"Desanimado" e desligar "consultorio" de "Doutor" — que exigiram commit meu para
+ajustar **vocabulario**. Quem sabe o vocabulario e quem edita, nao quem programa.
+
+**Decisao.** `sinonimos.json`, na pasta de dados do plugin, criado no primeiro
+arranque com o dicionario padrao. O painel le no arranque e o usuario edita sem
+recompilar nada.
+
+**Estado de modulo, deliberadamente.** `usarSinonimos()` troca o dicionario ativo
+em `match.ts`. A alternativa era arrastar o dicionario por `estaNaFrase`,
+`casar`, `analisar`, `planejar`, `ancora` e `dispersao` — seis assinaturas para
+um valor lido em toda parte e escrito uma vez so. Quem escreve e o painel, no
+arranque; ninguem mais. Ha teste que troca e restaura, para nao contaminar os
+outros.
+
+**Arquivo quebrado nunca vira dicionario vazio.** `parseSinonimos` devolve `null`
+e quem chama mantem o padrao. Vazio silencioso degradaria o casamento inteiro sem
+ninguem perceber — e este projeto ja perdeu tempo demais com falha silenciosa.
+
+**Consequencia.** As duas classes de erro ficam separadas e cada uma tem seu
+lugar: **take errado ou conceito que nao serve** se ensina apagando; **caminho
+errado ate o conceito** se conserta editando o dicionario. Ver D-027 para o
+porque de a contagem nao alcancar a segunda.
+
+---
+
 ## D-008 — Ferramental da Fase 1: esbuild e `node --test`, nada alem (2026-08-06) — firme
 
 **Contexto.** A Fase 1 pede TypeScript, lint e testes. O caminho habitual seria

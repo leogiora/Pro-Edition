@@ -24,7 +24,13 @@ import {
   type Pendentes,
 } from "../aprendizado.ts";
 import { CACHE_VAZIO, parseCacheIntensidade, ritmo } from "../intensidade.ts";
-import type { Conceito } from "../match.ts";
+import {
+  parseSinonimos,
+  sinonimosParaJson,
+  SINONIMOS_PADRAO,
+  usarSinonimos,
+  type Conceito,
+} from "../match.ts";
 import { planejar, REGRAS_DENSAS, REGRAS_PADRAO, semSobrepor, type Ocupado } from "../plano.ts";
 import type { Frase } from "../transcript.ts";
 import {
@@ -46,6 +52,7 @@ const MEMORIA_FILE = "aprendizado.json";
 const PENDENTES_FILE = "pendentes.json";
 const INTENSIDADE_FILE = "intensidade.json";
 const ASSOCIACOES_FILE = "ligacoes.json";
+const SINONIMOS_FILE = "sinonimos.json";
 const LOG_ANALISE = "ultimo-log.json";
 const LOG_APRENDER = "ultimo-aprendizado.json";
 
@@ -582,6 +589,39 @@ async function analisarSequencia(): Promise<void> {
   }
 }
 
+/**
+ * Carrega o dicionario editavel, criando-o na primeira vez.
+ *
+ * Ate agora, ligar "disfuncao" a "Desanimado" ou desligar "consultorio" de
+ * "Doutor" exigia alterar codigo e recompilar. Sao ajustes de vocabulario, e
+ * quem sabe o vocabulario e quem edita — nao quem programa.
+ *
+ * Arquivo quebrado nunca vira dicionario vazio: cai no padrao e avisa. Um
+ * dicionario vazio degradaria o casamento inteiro em silencio.
+ */
+async function carregarSinonimos(): Promise<void> {
+  try {
+    const bruto = await comLimite("ler sinonimos", readJson(SINONIMOS_FILE), 5000);
+    if (bruto === null) {
+      // Primeira vez: grava o padrao para o usuario ter o que editar.
+      await writeJson(SINONIMOS_FILE, sinonimosParaJson(SINONIMOS_PADRAO));
+      registrar(`Dicionario criado em ${SINONIMOS_FILE}, na pasta de dados do plugin.`, "vazio");
+      return;
+    }
+
+    const doDisco = parseSinonimos(bruto);
+    if (doDisco === null) {
+      registrar(`${SINONIMOS_FILE} ilegivel: usando o dicionario padrao.`, "aviso");
+      return;
+    }
+
+    usarSinonimos(doDisco);
+    registrar(`Dicionario: ${doDisco.size} entradas de ${SINONIMOS_FILE}`, "vazio");
+  } catch (e) {
+    registrar(`Dicionario nao carregou, usando o padrao. ${mensagemDeErro(e)}`, "aviso");
+  }
+}
+
 // ---------------------------------------------------------------- inicio
 
 function iniciar(): void {
@@ -613,6 +653,7 @@ function iniciar(): void {
     } catch (e) {
       registrar(`Configuracao nao carregou, usando padrao. ${mensagemDeErro(e)}`, "aviso");
     }
+    await carregarSinonimos();
     await relerSequencia();
   })();
 }

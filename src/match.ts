@@ -66,7 +66,7 @@ export function termos(texto: string): string[] {
  * Chave = termo do NOME DO ARQUIVO. Valores = como aquilo aparece na fala.
  * Editavel: e o lugar certo para ajustar a pontaria sem mexer em codigo.
  */
-export const SINONIMOS: ReadonlyMap<string, readonly string[]> = new Map([
+export const SINONIMOS_PADRAO: ReadonlyMap<string, readonly string[]> = new Map([
   // As chaves sao os termos JA normalizados do nome do arquivo. Os valores sao
   // como o assunto aparece na fala — tirados da transcricao real, nao inventados.
   ["viagra", ["disfuncao", "eretil", "impotencia", "erecao", "ereto", "remedio", "comprimido", "pilula", "azul", "potencia", "desempenho", "ejaculacao", "precoce", "libido", "rigidez"]],
@@ -123,6 +123,55 @@ export const SINONIMOS: ReadonlyMap<string, readonly string[]> = new Map([
   ["comparacao", ["comparar", "antes", "depois", "diferenca"]],
   ["jovem", ["jovens", "idade"]],
 ]);
+
+/**
+ * O dicionario em uso. Comeca no padrao e e trocado uma vez, no arranque, pelo
+ * que estiver em `sinonimos.json`.
+ *
+ * ponytail: e estado de modulo, e isso e deliberado. A alternativa era arrastar
+ * o dicionario por `estaNaFrase`, `casar`, `analisar`, `planejar`, `ancora` e
+ * `dispersao` — seis assinaturas para um valor que e lido em toda parte e escrito
+ * uma vez so. Quem escreve e o painel, no arranque; ninguem mais.
+ */
+let sinonimosEmUso: ReadonlyMap<string, readonly string[]> = SINONIMOS_PADRAO;
+
+/** Troca o dicionario. Chamado uma vez pelo painel, com o que veio do disco. */
+export function usarSinonimos(novos: ReadonlyMap<string, readonly string[]>): void {
+  sinonimosEmUso = novos;
+}
+
+/** O dicionario ativo, para gravar de volta ou mostrar. */
+export function sinonimosAtuais(): ReadonlyMap<string, readonly string[]> {
+  return sinonimosEmUso;
+}
+
+/**
+ * Le o `sinonimos.json` editado pelo usuario.
+ *
+ * Devolve `null` quando o arquivo nao existe ou nao da para aproveitar — e quem
+ * chama mantem o padrao. Um dicionario vazio degradaria o casamento inteiro em
+ * silencio, entao arquivo quebrado nunca vira dicionario vazio.
+ */
+export function parseSinonimos(raw: unknown): Map<string, readonly string[]> | null {
+  if (typeof raw !== "object" || raw === null) return null;
+  const bruto = (raw as Record<string, unknown>).sinonimos;
+  if (typeof bruto !== "object" || bruto === null) return null;
+
+  const mapa = new Map<string, readonly string[]>();
+  for (const [chave, valor] of Object.entries(bruto)) {
+    if (!Array.isArray(valor)) continue;
+    const termos = valor.filter((v): v is string => typeof v === "string" && v.length > 0);
+    if (termos.length > 0) mapa.set(chave, termos);
+  }
+  return mapa.size > 0 ? mapa : null;
+}
+
+/** O dicionario como vai para o disco, pronto para o usuario editar. */
+export function sinonimosParaJson(mapa: ReadonlyMap<string, readonly string[]>): unknown {
+  const sinonimos: Record<string, readonly string[]> = {};
+  for (const [chave, termos] of mapa) sinonimos[chave] = termos;
+  return { schema: 1, sinonimos };
+}
 
 export interface Conceito {
   /** Nome como aparece no arquivo: "Falhou na cama". */
@@ -216,7 +265,7 @@ function pesos(conceitos: readonly Conceito[]): Map<string, number> {
  */
 export function estaNaFrase(termoDoConceito: string, termosDaFrase: readonly string[]): boolean {
   if (termosDaFrase.some((f) => mesmaRaiz(termoDoConceito, f))) return true;
-  const sinonimos = SINONIMOS.get(termoDoConceito);
+  const sinonimos = sinonimosEmUso.get(termoDoConceito);
   if (!sinonimos) return false;
   return sinonimos.some((s) => termosDaFrase.some((f) => mesmaRaiz(radical(s), f)));
 }

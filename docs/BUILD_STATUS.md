@@ -64,17 +64,18 @@ src/plano.ts        regras de colocacao — puro
 src/analise.ts      pipeline que junta tudo — puro
 src/premiere.ts     unico ponto que fala com a API do Premiere
 src/ui/             painel
-tests/              188 testes, sem framework
+tests/              193 testes, sem framework
 proofs/             painel de provas da Fase 0 (trocar `main` no manifest para usar)
 ```
 
-`npm run verify` = tipos + 188 testes + build. **E o gate.**
+`npm run verify` = tipos + 193 testes + build. **E o gate.**
 
 Arquivos de estado, na pasta de dados do plugin (ver secao 8 das armadilhas):
 `config.json`, `ultimo-log.json`, `aprendizado.json` (contagens),
 `pendentes.json` (plano inserido e ainda nao julgado, um por sequencia),
 `intensidade.json` (agitacao medida de cada arquivo, incremental),
 `ligacoes.json` (associacoes que o usuario ensinou colocando B-roll),
+`sinonimos.json` (**o dicionario, editavel a mao**),
 `frases.json` (transcricao reconstruida da ultima analise, para diagnostico).
 
 ---
@@ -86,8 +87,8 @@ Arquivos de estado, na pasta de dados do plugin (ver secao 8 das armadilhas):
    dependencia descrita acima.
 2. **`createSetEndAction` nunca foi provada isoladamente.** E o que apara a
    duracao. Se falhar, os B-rolls entram com a duracao cheia do arquivo.
-3. **Dicionario de sinonimos vive no codigo** (`src/match.ts`, 37 entradas).
-   Deveria ser arquivo editavel fora do codigo.
+3. ~~Dicionario de sinonimos vive no codigo.~~ **Resolvida** (D-028): esta em
+   `sinonimos.json`, na pasta de dados do plugin, editavel sem recompilar.
 4. **Aprendizado: so a sobrevivencia foi provada no Premiere.** O ciclo de
    D-016 rodou inteiro, mas o passo de 0,15 por exclusao so se valida com uso.
    A troca de take (D-017) e o credito por colocacao manual (D-018) **ainda nao
