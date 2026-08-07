@@ -83,9 +83,10 @@ Arquivos de estado, na pasta de dados do plugin (ver secao 8 das armadilhas):
    duracao. Se falhar, os B-rolls entram com a duracao cheia do arquivo.
 3. **Dicionario de sinonimos vive no codigo** (`src/match.ts`, 37 entradas).
    Deveria ser arquivo editavel fora do codigo.
-4. **Aprendizado nunca rodou no Premiere.** A logica esta escrita e coberta por
-   15 testes, mas o caminho que le V2 e compara com o plano guardado (`lerClipes(1)`)
-   nunca foi executado dentro do aplicativo. Ver D-016 e "proximo passo".
+4. **Aprendizado: mecanismo provado, numeros nao.** O ciclo rodou inteiro no
+   Premiere (ver D-016), mas o passo de 0,15 por exclusao so se valida com uso.
+   Efeito colateral conhecido: **B-roll apagado volta na analise seguinte** —
+   uma exclusao so nao derruba um casamento de 85%. Ver "proximo passo".
 5. **Cenarios dificeis nao testados**: nested, multicam, `speed != 1`, midia
    offline. O remapeamento so esta provado para o caso simples.
 6. **ESLint nao instalado** — reducao deliberada de escopo, ver D-008.
@@ -94,23 +95,19 @@ Arquivos de estado, na pasta de dados do plugin (ver secao 8 das armadilhas):
 
 ## Proximo passo exato
 
-**Rodar o ciclo de aprendizado no Premiere, duas vezes.** Reiniciar o aplicativo
-(nao ha hot reload), e entao:
+**Decidir o que fazer com o B-roll que o usuario apagou e voltou.** Medido na
+rodada real: "Milhares de homens" e "Doutor" foram apagados, cairam de 100% para
+85% e **entraram de novo, o mesmo arquivo no mesmo lugar**. Esta correto pela
+regra (uma exclusao e evidencia fraca) e e ruim de usar. Tres saidas, em ordem de
+esforco:
 
-1. Analisar e inserir numa sequencia. O log deve terminar com
-   *"Apague os que nao serviram: a proxima analise aprende com isso."*
-   Conferir que `pendentes.json` apareceu na pasta de dados do plugin.
-2. Apagar na timeline os B-rolls que nao serviram. Nao desfazer com Ctrl+Z:
-   desfazer devolve a sequencia ao estado anterior e nao ensina nada.
-3. Analisar de novo. O log deve abrir com
-   *"aprendizado: N mantidos e M apagados em V2 desde a ultima analise"*,
-   e as sugestoes reprovadas devem trazer `· aprendizado -X%` no motivo.
+1. **Contar tambem por arquivo, nao so por par conceito-palavra.** Arquivo com
+   erro cede a vez a outra variacao do mesmo conceito — a biblioteca tem varias.
+   O conceito continua valendo, so troca o take. Barato e resolve a queixa real.
+2. Passo maior (0,15 -> 0,25): duas exclusoes derrubam. Mexe em todo mundo.
+3. Nao fazer nada e deixar a contagem trabalhar.
 
-O que pode falhar e ainda nao foi provado dentro do aplicativo: `lerClipes(1)`
-numa sequencia sem V2 (deve virar aviso, nao erro) e a gravacao dos dois JSON.
-
-Depois disso, os candidatos na fila (em ordem de valor, nao de esforco):
-tirar o dicionario de sinonimos do codigo (pendencia 3), provar
-`createSetEndAction` isolada (pendencia 2) e os cenarios dificeis de
-remapeamento (pendencia 5). Embedding de texto local continua sendo o degrau
-seguinte, so se a contagem nao bastar.
+Escolhida a saida, o resto da fila: tirar o dicionario de sinonimos do codigo
+(pendencia 3), provar `createSetEndAction` isolada (pendencia 2), cenarios
+dificeis de remapeamento (pendencia 5). Embedding de texto local continua sendo
+o degrau seguinte, so se a contagem nao bastar.

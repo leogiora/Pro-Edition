@@ -144,6 +144,20 @@ function relogio(segundos: number): string {
   return `${String(Math.floor(total / 60)).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
 }
 
+interface Julgamento {
+  readonly memoria: Memoria;
+  readonly pendentes: Pendentes;
+  /**
+   * Resumo guardado para o FIM do log, nao registrado na hora.
+   *
+   * O julgamento acontece no comeco da analise, mas o log rola sozinho para o
+   * fim — e o painel e curto demais para mostrar as duas pontas. Medido no
+   * Premiere real: a linha do aprendizado saiu da vista e o usuario concluiu
+   * que a contagem nao tinha acontecido.
+   */
+  readonly resumo: { readonly texto: string; readonly tipo: "ok" | "aviso" } | null;
+}
+
 /**
  * Julga o plano da rodada anterior antes de planejar a proxima.
  *
@@ -155,15 +169,14 @@ function relogio(segundos: number): string {
  * da faixa ou a gravacao falham, o plano continua pendente e sera julgado na
  * proxima rodada — melhor adiar que contar errado.
  */
-async function julgarPlanoAnterior(
-  sequencia: string,
-  videoTrackIndex: number
-): Promise<{ memoria: Memoria; pendentes: Pendentes }> {
+async function julgarPlanoAnterior(sequencia: string, videoTrackIndex: number): Promise<Julgamento> {
   const memoria = parseMemoria(await comLimite("ler aprendizado", readJson(MEMORIA_FILE), 5000));
   const pendentes = parsePendentes(await comLimite("ler pendentes", readJson(PENDENTES_FILE), 5000));
 
   const pendente = pendentes.porSequencia[sequencia];
-  if (pendente === undefined || pendente.itens.length === 0) return { memoria, pendentes };
+  if (pendente === undefined || pendente.itens.length === 0) {
+    return { memoria, pendentes, resumo: null };
+  }
 
   try {
     const faixa = `V${videoTrackIndex + 1}`;
@@ -176,14 +189,16 @@ async function julgarPlanoAnterior(
     await writeJson(MEMORIA_FILE, resultado.memoria);
     await writeJson(PENDENTES_FILE, julgado);
 
-    registrar(
-      `aprendizado: ${resultado.acertos} mantidos e ${resultado.erros} apagados em ${faixa} desde a ultima analise`,
-      "ok"
-    );
-    return { memoria: resultado.memoria, pendentes: julgado };
+    return {
+      memoria: resultado.memoria,
+      pendentes: julgado,
+      resumo: {
+        texto: `Aprendi da rodada anterior: voce manteve ${resultado.acertos} e apagou ${resultado.erros} em ${faixa}.`,
+        tipo: "ok",
+      },
+    };
   } catch (e) {
-    registrar(`Aprendizado adiado: ${mensagemDeErro(e)}`, "aviso");
-    return { memoria, pendentes };
+    return { memoria, pendentes, resumo: { texto: `Aprendizado adiado: ${mensagemDeErro(e)}`, tipo: "aviso" } };
   }
 }
 
@@ -192,6 +207,10 @@ async function analisarSequencia(): Promise<void> {
   botao.disabled = true;
   estado("analisando");
   limparLog();
+
+  // Sai no `finally`: assim aparece por ultimo — visivel — em qualquer saida,
+  // inclusive quando a analise nao acha oportunidade ou falha no meio.
+  let resumoAprendizado: Julgamento["resumo"] = null;
 
   try {
     const pasta = el<Campo>("libraryPath").value.trim();
@@ -214,7 +233,11 @@ async function analisarSequencia(): Promise<void> {
 
     const config = lerFormulario();
     const { name: nomeSequencia } = await comLimite("ler sequencia", getSequenceInfo());
-    const { memoria, pendentes } = await julgarPlanoAnterior(nomeSequencia, config.videoTrackIndex);
+    const { memoria, pendentes, resumo } = await julgarPlanoAnterior(
+      nomeSequencia,
+      config.videoTrackIndex
+    );
+    resumoAprendizado = resumo;
 
     const resultado = analisar({
       clipes,
@@ -296,6 +319,7 @@ async function analisarSequencia(): Promise<void> {
     registrar(mensagemDeErro(e), "erro");
     estado("falhou", "erro");
   } finally {
+    if (resumoAprendizado !== null) registrar(resumoAprendizado.texto, resumoAprendizado.tipo);
     botao.disabled = false;
     await salvarLog();
   }

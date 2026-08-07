@@ -185,8 +185,19 @@ inteiro por causa de um contexto ruim mataria o outro junto.
 - **Nao ve o que foi movido ou aparado.** So presenca por nome. Comparar posicao
   daria um sinal mais fino e nao vale o custo antes de haver caso medido.
 
-Provisoria ate rodar em sequencia real por algumas edicoes: os numeros sao
-plausiveis e testados, mas o passo certo so aparece com uso.
+**Provado no Premiere real (2026-08-07, sequencia "Reels", 62s).** Ciclo completo
+numa unica rodada: inseriu 5, o usuario apagou 2 na timeline, a analise seguinte
+leu V2 e contou `3 mantidos e 2 apagados`. `aprendizado.json` gravou os seis pares
+com o saldo certo, e o plano novo saiu com `aprendizado +15%` nos tres mantidos e
+`-15%` nos dois apagados. Nenhum ajuste foi preciso na logica.
+
+O unico defeito apareceu na apresentacao: o resumo era registrado no comeco do
+log, que rola sozinho para o fim, e sumia da tela. Corrigido — vai no `finally`,
+por ultimo. Registrado na secao 8 das armadilhas.
+
+Continua provisoria: **o mecanismo esta provado, o passo de 0,15 nao.** Uma
+rodada nao diz se derrubar um casamento exige tres exclusoes ou deveria exigir
+duas. So o uso continuado responde.
 
 ---
 

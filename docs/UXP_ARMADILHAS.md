@@ -160,3 +160,9 @@ O painel e curto e o log fica abaixo da area visivel. Toda analise grava
 
 Ler o arquivo e mais rapido e mais confiavel que captura de tela — e foi assim
 que a maior parte dos problemas desta lista acabou sendo diagnosticada.
+
+**Corolario: o que importa vai no FIM do log.** O log rola sozinho para baixo,
+entao so as ultimas linhas ficam a vista. Uma linha escrita no comeco da analise
+existe no arquivo e some da tela — aconteceu com o resumo do aprendizado, e o
+usuario concluiu, com razao, que a contagem nao tinha acontecido. Resumo se
+guarda numa variavel e se registra no `finally`.
