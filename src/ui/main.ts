@@ -8,7 +8,6 @@ import {
   formatTimecode,
   parseConfig,
   relogio,
-  trackLabel,
   type Config,
 } from "../domain.ts";
 import { analisar } from "../analise.ts";
@@ -29,6 +28,7 @@ import {
   comLimite,
   getSequenceInfo,
   inserirPlano,
+  lerBrollsAcimaDeV1,
   lerClipes,
   lerTranscricoes,
   listarPastaBrolls,
@@ -188,7 +188,6 @@ interface Julgamento {
  */
 async function julgarFaixa(
   sequencia: string,
-  videoTrackIndex: number,
   frases: readonly Frase[],
   conceitos: readonly Conceito[]
 ): Promise<Julgamento> {
@@ -197,43 +196,62 @@ async function julgarFaixa(
   const pendente = pendentes.porSequencia[sequencia];
 
   try {
-    const faixa = trackLabel("V", videoTrackIndex);
-    const naFaixa = await comLimite(`ler ${faixa}`, lerClipes(videoTrackIndex), 30000);
+    // Qualquer faixa acima de V1, nao so a de destino: empilhar na V3 e o que
+    // o editor faz quando nao quer sobrescrever.
+    const naTimeline = await comLimite("ler B-rolls da timeline", lerBrollsAcimaDeV1(), 30000);
     const resumo: Linha[] = [];
 
-    // 1. Sobrevivencia do que o plugin inseriu.
-    let atual = memoria;
-    let julgado = pendentes;
-    if (pendente !== undefined && pendente.itens.length > 0) {
-      const r = aprender(atual, pendente, new Set(naFaixa.map((c) => c.sourceName)));
-      atual = r.memoria;
-      // O pendente sai da lista na mesma rodada em que e contado. Sem isso, rodar
-      // a analise duas vezes contaria o mesmo acerto de novo.
-      julgado = comPendente(pendentes, sequencia, null);
-      resumo.push({
-        texto: `Aprendi da rodada anterior: voce manteve ${r.acertos} e apagou ${r.erros} em ${faixa}.`,
-        tipo: "ok",
-      });
-    }
-
-    // 2. O que sobrou na faixa sem ter vindo do plano foi voce quem pos.
     const doPlano = new Set(pendente?.itens.map((i) => i.arquivo) ?? []);
-    const manuais = naFaixa
+    const presentes = new Set(naTimeline.map((c) => c.sourceName));
+    const manuais = naTimeline
       .filter((c) => !doPlano.has(c.sourceName))
       .map((c) => ({ arquivo: c.sourceName, inicio: c.startSeconds }));
 
-    if (manuais.length > 0) {
-      const credito = creditarManuais(atual, sequencia, manuais, frases, conceitos);
-      atual = credito.memoria;
-      if (credito.creditados > 0) {
+    // Nada apagado e nada colocado desde o plano anterior significa que ninguem
+    // editou — provavelmente foi so um segundo clique em Analisar. Contar isso
+    // seria inventar sinal: no uso real essa esteira inflou um par ate 106
+    // acertos, e af afogou as exclusoes de verdade.
+    const apagou = [...doPlano].some((a) => !presentes.has(a));
+    const semEdicao = pendente !== undefined && !apagou && manuais.length === 0;
+
+    let atual = memoria;
+    let julgado = pendentes;
+
+    if (semEdicao) {
+      resumo.push({
+        texto: "Nada mudou na timeline desde a ultima analise: nao havia o que aprender.",
+        tipo: "aviso",
+      });
+    } else {
+      // 1. Sobrevivencia do que o plugin inseriu.
+      if (pendente !== undefined && pendente.itens.length > 0) {
+        const r = aprender(atual, pendente, presentes);
+        atual = r.memoria;
+        // O pendente sai da lista na mesma rodada em que e contado.
+        julgado = comPendente(pendentes, sequencia, null);
         resumo.push({
-          texto: `Aprendi ${credito.creditados} que voce colocou em ${faixa} por conta propria.`,
+          texto: `Aprendi da rodada anterior: voce manteve ${r.acertos} e apagou ${r.erros}.`,
           tipo: "ok",
         });
       }
-      // Nao ha o que contar aqui, mas ha o que dizer: falta ligacao no dicionario.
-      for (const sugestao of credito.semLigacao.slice(0, 3)) {
-        resumo.push({ texto: sugestao, tipo: "aviso" });
+
+      // 2. O que esta na timeline sem ter vindo do plano foi voce quem pos.
+      if (manuais.length > 0) {
+        const credito = creditarManuais(atual, sequencia, manuais, frases, conceitos);
+        atual = credito.memoria;
+        // Falar mesmo quando o numero e zero: silencio se parece com falha, e foi
+        // exatamente assim que este aprendizado passou por quebrado.
+        const jaContados = manuais.length - credito.creditados - credito.semLigacao.length;
+        resumo.push({
+          texto:
+            `Voce colocou ${manuais.length} por conta propria: ` +
+            `${credito.creditados} aprendidos, ${jaContados} ja contados antes.`,
+          tipo: credito.creditados > 0 ? "ok" : "aviso",
+        });
+        // Nao ha o que contar aqui, mas ha o que dizer: falta ligacao no dicionario.
+        for (const sugestao of credito.semLigacao.slice(0, 3)) {
+          resumo.push({ texto: sugestao, tipo: "aviso" });
+        }
       }
     }
 
@@ -298,7 +316,6 @@ async function analisarSequencia(): Promise<void> {
     // saber o que estava sendo dito naquele instante, e isso so existe agora.
     const { memoria, pendentes, resumo } = await julgarFaixa(
       nomeSequencia,
-      config.videoTrackIndex,
       resultado.frases,
       resultado.conceitos
     );

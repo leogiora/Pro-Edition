@@ -238,6 +238,39 @@ export async function lerClipes(videoTrackIndex = 0): Promise<
   return saida;
 }
 
+/**
+ * Todo B-roll da timeline, em QUALQUER faixa acima de V1.
+ *
+ * V1 e a camera principal e a fonte da transcricao; da V2 para cima e territorio
+ * de B-roll. Ler so a V2 era erro: empilhar na V3 e o que qualquer editor faz
+ * quando nao quer sobrescrever, e tudo que o usuario punha la ficava invisivel
+ * para o aprendizado — nem acerto, nem erro, nem aviso.
+ *
+ * Serve tambem para nao contar como apagado o clipe que so foi MOVIDO de faixa.
+ */
+export async function lerBrollsAcimaDeV1(): Promise<
+  Array<{ sourceName: string; startSeconds: number; videoTrackIndex: number }>
+> {
+  const { sequence } = await handles();
+  const total = await (sequence as { getVideoTrackCount: () => Promise<number> }).getVideoTrackCount();
+
+  const saida: Array<{ sourceName: string; startSeconds: number; videoTrackIndex: number }> = [];
+  for (let i = 1; i < total; i++) {
+    try {
+      for (const clipe of await lerClipes(i)) {
+        saida.push({
+          sourceName: clipe.sourceName,
+          startSeconds: clipe.startSeconds,
+          videoTrackIndex: i,
+        });
+      }
+    } catch {
+      // Faixa que nao responde nao pode derrubar a leitura das outras.
+    }
+  }
+  return saida;
+}
+
 /** Transcricao bruta de cada midia que tiver uma. Chave: nome do ProjectItem. */
 export async function lerTranscricoes(nomes: readonly string[]): Promise<Map<string, string>> {
   const { rootItem } = await handles();

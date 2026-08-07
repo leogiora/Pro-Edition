@@ -84,6 +84,37 @@ test("aprender: nao muda a memoria recebida", () => {
   assert.equal(JSON.stringify(antes), copia);
 });
 
+test("aprender: contagem nao cresce para sempre — acima do teto, decai", () => {
+  let m: Memoria = MEMORIA_VAZIA;
+  for (let i = 0; i < 60; i++) m = aprender(m, PLANO, new Set(["Viagra (1).mp4"])).memoria;
+
+  const saldo = m.pares[chave("Viagra", "viagra")];
+  assert.ok(saldo !== undefined);
+  assert.ok(
+    saldo.acertos + saldo.erros <= 20,
+    `historico fossilizado: ${saldo.acertos}/${saldo.erros}`
+  );
+});
+
+test("aprender: o decaimento preserva a proporcao aprendida", () => {
+  // Muitos acertos e poucos erros continuam sendo muitos acertos e poucos erros.
+  let m: Memoria = MEMORIA_VAZIA;
+  for (let i = 0; i < 30; i++) m = aprender(m, PLANO, new Set(["Viagra (1).mp4"])).memoria;
+  const saldo = m.pares[chave("Viagra", "viagra")];
+  assert.ok((saldo?.acertos ?? 0) > (saldo?.erros ?? 0));
+});
+
+test("aprender: depois do decaimento, uma exclusao volta a pesar", () => {
+  let m: Memoria = MEMORIA_VAZIA;
+  for (let i = 0; i < 60; i++) m = aprender(m, PLANO, new Set(["Viagra (1).mp4"])).memoria;
+  const antes = m.pares[chave("Viagra", "viagra")];
+
+  const depois = aprender(m, PLANO, new Set()).memoria.pares[chave("Viagra", "viagra")];
+  const pesoAntes = (antes?.acertos ?? 0) - (antes?.erros ?? 0);
+  const pesoDepois = (depois?.acertos ?? 0) - (depois?.erros ?? 0);
+  assert.ok(pesoDepois < pesoAntes, "com 106 contra 19 uma exclusao nao movia nada");
+});
+
 test("aprender: faixa inteira apagada e tudo erro", () => {
   const r = aprender(MEMORIA_VAZIA, PLANO, new Set());
   assert.equal(r.acertos, 0);

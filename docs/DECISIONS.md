@@ -347,6 +347,50 @@ Provisoria: nunca rodou dentro do Premiere. Spec em
 
 ---
 
+## D-020 — Quatro consertos vindos do uso real (2026-08-07) — firme
+
+O usuario relatou que colocou B-rolls, apagou outros, e "nada foi aprendido". O
+`aprendizado.json` mostrou que tres coisas diferentes estavam erradas e uma
+quarta so parecia.
+
+**1. So a V2 era lida.** `lerClipes(1)` ignorava V3 em diante. Empilhar na V3 e o
+que qualquer editor faz quando nao quer sobrescrever, e tudo que o usuario punha
+la era invisivel: nem acerto, nem erro, nem aviso. Agora `lerBrollsAcimaDeV1()`
+varre todas as faixas acima da V1 — a V1 fica de fora porque e a camera principal
+e a fonte da transcricao. Ganho colateral: clipe MOVIDO de faixa deixa de contar
+como apagado.
+
+**2. Silencio se parecia com falha.** O credito manual so escrevia no log quando
+`creditados > 0`. Como `vistos` impede recontar, a segunda analise ficava muda — e
+mudez, para quem esta olhando, e identica a nao ter funcionado. **Segunda vez que
+este projeto tropeca nisto** (a primeira foi o resumo que rolava para fora da
+tela). Agora sempre sai uma linha, inclusive `0 aprendidos, 5 ja contados antes`.
+
+**3. A esteira de auto-confirmacao.** Cada clique em *Analisar e inserir* gravava
+um pendente; o clique seguinte encontrava tudo la — porque o clique anterior
+acabara de inserir — e contava uma rodada inteira de sobrevivencias. Sem ninguem
+editar nada. Medido no arquivo real: `Falhou na cama|cama` chegou a **106 acertos
+contra 19 erros**, e `Viagra|viagra` a 66 contra 10.
+
+O guarda do D-016 impedia julgar o mesmo pendente duas vezes; nao impedia o ciclo
+inserir → julgar → inserir. Agora, se nada foi apagado e nada foi colocado desde o
+plano anterior, a rodada nao conta e o painel diz por que.
+
+Custo aceito: quem revisa e aprova os seis sem mexer em nada perde esse elogio
+fraco. Nao ha como distinguir isso de um segundo clique, e inventar sinal e pior
+que perder um.
+
+**4. Historico fossilizado.** Com 106 contra 19, uma exclusao do usuario nao movia
+mais nada — o fator ja estava no teto de +50%. Agora, passando de **20 eventos**,
+as duas contagens sao divididas pela metade: preserva a proporcao aprendida e
+devolve peso ao que acabou de acontecer. O `aprendizado.json` contaminado se
+normaliza sozinho no primeiro evento novo de cada par.
+
+**O que NAO estava errado:** `manteve 0 e apagou 6` estava correto — o usuario
+apagou os seis mesmo. Parecia bug e nao era.
+
+---
+
 ## D-008 — Ferramental da Fase 1: esbuild e `node --test`, nada alem (2026-08-06) — firme
 
 **Contexto.** A Fase 1 pede TypeScript, lint e testes. O caminho habitual seria

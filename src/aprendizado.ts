@@ -133,13 +133,27 @@ export function aprender(
   return { memoria: { ...memoria, schema: 3, pares, arquivos }, acertos, erros };
 }
 
-/** Soma um acerto ou um erro numa das contagens. */
+/**
+ * Acima disto, as duas contagens sao divididas pela metade.
+ *
+ * Sem teto o historico fossiliza: medido no uso real, um par chegou a 106
+ * acertos contra 19 erros, e nesse ponto uma exclusao do usuario nao move mais
+ * nada. Dividir os dois lados preserva a proporcao aprendida e devolve peso ao
+ * que acabou de acontecer.
+ */
+const TETO = 20;
+
+/** Soma um acerto ou um erro numa das contagens, com decaimento. */
 function somar(mapa: Record<string, Saldo>, k: string, sobreviveu: boolean): void {
   const atual = mapa[k] ?? { acertos: 0, erros: 0 };
-  mapa[k] = {
-    acertos: atual.acertos + (sobreviveu ? 1 : 0),
-    erros: atual.erros + (sobreviveu ? 0 : 1),
-  };
+  let acertos = atual.acertos + (sobreviveu ? 1 : 0);
+  let erros = atual.erros + (sobreviveu ? 0 : 1);
+
+  while (acertos + erros > TETO) {
+    acertos = Math.round(acertos / 2);
+    erros = Math.round(erros / 2);
+  }
+  mapa[k] = { acertos, erros };
 }
 
 /** Um B-roll que estava na faixa sem ter sido posto pelo plugin. */

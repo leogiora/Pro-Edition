@@ -161,6 +161,12 @@ O painel e curto e o log fica abaixo da area visivel. Toda analise grava
 Ler o arquivo e mais rapido e mais confiavel que captura de tela — e foi assim
 que a maior parte dos problemas desta lista acabou sendo diagnosticada.
 
+**Corolario 2: numero zero tambem se escreve.** Uma etapa que so registra quando
+tem algo a dizer produz silencio — e silencio, para quem esta olhando o painel, e
+indistinguivel de funcionalidade quebrada. Aconteceu duas vezes neste projeto,
+com o mesmo custo de diagnostico. Se a etapa rodou, ela fala, mesmo que seja
+`0 aprendidos, 5 ja contados antes`.
+
 **Corolario: o que importa vai no FIM do log.** O log rola sozinho para baixo,
 entao so as ultimas linhas ficam a vista. Uma linha escrita no comeco da analise
 existe no arquivo e some da tela — aconteceu com o resumo do aprendizado, e o
