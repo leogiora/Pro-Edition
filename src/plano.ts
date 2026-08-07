@@ -24,6 +24,17 @@ export interface Colocacao {
   /** Sempre visivel: nenhuma insercao automatica sem motivo escrito. */
   readonly motivo: string;
   readonly termosCasados: readonly string[];
+  /**
+   * O que estava sendo dito onde este B-roll entrou.
+   *
+   * Sem isto, um corte fora de contexto e indistinguivel de um corte fora de
+   * sincronia: os dois aparecem como "imagem errada aqui". Com a frase ao lado,
+   * da para dizer qual dos dois e — e foi justamente essa duvida que apareceu
+   * no uso real.
+   */
+  readonly textoDaFrase: string;
+  /** Instante da palavra que puxou o corte, antes da antecipacao. */
+  readonly ancoradoEm: number;
 }
 
 export interface Plano {
@@ -69,6 +80,32 @@ export const REGRAS_PADRAO: RegrasPlano = {
   janelaSemRepetir: 20,
   antecipacao: 0.3,
   toleranciaIntensidade: 0.35,
+};
+
+/**
+ * Densidade maxima: o maximo de B-roll que ainda passa pelo corte de qualidade.
+ *
+ * Os numeros saem dos descartes medidos numa sequencia real de 62s, onde 6
+ * B-rolls entraram e 13 candidatos cairam. Dos 13, **dez cairam por regra de
+ * espacamento**, nao por qualidade:
+ *
+ * - 7 por "muito perto do B-roll anterior" -> `intervaloMinimo` vai a zero
+ * - 3 por "conceito repetido" -> `janelaSemRepetir` cai de 20s para 8s
+ * - 1 por "sobra so 1,3s" e 1 por "frase curta demais (1,4s)" -> minimo a 1,2s
+ *
+ * `duracaoMaxima` cai para 3s porque B-roll mais curto deixa espaco para o
+ * proximo — o gargalo aqui e tempo de tela, nao falta de candidato.
+ *
+ * **`scoreMinimo` NAO muda.** Densidade se ganha afrouxando espacamento, nunca
+ * afrouxando o casamento: encher a timeline de sugestao ruim nao e mais B-roll,
+ * e mais trabalho de apagar.
+ */
+export const REGRAS_DENSAS: RegrasPlano = {
+  ...REGRAS_PADRAO,
+  duracaoMinima: 1.2,
+  duracaoMaxima: 3,
+  intervaloMinimo: 0,
+  janelaSemRepetir: 8,
 };
 
 /**
@@ -123,6 +160,8 @@ interface Candidato {
   readonly score: number;
   readonly motivo: string;
   readonly termosCasados: readonly string[];
+  /** Onde a palavra que casou foi dita, sem a antecipacao descontada. */
+  readonly palavraEm: number;
   readonly ancoraEm: number;
 }
 
@@ -161,6 +200,7 @@ export function planejar(
         score,
         motivo: ajuste === 1 ? s.motivo : `${s.motivo} · aprendizado ${sinal(ajuste)}`,
         termosCasados: s.termosCasados,
+        palavraEm: ancora(o.frase, s.termosCasados),
         ancoraEm: Math.max(o.frase.inicio, ancora(o.frase, s.termosCasados) - regras.antecipacao),
       });
     }
@@ -230,6 +270,8 @@ export function planejar(
       score: c.score,
       motivo: montarMotivo(c.motivo, trocouTake, cabem.rotulo),
       termosCasados: c.termosCasados,
+      textoDaFrase: c.frase.texto,
+      ancoradoEm: c.palavraEm,
       inicio: c.ancoraEm,
       duracao,
     });

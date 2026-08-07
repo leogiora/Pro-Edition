@@ -96,6 +96,8 @@ export interface Config {
   readonly removeAudio: boolean;
   /** Escalar o clipe para cobrir a tela. */
   readonly fillScreen: boolean;
+  /** Afrouxar so o espacamento, para caber o maximo de B-roll. */
+  readonly densidadeMaxima: boolean;
   /** Pasta da biblioteca de B-rolls. */
   readonly libraryPath: string;
 }
@@ -106,6 +108,7 @@ export const DEFAULT_CONFIG: Config = {
   audioTrackIndex: 2,
   removeAudio: true,
   fillScreen: true,
+  densidadeMaxima: true,
   libraryPath: "",
 };
 
@@ -125,6 +128,7 @@ export function parseConfig(raw: unknown): Config {
     audioTrackIndex: inteiro(o.audioTrackIndex, DEFAULT_CONFIG.audioTrackIndex),
     removeAudio: booleano(o.removeAudio, DEFAULT_CONFIG.removeAudio),
     fillScreen: booleano(o.fillScreen, DEFAULT_CONFIG.fillScreen),
+    densidadeMaxima: booleano(o.densidadeMaxima, DEFAULT_CONFIG.densidadeMaxima),
     libraryPath: typeof o.libraryPath === "string" ? o.libraryPath : DEFAULT_CONFIG.libraryPath,
   };
 }

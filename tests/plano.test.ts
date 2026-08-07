@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 
 import { aprender, MEMORIA_VAZIA } from "../src/aprendizado.ts";
-import { planejar, REGRAS_PADRAO, type Biblioteca } from "../src/plano.ts";
+import { planejar, REGRAS_DENSAS, REGRAS_PADRAO, type Biblioteca } from "../src/plano.ts";
 import type { Oportunidade } from "../src/analise.ts";
 import type { Conceito } from "../src/match.ts";
 
@@ -246,6 +246,38 @@ test("planejar: o motivo diz quando o historico mexeu no score", () => {
 
   const p = planejar([oportunidade(10, 3, [{ c: VIAGRA, score: 0.8 }])], BIBLIOTECA, REGRAS_PADRAO, memoria);
   assert.match(p0(p.colocacoes).motivo, /aprendizado \+15%/);
+});
+
+// --------------------------- densidade --------------------------------------
+
+test("REGRAS_DENSAS: recupera o que caiu por espacamento, nao por qualidade", () => {
+  // Tres frases seguidas, coladas: com o padrao so a primeira entra.
+  const seguidas = [
+    oportunidade(10, 3, [{ c: FRUSTRADO, score: 1 }]),
+    oportunidade(14, 3, [{ c: VIAGRA, score: 1 }]),
+  ];
+  assert.equal(planejar(seguidas, BIBLIOTECA, REGRAS_PADRAO).colocacoes.length, 1);
+  assert.equal(planejar(seguidas, BIBLIOTECA, REGRAS_DENSAS).colocacoes.length, 2);
+});
+
+test("REGRAS_DENSAS: o mesmo conceito volta mais cedo, mas com outro take", () => {
+  const p = planejar(
+    [
+      oportunidade(10, 3, [{ c: FRUSTRADO, score: 1 }]),
+      oportunidade(22, 3, [{ c: FRUSTRADO, score: 1 }]),
+    ],
+    BIBLIOTECA,
+    REGRAS_DENSAS
+  );
+  assert.equal(p.colocacoes.length, 2, "12s de distancia cabe na janela de 8s");
+  assert.notEqual(p.colocacoes[0]?.arquivo, p.colocacoes[1]?.arquivo);
+});
+
+test("REGRAS_DENSAS: densidade NAO afrouxa o corte de qualidade", () => {
+  // Score 0,5 continua fora: mais B-roll nao pode significar B-roll pior.
+  const fraca = [oportunidade(10, 3, [{ c: FRUSTRADO, score: 0.5 }])];
+  assert.equal(planejar(fraca, BIBLIOTECA, REGRAS_DENSAS).colocacoes.length, 0);
+  assert.equal(REGRAS_DENSAS.scoreMinimo, REGRAS_PADRAO.scoreMinimo);
 });
 
 // ------------------------ intensidade do take -------------------------------

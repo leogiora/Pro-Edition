@@ -22,7 +22,7 @@ import {
 } from "../aprendizado.ts";
 import { CACHE_VAZIO, parseCacheIntensidade, ritmo } from "../intensidade.ts";
 import type { Conceito } from "../match.ts";
-import { planejar } from "../plano.ts";
+import { planejar, REGRAS_DENSAS, REGRAS_PADRAO } from "../plano.ts";
 import type { Frase } from "../transcript.ts";
 import {
   comLimite,
@@ -113,6 +113,7 @@ function lerFormulario(): Config {
     audioTrackIndex: DEFAULT_CONFIG.audioTrackIndex,
     removeAudio: el<Caixa>("removeAudio").checked,
     fillScreen: el<Caixa>("fillScreen").checked,
+    densidadeMaxima: el<Caixa>("densidadeMaxima").checked,
     libraryPath: el<Campo>("libraryPath").value.trim(),
   };
 }
@@ -120,6 +121,7 @@ function lerFormulario(): Config {
 function preencherFormulario(c: Config): void {
   el<Caixa>("removeAudio").checked = c.removeAudio;
   el<Caixa>("fillScreen").checked = c.fillScreen;
+  el<Caixa>("densidadeMaxima").checked = c.densidadeMaxima;
   el<Campo>("libraryPath").value = c.libraryPath;
 }
 
@@ -276,6 +278,11 @@ async function julgarFaixa(
   }
 }
 
+/** Frase cortada para caber numa linha do painel, que e estreito. */
+function trecho(texto: string, limite = 70): string {
+  return texto.length <= limite ? texto : `${texto.slice(0, limite)}...`;
+}
+
 async function analisarSequencia(): Promise<void> {
   const botao = el<HTMLButtonElement & { disabled: boolean }>("analisar");
   botao.disabled = true;
@@ -364,10 +371,23 @@ async function analisarSequencia(): Promise<void> {
     const plano = planejar(
       resultado.oportunidades,
       { caminhos: new Map(arquivos.map((a) => [a.name, a.nativePath])) },
-      undefined,
+      config.densidadeMaxima ? REGRAS_DENSAS : REGRAS_PADRAO,
       memoria,
       { porArquivo, ritmoDasFrases: resultado.frases.map((f) => ritmo(f.palavras, f.duracao)) }
     );
+
+    // Toda frase reconstruida, com o tempo que o plugin acha que ela ocupa.
+    // E o unico jeito de separar "casou com a palavra errada" de "esta fora de
+    // sincronia": basta comparar duas ou tres com a timeline aberta.
+    void writeJson("frases.json", {
+      quando: new Date().toISOString(),
+      sequencia: nomeSequencia,
+      frases: resultado.frases.map((f) => ({
+        inicio: Number(f.inicio.toFixed(2)),
+        fim: Number(f.fim.toFixed(2)),
+        texto: f.texto,
+      })),
+    }).catch(() => undefined);
 
     for (const descarte of plano.descartes) registrar(`  ${descarte}`, "vazio");
 
@@ -383,6 +403,9 @@ async function analisarSequencia(): Promise<void> {
         `${relogio(c.inicio)}  ${c.arquivo}  ${c.duracao.toFixed(1)}s · ${Math.round(c.score * 100)}% · ${c.motivo}`,
         "passo"
       );
+      // A fala daquele ponto, logo abaixo: e o que permite ver de relance se o
+      // corte esta no contexto certo, sem abrir a timeline.
+      registrar(`        "${trecho(c.textoDaFrase)}"`, "vazio");
     }
 
     estado("inserindo");
