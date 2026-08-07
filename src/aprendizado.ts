@@ -22,13 +22,24 @@ export interface Saldo {
   readonly erros: number;
 }
 
-/** Contagem por par conceito-palavra. Chave: `conceito|termo`. */
+/**
+ * Duas contagens, com papeis diferentes:
+ *
+ * - `pares` (`conceito|termo`) responde *se* o conceito devia ter sido sugerido.
+ * - `arquivos` (nome do arquivo) responde *qual take* daquele conceito serve.
+ *
+ * Apagar um B-roll quase nunca quer dizer "esse assunto nao cabe aqui"; quer
+ * dizer "esse plano especifico nao serviu". Sem a segunda contagem, o unico
+ * caminho era enfraquecer o conceito inteiro — e o mesmo arquivo voltava
+ * mesmo assim, porque uma exclusao so nao derruba um casamento forte.
+ */
 export interface Memoria {
-  readonly schema: 1;
+  readonly schema: 2;
   readonly pares: Readonly<Record<string, Saldo>>;
+  readonly arquivos: Readonly<Record<string, Saldo>>;
 }
 
-export const MEMORIA_VAZIA: Memoria = { schema: 1, pares: {} };
+export const MEMORIA_VAZIA: Memoria = { schema: 2, pares: {}, arquivos: {} };
 
 /** O que foi inserido e ainda nao foi julgado pelo usuario. */
 export interface PlanoPendente {
@@ -91,25 +102,52 @@ export function aprender(
   sobreviventes: ReadonlySet<string>
 ): Aprendizado {
   const pares: Record<string, Saldo> = { ...memoria.pares };
+  const arquivos: Record<string, Saldo> = { ...memoria.arquivos };
   let acertos = 0;
   let erros = 0;
+
+  const somar = (mapa: Record<string, Saldo>, k: string, sobreviveu: boolean): void => {
+    const atual = mapa[k] ?? { acertos: 0, erros: 0 };
+    mapa[k] = {
+      acertos: atual.acertos + (sobreviveu ? 1 : 0),
+      erros: atual.erros + (sobreviveu ? 0 : 1),
+    };
+  };
 
   for (const item of pendente.itens) {
     const sobreviveu = sobreviventes.has(item.arquivo);
     if (sobreviveu) acertos++;
     else erros++;
 
-    for (const termo of item.termosCasados) {
-      const k = chave(item.conceito, termo);
-      const atual = pares[k] ?? { acertos: 0, erros: 0 };
-      pares[k] = {
-        acertos: atual.acertos + (sobreviveu ? 1 : 0),
-        erros: atual.erros + (sobreviveu ? 0 : 1),
-      };
-    }
+    somar(arquivos, item.arquivo, sobreviveu);
+    for (const termo of item.termosCasados) somar(pares, chave(item.conceito, termo), sobreviveu);
   }
 
-  return { memoria: { schema: 1, pares }, acertos, erros };
+  return { memoria: { schema: 2, pares, arquivos }, acertos, erros };
+}
+
+/**
+ * Qual take do conceito usar, entre os ainda disponiveis.
+ *
+ * O que o usuario apagou cede a vez a outra variacao do mesmo conceito. Sem
+ * historico todos empatam em zero e vence o primeiro — entao a escolha continua
+ * deterministica e a ordem original e preservada no empate.
+ *
+ * Nunca devolve nada fora da lista: se todas as variacoes apanharam, ainda assim
+ * escolhe a menos pior. Deixar o conceito de fora e trabalho do score, nao daqui.
+ */
+export function melhorArquivo(memoria: Memoria, arquivos: readonly string[]): string | undefined {
+  let escolhido: string | undefined;
+  let melhor = Number.NEGATIVE_INFINITY;
+  for (const arquivo of arquivos) {
+    const saldo = memoria.arquivos[arquivo];
+    const valor = saldo === undefined ? 0 : saldo.acertos - saldo.erros;
+    if (valor > melhor) {
+      melhor = valor;
+      escolhido = arquivo;
+    }
+  }
+  return escolhido;
 }
 
 /** Grava (ou remove, com `null`) o pendente de uma sequencia. */
@@ -129,16 +167,23 @@ export function comPendente(
 /**
  * Valida o que veio do disco. Arquivo corrompido volta vazio em vez de lancar:
  * perder o historico e ruim, derrubar a analise por causa dele e pior.
+ *
+ * Le o schema 1 sem caso especial: la nao havia contagem por arquivo, e a
+ * ausencia ja significa "nenhum dado ainda", que e a verdade. O historico de
+ * conceitos sobrevive a atualizacao.
  */
 export function parseMemoria(raw: unknown): Memoria {
-  const pares: Record<string, Saldo> = {};
-  for (const [k, v] of entradas(raw, "pares")) {
-    const o = v as Record<string, unknown>;
-    const acertos = naoNegativo(o.acertos);
-    const erros = naoNegativo(o.erros);
-    if (acertos !== null && erros !== null) pares[k] = { acertos, erros };
+  return { schema: 2, pares: saldos(raw, "pares"), arquivos: saldos(raw, "arquivos") };
+}
+
+function saldos(raw: unknown, campo: string): Record<string, Saldo> {
+  const mapa: Record<string, Saldo> = {};
+  for (const [k, v] of entradas(raw, campo)) {
+    const acertos = naoNegativo(v.acertos);
+    const erros = naoNegativo(v.erros);
+    if (acertos !== null && erros !== null) mapa[k] = { acertos, erros };
   }
-  return { schema: 1, pares };
+  return mapa;
 }
 
 export function parsePendentes(raw: unknown): Pendentes {

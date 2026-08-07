@@ -7,7 +7,7 @@
  */
 
 import type { Oportunidade } from "./analise.ts";
-import { fator, MEMORIA_VAZIA, type Memoria } from "./aprendizado.ts";
+import { fator, melhorArquivo, MEMORIA_VAZIA, type Memoria } from "./aprendizado.ts";
 import { estaNaFrase, mesmaRaiz } from "./match.ts";
 
 export interface Colocacao {
@@ -164,11 +164,17 @@ export function planejar(
       continue;
     }
 
-    const arquivo = c.arquivos.find((a) => !arquivosUsados.has(a));
+    // O que o usuario apagou cede a vez a outra variacao do mesmo conceito. O
+    // assunto continua valendo; so muda o take.
+    const disponiveis = c.arquivos.filter((a) => !arquivosUsados.has(a));
+    const arquivo = melhorArquivo(memoria, disponiveis);
     if (arquivo === undefined) {
       descartes.push(`${onde}: todas as variacoes ja usadas`);
       continue;
     }
+    // Sem historico o escolhido e sempre o primeiro. Se divergiu, foi a contagem
+    // por arquivo que mudou a escolha — e isso tem de aparecer no motivo.
+    const trocouTake = arquivo !== disponiveis[0];
     const caminho = biblioteca.caminhos.get(arquivo);
     if (caminho === undefined) {
       descartes.push(`${onde}: ${arquivo} nao esta na pasta`);
@@ -188,7 +194,7 @@ export function planejar(
       caminho,
       conceito: c.conceito,
       score: c.score,
-      motivo: c.motivo,
+      motivo: trocouTake ? `${c.motivo} · outro take, o anterior foi apagado` : c.motivo,
       termosCasados: c.termosCasados,
       inicio: c.ancoraEm,
       duracao,

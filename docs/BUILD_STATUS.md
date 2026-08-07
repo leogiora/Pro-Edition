@@ -85,8 +85,8 @@ Arquivos de estado, na pasta de dados do plugin (ver secao 8 das armadilhas):
    Deveria ser arquivo editavel fora do codigo.
 4. **Aprendizado: mecanismo provado, numeros nao.** O ciclo rodou inteiro no
    Premiere (ver D-016), mas o passo de 0,15 por exclusao so se valida com uso.
-   Efeito colateral conhecido: **B-roll apagado volta na analise seguinte** —
-   uma exclusao so nao derruba um casamento de 85%. Ver "proximo passo".
+   A troca de take (D-017) ainda **nao rodou dentro do aplicativo** — os
+   arquivos julgados ate agora sao anteriores a contagem por arquivo existir.
 5. **Cenarios dificeis nao testados**: nested, multicam, `speed != 1`, midia
    offline. O remapeamento so esta provado para o caso simples.
 6. **ESLint nao instalado** — reducao deliberada de escopo, ver D-008.
@@ -95,19 +95,13 @@ Arquivos de estado, na pasta de dados do plugin (ver secao 8 das armadilhas):
 
 ## Proximo passo exato
 
-**Decidir o que fazer com o B-roll que o usuario apagou e voltou.** Medido na
-rodada real: "Milhares de homens" e "Doutor" foram apagados, cairam de 100% para
-85% e **entraram de novo, o mesmo arquivo no mesmo lugar**. Esta correto pela
-regra (uma exclusao e evidencia fraca) e e ruim de usar. Tres saidas, em ordem de
-esforco:
+**Ver a troca de take acontecer no Premiere** (D-017). Reiniciar o aplicativo e,
+na proxima sequencia: apagar um B-roll que nao serviu, analisar de novo e conferir
+que entrou **outra variacao do mesmo conceito**, com `· outro take, o anterior foi
+apagado` no motivo. Vale so para arquivos julgados de agora em diante — o
+`aprendizado.json` gravado antes desta versao nao tinha contagem por arquivo.
 
-1. **Contar tambem por arquivo, nao so por par conceito-palavra.** Arquivo com
-   erro cede a vez a outra variacao do mesmo conceito — a biblioteca tem varias.
-   O conceito continua valendo, so troca o take. Barato e resolve a queixa real.
-2. Passo maior (0,15 -> 0,25): duas exclusoes derrubam. Mexe em todo mundo.
-3. Nao fazer nada e deixar a contagem trabalhar.
-
-Escolhida a saida, o resto da fila: tirar o dicionario de sinonimos do codigo
-(pendencia 3), provar `createSetEndAction` isolada (pendencia 2), cenarios
-dificeis de remapeamento (pendencia 5). Embedding de texto local continua sendo
-o degrau seguinte, so se a contagem nao bastar.
+Depois disso a fila e: tirar o dicionario de sinonimos do codigo (pendencia 3),
+provar `createSetEndAction` isolada (pendencia 2), cenarios dificeis de
+remapeamento (pendencia 5). Embedding de texto local continua sendo o degrau
+seguinte, so se a contagem nao bastar.

@@ -6,6 +6,7 @@ import {
   chave,
   comPendente,
   fator,
+  melhorArquivo,
   MEMORIA_VAZIA,
   parseMemoria,
   parsePendentes,
@@ -86,6 +87,47 @@ test("aprender: faixa inteira apagada e tudo erro", () => {
   assert.equal(r.erros, 2);
 });
 
+// --------------------------------------------------------- melhorArquivo
+
+test("melhorArquivo: sem historico, mantem a ordem original", () => {
+  assert.equal(melhorArquivo(MEMORIA_VAZIA, ["a.mp4", "b.mp4"]), "a.mp4");
+});
+
+test("melhorArquivo: o take apagado cede a vez ao proximo", () => {
+  const m = aprender(
+    MEMORIA_VAZIA,
+    pendente(["a.mp4", "Casal feliz", ["casal"]]),
+    new Set()
+  ).memoria;
+  assert.equal(melhorArquivo(m, ["a.mp4", "b.mp4"]), "b.mp4");
+});
+
+test("melhorArquivo: take aprovado continua sendo o preferido", () => {
+  const m = aprender(
+    MEMORIA_VAZIA,
+    pendente(["b.mp4", "Casal feliz", ["casal"]]),
+    new Set(["b.mp4"])
+  ).memoria;
+  assert.equal(melhorArquivo(m, ["a.mp4", "b.mp4"]), "b.mp4");
+});
+
+test("melhorArquivo: com todos apanhando, escolhe o menos pior em vez de desistir", () => {
+  let m = aprender(MEMORIA_VAZIA, pendente(["a.mp4", "C", ["c"]]), new Set()).memoria;
+  m = aprender(m, pendente(["a.mp4", "C", ["c"]]), new Set()).memoria;
+  m = aprender(m, pendente(["b.mp4", "C", ["c"]]), new Set()).memoria;
+  assert.equal(melhorArquivo(m, ["a.mp4", "b.mp4"]), "b.mp4");
+});
+
+test("melhorArquivo: lista vazia devolve undefined", () => {
+  assert.equal(melhorArquivo(MEMORIA_VAZIA, []), undefined);
+});
+
+test("aprender: conta o arquivo alem do par conceito-palavra", () => {
+  const r = aprender(MEMORIA_VAZIA, PLANO, new Set(["Viagra (1).mp4"]));
+  assert.deepEqual(r.memoria.arquivos["Viagra (1).mp4"], { acertos: 1, erros: 0 });
+  assert.deepEqual(r.memoria.arquivos["Casal feliz (3).mp4"], { acertos: 0, erros: 1 });
+});
+
 // -------------------------------------------------------------- pendentes
 
 test("comPendente: uma sequencia nao apaga o julgamento da outra", () => {
@@ -105,6 +147,15 @@ test("parse: ida e volta pelo JSON preserva tudo", () => {
 
   const p = comPendente(PENDENTES_VAZIO, "Corte A", PLANO);
   assert.deepEqual(parsePendentes(JSON.parse(JSON.stringify(p))), p);
+});
+
+test("parse: aprendizado.json do schema 1 sobrevive a atualizacao", () => {
+  // Arquivo real gravado antes da contagem por arquivo existir.
+  const antigo = { schema: 1, pares: { "Viagra|viagra": { acertos: 1, erros: 0 } } };
+  const m = parseMemoria(antigo);
+  assert.equal(m.schema, 2);
+  assert.deepEqual(m.pares["Viagra|viagra"], { acertos: 1, erros: 0 });
+  assert.deepEqual(m.arquivos, {});
 });
 
 test("parse: arquivo corrompido volta vazio em vez de lancar", () => {

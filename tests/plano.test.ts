@@ -195,6 +195,45 @@ test("planejar: par apagado varias vezes deixa de entrar sozinho", () => {
   assert.equal(depois.colocacoes.length, 0, "0,7 x 0,55 fica abaixo do corte de 0,6");
 });
 
+test("planejar: o take apagado nao volta — entra outra variacao do conceito", () => {
+  const memoria = aprender(
+    MEMORIA_VAZIA,
+    {
+      quando: "",
+      itens: [{ arquivo: "Frustrado (1).mp4", conceito: "Frustrado", termosCasados: FRUSTRADO.termos }],
+    },
+    new Set()
+  ).memoria;
+
+  const p = planejar(
+    [oportunidade(10, 3, [{ c: FRUSTRADO, score: 1 }])],
+    BIBLIOTECA,
+    REGRAS_PADRAO,
+    memoria
+  );
+  const c = p0(p.colocacoes);
+  assert.equal(c.arquivo, "Frustrado (2).mp4", "devia ter trocado de take");
+  assert.match(c.motivo, /outro take/);
+});
+
+test("planejar: sem alternativa, o conceito ainda entra com o take conhecido", () => {
+  // "Viagra" so tem um arquivo: trocar nao e opcao, e derrubar e trabalho do score.
+  const memoria = aprender(
+    MEMORIA_VAZIA,
+    { quando: "", itens: [{ arquivo: "Viagra (1).mp4", conceito: "Viagra", termosCasados: VIAGRA.termos }] },
+    new Set()
+  ).memoria;
+
+  const p = planejar(
+    [oportunidade(10, 3, [{ c: VIAGRA, score: 1 }])],
+    BIBLIOTECA,
+    REGRAS_PADRAO,
+    memoria
+  );
+  assert.equal(p0(p.colocacoes).arquivo, "Viagra (1).mp4");
+  assert.doesNotMatch(p0(p.colocacoes).motivo, /outro take/);
+});
+
 test("planejar: o motivo diz quando o historico mexeu no score", () => {
   const memoria = aprender(
     MEMORIA_VAZIA,

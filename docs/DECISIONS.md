@@ -201,6 +201,38 @@ duas. So o uso continuado responde.
 
 ---
 
+## D-017 — Apagar troca o take, nao derruba o assunto (2026-08-07) — firme
+
+**Contexto.** Na primeira rodada real do aprendizado (D-016) os dois B-rolls
+apagados **voltaram na analise seguinte**, o mesmo arquivo no mesmo lugar. Correto
+pela regra — uma exclusao e evidencia fraca, 100% cai para 85% e continua acima
+do corte — e ruim de usar: a impressao e que o plugin ignorou a edicao.
+
+**A leitura errada seria acelerar o castigo.** Subir o passo de 0,15 para 0,25
+faria duas exclusoes derrubarem o conceito, e junto com ele o assunto inteiro.
+
+**O que apagar realmente significa.** Quase nunca "esse assunto nao cabe aqui" —
+quase sempre "esse plano especifico nao serviu". O conceito estava certo; o take
+e que nao.
+
+**Decisao.** Uma segunda contagem, por **arquivo**. O planejador escolhe entre as
+variacoes disponiveis do conceito pelo saldo: o apagado cede a vez ao proximo. O
+score continua sendo trabalho dos pares conceito-palavra.
+
+**Consequencias.**
+
+- Apagar tem efeito **na proxima analise**, nao depois de tres — mas o efeito e
+  trocar o plano, nao perder o assunto.
+- Conceito com um arquivo so continua entrando com ele. Derrubar e trabalho do
+  score, nao da escolha de take, e forcar aqui deixaria o conceito sem nada.
+- O motivo passa a dizer `· outro take, o anterior foi apagado`. Divergir do
+  primeiro disponivel so acontece por historico: sem ele todos empatam em zero.
+- `Memoria` vai para schema 2. Ler o schema 1 nao precisou de caso especial: a
+  ausencia de `arquivos` ja significa "nenhum dado ainda". O historico de
+  conceitos ja acumulado sobreviveu a atualizacao.
+
+---
+
 ## D-008 — Ferramental da Fase 1: esbuild e `node --test`, nada alem (2026-08-06) — firme
 
 **Contexto.** A Fase 1 pede TypeScript, lint e testes. O caminho habitual seria
