@@ -5,7 +5,7 @@
  * Tudo aqui vem de prova executada na Fase 0. Ver docs/API_PROOFS.md.
  */
 
-import { caminhoParaUrl, ehVideo, fillScalePercent, type Size } from "./domain.ts";
+import { caminhoParaUrl, ehVideo, fillScalePercent, trackLabel, type Size } from "./domain.ts";
 import { dimensoesDeMp4 } from "./mp4.ts";
 
 declare function require(id: string): unknown;
@@ -109,10 +109,7 @@ export async function getSequenceInfo(): Promise<SequenceInfo> {
   const { sequence } = await handles();
   const seq = sequence as {
     name: string;
-    getSettings: () => Promise<{
-      getVideoFrameRate: () => Promise<{ value: number }>;
-      getVideoFrameRect: () => Promise<{ width: number; height: number }>;
-    }>;
+    getSettings: () => Promise<SequenceSettings>;
     getEndTime: () => Promise<{ seconds: number }>;
     getVideoTrackCount: () => Promise<number>;
     getAudioTrackCount: () => Promise<number>;
@@ -355,53 +352,51 @@ export async function inserirPlano(
         );
       }
     });
-    passos.push(`${prontos.length} inseridos em V${opcoes.videoTrackIndex + 1}`);
+    passos.push(`${prontos.length} inseridos em ${trackLabel("V", opcoes.videoTrackIndex)}`);
   }
 
   // 3. Aparar a duracao e escalar — o clipe so existe agora.
   {
     const { project, sequence } = await handles();
-    const faixa = await (sequence as {
-      getVideoTrack: (i: number) => Promise<{ getTrackItems: (t: number, e: boolean) => Promise<unknown[]> }>;
-    }).getVideoTrack(opcoes.videoTrackIndex);
-    const naFaixa = (await faixa.getTrackItems(CLIP, false)) as Array<{
-      getName: () => Promise<string>;
-      getStartTime: () => Promise<{ seconds: number }>;
-      getProjectItem: () => Promise<unknown>;
-      getComponentChain: () => Promise<ChainMotion>;
-      createSetEndAction: (t: unknown) => unknown;
-    }>;
+    const seq = sequence as SequenceParaAjuste;
+    const faixa = await seq.getVideoTrack(opcoes.videoTrackIndex);
+    const naFaixa = (await faixa.getTrackItems(CLIP, false)) as ItemNaFaixa[];
 
-    const ajustes: Array<() => unknown[]> = [];
+    // O quadro da sequencia nao muda no meio do lote: uma leitura serve para
+    // todos. Estava dentro do laco, custando duas chamadas por B-roll.
+    const quadro = opcoes.preencherTela ? await (await seq.getSettings()).getVideoFrameRect() : null;
+
+    // A Action so pode NASCER dentro do lockedAccess: aqui se monta a receita,
+    // la ela e executada. Lista unica de thunks — agrupar por clipe nao servia a
+    // nada, a transacao consome tudo em ordem do mesmo jeito.
+    const acoes: Array<() => unknown> = [];
+    let ajustados = 0;
+
     for (const c of colocacoes) {
       const clipe = await acharClipe(naFaixa, c);
       if (!clipe) continue;
+      ajustados++;
 
-      const acoes: unknown[] = [];
       const fim = await ppro.TickTime.createWithSeconds(c.inicio + c.duracao);
       acoes.push(() => clipe.createSetEndAction(fim));
 
-      if (opcoes.preencherTela) {
+      if (quadro !== null) {
         const param = await acharScale(clipe);
         const tamanho = param ? await dimensoesDoArquivo(c.caminho) : null;
         if (param && tamanho) {
-          const rect = await (await (sequence as {
-            getSettings: () => Promise<{ getVideoFrameRect: () => Promise<{ width: number; height: number }> }>;
-          }).getSettings()).getVideoFrameRect();
-          const escala = fillScalePercent(tamanho, { width: rect.width, height: rect.height });
+          const escala = fillScalePercent(tamanho, quadro);
           acoes.push(() => param.createSetValueAction(param.createKeyframe(escala), true));
         } else if (!tamanho) {
           avisos.push(`${c.arquivo}: resolucao indisponivel, sem escala.`);
         }
       }
-      ajustes.push(() => acoes.map((f) => (f as () => unknown)()));
     }
 
-    if (ajustes.length > 0) {
+    if (acoes.length > 0) {
       comTransacao(project as never, "Auto B-roll: ajustar duracao e escala", (adicionar) => {
-        for (const lote of ajustes) for (const acao of lote()) adicionar(acao);
+        for (const acao of acoes) adicionar(acao());
       });
-      passos.push(`${ajustes.length} ajustados (duracao${opcoes.preencherTela ? " e escala" : ""})`);
+      passos.push(`${ajustados} ajustados (duracao${opcoes.preencherTela ? " e escala" : ""})`);
     }
   }
 
@@ -434,6 +429,24 @@ export async function inserirPlano(
   }
 
   return { inseridos: colocacoes.length, passos, avisos };
+}
+
+/** Um clipe ja na faixa de destino, com o que a etapa de ajuste precisa dele. */
+interface ItemNaFaixa {
+  getName: () => Promise<string>;
+  getStartTime: () => Promise<{ seconds: number }>;
+  getComponentChain: () => Promise<ChainMotion>;
+  createSetEndAction: (t: unknown) => unknown;
+}
+
+interface SequenceParaAjuste {
+  getVideoTrack: (i: number) => Promise<{ getTrackItems: (t: number, e: boolean) => Promise<unknown[]> }>;
+  getSettings: () => Promise<SequenceSettings>;
+}
+
+interface SequenceSettings {
+  getVideoFrameRate: () => Promise<{ value: number }>;
+  getVideoFrameRect: () => Promise<{ width: number; height: number }>;
 }
 
 interface ChainMotion {

@@ -32,19 +32,37 @@ export interface EntradaAnalise {
   readonly transcricoesJson: ReadonlyMap<string, string>;
   /** Nomes de todas as midias do projeto, para extrair os conceitos. */
   readonly biblioteca: readonly string[];
-  /** Frases mais curtas que isto nao recebem B-roll (secao 8 do CLAUDE.md). */
+  /**
+   * Costura de teste, nao configuracao: o painel nunca passa estes dois. Existem
+   * para os testes provarem o comportamento de fronteira sem ter de fabricar uma
+   * transcricao com a duracao exata do limiar.
+   */
   readonly duracaoMinima?: number;
-  /** Score minimo para uma sugestao valer a pena mostrar. */
   readonly scoreMinimo?: number;
 }
 
 /** Confianca abaixo disto marca o trecho como incerto em vez de confiar nele. */
 const CONFIANCA_SUSPEITA = 0.6;
 
+/*
+ * Corte grosso, deliberadamente mais FROUXO que o do planejador (1,5s e 0,6).
+ *
+ * Nao e o mesmo limiar duplicado: aqui decide-se o que vale a pena *mostrar* ao
+ * usuario como oportunidade; la decide-se o que entra sozinho na timeline. Quem
+ * recusa a colocacao e o `plano.ts`, e com motivo escrito. Estes dois numeros so
+ * evitam encher a lista de frases sem chance nenhuma.
+ *
+ * Consequencia de serem mais frouxos: tudo o que passa por aqui e reavaliado
+ * depois. Se um dia ficarem mais rigidos que os do planejador, passam a decidir
+ * no lugar dele — em silencio, sem linha de descarte. Nao inverter.
+ */
+const DURACAO_MINIMA = 1.2;
+const SCORE_MINIMO = 0.5;
+
 export function analisar(entrada: EntradaAnalise): Analise {
   const avisos: string[] = [];
-  const duracaoMinima = entrada.duracaoMinima ?? 1.2;
-  const scoreMinimo = entrada.scoreMinimo ?? 0.5;
+  const duracaoMinima = entrada.duracaoMinima ?? DURACAO_MINIMA;
+  const scoreMinimo = entrada.scoreMinimo ?? SCORE_MINIMO;
 
   const transcricoes = new Map<string, TranscricaoOrigem>();
   for (const [nome, json] of entrada.transcricoesJson) {

@@ -8,7 +8,6 @@ import {
   fillScalePercent,
   formatTimecode,
   parseConfig,
-  parseFrameSizeFromXmp,
   sourceToSequence,
   trackLabel,
   type TimelineClip,
@@ -108,31 +107,6 @@ test("parseConfig: campo valido sobrevive, campo invalido cai no padrao", () => 
   assert.equal(c.videoTrackIndex, 2);
   assert.equal(c.audioTrackIndex, DEFAULT_CONFIG.audioTrackIndex);
   assert.equal(c.removeAudio, false);
-});
-
-test("parseFrameSizeFromXmp: forma de atributo", () => {
-  const xmp = `<rdf:Description><xmpDM:videoFrameSize stDim:w="720" stDim:h="1280" stDim:unit="pixel"/></rdf:Description>`;
-  assert.deepEqual(parseFrameSizeFromXmp(xmp), { width: 720, height: 1280 });
-});
-
-test("parseFrameSizeFromXmp: forma de elemento", () => {
-  const xmp = `<xmpDM:videoFrameSize><stDim:w>464</stDim:w><stDim:h>832</stDim:h></xmpDM:videoFrameSize>`;
-  assert.deepEqual(parseFrameSizeFromXmp(xmp), { width: 464, height: 832 });
-});
-
-test("parseFrameSizeFromXmp: valores decimais viram inteiros", () => {
-  assert.deepEqual(parseFrameSizeFromXmp(`stDim:w="1080.0" stDim:h="1920.0"`), {
-    width: 1080,
-    height: 1920,
-  });
-});
-
-test("parseFrameSizeFromXmp: sem dimensao devolve null em vez de chutar", () => {
-  assert.equal(parseFrameSizeFromXmp(""), null);
-  assert.equal(parseFrameSizeFromXmp("<rdf:Description/>"), null);
-  // So a largura: nao da para escalar com meia informacao.
-  assert.equal(parseFrameSizeFromXmp(`stDim:w="720"`), null);
-  assert.equal(parseFrameSizeFromXmp(`stDim:w="0" stDim:h="0"`), null);
 });
 
 test("caminhoParaUrl: caminho do Windows vira file:/C:/...", () => {

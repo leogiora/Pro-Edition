@@ -62,11 +62,11 @@ src/plano.ts        regras de colocacao — puro
 src/analise.ts      pipeline que junta tudo — puro
 src/premiere.ts     unico ponto que fala com a API do Premiere
 src/ui/             painel
-tests/              111 testes, sem framework
+tests/              116 testes, sem framework
 proofs/             painel de provas da Fase 0 (trocar `main` no manifest para usar)
 ```
 
-`npm run verify` = tipos + 111 testes + build. **E o gate.**
+`npm run verify` = tipos + 116 testes + build. **E o gate.**
 
 Arquivos de estado, na pasta de dados do plugin (ver secao 8 das armadilhas):
 `config.json`, `ultimo-log.json`, `aprendizado.json` (contagens),

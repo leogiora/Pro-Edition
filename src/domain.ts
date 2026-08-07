@@ -3,9 +3,6 @@
  * Tudo aqui e testavel com `npm test` sem abrir o Premiere.
  */
 
-/** Ticks por segundo no Premiere. Verificado na Fase 0 por divisao em varios itens. */
-export const TICKS_PER_SECOND = 254_016_000_000;
-
 /** Um clipe como ele existe na timeline, ja recortado pelo editor. */
 export interface TimelineClip {
   /** Onde o clipe comeca na sequencia, em segundos. */
@@ -70,32 +67,11 @@ export function formatTimecode(seconds: number, fps: number): string {
   return `${pad(Math.floor(total / 3600))}:${pad(Math.floor(total / 60) % 60)}:${pad(total % 60)}:${pad(frames)}`;
 }
 
-/**
- * Extrai a resolucao do XMP de um ProjectItem.
- *
- * O `ProjectItem` do Premiere nao expoe largura nem altura, e sem isso nao da
- * para calcular a escala de preenchimento. O XMP carrega `videoFrameSize`, em
- * forma de atributo ou de elemento conforme o codec. Aceita as duas.
- *
- * Devolve `null` quando nao encontra — quem chama decide se escala ou desiste,
- * mas nunca chuta uma dimensao.
+/*
+ * A resolucao da fonte ja foi lida do XMP aqui. Nao e mais: o XMP nao traz
+ * `videoFrameSize` nesta biblioteca e a leitura falhou nos arquivos reais.
+ * Quem faz isso hoje e `src/mp4.ts`, direto do cabecalho. Ver D-009 e D-015.
  */
-export function parseFrameSizeFromXmp(xmp: string): Size | null {
-  if (typeof xmp !== "string" || xmp.length === 0) return null;
-
-  const buscar = (dim: "w" | "h"): number | null => {
-    const atributo = new RegExp(`stDim:${dim}\\s*=\\s*"(\\d+(?:\\.\\d+)?)"`).exec(xmp);
-    const elemento = new RegExp(`<stDim:${dim}>\\s*(\\d+(?:\\.\\d+)?)\\s*</stDim:${dim}>`).exec(xmp);
-    const achado = atributo ?? elemento;
-    if (!achado) return null;
-    const n = Math.round(Number(achado[1]));
-    return Number.isFinite(n) && n > 0 ? n : null;
-  };
-
-  const width = buscar("w");
-  const height = buscar("h");
-  return width !== null && height !== null ? { width, height } : null;
-}
 
 /** Configuracao do usuario. Persistida como JSON com versao de schema. */
 export interface Config {

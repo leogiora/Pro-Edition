@@ -3,7 +3,7 @@
  * Nenhuma chamada a `premierepro` mora aqui.
  */
 
-import { DEFAULT_CONFIG, formatTimecode, parseConfig, type Config } from "../domain.ts";
+import { DEFAULT_CONFIG, formatTimecode, parseConfig, trackLabel, type Config } from "../domain.ts";
 import { analisar } from "../analise.ts";
 import {
   aprender,
@@ -179,7 +179,7 @@ async function julgarPlanoAnterior(sequencia: string, videoTrackIndex: number): 
   }
 
   try {
-    const faixa = `V${videoTrackIndex + 1}`;
+    const faixa = trackLabel("V", videoTrackIndex);
     const naFaixa = await comLimite(`ler ${faixa}`, lerClipes(videoTrackIndex), 30000);
     const resultado = aprender(memoria, pendente, new Set(naFaixa.map((c) => c.sourceName)));
     const julgado = comPendente(pendentes, sequencia, null);

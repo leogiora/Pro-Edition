@@ -265,6 +265,11 @@ codigo ou a primeira discussao de estilo.
 Falhou nos arquivos reais: o XMP nao traz `videoFrameSize` nesta biblioteca.
 Mantida aqui como registro de tentativa, para ninguem repetir.
 
+**Codigo removido em 2026-08-07.** `parseFrameSizeFromXmp` e seus quatro testes
+sairam de `src/domain.ts` e `tests/domain.test.ts`. Ficavam verdes no `npm test`,
+o que dava a impressao de codigo em uso — quando o que exercitavam era um caminho
+provado impossivel. O registro de que foi tentado mora aqui, que e o lugar dele.
+
 ---
 
 ## D-009 (original) — Resolucao da fonte vem do XMP — provisoria
