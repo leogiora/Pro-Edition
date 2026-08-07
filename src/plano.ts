@@ -127,6 +127,53 @@ function ancora(frase: Oportunidade["frase"], termosCasados: readonly string[]):
   return frase.inicio;
 }
 
+/**
+ * Distancia maxima, em segundos, entre as palavras que fizeram o conceito casar.
+ *
+ * Medido numa frase real de 7,4s: "essa a sensacao que MILHOES de casais no
+ * Brasil tem quando o HOMEM comeca a perder o desempenho". O conceito "Milhares
+ * de homens" pontuou 100% porque as duas palavras estavam na frase — a 2,8s uma
+ * da outra, falando de coisas diferentes. "milhoes" qualificava casais.
+ *
+ * Os casamentos legitimos do mesmo conceito ficam colados: "ajudei milhares de
+ * homens" (0,35s) e "30 milhoes de homens" (0,7s). 1,5s separa os dois mundos
+ * com folga, e equivale a cerca de quatro palavras de distancia.
+ */
+const DISPERSAO_MAXIMA = 1.5;
+
+/**
+ * Quao espalhadas no tempo estao as palavras que casaram.
+ *
+ * Procura o agrupamento mais apertado: cada termo pode ter sido dito varias
+ * vezes, e o que importa e se existe ALGUM ponto da frase onde todos aparecem
+ * juntos. Devolve `null` quando algum termo nao tem tempo conhecido — nesse caso
+ * nao da para julgar, e nao julgar e melhor que descartar por engano.
+ */
+function dispersao(frase: Oportunidade["frase"], termosCasados: readonly string[]): number | null {
+  if (termosCasados.length < 2) return 0;
+
+  const tempos = termosCasados.map((casado) =>
+    frase.termosNoTempo
+      .filter((t) => mesmaRaiz(casado, t.termo) || estaNaFrase(casado, [t.termo]))
+      .map((t) => t.inicio)
+  );
+  if (tempos.some((lista) => lista.length === 0)) return null;
+
+  const primeiro = tempos[0];
+  if (primeiro === undefined) return null;
+
+  let melhor = Number.POSITIVE_INFINITY;
+  for (const ancoraDoTermo of primeiro) {
+    let maiorDistancia = 0;
+    for (const outros of tempos.slice(1)) {
+      const perto = Math.min(...outros.map((t) => Math.abs(t - ancoraDoTermo)));
+      maiorDistancia = Math.max(maiorDistancia, perto);
+    }
+    melhor = Math.min(melhor, maiorDistancia);
+  }
+  return melhor;
+}
+
 /** Onde procurar o arquivo de cada conceito. */
 export interface Biblioteca {
   /** Nome do arquivo -> caminho completo. */
@@ -189,6 +236,16 @@ export function planejar(
     for (const s of o.sugestoes) {
       // O historico entra AQUI, antes do corte: par que o usuario ja apagou
       // algumas vezes deixa de passar sozinho, sem ninguem editar dicionario.
+      // Duas palavras do conceito na mesma frase nao bastam: elas precisam ter
+      // sido ditas JUNTAS. Espalhadas, qualificam sujeitos diferentes.
+      const espalhamento = dispersao(o.frase, s.termosCasados);
+      if (espalhamento !== null && espalhamento > DISPERSAO_MAXIMA) {
+        descartes.push(
+          `${relogio(o.frase.inicio)} ${s.conceito.rotulo}: palavras a ${espalhamento.toFixed(1)}s uma da outra, falam de coisas diferentes`
+        );
+        continue;
+      }
+
       const ajuste = fator(memoria, s.conceito.rotulo, s.termosCasados);
       const score = s.score * ajuste;
       if (score < regras.scoreMinimo) continue;

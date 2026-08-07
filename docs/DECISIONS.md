@@ -391,6 +391,56 @@ apagou os seis mesmo. Parecia bug e nao era.
 
 ---
 
+## D-021 — As palavras do conceito precisam ter sido ditas juntas (2026-08-07) — firme
+
+**Contexto.** O usuario relatou que o primeiro B-roll "nao batia com o contexto,
+parece fora do sync da transcricao". O `frases.json` mostrou que a transcricao
+estava perfeita — 10 frases cobrindo 0,01s a 62,22s, texto continuo e coerente.
+**Nao havia problema de sincronia nenhum.** A ancora tambem estava certa: caiu em
+cima da palavra que casou.
+
+**O erro estava no casamento**, e a frase real deixa claro:
+
+```
+1,57–8,95s: "E exatamente essa a sensacao que MILHOES de casais no Brasil
+             tem quando o HOMEM comeca a perder o desempenho sexual."
+                          ^ ~3,7s                  ^ ~6,5s
+```
+
+"Milhares de homens" pontuou 100% porque os dois termos estavam na frase —
+"milhare" via sinonimo *milhoes*, e "homem". So que "milhoes" qualificava
+**casais**, e "homem" apareceu 2,8s depois falando de outra coisa.
+
+**Causa raiz: o casamento tratava a frase como saco de palavras.** Numa frase de
+7 segundos, duas palavras a 2,8s de distancia modificam sujeitos diferentes.
+
+**Estrago em cadeia:** as 00:12 a frase e "Mais de 30 milhoes de homens" —
+casamento perfeito — e foi descartada por "conceito repetido", porque o
+casamento errado as 00:06 ja tinha gasto a vaga. E o usuario apagou o errado, o
+que ensinou o plugin a desconfiar de um conceito que estava certo.
+
+**Decisao.** Conceito de dois ou mais termos so casa se as palavras tiverem sido
+ditas a menos de **1,5s** uma da outra. O dado ja existia: `termosNoTempo` guarda
+o instante de cada palavra desde o D-014, e so era usado para ancorar.
+
+Separa os mundos com folga, medido nos casos reais:
+
+| Frase | Distancia | Resultado |
+|---|---|---|
+| "ajudei milhares de homens" | 0,35s | casa |
+| "30 milhoes de homens" | 0,70s | casa |
+| "milhoes de casais ... o homem" | 2,80s | **nao casa** |
+
+Procura o agrupamento mais apertado, nao a primeira ocorrencia: a mesma palavra
+pode ter sido dita varias vezes, e basta existir um ponto da frase onde todas
+aparecem juntas.
+
+**Quando nao da para julgar, nao julga.** Termo sem tempo conhecido devolve
+`null` e o casamento segue — descartar por engano e pior que deixar passar.
+Conceito de um termo so nao tem dispersao e nao e afetado.
+
+---
+
 ## D-008 — Ferramental da Fase 1: esbuild e `node --test`, nada alem (2026-08-06) — firme
 
 **Contexto.** A Fase 1 pede TypeScript, lint e testes. O caminho habitual seria

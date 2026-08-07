@@ -248,6 +248,62 @@ test("planejar: o motivo diz quando o historico mexeu no score", () => {
   assert.match(p0(p.colocacoes).motivo, /aprendizado \+15%/);
 });
 
+// ------------------- palavras espalhadas na frase ---------------------------
+
+/** Como `conceitosDeArquivos` produz de verdade: "de" cai, e o resto vira radical. */
+const MILHARES: Conceito = {
+  rotulo: "Milhares de homens",
+  arquivos: ["Milhares de homens (1).mp4"],
+  termos: ["milhare", "homem"],
+};
+const BIBLIOTECA_MILHARES: Biblioteca = {
+  caminhos: new Map([["Milhares de homens (1).mp4", "C:\\b\\Milhares de homens (1).mp4"]]),
+};
+
+test("planejar: duas palavras longe uma da outra nao formam um casamento", () => {
+  // Frase real que causou o erro: "...que MILHOES de casais no Brasil tem
+  // quando o HOMEM comeca a perder o desempenho sexual." As duas palavras
+  // existem, mas a 2,8s de distancia e falando de coisas diferentes.
+  const o = oportunidade(1.6, 7.4, [{ c: MILHARES, score: 1 }], [
+    { termo: "milhare", inicio: 3.7 },
+    { termo: "casais", inicio: 4.2 },
+    { termo: "homem", inicio: 6.5 },
+  ]);
+  const p = planejar([o], BIBLIOTECA_MILHARES);
+  assert.equal(p.colocacoes.length, 0);
+  assert.match(p.descartes.join(" "), /falam de coisas diferentes/);
+});
+
+test("planejar: as mesmas palavras coladas casam normalmente", () => {
+  // "ajudei milhares de homens a recuperarem..." — 0,35s de distancia.
+  const o = oportunidade(38.8, 10, [{ c: MILHARES, score: 1 }], [
+    { termo: "milhare", inicio: 39.2 },
+    { termo: "homem", inicio: 39.55 },
+  ]);
+  assert.equal(planejar([o], BIBLIOTECA_MILHARES).colocacoes.length, 1);
+});
+
+test("planejar: conceito de uma palavra so nao tem dispersao para medir", () => {
+  const o = oportunidade(10, 4, [{ c: VIAGRA, score: 1 }], [{ termo: "viagra", inicio: 11 }]);
+  assert.equal(planejar([o], BIBLIOTECA).colocacoes.length, 1);
+});
+
+test("planejar: sem tempo das palavras, nao descarta por engano", () => {
+  // termosNoTempo vazio: nao da para julgar distancia, entao nao se julga.
+  const o = oportunidade(10, 4, [{ c: MILHARES, score: 1 }]);
+  assert.equal(planejar([o], BIBLIOTECA_MILHARES).colocacoes.length, 1);
+});
+
+test("planejar: escolhe a ocorrencia mais proxima quando a palavra se repete", () => {
+  // "milhares" aparece longe E perto de "homens": vale o par mais apertado.
+  const o = oportunidade(1.6, 10, [{ c: MILHARES, score: 1 }], [
+    { termo: "milhare", inicio: 2 },
+    { termo: "homem", inicio: 9 },
+    { termo: "milhare", inicio: 8.7 },
+  ]);
+  assert.equal(planejar([o], BIBLIOTECA_MILHARES).colocacoes.length, 1);
+});
+
 // --------------------------- densidade --------------------------------------
 
 test("REGRAS_DENSAS: recupera o que caiu por espacamento, nao por qualidade", () => {
