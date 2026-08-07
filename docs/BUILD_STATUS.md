@@ -1,8 +1,9 @@
 # BUILD_STATUS
 
-Ultima atualizacao: 2026-08-07
-Estado: **fatia vertical funcionando ponta a ponta dentro do Premiere, agora com
-aprendizado por sobrevivencia (escrito e testado, ainda nao rodado no Premiere)**
+Ultima atualizacao: 2026-08-07 (fim da sessao 2)
+Estado: **produto util dentro do Premiere.** Insere B-roll pela transcricao,
+aprende com a edicao do usuario, escolhe o take pelo ritmo da fala, e nunca
+sobrescreve o que ja esta na timeline.
 
 Fase 0 (provas de API): fechada, gate atingido.
 Fase 1 (esqueleto): entregue.
@@ -30,26 +31,59 @@ da ordem sequencial do CLAUDE.md. Ver D-011.
 
 ## O que funciona hoje
 
-Um clique em **Analisar e inserir** executa:
+**Dois botoes.** O painel nao tem mais nada — o "Reler" foi apagado porque nada
+dependia dele, e o cabecalho passou a se preencher no inicio de cada acao.
+
+### Analisar e inserir
 
 ```
-lista a pasta de B-rolls (disco, sem seletor)
+le sinonimos.json (dicionario editavel) e ligacoes.json (o que voce ensinou)
+  -> lista a pasta de B-rolls (disco, sem seletor)
   -> le os clipes de V1 e a transcricao de cada midia
   -> remapeia para o tempo da sequencia e descarta o que foi cortado fora
   -> agrupa em frases (eos do Premiere + pausa > 1,5s)
   -> casa com os 32 conceitos (raiz + peso por raridade + sinonimos)
-  -> planeja: ancora na palavra, duracao, diversidade, sem repetir
-  -> insere em V2, apara, escala para preencher, remove o audio
-  -> guarda o plano; na proxima analise le V2 e aprende das duas pontas:
-     o que voce apagou (erro) e o que voce colocou por conta propria (acerto)
+     exigindo que as palavras do conceito tenham sido ditas JUNTAS (D-021)
+  -> JULGA a timeline: o que voce apagou, o que voce colocou (D-016/17/18/20)
+  -> mede a agitacao de cada arquivo pelo stsz do mp4, com cache (D-019)
+  -> planeja: ancora na palavra, take pelo ritmo da fala, sem repetir
+  -> DESCARTA o que cairia em cima do que ja existe (D-023)
+  -> insere, apara, escala para preencher, remove o audio
+  -> guarda o plano para a proxima rodada julgar
 ```
 
+### Aprender
+
+Mesmo caminho ate julgar a timeline, e **para**. Nao planeja, nao insere. Serve
+para ensinar sem deixar o plugin mexer em nada.
+
+### O ciclo de uso
+
+1. **Analisar e inserir** — enche a timeline.
+2. Editar: apagar o que nao serviu, mover, aparar, por os seus em qualquer faixa
+   acima da V1.
+3. **Aprender** — ele estuda o que voce fez.
+4. **Analisar e inserir** de novo — preenche so o que ficou vazio.
+
 Medido numa sequencia real de 62s: 260 B-rolls lidos, 31 clipes em V1,
-176 palavras, 10 frases, 32 conceitos.
+176 palavras, 10 frases, 32 conceitos, 8 a 10 B-rolls inseridos.
 
 **Undo: tres Ctrl+Z**, independente da quantidade de B-rolls. As etapas nao
 podem virar uma so porque ha dependencia real — o item de audio e o clipe em V2
 so existem depois do overwrite ser aplicado.
+
+## As duas ferramentas, e qual usar
+
+A licao mais util da sessao 2, aprendida errando:
+
+| Sintoma | Ferramenta |
+|---|---|
+| O take nao serve, ou o conceito nao cabe ali | **Apagar.** A contagem aprende. |
+| O mesmo conceito as vezes acerta e as vezes erra **pela mesma palavra** | **Editar `sinonimos.json`.** |
+
+A contagem nunca conserta o segundo caso: o par que erra em "consulta online"
+(`Doutor|doutor`) e o mesmo que acerta em "eu sou medico". Punir um puniria o
+outro. Ver D-027.
 
 ## Estrutura
 
@@ -80,57 +114,97 @@ Arquivos de estado, na pasta de dados do plugin (ver secao 8 das armadilhas):
 
 ---
 
+## Provado dentro do Premiere
+
+- **Insercao completa**: importar, overwrite, aparar, escalar, remover audio.
+- **Aprendizado por sobrevivencia** (D-016): ciclo inteiro, com numeros conferidos
+  no `aprendizado.json`. Uma exclusao repetida derrubou o casamento errado de
+  "Milhares de homens", que sumiu do plano sozinho.
+- **Decaimento** (D-020): `Falhou na cama|cama` desabou de 106/19 para 10/4 e o
+  historico fossilizado voltou a reagir.
+- **Intensidade** (D-019): `intensidade.json` gravado, e os motivos do log trazem
+  `take agitado` / `take parado`.
+- **Dispersao** (D-021): o descarte "palavras a 8,8s uma da outra" apareceu no
+  log real.
+- **Densidade maxima**: 6 -> 10 B-rolls na mesma sequencia de 62s.
+
+## Nao provado ainda — o que conferir na proxima sessao
+
+1. **Nao sobrescrever** (D-023). Clicar em *Analisar* duas vezes sem editar nada
+   deve dizer *"Tudo o que eu sugeriria ja esta na timeline"* e nao mexer em
+   nada. **E o mais importante da lista: e a trava que protege a edicao.**
+2. **Ligacoes aprendidas** (D-022). Nunca dispararam — `ligacoes.json` ainda nem
+   existe. Exige colocar B-roll do mesmo conceito **tres vezes** em trechos que o
+   dicionario nao explica.
+3. **Dicionario editavel** (D-028). Conferir que `sinonimos.json` nasce sozinho
+   e que editar muda o casamento sem recompilar.
+4. **Troca de take** (D-017) e **credito manual** (D-018): a mecanica rodou, mas
+   nunca foram vistos acontecendo com log proprio na tela.
+5. **Log com historico** (D-026) e a lista `postos` (D-025).
+
 ## Bloqueios e pendencias
 
 1. **Undo unico nao alcancado.** Sao tres transacoes. O CLAUDE.md secao 2 item 8
    pede uma. Precisaria montar tudo numa CompoundAction, o que esbarra na
    dependencia descrita acima.
 2. **`createSetEndAction` nunca foi provada isoladamente.** E o que apara a
-   duracao. Se falhar, os B-rolls entram com a duracao cheia do arquivo.
-3. ~~Dicionario de sinonimos vive no codigo.~~ **Resolvida** (D-028): esta em
-   `sinonimos.json`, na pasta de dados do plugin, editavel sem recompilar.
-4. **Aprendizado: so a sobrevivencia foi provada no Premiere.** O ciclo de
-   D-016 rodou inteiro, mas o passo de 0,15 por exclusao so se valida com uso.
-   A troca de take (D-017) e o credito por colocacao manual (D-018) **ainda nao
-   rodaram dentro do aplicativo**.
-7. **Intensidade (D-019) nunca rodou no Premiere.** Toda a logica esta coberta
-   por teste puro, mas a medicao real dos 260 arquivos — quanto demora, e se a
-   agitacao medida corresponde ao que se ve na tela — so o uso responde.
-   Movimento tambem nao e emocao: separa agitado de parado, nao clima.
+   duracao. Na pratica funciona — os B-rolls entram com a duracao planejada —
+   mas nao ha prova isolada.
+3. ~~Dicionario de sinonimos no codigo.~~ **Resolvida** (D-028).
+4. **Os numeros do aprendizado so se validam com uso.** Passo de 0,15 por
+   exclusao, teto de 20 eventos, tolerancia de intensidade 0,35, tres
+   ocorrencias para firmar uma ligacao. Todos plausiveis, nenhum calibrado.
 5. **Cenarios dificeis nao testados**: nested, multicam, `speed != 1`, midia
    offline. O remapeamento so esta provado para o caso simples.
 6. **ESLint nao instalado** — reducao deliberada de escopo, ver D-008.
+7. **Movimento nao e emocao.** A intensidade separa agitado de parado, nao
+   esperancoso de sombrio. Clima exigiria os pixels — opcao descartada no D-019,
+   e o degrau seguinte se a agitacao nao bastar.
 
 ---
 
 ## Proximo passo exato
 
-**Uma unica rodada no Premiere cobre tudo o que esta pendente de prova.**
-Reiniciar o aplicativo e, numa sequencia, conferir na ordem:
+**Uma rodada no Premiere cobre a lista "nao provado" inteira.** Reiniciar o
+aplicativo e, na mesma sessao:
 
-**Intensidade (D-019), na primeira analise depois desta versao:**
+1. **Analisar e inserir.** Conferir que o `sinonimos.json` nasceu.
+2. **Analisar de novo, sem editar nada.** Deve recusar tudo com
+   *"ja ha B-roll ai, deixei como esta"*. Se inserir ou duplicar qualquer coisa,
+   **parar e consertar antes de qualquer outra coisa** — e a trava que protege o
+   trabalho do usuario.
+3. **Apagar** dois ou tres, e **colocar** um na mao numa fala que combine.
+4. **Aprender.** Ler o log dele, que agora e proprio (`ultimo-aprendizado.json`)
+   e guarda as dez ultimas execucoes.
+5. **Analisar** de novo e ver se os apagados voltaram com outro take.
 
-1. O log mostra `medindo intensidade: 25 de 260`... ate o fim, e termina.
-2. `intensidade.json` aparece na pasta de dados do plugin.
-3. A analise seguinte **nao** mostra linha de medicao nenhuma.
-4. Algum motivo traz `· take agitado, a fala corre aqui` ou
-   `· take parado, momento calmo`.
-5. Em duas sequencias de ritmos diferentes, os takes escolhidos para o mesmo
-   conceito mudam.
+Depois disso, em ordem de valor: calibrar os numeros do aprendizado com o uso
+(pendencia 4); cenarios dificeis de remapeamento (pendencia 5); `.ccx` e Fase 8.
+Embedding de texto local e analise de pixels continuam sendo os degraus
+seguintes, **so se** a contagem e a agitacao nao bastarem.
 
-**Aprendizado (D-017 e D-018), na mesma sessao:**
+---
 
-1. **Apagar** um B-roll que nao serviu. Na analise seguinte deve entrar **outra
-   variacao do mesmo conceito**, com `· outro take, o anterior foi apagado` no
-   motivo (D-017). Vale so para arquivos julgados desta versao em diante.
-2. **Colocar um na mao**, em cima de uma fala que combine. A analise seguinte
-   deve terminar com *"Aprendi N que voce colocou em V2 por conta propria"*
-   (D-018).
-3. Colocar um que **nao** combine com a fala: deve sair a sugestao
-   *"...nenhum termo liga os dois. Falta sinonimo?"* — e essa lista e a
-   materia-prima da pendencia 3.
+## Sessao 2 (2026-08-07) — o que foi decidido
 
-Depois disso a fila e: tirar o dicionario de sinonimos do codigo (pendencia 3),
-agora com as sugestoes reais em maos; provar `createSetEndAction` isolada
-(pendencia 2); cenarios dificeis de remapeamento (pendencia 5). Embedding de
-texto local continua sendo o degrau seguinte, so se a contagem nao bastar.
+| | |
+|---|---|
+| D-016 | Aprender por sobrevivencia: o que voce apaga vira erro |
+| D-017 | Apagar troca o take, nao derruba o assunto |
+| D-018 | O que voce coloca na mao tambem ensina |
+| D-019 | Intensidade do take: agitacao do `stsz` x ritmo da fala |
+| D-020 | Quatro consertos do uso real: todas as faixas, falar zero, esteira, decaimento |
+| D-021 | As palavras do conceito precisam ter sido ditas juntas |
+| D-022 | Botao Aprender, e ligacoes que o dicionario nao tem |
+| D-023 | A timeline manda: nada entra por cima |
+| D-024 | Um arquivo de log por acao |
+| D-025 | O plugin lembra que o trabalho foi dele |
+| D-026 | Log guarda as ultimas dez execucoes |
+| D-027 | Dois acertos de dicionario que o aprendizado nao alcancaria |
+| D-028 | O dicionario saiu do codigo |
+
+**O erro que mais custou nesta sessao, quatro vezes:** confundir silencio com
+falha. Uma linha que rolava para fora da tela, uma etapa que so falava quando
+tinha numero maior que zero, um log que o clique seguinte apagava, e um resumo
+vazio quando nao havia o que aprender. Nas quatro, o plugin tinha funcionado.
+Esta na secao 8 das armadilhas, com os tres corolarios.
