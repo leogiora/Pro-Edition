@@ -289,6 +289,16 @@ async function julgarFaixa(
     await writeJson(MEMORIA_FILE, atual);
     if (julgado !== pendentes) await writeJson(PENDENTES_FILE, julgado);
 
+    // TERCEIRA vez que este projeto confunde silencio com falha. Sem plano
+    // pendente e sem colocacao sua nao ha mesmo o que aprender — mas isso e uma
+    // resposta, e resposta se escreve.
+    if (resumo.length === 0) {
+      resumo.push({
+        texto: "Nada novo para aprender: nenhum plano pendente e nenhum B-roll seu na timeline.",
+        tipo: "aviso",
+      });
+    }
+
     return { memoria: atual, pendentes: julgado, resumo };
   } catch (e) {
     return {
@@ -373,6 +383,9 @@ async function aprenderDaTimeline(): Promise<void> {
     const { resultado, nomeSequencia } = await lerContexto();
     const { resumo } = await julgarFaixa(nomeSequencia, resultado.frases, resultado.conceitos);
     resumoAprendizado = resumo;
+    // Este botao nao insere nada, entao o log dele e curto e some no clique
+    // seguinte. Vale dizer que terminou.
+    registrar("Aprendizado gravado. Nada foi inserido na timeline.", "ok");
     estado("pronto", "ok");
   } catch (e) {
     registrar(mensagemDeErro(e), "erro");
