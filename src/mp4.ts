@@ -16,10 +16,10 @@
 import type { Size } from "./domain.ts";
 
 /** Boxes que sao apenas recipientes de outros boxes. */
-const RECIPIENTES = new Set(["moov", "trak", "mdia", "edts"]);
+const RECIPIENTES = new Set(["moov", "trak", "mdia", "edts", "minf", "stbl"]);
 
-/** Ate onde vale procurar. Evita varrer um arquivo inteiro por engano. */
-const PROFUNDIDADE_MAXIMA = 4;
+/** moov > trak > mdia > minf > stbl > stsz sao seis niveis. */
+const PROFUNDIDADE_MAXIMA = 6;
 
 function texto(bytes: Uint8Array, inicio: number): string {
   return String.fromCharCode(bytes[inicio] ?? 0, bytes[inicio + 1] ?? 0, bytes[inicio + 2] ?? 0, bytes[inicio + 3] ?? 0);
@@ -34,20 +34,24 @@ function uint32(bytes: Uint8Array, inicio: number): number {
   ) >>> 0;
 }
 
-/**
- * Largura e altura de exibicao do primeiro track de video.
- *
- * Devolve `null` quando nao encontra — nunca chuta, porque escala errada corta
- * a imagem no lugar errado, o que e pior que nao escalar.
- */
-export function dimensoesDeMp4(bytes: Uint8Array): Size | null {
-  return varrer(bytes, 0, bytes.length, 0);
+interface Box {
+  readonly tipo: string;
+  /** Primeiro byte do conteudo. */
+  readonly conteudo: number;
+  /** Primeiro byte DEPOIS do box. */
+  readonly fim: number;
 }
 
-function varrer(bytes: Uint8Array, inicio: number, fim: number, profundidade: number): Size | null {
-  if (profundidade > PROFUNDIDADE_MAXIMA) return null;
-
+/**
+ * Percorre os boxes de uma faixa de bytes.
+ *
+ * Devolve `null` no primeiro sinal de arquivo truncado ou tamanho impossivel —
+ * seguir adiante de um box malformado e como entrar em laco.
+ */
+function boxesEm(bytes: Uint8Array, inicio: number, fim: number): Box[] | null {
+  const achados: Box[] = [];
   let posicao = inicio;
+
   while (posicao + 8 <= fim) {
     let tamanho = uint32(bytes, posicao);
     const tipo = texto(bytes, posicao + 4);
@@ -64,18 +68,123 @@ function varrer(bytes: Uint8Array, inicio: number, fim: number, profundidade: nu
 
     if (tamanho < 8 || posicao + tamanho > fim) return null; // arquivo truncado
 
-    if (tipo === "tkhd") {
-      const tamanhoDoTrack = lerTkhd(bytes, conteudo);
-      // Track de audio tem tkhd com largura e altura zeradas: pular.
-      if (tamanhoDoTrack) return tamanhoDoTrack;
-    } else if (RECIPIENTES.has(tipo)) {
-      const achado = varrer(bytes, conteudo, posicao + tamanho, profundidade + 1);
-      if (achado) return achado;
-    }
-
+    achados.push({ tipo, conteudo, fim: posicao + tamanho });
     posicao += tamanho;
   }
+  return achados;
+}
+
+/** Primeiro box do tipo pedido, descendo por recipientes. */
+function procurar(
+  bytes: Uint8Array,
+  inicio: number,
+  fim: number,
+  tipo: string,
+  profundidade = 0
+): Box | null {
+  if (profundidade > PROFUNDIDADE_MAXIMA) return null;
+  const lista = boxesEm(bytes, inicio, fim);
+  if (lista === null) return null;
+
+  for (const box of lista) {
+    if (box.tipo === tipo) return box;
+    if (RECIPIENTES.has(box.tipo)) {
+      const achado = procurar(bytes, box.conteudo, box.fim, tipo, profundidade + 1);
+      if (achado) return achado;
+    }
+  }
   return null;
+}
+
+/**
+ * O trak de video, com o que se sabe dele.
+ *
+ * O pareamento importa: `tkhd` e `stsz` precisam vir do MESMO trak, senao a
+ * tabela de quadros lida seria a do audio — que existe em 147 dos 260 arquivos
+ * desta biblioteca.
+ */
+interface TrakDeVideo {
+  readonly tamanho: Size;
+  readonly amostras: readonly number[] | null;
+}
+
+function trakDeVideo(bytes: Uint8Array): TrakDeVideo | null {
+  const moov = procurar(bytes, 0, bytes.length, "moov");
+  if (!moov) return null;
+
+  const dentro = boxesEm(bytes, moov.conteudo, moov.fim);
+  if (dentro === null) return null;
+
+  for (const trak of dentro) {
+    if (trak.tipo !== "trak") continue;
+
+    const tkhd = procurar(bytes, trak.conteudo, trak.fim, "tkhd");
+    if (!tkhd) continue;
+    const tamanho = lerTkhd(bytes, tkhd.conteudo);
+    // Track de audio tem tkhd com largura e altura zeradas: pular.
+    if (!tamanho) continue;
+
+    const stsz = procurar(bytes, trak.conteudo, trak.fim, "stsz");
+    return { tamanho, amostras: stsz ? lerStsz(bytes, stsz.conteudo, stsz.fim) : null };
+  }
+  return null;
+}
+
+/**
+ * Largura e altura de exibicao do primeiro track de video.
+ *
+ * Devolve `null` quando nao encontra — nunca chuta, porque escala errada corta
+ * a imagem no lugar errado, o que e pior que nao escalar.
+ */
+export function dimensoesDeMp4(bytes: Uint8Array): Size | null {
+  return trakDeVideo(bytes)?.tamanho ?? null;
+}
+
+/**
+ * Quanto o clipe se mexe, em bytes por quadro por pixel.
+ *
+ * Movimento obriga o codificador a gastar mais bits no mesmo quadro. Dividir
+ * pelos pixels normaliza a medida, o que e obrigatorio aqui: 47% da biblioteca e
+ * 464x832 e 52% e 720x1280, e comparar bytes crus entre os dois nao diz nada.
+ *
+ * O numero nao tem unidade util sozinho — so serve comparado com os irmaos do
+ * mesmo conceito. Ver `src/intensidade.ts`.
+ */
+export function agitacaoDeMp4(bytes: Uint8Array): number | null {
+  const trak = trakDeVideo(bytes);
+  if (!trak?.amostras || trak.amostras.length === 0) return null;
+
+  const pixels = trak.tamanho.width * trak.tamanho.height;
+  if (pixels <= 0) return null;
+
+  const soma = trak.amostras.reduce((s, n) => s + n, 0);
+  return soma / trak.amostras.length / pixels;
+}
+
+/**
+ * Tabela de tamanhos de quadro.
+ *
+ * `sample_size` diferente de zero significa que todos os quadros tem o mesmo
+ * tamanho — nao ha variacao para medir, entao nao ha agitacao a extrair.
+ */
+function lerStsz(bytes: Uint8Array, inicio: number, fimDoBox: number): number[] | null {
+  if (inicio + 12 > fimDoBox) return null;
+
+  const tamanhoUnico = uint32(bytes, inicio + 4);
+  if (tamanhoUnico !== 0) return null;
+
+  const quantidade = uint32(bytes, inicio + 8);
+  if (quantidade === 0) return null;
+
+  const amostras: number[] = [];
+  let posicao = inicio + 12;
+  for (let i = 0; i < quantidade; i++) {
+    // Quantidade mentirosa em arquivo corrompido: parar em vez de ler lixo.
+    if (posicao + 4 > fimDoBox) return null;
+    amostras.push(uint32(bytes, posicao));
+    posicao += 4;
+  }
+  return amostras;
 }
 
 function lerTkhd(bytes: Uint8Array, inicio: number): Size | null {
