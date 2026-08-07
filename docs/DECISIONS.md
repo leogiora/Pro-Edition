@@ -278,6 +278,75 @@ Provisoria pelo mesmo motivo do D-016: nunca rodou dentro do Premiere.
 
 ---
 
+## D-019 — Intensidade escolhe o take; o nome nunca poderia (2026-08-07) — provisoria
+
+**Contexto.** O D-012 apostou que os nomes de arquivo sao os rotulos semanticos,
+e a aposta se pagou — para escolher o ASSUNTO. Para escolher o TAKE ela nao tem o
+que dizer, e a razao e aritmetica:
+
+| Conceito | Takes |
+|---|---|
+| Viagra | 43 |
+| Doutor | 38 |
+| Frustrado | 37 |
+| Teleconsulta | 25 |
+| Falhou na cama | 24 |
+
+**Cinco conceitos concentram 167 dos 260 arquivos.** Os 43 clipes chamados
+"Viagra" nao passam a mesma sensacao, e o nome nao os distingue porque e o mesmo
+nome. Doze conceitos tem arquivo unico e nunca sofreram disso.
+
+**Por que o aprendizado sozinho nao resolvia.** `melhorArquivo` (D-017) escolhe o
+maior saldo: um take em `+1` vence para sempre 42 takes em `0`. O plugin trava no
+primeiro que deu certo e nunca mostra os outros. Precisava entrar informacao por
+arquivo vinda de fora do historico.
+
+**Decisao.** Duas medidas, nenhuma delas um modelo:
+
+1. **Agitacao do clipe** — media de bytes por quadro dividida pelos pixels, lida
+   da tabela `stsz` do proprio MP4. Movimento obriga o codificador a gastar mais
+   bits. Nada e decodificado; e a mesma caminhada por boxes que ja lia a
+   resolucao.
+2. **Ritmo da fala** — palavras por segundo da frase. Ja estava calculado.
+
+**Comparacao so por percentil, nunca por escala absoluta.** Cada take vira sua
+posicao entre os irmaos do mesmo conceito; cada frase, sua posicao entre as
+frases da sequencia. Isso dispensa calibracao e cancela vies de codificador e de
+resolucao — comparar bytes crus entre um 464x832 e um 720x1280 nao diria nada.
+
+**A intensidade filtra, o historico escolhe.** Nessa ordem, e nao na inversa: com
+o historico mandando, os cinco conceitos grandes ja teriam favorito e a
+intensidade nunca seria consultada. Destrava o D-017 de brinde — momentos de
+ritmos diferentes abrem pools diferentes, e takes nunca usados voltam a aparecer.
+
+**Consequencias e limites:**
+
+- Nenhum encaixe cai de volta para todos os disponiveis. Intensidade nunca pode
+  custar uma colocacao boa, e ha teste disso.
+- Take que nao pode ser medido nunca e excluido: ausencia de informacao nao e
+  informacao negativa.
+- Conceito de um take so recebe percentil 0,5 e continua elegivel sempre.
+- Sem medida chegando, o plano sai **identico** ao de antes — tambem testado.
+- `toleranciaIntensidade` mora em `RegrasPlano`, com `antecipacao` e
+  `janelaSemRepetir`. Comeca em 0,35. E botao, nao constante: apertar se entrar
+  take fora de clima, afrouxar se muita colocacao cair no fallback.
+- Primeira analise le 0,6 GB para medir. Depois, `intensidade.json` responde. E o
+  indexador da Fase 5 chegando cedo e em miniatura.
+- **Chave do cache e so o nome do arquivo.** Comparar tamanho exigiria
+  `getMetadata()` em 260 entradas, e chamada UXP em volume e o que pendura o
+  painel. Trocar um arquivo mantendo o nome pede apagar `intensidade.json`.
+
+**O limite que importa: movimento nao e emocao.** Isto separa take agitado de
+take parado, nao esperancoso de sombrio. Um fundo estatico mas visualmente
+ocupado le como agitado; um close parado num rosto le como calmo, e esse acerta.
+Clima exigiria os pixels — a opcao descartada nesta rodada, que continua sendo o
+degrau seguinte se a agitacao sozinha nao bastar.
+
+Provisoria: nunca rodou dentro do Premiere. Spec em
+`docs/superpowers/specs/2026-08-07-intensidade-do-take-design.md`.
+
+---
+
 ## D-008 — Ferramental da Fase 1: esbuild e `node --test`, nada alem (2026-08-06) — firme
 
 **Contexto.** A Fase 1 pede TypeScript, lint e testes. O caminho habitual seria

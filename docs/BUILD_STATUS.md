@@ -59,19 +59,21 @@ src/mp4.ts          resolucao lida do cabecalho do arquivo — puro
 src/transcript.ts   reconstrucao do corte final + frases — puro
 src/match.ts        conceitos, sinonimos, casamento — puro
 src/aprendizado.ts  contagem por par conceito-palavra e por arquivo — puro
+src/intensidade.ts  percentil de agitacao e de ritmo, e o cache — puro
 src/plano.ts        regras de colocacao — puro
 src/analise.ts      pipeline que junta tudo — puro
 src/premiere.ts     unico ponto que fala com a API do Premiere
 src/ui/             painel
-tests/              126 testes, sem framework
+tests/              158 testes, sem framework
 proofs/             painel de provas da Fase 0 (trocar `main` no manifest para usar)
 ```
 
-`npm run verify` = tipos + 126 testes + build. **E o gate.**
+`npm run verify` = tipos + 158 testes + build. **E o gate.**
 
 Arquivos de estado, na pasta de dados do plugin (ver secao 8 das armadilhas):
 `config.json`, `ultimo-log.json`, `aprendizado.json` (contagens),
-`pendentes.json` (plano inserido e ainda nao julgado, um por sequencia).
+`pendentes.json` (plano inserido e ainda nao julgado, um por sequencia),
+`intensidade.json` (agitacao medida de cada arquivo, incremental).
 
 ---
 
@@ -88,6 +90,10 @@ Arquivos de estado, na pasta de dados do plugin (ver secao 8 das armadilhas):
    D-016 rodou inteiro, mas o passo de 0,15 por exclusao so se valida com uso.
    A troca de take (D-017) e o credito por colocacao manual (D-018) **ainda nao
    rodaram dentro do aplicativo**.
+7. **Intensidade (D-019) nunca rodou no Premiere.** Toda a logica esta coberta
+   por teste puro, mas a medicao real dos 260 arquivos — quanto demora, e se a
+   agitacao medida corresponde ao que se ve na tela — so o uso responde.
+   Movimento tambem nao e emocao: separa agitado de parado, nao clima.
 5. **Cenarios dificeis nao testados**: nested, multicam, `speed != 1`, midia
    offline. O remapeamento so esta provado para o caso simples.
 6. **ESLint nao instalado** — reducao deliberada de escopo, ver D-008.
@@ -96,8 +102,20 @@ Arquivos de estado, na pasta de dados do plugin (ver secao 8 das armadilhas):
 
 ## Proximo passo exato
 
-**Rodar as duas pontas do aprendizado no Premiere.** Reiniciar o aplicativo e,
-numa sequencia:
+**Uma unica rodada no Premiere cobre tudo o que esta pendente de prova.**
+Reiniciar o aplicativo e, numa sequencia, conferir na ordem:
+
+**Intensidade (D-019), na primeira analise depois desta versao:**
+
+1. O log mostra `medindo intensidade: 25 de 260`... ate o fim, e termina.
+2. `intensidade.json` aparece na pasta de dados do plugin.
+3. A analise seguinte **nao** mostra linha de medicao nenhuma.
+4. Algum motivo traz `· take agitado, a fala corre aqui` ou
+   `· take parado, momento calmo`.
+5. Em duas sequencias de ritmos diferentes, os takes escolhidos para o mesmo
+   conceito mudam.
+
+**Aprendizado (D-017 e D-018), na mesma sessao:**
 
 1. **Apagar** um B-roll que nao serviu. Na analise seguinte deve entrar **outra
    variacao do mesmo conceito**, com `· outro take, o anterior foi apagado` no

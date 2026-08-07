@@ -21,6 +21,7 @@ import {
   type Memoria,
   type Pendentes,
 } from "../aprendizado.ts";
+import { CACHE_VAZIO, parseCacheIntensidade, ritmo } from "../intensidade.ts";
 import type { Conceito } from "../match.ts";
 import { planejar } from "../plano.ts";
 import type { Frase } from "../transcript.ts";
@@ -31,6 +32,7 @@ import {
   lerClipes,
   lerTranscricoes,
   listarPastaBrolls,
+  medirBiblioteca,
   readJson,
   writeJson,
 } from "../premiere.ts";
@@ -38,6 +40,7 @@ import {
 const CONFIG_FILE = "config.json";
 const MEMORIA_FILE = "aprendizado.json";
 const PENDENTES_FILE = "pendentes.json";
+const INTENSIDADE_FILE = "intensidade.json";
 
 // ------------------------------------------------------------------ util
 
@@ -307,11 +310,38 @@ async function analisarSequencia(): Promise<void> {
       return;
     }
 
+    // Medir a biblioteca: a primeira vez custa dezenas de segundos, as
+    // seguintes nao custam nada. Falhar aqui so tira a escolha de take pelo
+    // momento; nao pode tirar a insercao.
+    const cache = parseCacheIntensidade(
+      await comLimite("ler intensidade", readJson(INTENSIDADE_FILE), 5000)
+    );
+    let medido = cache;
+    try {
+      medido = await comLimite(
+        "medir intensidade",
+        medirBiblioteca(arquivos, cache, (feitos, total) =>
+          registrar(`  medindo intensidade: ${feitos} de ${total}`, "passo")
+        ),
+        300000
+      );
+      if (medido !== cache) await writeJson(INTENSIDADE_FILE, medido);
+    } catch (e) {
+      registrar(`Intensidade nao medida, seguindo sem ela. ${mensagemDeErro(e)}`, "aviso");
+      medido = CACHE_VAZIO;
+    }
+
+    const porArquivo = new Map<string, number>();
+    for (const [nome, valor] of Object.entries(medido.arquivos)) {
+      if (valor !== null) porArquivo.set(nome, valor);
+    }
+
     const plano = planejar(
       resultado.oportunidades,
       { caminhos: new Map(arquivos.map((a) => [a.name, a.nativePath])) },
       undefined,
-      memoria
+      memoria,
+      { porArquivo, ritmoDasFrases: resultado.frases.map((f) => ritmo(f.palavras, f.duracao)) }
     );
 
     for (const descarte of plano.descartes) registrar(`  ${descarte}`, "vazio");
