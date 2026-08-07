@@ -53,3 +53,51 @@ export function encaixam(
 export function ritmo(palavras: number, duracao: number): number {
   return duracao > 0 ? palavras / duracao : 0;
 }
+
+// ------------------------------------------------------------------ cache
+
+/**
+ * Medicoes ja feitas, por nome de arquivo.
+ *
+ * `null` guardado quer dizer "tentei e nao deu" — vale tanto quanto um numero,
+ * porque impede reler 2,3 MB a cada analise para falhar do mesmo jeito.
+ *
+ * A chave e so o nome. Comparar tambem o tamanho exigiria `getMetadata()` em 260
+ * entradas, e chamada UXP em volume e o que pendura o painel (UXP_ARMADILHAS
+ * secao 3). Trocar um arquivo mantendo o nome pede apagar este arquivo a mao.
+ */
+export interface CacheIntensidade {
+  readonly schema: 1;
+  readonly arquivos: Readonly<Record<string, number | null>>;
+}
+
+export const CACHE_VAZIO: CacheIntensidade = { schema: 1, arquivos: {} };
+
+/** Quem ainda nao foi medido. Medido e nao deu certo tambem conta como medido. */
+export function aMedir(cache: CacheIntensidade, nomes: readonly string[]): string[] {
+  return nomes.filter((n) => !(n in cache.arquivos));
+}
+
+export function comMedida(
+  cache: CacheIntensidade,
+  nome: string,
+  agitacao: number | null
+): CacheIntensidade {
+  return { schema: 1, arquivos: { ...cache.arquivos, [nome]: agitacao } };
+}
+
+/** Cache corrompido volta vazio: remedir custa tempo, lancar custa a analise. */
+export function parseCacheIntensidade(raw: unknown): CacheIntensidade {
+  if (typeof raw !== "object" || raw === null) return CACHE_VAZIO;
+  const bruto = (raw as Record<string, unknown>).arquivos;
+  if (typeof bruto !== "object" || bruto === null) return CACHE_VAZIO;
+
+  const arquivos: Record<string, number | null> = {};
+  for (const [nome, valor] of Object.entries(bruto)) {
+    if (valor === null) arquivos[nome] = null;
+    else if (typeof valor === "number" && Number.isFinite(valor) && valor >= 0) {
+      arquivos[nome] = valor;
+    }
+  }
+  return { schema: 1, arquivos };
+}

@@ -1,7 +1,15 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { encaixam, percentis, ritmo } from "../src/intensidade.ts";
+import {
+  aMedir,
+  CACHE_VAZIO,
+  comMedida,
+  encaixam,
+  parseCacheIntensidade,
+  percentis,
+  ritmo,
+} from "../src/intensidade.ts";
 
 test("percentis: menor vira 0, maior vira 1", () => {
   assert.deepEqual(percentis([10, 20, 30]), [0, 0.5, 1]);
@@ -56,4 +64,43 @@ test("ritmo: palavras por segundo", () => {
 
 test("ritmo: duracao zero nao vira infinito", () => {
   assert.equal(ritmo(10, 0), 0);
+});
+
+// ---------------------------------------------------------------- cache
+
+test("aMedir: so pede o que ainda nao foi medido", () => {
+  const cache = comMedida(CACHE_VAZIO, "a.mp4", 0.003);
+  assert.deepEqual(aMedir(cache, ["a.mp4", "b.mp4"]), ["b.mp4"]);
+});
+
+test("aMedir: arquivo que nao deu para medir nao e tentado de novo", () => {
+  // Guardar o `null` e o que impede reler 2,3 MB toda analise para falhar igual.
+  const cache = comMedida(CACHE_VAZIO, "quebrado.mp4", null);
+  assert.deepEqual(aMedir(cache, ["quebrado.mp4"]), []);
+});
+
+test("parseCacheIntensidade: ida e volta pelo JSON", () => {
+  const cache = comMedida(comMedida(CACHE_VAZIO, "a.mp4", 0.003), "b.mp4", null);
+  assert.deepEqual(parseCacheIntensidade(JSON.parse(JSON.stringify(cache))), cache);
+});
+
+test("parseCacheIntensidade: arquivo corrompido volta vazio em vez de lancar", () => {
+  for (const lixo of [null, 42, "texto", {}, { arquivos: "nao e objeto" }]) {
+    assert.deepEqual(parseCacheIntensidade(lixo), CACHE_VAZIO);
+  }
+});
+
+test("parseCacheIntensidade: entrada malformada some, o resto fica", () => {
+  const c = parseCacheIntensidade({
+    schema: 1,
+    arquivos: { "bom.mp4": 0.004, "ruim.mp4": "texto", "nulo.mp4": null },
+  });
+  assert.deepEqual(c.arquivos, { "bom.mp4": 0.004, "nulo.mp4": null });
+});
+
+test("comMedida: nao altera o cache recebido", () => {
+  const antes = comMedida(CACHE_VAZIO, "a.mp4", 0.003);
+  const copia = JSON.stringify(antes);
+  comMedida(antes, "b.mp4", 0.007);
+  assert.equal(JSON.stringify(antes), copia);
 });

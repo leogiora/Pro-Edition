@@ -6,7 +6,8 @@
  */
 
 import { caminhoParaUrl, ehVideo, fillScalePercent, trackLabel, type Size } from "./domain.ts";
-import { dimensoesDeMp4 } from "./mp4.ts";
+import { aMedir, comMedida, type CacheIntensidade } from "./intensidade.ts";
+import { agitacaoDeMp4, dimensoesDeMp4 } from "./mp4.ts";
 
 declare function require(id: string): unknown;
 
@@ -278,6 +279,54 @@ async function dimensoesDoArquivo(caminho: string): Promise<Size | null> {
   }
 }
 
+
+/**
+ * Mede a agitacao dos arquivos que ainda nao estao no cache.
+ *
+ * Le o arquivo inteiro porque o UXP nao oferece leitura parcial, e o `moov` pode
+ * estar no fim. Sao ~2,3 MB por arquivo nesta biblioteca; a primeira passada nos
+ * 260 custa dezenas de segundos, e as seguintes nao custam nada.
+ *
+ * Falha de leitura vira `null` gravado, nao excecao: um arquivo ilegivel nao
+ * pode derrubar a analise, e gravar o `null` impede tentar de novo toda vez.
+ */
+export async function medirBiblioteca(
+  arquivos: readonly ArquivoBroll[],
+  cache: CacheIntensidade,
+  aoProgredir: (feitos: number, total: number) => void
+): Promise<CacheIntensidade> {
+  const pendentes = aMedir(cache, arquivos.map((a) => a.name));
+  if (pendentes.length === 0) return cache;
+
+  const porNome = new Map(arquivos.map((a) => [a.name, a.nativePath]));
+  let atual = cache;
+  let feitos = 0;
+
+  for (const nome of pendentes) {
+    const caminho = porNome.get(nome);
+    let agitacao: number | null = null;
+
+    if (caminho !== undefined) {
+      try {
+        const entrada = (await uxp.storage.localFileSystem.getEntryWithUrl(
+          caminhoParaUrl(caminho)
+        )) as { read: (o: unknown) => Promise<ArrayBuffer> } | null;
+        if (entrada) {
+          const dados = await entrada.read({ format: uxp.storage.formats.binary });
+          agitacao = agitacaoDeMp4(new Uint8Array(dados));
+        }
+      } catch {
+        // Arquivo ilegivel: fica como null e nao se tenta de novo.
+      }
+    }
+
+    atual = comMedida(atual, nome, agitacao);
+    feitos++;
+    // De 25 em 25 para nao inundar o log de um painel curto.
+    if (feitos % 25 === 0 || feitos === pendentes.length) aoProgredir(feitos, pendentes.length);
+  }
+  return atual;
+}
 
 export interface ColocacaoParaInserir {
   readonly arquivo: string;
