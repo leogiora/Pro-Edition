@@ -488,6 +488,44 @@ apagar. Provisoria ate rodar no uso real.
 
 ---
 
+## D-023 — A timeline manda: nada entra por cima (2026-08-07) — firme
+
+**Contexto.** O planejador monta o plano ideal do zero, toda vez, cego para o que
+ja existe. A insercao usa `createOverwriteItemAction`. Somados, isso significava
+que **cada clique em Analisar passava por cima do que o usuario tinha feito** —
+B-roll movido, aparado ou deliberadamente mantido, apagado por um clique. O
+usuario pediu: "analisou e aplicou so uma vez".
+
+**Decisao.** Entre planejar e inserir entra `semSobrepor()`: onde ja ha B-roll em
+qualquer faixa acima da V1, a colocacao e descartada com motivo escrito. Regra
+sem excecao — o que ja esta na timeline sempre ganha do que o plugin sugeriria.
+
+Encostar nao e sobrepor: um B-roll que comeca onde o outro termina e montagem
+normal, e 0,05s de folga impede que arredondamento de frame vire conflito.
+
+**Consequencia deliberada em `julgarFaixa`: ele agora LANCA** se nao conseguir
+ler a timeline. Antes falhar ali so adiava o aprendizado; agora a mesma leitura
+diz o que esta ocupado, e seguir sem ela significaria inserir as cegas por cima
+do trabalho do usuario. Perder uma rodada de aprendizado custa pouco; apagar uma
+edicao dele custa caro.
+
+Isso tambem torna Analisar **idempotente na pratica**: clicar duas vezes nao
+duplica nem sobrescreve nada, so informa que ja esta tudo la. E cobre o teste de
+idempotencia que o CLAUDE.md secao 13 pedia.
+
+---
+
+## D-024 — Um arquivo de log por acao (2026-08-07) — firme
+
+Havia um `ultimo-log.json` so. Clicar em Analisar logo depois de Aprender apagava
+a unica prova do que o Aprender tinha feito — e foi exatamente assim que um
+aprendizado inteiro, que funcionou, passou por "nao aconteceu nada".
+
+Agora: `ultimo-log.json` para a analise, `ultimo-aprendizado.json` para o botao
+Aprender. Sugestao do proprio usuario, e obviamente certa.
+
+---
+
 ## D-008 — Ferramental da Fase 1: esbuild e `node --test`, nada alem (2026-08-06) — firme
 
 **Contexto.** A Fase 1 pede TypeScript, lint e testes. O caminho habitual seria

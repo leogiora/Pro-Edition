@@ -25,7 +25,7 @@ import {
 } from "../aprendizado.ts";
 import { CACHE_VAZIO, parseCacheIntensidade, ritmo } from "../intensidade.ts";
 import type { Conceito } from "../match.ts";
-import { planejar, REGRAS_DENSAS, REGRAS_PADRAO } from "../plano.ts";
+import { planejar, REGRAS_DENSAS, REGRAS_PADRAO, semSobrepor, type Ocupado } from "../plano.ts";
 import type { Frase } from "../transcript.ts";
 import {
   comLimite,
@@ -46,6 +46,8 @@ const MEMORIA_FILE = "aprendizado.json";
 const PENDENTES_FILE = "pendentes.json";
 const INTENSIDADE_FILE = "intensidade.json";
 const ASSOCIACOES_FILE = "ligacoes.json";
+const LOG_ANALISE = "ultimo-log.json";
+const LOG_APRENDER = "ultimo-aprendizado.json";
 
 // ------------------------------------------------------------------ util
 
@@ -83,10 +85,16 @@ function limparLog(): void {
   log.textContent = "";
 }
 
-/** Grava o log onde da para ler de fora do Premiere. Nunca lanca. */
-async function salvarLog(): Promise<void> {
+/**
+ * Grava o log onde da para ler de fora do Premiere. Nunca lanca.
+ *
+ * Arquivo por acao, e nao um so: com um arquivo unico, clicar em Analisar logo
+ * depois de Aprender apagava a unica prova do que o Aprender tinha feito — foi
+ * assim que um aprendizado inteiro passou por "nao aconteceu nada".
+ */
+async function salvarLog(arquivo: string): Promise<void> {
   try {
-    await writeJson("ultimo-log.json", { quando: new Date().toISOString(), linhas });
+    await writeJson(arquivo, { quando: new Date().toISOString(), linhas });
   } catch {
     // Sem log em arquivo o painel ainda funciona; nao vale derrubar nada.
   }
@@ -175,6 +183,13 @@ interface Julgamento {
    * que a contagem nao tinha acontecido.
    */
   readonly resumo: readonly Linha[];
+  /**
+   * O que ja ocupa as faixas de B-roll.
+   *
+   * Vem daqui porque a leitura ja foi feita para julgar — e e o mesmo instante
+   * que interessa. Serve para nao inserir por cima do que voce fez.
+   */
+  readonly ocupado: readonly Ocupado[];
 }
 
 /**
@@ -189,9 +204,11 @@ interface Julgamento {
  * O usuario "treina" o plugin editando normalmente. Nao ha botao de nota, nao ha
  * modelo, so contagem.
  *
- * Nunca lanca: falhar em aprender nao pode impedir a analise. Quando a leitura
- * da faixa ou a gravacao falham, o plano continua pendente e sera julgado na
- * proxima rodada — melhor adiar que contar errado.
+ * **Lanca se nao conseguir ler a timeline**, e isso mudou de proposito. Antes,
+ * falhar aqui so adiava o aprendizado. Agora a mesma leitura diz o que ja esta
+ * ocupado, e seguir sem ela significaria inserir por cima do trabalho do
+ * usuario. Perder uma rodada de aprendizado custa pouco; apagar uma edicao dele
+ * custa caro.
  */
 async function julgarFaixa(
   sequencia: string,
@@ -299,13 +316,16 @@ async function julgarFaixa(
       });
     }
 
-    return { memoria: atual, pendentes: julgado, resumo };
-  } catch (e) {
     return {
-      memoria,
-      pendentes,
-      resumo: [{ texto: `Aprendizado adiado: ${mensagemDeErro(e)}`, tipo: "aviso" }],
+      memoria: atual,
+      pendentes: julgado,
+      resumo,
+      ocupado: naTimeline.map((c) => ({ inicio: c.startSeconds, fim: c.endSeconds })),
     };
+  } catch (e) {
+    // Sem saber o que ha na timeline, o seguro e nao inserir nada por cima:
+    // lista vazia aqui liberaria tudo, entao o erro precisa parar a insercao.
+    throw new Error(`Nao consegui ler a timeline: ${mensagemDeErro(e)}`);
   }
 }
 
@@ -393,7 +413,7 @@ async function aprenderDaTimeline(): Promise<void> {
   } finally {
     for (const linha of resumoAprendizado) registrar(linha.texto, linha.tipo);
     botao.disabled = false;
-    await salvarLog();
+    await salvarLog(LOG_APRENDER);
   }
 }
 
@@ -415,7 +435,7 @@ async function analisarSequencia(): Promise<void> {
 
     // Depois da analise, de proposito: creditar o que voce colocou na mao exige
     // saber o que estava sendo dito naquele instante, e isso so existe agora.
-    const { memoria, pendentes, resumo } = await julgarFaixa(
+    const { memoria, pendentes, resumo, ocupado } = await julgarFaixa(
       nomeSequencia,
       resultado.frases,
       resultado.conceitos
@@ -477,14 +497,25 @@ async function analisarSequencia(): Promise<void> {
 
     for (const descarte of plano.descartes) registrar(`  ${descarte}`, "vazio");
 
-    if (plano.colocacoes.length === 0) {
+    // O planejador monta o plano ideal do zero, cego para o que ja foi feito.
+    // Aqui o que ja esta na timeline manda: nada entra por cima.
+    const { entram, bloqueadas } = semSobrepor(plano.colocacoes, ocupado);
+    for (const b of bloqueadas) registrar(`  ${b}`, "vazio");
+
+    if (entram.length === 0 && bloqueadas.length > 0) {
+      registrar("Tudo o que eu sugeriria ja esta na timeline. Nada a fazer.", "ok");
+      estado("nada a inserir", "ok");
+      return;
+    }
+
+    if (entram.length === 0) {
       registrar("Nenhuma sugestao boa o bastante para entrar sozinha.", "aviso");
       estado("nada a inserir", "ok");
       return;
     }
 
-    registrar(`${plano.colocacoes.length} B-rolls a inserir:`, "ok");
-    for (const c of plano.colocacoes) {
+    registrar(`${entram.length} B-rolls a inserir:`, "ok");
+    for (const c of entram) {
       registrar(
         `${relogio(c.inicio)}  ${c.arquivo}  ${c.duracao.toFixed(1)}s · ${Math.round(c.score * 100)}% · ${c.motivo}`,
         "passo"
@@ -497,7 +528,7 @@ async function analisarSequencia(): Promise<void> {
     estado("inserindo");
     const feito = await comLimite(
       "inserir plano",
-      inserirPlano(plano.colocacoes, {
+      inserirPlano(entram, {
         videoTrackIndex: config.videoTrackIndex,
         audioTrackIndex: config.audioTrackIndex,
         removerAudio: config.removeAudio,
@@ -516,7 +547,7 @@ async function analisarSequencia(): Promise<void> {
         PENDENTES_FILE,
         comPendente(pendentes, nomeSequencia, {
           quando: new Date().toISOString(),
-          itens: plano.colocacoes.map((c) => ({
+          itens: entram.map((c) => ({
             arquivo: c.arquivo,
             conceito: c.conceito,
             termosCasados: c.termosCasados,
@@ -535,7 +566,7 @@ async function analisarSequencia(): Promise<void> {
   } finally {
     for (const linha of resumoAprendizado) registrar(linha.texto, linha.tipo);
     botao.disabled = false;
-    await salvarLog();
+    await salvarLog(LOG_ANALISE);
   }
 }
 

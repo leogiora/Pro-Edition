@@ -389,6 +389,50 @@ function montarMotivo(base: string, trocouTake: boolean, intensidade: string | n
   return texto;
 }
 
+/** Um pedaco de timeline que ja tem alguma coisa. */
+export interface Ocupado {
+  readonly inicio: number;
+  readonly fim: number;
+}
+
+/**
+ * Encostar nao e sobrepor.
+ *
+ * Um B-roll que comeca exatamente onde o outro termina e montagem normal, e
+ * arredondamento de frame nao pode transformar isso em conflito.
+ */
+const FOLGA_DE_ENCOSTE = 0.05;
+
+/**
+ * Tira do plano tudo que cairia em cima de coisa que ja esta na timeline.
+ *
+ * O planejador e cego para o que ja foi feito: ele monta o plano ideal do zero,
+ * toda vez. Aplicar isso com overwrite passa por cima do que o usuario moveu,
+ * aparou ou decidiu manter — trabalho dele, apagado por um clique.
+ *
+ * A regra e simples e nao tem excecao: onde ja existe B-roll, nao entra outro.
+ */
+export function semSobrepor(
+  colocacoes: readonly Colocacao[],
+  ocupado: readonly Ocupado[]
+): { entram: Colocacao[]; bloqueadas: string[] } {
+  const entram: Colocacao[] = [];
+  const bloqueadas: string[] = [];
+
+  for (const c of colocacoes) {
+    const fim = c.inicio + c.duracao;
+    const colide = ocupado.some(
+      (o) => c.inicio < o.fim - FOLGA_DE_ENCOSTE && o.inicio < fim - FOLGA_DE_ENCOSTE
+    );
+    if (colide) {
+      bloqueadas.push(`${relogio(c.inicio)} ${c.conceito}: ja ha B-roll ai, deixei como esta`);
+      continue;
+    }
+    entram.push(c);
+  }
+  return { entram, bloqueadas };
+}
+
 /** "+15%" / "-30%": o motivo tem de dizer que o historico mexeu no score. */
 function sinal(ajuste: number): string {
   const pontos = Math.round((ajuste - 1) * 100);

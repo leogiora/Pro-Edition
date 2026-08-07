@@ -2,7 +2,14 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 
 import { aprender, MEMORIA_VAZIA } from "../src/aprendizado.ts";
-import { planejar, REGRAS_DENSAS, REGRAS_PADRAO, type Biblioteca } from "../src/plano.ts";
+import {
+  planejar,
+  REGRAS_DENSAS,
+  REGRAS_PADRAO,
+  semSobrepor,
+  type Biblioteca,
+  type Colocacao,
+} from "../src/plano.ts";
 import type { Oportunidade } from "../src/analise.ts";
 import type { Conceito } from "../src/match.ts";
 
@@ -408,6 +415,51 @@ test("planejar: o historico ainda escolhe DENTRO do que a intensidade permitiu",
     }
   );
   assert.equal(p0(p.colocacoes).arquivo, "Frustrado (2).mp4");
+});
+
+// ------------------- nao passar por cima do que ja existe --------------------
+
+function colocada(inicio: number, duracao: number): Colocacao {
+  return {
+    arquivo: "x.mp4",
+    caminho: "C:\\b\\x.mp4",
+    conceito: "X",
+    inicio,
+    duracao,
+    score: 1,
+    motivo: "",
+    termosCasados: [],
+    textoDaFrase: "",
+    ancoradoEm: inicio,
+  };
+}
+
+test("semSobrepor: onde ja ha B-roll, nao entra outro", () => {
+  const r = semSobrepor([colocada(10, 3)], [{ inicio: 11, fim: 14 }]);
+  assert.equal(r.entram.length, 0);
+  assert.match(r.bloqueadas.join(" "), /ja ha B-roll ai/);
+});
+
+test("semSobrepor: espaco livre continua entrando", () => {
+  const r = semSobrepor([colocada(10, 3)], [{ inicio: 30, fim: 33 }]);
+  assert.equal(r.entram.length, 1);
+  assert.deepEqual(r.bloqueadas, []);
+});
+
+test("semSobrepor: encostar nao e sobrepor", () => {
+  // Termina em 13, o proximo comeca em 13: montagem normal.
+  assert.equal(semSobrepor([colocada(13, 3)], [{ inicio: 10, fim: 13 }]).entram.length, 1);
+  assert.equal(semSobrepor([colocada(10, 3)], [{ inicio: 13, fim: 16 }]).entram.length, 1);
+});
+
+test("semSobrepor: sobreposicao parcial tambem bloqueia", () => {
+  // O que ja esta la manda, mesmo que o novo cubra so o comeco dele.
+  assert.equal(semSobrepor([colocada(10, 3)], [{ inicio: 12, fim: 20 }]).entram.length, 0);
+  assert.equal(semSobrepor([colocada(10, 3)], [{ inicio: 5, fim: 11 }]).entram.length, 0);
+});
+
+test("semSobrepor: timeline vazia deixa tudo passar", () => {
+  assert.equal(semSobrepor([colocada(10, 3), colocada(20, 3)], []).entram.length, 2);
 });
 
 function p0<T>(lista: readonly T[]): T {
