@@ -161,6 +161,11 @@ O painel e curto e o log fica abaixo da area visivel. Toda analise grava
 Ler o arquivo e mais rapido e mais confiavel que captura de tela — e foi assim
 que a maior parte dos problemas desta lista acabou sendo diagnosticada.
 
+**Corolario 3: o log guarda as ultimas execucoes, nao a ultima.** Duas acoes
+seguidas, e a segunda apagava a prova da primeira — inclusive quando era a
+primeira que tinha feito o trabalho. Os arquivos de log guardam
+`{ execucoes: [...] }` com as dez mais recentes.
+
 **Corolario 2: numero zero tambem se escreve.** Uma etapa que so registra quando
 tem algo a dizer produz silencio — e silencio, para quem esta olhando o painel, e
 indistinguivel de funcionalidade quebrada. Aconteceu duas vezes neste projeto,

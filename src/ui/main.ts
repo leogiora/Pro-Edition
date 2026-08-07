@@ -94,7 +94,15 @@ function limparLog(): void {
  */
 async function salvarLog(arquivo: string): Promise<void> {
   try {
-    await writeJson(arquivo, { quando: new Date().toISOString(), linhas });
+    // Guarda as ultimas execucoes, nao so a ultima. Um log que se apaga nao e
+    // log: clicar duas vezes destruia a prova do clique que fez o trabalho, e
+    // sobrava a do clique que nao tinha mais nada a fazer.
+    const antes = await readJson(arquivo);
+    const anteriores = Array.isArray((antes as { execucoes?: unknown })?.execucoes)
+      ? ((antes as { execucoes: unknown[] }).execucoes as unknown[])
+      : [];
+    const execucoes = [{ quando: new Date().toISOString(), linhas }, ...anteriores].slice(0, 10);
+    await writeJson(arquivo, { execucoes });
   } catch {
     // Sem log em arquivo o painel ainda funciona; nao vale derrubar nada.
   }
@@ -225,7 +233,9 @@ async function julgarFaixa(
     const naTimeline = await comLimite("ler B-rolls da timeline", lerBrollsAcimaDeV1(), 30000);
     const resumo: Linha[] = [];
 
-    const doPlano = new Set(pendente?.itens.map((i) => i.arquivo) ?? []);
+    // Tudo que veio do plugin — o que espera julgamento e o que ja foi julgado.
+    // Sem a segunda parte, o proprio trabalho do plugin vira "colocacao sua".
+    const doPlano = new Set([...(pendente?.itens.map((i) => i.arquivo) ?? []), ...(pendente?.postos ?? [])]);
     const presentes = new Set(naTimeline.map((c) => c.sourceName));
     const manuais = naTimeline
       .filter((c) => !doPlano.has(c.sourceName))
@@ -235,7 +245,9 @@ async function julgarFaixa(
     // editou — provavelmente foi so um segundo clique em Analisar. Contar isso
     // seria inventar sinal: no uso real essa esteira inflou um par ate 106
     // acertos, e af afogou as exclusoes de verdade.
-    const apagou = [...doPlano].some((a) => !presentes.has(a));
+    // So o que espera julgamento conta como "apagado". Os `postos` de rodadas
+    // ja julgadas sumiram ha muito tempo e nao sao noticia.
+    const apagou = (pendente?.itens ?? []).some((i) => !presentes.has(i.arquivo));
     const semEdicao = pendente !== undefined && !apagou && manuais.length === 0;
 
     let atual = memoria;

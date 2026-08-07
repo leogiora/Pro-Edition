@@ -372,10 +372,35 @@ test("creditarManuais: ja contado antes aparece como tal", () => {
 test("comPendente: uma sequencia nao apaga o julgamento da outra", () => {
   const a = comPendente(PENDENTES_VAZIO, "Corte A", PLANO);
   const b = comPendente(a, "Corte B", PLANO);
-  assert.ok(b.porSequencia["Corte A"]);
+  assert.equal(b.porSequencia["Corte A"]?.itens.length, 2);
   const so = comPendente(b, "Corte A", null);
-  assert.equal(so.porSequencia["Corte A"], undefined);
-  assert.ok(so.porSequencia["Corte B"]);
+  assert.deepEqual(so.porSequencia["Corte A"]?.itens, [], "julgado, nao ha mais o que julgar");
+  assert.equal(so.porSequencia["Corte B"]?.itens.length, 2, "a outra sequencia nao foi tocada");
+});
+
+test("comPendente: julgar esvazia os itens mas nunca esquece o que o plugin pos", () => {
+  const posto = comPendente(PENDENTES_VAZIO, "Reels", PLANO);
+  const julgado = comPendente(posto, "Reels", null);
+  // Sem isto, o proprio trabalho do plugin virava "colocacao do usuario".
+  assert.deepEqual([...(julgado.porSequencia["Reels"]?.postos ?? [])].sort(), [
+    "Casal feliz (3).mp4",
+    "Viagra (1).mp4",
+  ]);
+});
+
+test("comPendente: a lista do que o plugin pos acumula entre rodadas", () => {
+  let p = comPendente(PENDENTES_VAZIO, "Reels", PLANO);
+  p = comPendente(p, "Reels", null);
+  p = comPendente(p, "Reels", pendente(["Doutor (2).mp4", "Doutor", ["doutor"]]));
+  assert.equal(p.porSequencia["Reels"]?.postos?.length, 3);
+});
+
+test("parsePendentes: pendente antigo, sem `postos`, nao quebra", () => {
+  const antigo = {
+    schema: 1,
+    porSequencia: { Reels: { quando: "x", itens: [{ arquivo: "a.mp4", conceito: "A", termosCasados: [] }] } },
+  };
+  assert.deepEqual(parsePendentes(antigo).porSequencia["Reels"]?.postos, []);
 });
 
 // ------------------------------------------------------------ persistencia

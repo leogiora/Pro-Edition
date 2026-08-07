@@ -64,6 +64,17 @@ export interface PlanoPendente {
     readonly conceito: string;
     readonly termosCasados: readonly string[];
   }[];
+  /**
+   * Tudo o que o PLUGIN ja pos nesta sequencia, mesmo depois de julgado.
+   *
+   * Sem esta lista, um B-roll do plugin que sobreviveu ao julgamento vira
+   * "colocacao manual" na rodada seguinte — e o painel dizia "voce colocou 7 por
+   * conta propria" para sete arquivos que o usuario nunca tocou.
+   *
+   * Estado derivado: quem monta um plano nao preenche isto. `comPendente`
+   * acumula sozinho, e e ele que garante que a lista nunca se perca.
+   */
+  readonly postos?: readonly string[];
 }
 
 /**
@@ -316,15 +327,28 @@ export function melhorArquivo(memoria: Memoria, arquivos: readonly string[]): st
   return escolhido;
 }
 
-/** Grava (ou remove, com `null`) o pendente de uma sequencia. */
+/**
+ * Grava o pendente de uma sequencia, ou o esvazia com `null`.
+ *
+ * Esvaziar apaga os itens a julgar, **nunca a lista de `postos`**: o plugin
+ * precisa continuar sabendo o que foi ele quem inseriu, senao passa a chamar o
+ * proprio trabalho de colocacao do usuario.
+ */
 export function comPendente(
   pendentes: Pendentes,
   sequencia: string,
   plano: PlanoPendente | null
 ): Pendentes {
+  const antes = pendentes.porSequencia[sequencia];
+  const postos = new Set(antes?.postos ?? []);
+  for (const item of plano?.itens ?? []) postos.add(item.arquivo);
+
   const porSequencia = { ...pendentes.porSequencia };
-  if (plano === null) delete porSequencia[sequencia];
-  else porSequencia[sequencia] = plano;
+  porSequencia[sequencia] = {
+    quando: plano?.quando ?? antes?.quando ?? "",
+    itens: plano?.itens ?? [],
+    postos: [...postos],
+  };
   return { schema: 1, porSequencia };
 }
 
@@ -436,7 +460,13 @@ export function parsePendentes(raw: unknown): Pendentes {
           : [],
       });
     }
-    porSequencia[k] = { quando: typeof o.quando === "string" ? o.quando : "", itens };
+    porSequencia[k] = {
+      quando: typeof o.quando === "string" ? o.quando : "",
+      itens,
+      postos: Array.isArray(o.postos)
+        ? (o.postos as unknown[]).filter((p): p is string => typeof p === "string")
+        : [],
+    };
   }
   return { schema: 1, porSequencia };
 }

@@ -526,6 +526,47 @@ Aprender. Sugestao do proprio usuario, e obviamente certa.
 
 ---
 
+## D-025 — O plugin lembra que o trabalho foi dele (2026-08-07) — firme
+
+**Contexto.** O usuario tirou um B-roll, clicou em Aprender, e o painel respondeu
+*"Voce colocou 7 por conta propria: 0 aprendidos, 7 ja contados antes"*. Ele nao
+tinha colocado nenhum: eram sete B-rolls que o **plugin** inseriu e que
+sobreviveram.
+
+**Causa.** Julgar o pendente apagava a entrada inteira. Na rodada seguinte, os
+sobreviventes estavam na timeline sem constar de plano nenhum — e a unica coisa
+que o codigo sabe fazer com isso e chamar de colocacao manual.
+
+**Decisao.** A entrada nao e mais apagada: os `itens` esvaziam, e uma lista
+`postos` acumula tudo o que o plugin ja inseriu naquela sequencia. O caminho
+manual passa a ignorar esses arquivos.
+
+Cuidado que quase virou bug: `apagou` continua olhando **so os itens a julgar**.
+Se olhasse `postos`, todo arquivo de rodadas antigas contaria como apagado e a
+trava do D-020 (nao contar rodada sem edicao) nunca mais dispararia.
+
+**Verificado no arquivo real:** o aprendizado tinha funcionado. `Doutor|doutor`
+foi de 14/6 para 9/4 — o erro da exclusao entrou — e os sete sobreviventes
+somaram um acerto cada. So a mensagem estava errada.
+
+---
+
+## D-026 — Log guarda as ultimas dez execucoes (2026-08-07) — firme
+
+O usuario clicou em Aprender duas vezes. O primeiro clique julgou o pendente e
+aprendeu; o segundo, sem nada pendente, nao tinha o que fazer — e sobrescreveu o
+log do primeiro. Sobrou a prova do clique inutil.
+
+**Um log que se apaga nao e log.** `ultimo-log.json` e `ultimo-aprendizado.json`
+passam a guardar `{ execucoes: [...] }` com as dez ultimas, mais recente
+primeiro.
+
+E a **quarta** vez que este projeto perde evidencia de algo que funcionou. As
+tres anteriores foram por silencio (D-020, D-024 e a linha que rolava para fora
+da tela); esta foi por sobrescrita. Registrado na secao 8 das armadilhas.
+
+---
+
 ## D-008 — Ferramental da Fase 1: esbuild e `node --test`, nada alem (2026-08-06) — firme
 
 **Contexto.** A Fase 1 pede TypeScript, lint e testes. O caminho habitual seria
