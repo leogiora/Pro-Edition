@@ -7,6 +7,7 @@
  */
 
 import type { Oportunidade } from "./analise.ts";
+import { fator, MEMORIA_VAZIA, type Memoria } from "./aprendizado.ts";
 import { estaNaFrase, mesmaRaiz } from "./match.ts";
 
 export interface Colocacao {
@@ -103,7 +104,8 @@ interface Candidato {
 export function planejar(
   oportunidades: readonly Oportunidade[],
   biblioteca: Biblioteca,
-  regras: RegrasPlano = REGRAS_PADRAO
+  regras: RegrasPlano = REGRAS_PADRAO,
+  memoria: Memoria = MEMORIA_VAZIA
 ): Plano {
   const colocacoes: Colocacao[] = [];
   const descartes: string[] = [];
@@ -116,14 +118,18 @@ export function planejar(
     }
     let algumPassou = false;
     for (const s of o.sugestoes) {
-      if (s.score < regras.scoreMinimo) continue;
+      // O historico entra AQUI, antes do corte: par que o usuario ja apagou
+      // algumas vezes deixa de passar sozinho, sem ninguem editar dicionario.
+      const ajuste = fator(memoria, s.conceito.rotulo, s.termosCasados);
+      const score = s.score * ajuste;
+      if (score < regras.scoreMinimo) continue;
       algumPassou = true;
       candidatos.push({
         frase: o.frase,
         conceito: s.conceito.rotulo,
         arquivos: s.conceito.arquivos,
-        score: s.score,
-        motivo: s.motivo,
+        score,
+        motivo: ajuste === 1 ? s.motivo : `${s.motivo} · aprendizado ${sinal(ajuste)}`,
         termosCasados: s.termosCasados,
         ancoraEm: Math.max(o.frase.inicio, ancora(o.frase, s.termosCasados) - regras.antecipacao),
       });
@@ -198,6 +204,12 @@ export function planejar(
 function rotulo(segundos: number): string {
   const total = Math.max(0, Math.round(segundos));
   return `${String(Math.floor(total / 60)).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
+}
+
+/** "+15%" / "-30%": o motivo tem de dizer que o historico mexeu no score. */
+function sinal(ajuste: number): string {
+  const pontos = Math.round((ajuste - 1) * 100);
+  return `${pontos > 0 ? "+" : ""}${pontos}%`;
 }
 
 function porcento(score: number | undefined): string {

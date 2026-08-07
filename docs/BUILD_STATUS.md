@@ -1,7 +1,8 @@
 # BUILD_STATUS
 
-Ultima atualizacao: 2026-08-06
-Estado: **fatia vertical funcionando ponta a ponta dentro do Premiere**
+Ultima atualizacao: 2026-08-07
+Estado: **fatia vertical funcionando ponta a ponta dentro do Premiere, agora com
+aprendizado por sobrevivencia (escrito e testado, ainda nao rodado no Premiere)**
 
 Fase 0 (provas de API): fechada, gate atingido.
 Fase 1 (esqueleto): entregue.
@@ -39,6 +40,7 @@ lista a pasta de B-rolls (disco, sem seletor)
   -> casa com os 32 conceitos (raiz + peso por raridade + sinonimos)
   -> planeja: ancora na palavra, duracao, diversidade, sem repetir
   -> insere em V2, apara, escala para preencher, remove o audio
+  -> guarda o plano; na proxima analise compara com V2 e aprende com o que sumiu
 ```
 
 Medido numa sequencia real de 62s: 260 B-rolls lidos, 31 clipes em V1,
@@ -55,15 +57,20 @@ src/domain.ts       tempo, escala, timecode, caminho, config — puro
 src/mp4.ts          resolucao lida do cabecalho do arquivo — puro
 src/transcript.ts   reconstrucao do corte final + frases — puro
 src/match.ts        conceitos, sinonimos, casamento — puro
+src/aprendizado.ts  contagem acerto/erro por par conceito-palavra — puro
 src/plano.ts        regras de colocacao — puro
 src/analise.ts      pipeline que junta tudo — puro
 src/premiere.ts     unico ponto que fala com a API do Premiere
 src/ui/             painel
-tests/              96 testes, sem framework
+tests/              111 testes, sem framework
 proofs/             painel de provas da Fase 0 (trocar `main` no manifest para usar)
 ```
 
-`npm run verify` = tipos + 96 testes + build. **E o gate.**
+`npm run verify` = tipos + 111 testes + build. **E o gate.**
+
+Arquivos de estado, na pasta de dados do plugin (ver secao 8 das armadilhas):
+`config.json`, `ultimo-log.json`, `aprendizado.json` (contagens),
+`pendentes.json` (plano inserido e ainda nao julgado, um por sequencia).
 
 ---
 
@@ -76,8 +83,9 @@ proofs/             painel de provas da Fase 0 (trocar `main` no manifest para u
    duracao. Se falhar, os B-rolls entram com a duracao cheia do arquivo.
 3. **Dicionario de sinonimos vive no codigo** (`src/match.ts`, 37 entradas).
    Deveria ser arquivo editavel fora do codigo.
-4. **Sem aprendizado.** O plugin nao sabe quais B-rolls o usuario manteve ou
-   apagou. Ver "proximo passo".
+4. **Aprendizado nunca rodou no Premiere.** A logica esta escrita e coberta por
+   15 testes, mas o caminho que le V2 e compara com o plano guardado (`lerClipes(1)`)
+   nunca foi executado dentro do aplicativo. Ver D-016 e "proximo passo".
 5. **Cenarios dificeis nao testados**: nested, multicam, `speed != 1`, midia
    offline. O remapeamento so esta provado para o caso simples.
 6. **ESLint nao instalado** — reducao deliberada de escopo, ver D-008.
@@ -86,11 +94,23 @@ proofs/             painel de provas da Fase 0 (trocar `main` no manifest para u
 
 ## Proximo passo exato
 
-**Aprender com o que o usuario apaga.** O plugin guarda o plano que inseriu; na
-analise seguinte le V2 e compara. B-roll que sobreviveu foi acerto, o que sumiu
-foi erro. Com isso ajusta o peso de cada par conceito-palavra — sem modelo, sem
-nuvem, so contagem. O usuario "treina" editando normalmente.
+**Rodar o ciclo de aprendizado no Premiere, duas vezes.** Reiniciar o aplicativo
+(nao ha hot reload), e entao:
 
-Foi acordado com o usuario como o caminho preferido, antes de considerar
-embedding de texto local (que continua sendo o degrau seguinte se isso nao
-bastar).
+1. Analisar e inserir numa sequencia. O log deve terminar com
+   *"Apague os que nao serviram: a proxima analise aprende com isso."*
+   Conferir que `pendentes.json` apareceu na pasta de dados do plugin.
+2. Apagar na timeline os B-rolls que nao serviram. Nao desfazer com Ctrl+Z:
+   desfazer devolve a sequencia ao estado anterior e nao ensina nada.
+3. Analisar de novo. O log deve abrir com
+   *"aprendizado: N mantidos e M apagados em V2 desde a ultima analise"*,
+   e as sugestoes reprovadas devem trazer `· aprendizado -X%` no motivo.
+
+O que pode falhar e ainda nao foi provado dentro do aplicativo: `lerClipes(1)`
+numa sequencia sem V2 (deve virar aviso, nao erro) e a gravacao dos dois JSON.
+
+Depois disso, os candidatos na fila (em ordem de valor, nao de esforco):
+tirar o dicionario de sinonimos do codigo (pendencia 3), provar
+`createSetEndAction` isolada (pendencia 2) e os cenarios dificeis de
+remapeamento (pendencia 5). Embedding de texto local continua sendo o degrau
+seguinte, so se a contagem nao bastar.

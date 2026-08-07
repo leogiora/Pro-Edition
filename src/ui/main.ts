@@ -5,6 +5,14 @@
 
 import { DEFAULT_CONFIG, formatTimecode, parseConfig, type Config } from "../domain.ts";
 import { analisar } from "../analise.ts";
+import {
+  aprender,
+  comPendente,
+  parseMemoria,
+  parsePendentes,
+  type Memoria,
+  type Pendentes,
+} from "../aprendizado.ts";
 import { planejar } from "../plano.ts";
 import {
   comLimite,
@@ -18,6 +26,8 @@ import {
 } from "../premiere.ts";
 
 const CONFIG_FILE = "config.json";
+const MEMORIA_FILE = "aprendizado.json";
+const PENDENTES_FILE = "pendentes.json";
 
 // ------------------------------------------------------------------ util
 
@@ -134,6 +144,49 @@ function relogio(segundos: number): string {
   return `${String(Math.floor(total / 60)).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
 }
 
+/**
+ * Julga o plano da rodada anterior antes de planejar a proxima.
+ *
+ * O sinal ja esta na timeline: B-roll que continua na faixa foi acerto, o que
+ * sumiu foi erro. O usuario "treina" o plugin editando normalmente — nao ha
+ * botao de nota, nao ha modelo, so contagem.
+ *
+ * Nunca lanca: falhar em aprender nao pode impedir a analise. Quando a leitura
+ * da faixa ou a gravacao falham, o plano continua pendente e sera julgado na
+ * proxima rodada — melhor adiar que contar errado.
+ */
+async function julgarPlanoAnterior(
+  sequencia: string,
+  videoTrackIndex: number
+): Promise<{ memoria: Memoria; pendentes: Pendentes }> {
+  const memoria = parseMemoria(await comLimite("ler aprendizado", readJson(MEMORIA_FILE), 5000));
+  const pendentes = parsePendentes(await comLimite("ler pendentes", readJson(PENDENTES_FILE), 5000));
+
+  const pendente = pendentes.porSequencia[sequencia];
+  if (pendente === undefined || pendente.itens.length === 0) return { memoria, pendentes };
+
+  try {
+    const faixa = `V${videoTrackIndex + 1}`;
+    const naFaixa = await comLimite(`ler ${faixa}`, lerClipes(videoTrackIndex), 30000);
+    const resultado = aprender(memoria, pendente, new Set(naFaixa.map((c) => c.sourceName)));
+    const julgado = comPendente(pendentes, sequencia, null);
+
+    // O pendente sai da lista na mesma rodada em que e contado. Sem isso, rodar
+    // a analise duas vezes contaria o mesmo acerto de novo.
+    await writeJson(MEMORIA_FILE, resultado.memoria);
+    await writeJson(PENDENTES_FILE, julgado);
+
+    registrar(
+      `aprendizado: ${resultado.acertos} mantidos e ${resultado.erros} apagados em ${faixa} desde a ultima analise`,
+      "ok"
+    );
+    return { memoria: resultado.memoria, pendentes: julgado };
+  } catch (e) {
+    registrar(`Aprendizado adiado: ${mensagemDeErro(e)}`, "aviso");
+    return { memoria, pendentes };
+  }
+}
+
 async function analisarSequencia(): Promise<void> {
   const botao = el<HTMLButtonElement & { disabled: boolean }>("analisar");
   botao.disabled = true;
@@ -160,6 +213,9 @@ async function analisarSequencia(): Promise<void> {
     registrar(`${transcricoesJson.size} de ${nomes.length} midias com transcricao`, "passo");
 
     const config = lerFormulario();
+    const { name: nomeSequencia } = await comLimite("ler sequencia", getSequenceInfo());
+    const { memoria, pendentes } = await julgarPlanoAnterior(nomeSequencia, config.videoTrackIndex);
+
     const resultado = analisar({
       clipes,
       transcricoesJson,
@@ -178,9 +234,12 @@ async function analisarSequencia(): Promise<void> {
       return;
     }
 
-    const plano = planejar(resultado.oportunidades, {
-      caminhos: new Map(arquivos.map((a) => [a.name, a.nativePath])),
-    });
+    const plano = planejar(
+      resultado.oportunidades,
+      { caminhos: new Map(arquivos.map((a) => [a.name, a.nativePath])) },
+      undefined,
+      memoria
+    );
 
     for (const descarte of plano.descartes) registrar(`  ${descarte}`, "vazio");
 
@@ -212,6 +271,25 @@ async function analisarSequencia(): Promise<void> {
     for (const passo of feito.passos) registrar(`  ${passo}`, "ok");
     for (const aviso of feito.avisos) registrar(`  ${aviso}`, "aviso");
     registrar("Tres Ctrl+Z desfazem tudo.", "vazio");
+
+    // Guarda o que entrou. Apague na timeline o que nao serviu: a proxima
+    // analise le a faixa, compara com isto e ajusta o peso de cada par.
+    try {
+      await writeJson(
+        PENDENTES_FILE,
+        comPendente(pendentes, nomeSequencia, {
+          quando: new Date().toISOString(),
+          itens: plano.colocacoes.map((c) => ({
+            arquivo: c.arquivo,
+            conceito: c.conceito,
+            termosCasados: c.termosCasados,
+          })),
+        })
+      );
+      registrar("Apague os que nao serviram: a proxima analise aprende com isso.", "vazio");
+    } catch (e) {
+      registrar(`Plano nao ficou guardado, esta rodada nao vai ensinar nada. ${mensagemDeErro(e)}`, "aviso");
+    }
 
     estado("pronto", "ok");
   } catch (e) {

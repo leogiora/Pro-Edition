@@ -148,6 +148,48 @@ o indexador da Fase 5 vai precisar. D-009 fica **superada**.
 
 ---
 
+## D-016 — Aprendizado por sobrevivencia, sem botao e sem modelo (2026-08-07) — provisoria
+
+**Contexto.** O plugin acertava as sugestoes obvias e errava nas de borda, e nao
+tinha como saber a diferenca. As opcoes eram: pedir nota ao usuario, treinar um
+modelo, ou ler o sinal que ja existe.
+
+**Decisao.** Ler o sinal que ja existe. O plugin grava o plano que inseriu
+(`pendentes.json`); na analise seguinte le a faixa de destino e compara por nome
+de arquivo. Quem sobreviveu foi acerto, quem sumiu foi erro. As contagens ficam
+por par **conceito-palavra** (`aprendizado.json`), e viram um multiplicador do
+score aplicado ANTES do corte de qualidade.
+
+`fator = 1 + 0,15 x (acertos - erros)`, preso entre 0,5 e 1,5, com media entre os
+pares da sugestao. Numeros escolhidos para que **tres exclusoes** derrubem um
+casamento de 70% abaixo do corte de 60% — rapido o bastante para o usuario
+perceber o efeito na mesma semana, lento o bastante para um Ctrl+Z distraido nao
+apagar um conceito bom. Os limites impedem que o historico zere ou promova
+qualquer coisa sozinho.
+
+**Por que par conceito-palavra, e nao conceito.** "Tempo" casando com "bomba
+relogio" e outra decisao que "Tempo" casando com "demora". Punir o conceito
+inteiro por causa de um contexto ruim mataria o outro junto.
+
+**Consequencias e o que fica em aberto:**
+
+- O pendente sai da lista na mesma rodada em que e contado. Sem isso, rodar a
+  analise duas vezes sem editar nada contaria o mesmo acerto de novo.
+- Um pendente **por sequencia**: analisar o corte B nao pode jogar fora o
+  julgamento ainda nao lido do corte A.
+- Falha ao ler a faixa ou ao gravar mantem o plano pendente para a proxima
+  rodada. Adiar o aprendizado e sempre melhor que contar errado.
+- **Nao distingue "ruim" de "nao coube".** B-roll apagado por conflito de
+  montagem conta como erro semantico igual. Aceito: o volume de casos corrige o
+  vies, e a alternativa exigia perguntar ao usuario.
+- **Nao ve o que foi movido ou aparado.** So presenca por nome. Comparar posicao
+  daria um sinal mais fino e nao vale o custo antes de haver caso medido.
+
+Provisoria ate rodar em sequencia real por algumas edicoes: os numeros sao
+plausiveis e testados, mas o passo certo so aparece com uso.
+
+---
+
 ## D-008 — Ferramental da Fase 1: esbuild e `node --test`, nada alem (2026-08-06) — firme
 
 **Contexto.** A Fase 1 pede TypeScript, lint e testes. O caminho habitual seria

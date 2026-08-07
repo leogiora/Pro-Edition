@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
+import { aprender, MEMORIA_VAZIA } from "../src/aprendizado.ts";
 import { planejar, REGRAS_PADRAO, type Biblioteca } from "../src/plano.ts";
 import type { Oportunidade } from "../src/analise.ts";
 import type { Conceito } from "../src/match.ts";
@@ -174,6 +175,38 @@ test("planejar: B-roll nao passa do fim da frase", () => {
   const o = oportunidade(10, 6, [{ c: FRUSTRADO, score: 1 }], [{ termo: "frustrado", inicio: 14 }]);
   const c = p0(planejar([o], BIBLIOTECA).colocacoes);
   assert.ok(c.inicio + c.duracao <= 16.01, `${c.inicio}+${c.duracao} passou de 16`);
+});
+
+// ------------------------- aprendizado por sobrevivencia --------------------
+
+test("planejar: par apagado varias vezes deixa de entrar sozinho", () => {
+  const o = oportunidade(10, 3, [{ c: FRUSTRADO, score: 0.7 }]);
+  assert.equal(planejar([o], BIBLIOTECA).colocacoes.length, 1);
+
+  // Tres rodadas em que o usuario apagou este B-roll da timeline.
+  let memoria = MEMORIA_VAZIA;
+  const pendente = {
+    quando: "",
+    itens: [{ arquivo: "Frustrado (1).mp4", conceito: "Frustrado", termosCasados: FRUSTRADO.termos }],
+  };
+  for (let i = 0; i < 3; i++) memoria = aprender(memoria, pendente, new Set()).memoria;
+
+  const depois = planejar([o], BIBLIOTECA, REGRAS_PADRAO, memoria);
+  assert.equal(depois.colocacoes.length, 0, "0,7 x 0,55 fica abaixo do corte de 0,6");
+});
+
+test("planejar: o motivo diz quando o historico mexeu no score", () => {
+  const memoria = aprender(
+    MEMORIA_VAZIA,
+    {
+      quando: "",
+      itens: [{ arquivo: "Viagra (1).mp4", conceito: "Viagra", termosCasados: VIAGRA.termos }],
+    },
+    new Set(["Viagra (1).mp4"])
+  ).memoria;
+
+  const p = planejar([oportunidade(10, 3, [{ c: VIAGRA, score: 0.8 }])], BIBLIOTECA, REGRAS_PADRAO, memoria);
+  assert.match(p0(p.colocacoes).motivo, /aprendizado \+15%/);
 });
 
 function p0<T>(lista: readonly T[]): T {
