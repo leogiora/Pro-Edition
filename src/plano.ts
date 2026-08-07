@@ -9,6 +9,7 @@
 import type { Oportunidade } from "./analise.ts";
 import { fator, melhorArquivo, MEMORIA_VAZIA, type Memoria } from "./aprendizado.ts";
 import { relogio } from "./domain.ts";
+import { encaixam, percentis, ritmo } from "./intensidade.ts";
 import { estaNaFrase, mesmaRaiz } from "./match.ts";
 
 export interface Colocacao {
@@ -48,6 +49,15 @@ export interface RegrasPlano {
    * de ouvir a palavra. Um respiro curto antes faz o B-roll parecer intencional.
    */
   readonly antecipacao: number;
+  /**
+   * Quanto o percentil de agitacao do take pode se afastar do percentil de
+   * ritmo da fala e ainda contar como encaixe.
+   *
+   * Botao, nao constante: nos 43 takes de "Viagra", 0,35 deixa ~15 candidatos
+   * quando a fala esta num extremo de ritmo e ~30 quando esta no meio. Apertar
+   * se entrar take fora de clima; afrouxar se muita colocacao cair no fallback.
+   */
+  readonly toleranciaIntensidade: number;
 }
 
 export const REGRAS_PADRAO: RegrasPlano = {
@@ -58,6 +68,7 @@ export const REGRAS_PADRAO: RegrasPlano = {
   scoreMinimo: 0.6,
   janelaSemRepetir: 20,
   antecipacao: 0.3,
+  toleranciaIntensidade: 0.35,
 };
 
 /**
@@ -86,6 +97,19 @@ export interface Biblioteca {
 }
 
 /**
+ * O que se sabe de intensidade nesta rodada.
+ *
+ * Ausente, o planejador se comporta exatamente como antes de isto existir — o
+ * que mantem intacto todo o comportamento provado ate aqui.
+ */
+export interface IntensidadeDoPlano {
+  /** Agitacao crua por arquivo, como saiu do mp4. */
+  readonly porArquivo: ReadonlyMap<string, number>;
+  /** Palavras por segundo de TODAS as frases da sequencia, para o percentil. */
+  readonly ritmoDasFrases: readonly number[];
+}
+
+/**
  * Uma sugestao ja posicionada no tempo, antes de decidir se entra.
  *
  * Cada sugestao vira um candidato proprio, ancorado na SUA palavra. Uma frase
@@ -106,10 +130,15 @@ export function planejar(
   oportunidades: readonly Oportunidade[],
   biblioteca: Biblioteca,
   regras: RegrasPlano = REGRAS_PADRAO,
-  memoria: Memoria = MEMORIA_VAZIA
+  memoria: Memoria = MEMORIA_VAZIA,
+  intensidade?: IntensidadeDoPlano
 ): Plano {
   const colocacoes: Colocacao[] = [];
   const descartes: string[] = [];
+
+  // Ordenado uma vez para a sequencia toda: e a regua contra a qual o ritmo de
+  // cada frase vira percentil.
+  const ritmoOrdenado = intensidade ? [...intensidade.ritmoDasFrases].sort((a, b) => a - b) : [];
 
   const candidatos: Candidato[] = [];
   for (const o of oportunidades) {
@@ -168,7 +197,11 @@ export function planejar(
     // O que o usuario apagou cede a vez a outra variacao do mesmo conceito. O
     // assunto continua valendo; so muda o take.
     const disponiveis = c.arquivos.filter((a) => !arquivosUsados.has(a));
-    const arquivo = melhorArquivo(memoria, disponiveis);
+
+    // A intensidade FILTRA, o historico ESCOLHE. Sem isso o historico trava no
+    // primeiro take creditado e os outros 42 nunca aparecem.
+    const cabem = filtrarPorIntensidade(disponiveis, c.frase, intensidade, regras, ritmoOrdenado);
+    const arquivo = melhorArquivo(memoria, cabem.arquivos);
     if (arquivo === undefined) {
       descartes.push(`${onde}: todas as variacoes ja usadas`);
       continue;
@@ -195,7 +228,7 @@ export function planejar(
       caminho,
       conceito: c.conceito,
       score: c.score,
-      motivo: trocouTake ? `${c.motivo} · outro take, o anterior foi apagado` : c.motivo,
+      motivo: montarMotivo(c.motivo, trocouTake, cabem.rotulo),
       termosCasados: c.termosCasados,
       inicio: c.ancoraEm,
       duracao,
@@ -206,6 +239,55 @@ export function planejar(
   }
 
   return { colocacoes, descartes };
+}
+
+/**
+ * Restringe os takes aos que combinam com o ritmo da fala naquele ponto.
+ *
+ * Devolve tambem o rotulo para o motivo. Quando nada encaixa, devolve todos:
+ * intensidade nunca pode custar uma colocacao boa.
+ */
+function filtrarPorIntensidade(
+  disponiveis: readonly string[],
+  frase: Oportunidade["frase"],
+  intensidade: IntensidadeDoPlano | undefined,
+  regras: RegrasPlano,
+  ritmoOrdenado: readonly number[]
+): { arquivos: readonly string[]; rotulo: string | null } {
+  if (intensidade === undefined || disponiveis.length < 2 || ritmoOrdenado.length < 2) {
+    return { arquivos: disponiveis, rotulo: null };
+  }
+
+  const daFrase = ritmo(frase.palavras, frase.duracao);
+  const alvo = ritmoOrdenado.indexOf(maisProximo(ritmoOrdenado, daFrase)) / (ritmoOrdenado.length - 1);
+
+  const dosTakes = percentis(disponiveis.map((a) => intensidade.porArquivo.get(a) ?? null));
+  const indices = encaixam(dosTakes, alvo, regras.toleranciaIntensidade);
+  if (indices.length === 0) return { arquivos: disponiveis, rotulo: null };
+
+  return {
+    // `filter` em vez de `?? ""`: nome vazio entrando na escolha viraria uma
+    // colocacao apontando para arquivo nenhum.
+    arquivos: indices.map((i) => disponiveis[i]).filter((a): a is string => a !== undefined),
+    rotulo: alvo >= 0.5 ? "take agitado, a fala corre aqui" : "take parado, momento calmo",
+  };
+}
+
+/** O valor da lista mais proximo do procurado. Lista nunca vazia aqui. */
+function maisProximo(ordenados: readonly number[], alvo: number): number {
+  let escolhido = ordenados[0] ?? 0;
+  for (const v of ordenados) {
+    if (Math.abs(v - alvo) < Math.abs(escolhido - alvo)) escolhido = v;
+  }
+  return escolhido;
+}
+
+/** O motivo carrega tudo o que mexeu na escolha, na ordem em que mexeu. */
+function montarMotivo(base: string, trocouTake: boolean, intensidade: string | null): string {
+  let texto = base;
+  if (intensidade !== null) texto += ` · ${intensidade}`;
+  if (trocouTake) texto += " · outro take, o anterior foi apagado";
+  return texto;
 }
 
 /** "+15%" / "-30%": o motivo tem de dizer que o historico mexeu no score. */

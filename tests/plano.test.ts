@@ -248,6 +248,80 @@ test("planejar: o motivo diz quando o historico mexeu no score", () => {
   assert.match(p0(p.colocacoes).motivo, /aprendizado \+15%/);
 });
 
+// ------------------------ intensidade do take -------------------------------
+
+/** Frustrado tem dois takes: (1) parado, (2) agitado. */
+const AGITACAO = new Map([
+  ["Frustrado (1).mp4", 0.001],
+  ["Frustrado (2).mp4", 0.009],
+  ["Viagra (1).mp4", 0.005],
+]);
+
+test("planejar: fala rapida puxa o take agitado, fala lenta puxa o parado", () => {
+  const lenta = oportunidade(10, 4, [{ c: FRUSTRADO, score: 1 }]);
+  const rapida = oportunidade(60, 4, [{ c: FRUSTRADO, score: 1 }]);
+  const p = planejar([lenta, rapida], BIBLIOTECA, REGRAS_PADRAO, MEMORIA_VAZIA, {
+    porArquivo: AGITACAO,
+    // A frase de 10s tem ritmo 2 (percentil 0); a de 60s tem 8 (percentil 1).
+    ritmoDasFrases: [2, 8],
+  });
+  assert.equal(p.colocacoes.length, 2);
+  assert.equal(p0(p.colocacoes).arquivo, "Frustrado (1).mp4", "a lenta pega o parado");
+  assert.equal(p.colocacoes[1]?.arquivo, "Frustrado (2).mp4", "a rapida pega o agitado");
+});
+
+test("planejar: o motivo diz que o take foi escolhido pelo momento", () => {
+  const p = planejar(
+    [oportunidade(10, 4, [{ c: FRUSTRADO, score: 1 }])],
+    BIBLIOTECA,
+    REGRAS_PADRAO,
+    MEMORIA_VAZIA,
+    { porArquivo: AGITACAO, ritmoDasFrases: [2, 8] }
+  );
+  assert.match(p0(p.colocacoes).motivo, /take (agitado|parado)/);
+});
+
+test("planejar: nenhum take encaixa, a colocacao acontece do mesmo jeito", () => {
+  // Os dois takes tem a mesma agitacao, entao percentis 0 e 0; a fala e rapida.
+  const so = new Map([["Frustrado (1).mp4", 0.001], ["Frustrado (2).mp4", 0.0011]]);
+  const p = planejar(
+    [oportunidade(10, 4, [{ c: FRUSTRADO, score: 1 }])],
+    BIBLIOTECA,
+    REGRAS_PADRAO,
+    MEMORIA_VAZIA,
+    { porArquivo: so, ritmoDasFrases: [2, 8] }
+  );
+  assert.equal(p.colocacoes.length, 1, "intensidade nunca pode custar uma colocacao");
+});
+
+test("planejar: sem intensidade, o plano e identico ao de hoje", () => {
+  const o = [oportunidade(10, 4, [{ c: FRUSTRADO, score: 1 }])];
+  assert.deepEqual(planejar(o, BIBLIOTECA), planejar(o, BIBLIOTECA, REGRAS_PADRAO, MEMORIA_VAZIA));
+});
+
+test("planejar: o historico ainda escolhe DENTRO do que a intensidade permitiu", () => {
+  // Os dois takes encaixam igualmente; o historico reprova o (1), entao vem o (2).
+  const memoria = aprender(
+    MEMORIA_VAZIA,
+    {
+      quando: "",
+      itens: [{ arquivo: "Frustrado (1).mp4", conceito: "Frustrado", termosCasados: FRUSTRADO.termos }],
+    },
+    new Set()
+  ).memoria;
+  const p = planejar(
+    [oportunidade(10, 4, [{ c: FRUSTRADO, score: 1 }])],
+    BIBLIOTECA,
+    REGRAS_PADRAO,
+    memoria,
+    {
+      porArquivo: new Map([["Frustrado (1).mp4", 0.005], ["Frustrado (2).mp4", 0.005]]),
+      ritmoDasFrases: [2, 8],
+    }
+  );
+  assert.equal(p0(p.colocacoes).arquivo, "Frustrado (2).mp4");
+});
+
 function p0<T>(lista: readonly T[]): T {
   const primeiro = lista[0];
   if (primeiro === undefined) throw new Error("plano vazio");
