@@ -240,12 +240,20 @@ async function julgarFaixa(
         const credito = creditarManuais(atual, sequencia, manuais, frases, conceitos);
         atual = credito.memoria;
         // Falar mesmo quando o numero e zero: silencio se parece com falha, e foi
-        // exatamente assim que este aprendizado passou por quebrado.
-        const jaContados = manuais.length - credito.creditados - credito.semLigacao.length;
+        // exatamente assim que este aprendizado passou por quebrado. E dizer o
+        // motivo CERTO de cada um — juntar tudo em "ja contados" esconderia
+        // arquivo de fora da pasta, que e problema, atras de algo que nao e.
+        const detalhe: string[] = [`${credito.creditados} aprendidos`];
+        if (credito.jaContados > 0) detalhe.push(`${credito.jaContados} ja contados antes`);
+        if (credito.foraDaBiblioteca > 0) {
+          detalhe.push(`${credito.foraDaBiblioteca} fora da pasta de B-rolls`);
+        }
+        if (credito.semFala > 0) detalhe.push(`${credito.semFala} sobre silencio`);
+        if (credito.semLigacao.length > 0) {
+          detalhe.push(`${credito.semLigacao.length} sem ligacao no dicionario`);
+        }
         resumo.push({
-          texto:
-            `Voce colocou ${manuais.length} por conta propria: ` +
-            `${credito.creditados} aprendidos, ${jaContados} ja contados antes.`,
+          texto: `Voce colocou ${manuais.length} por conta propria: ${detalhe.join(", ")}.`,
           tipo: credito.creditados > 0 ? "ok" : "aviso",
         });
         // Nao ha o que contar aqui, mas ha o que dizer: falta ligacao no dicionario.

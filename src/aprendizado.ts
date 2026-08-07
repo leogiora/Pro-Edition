@@ -166,6 +166,18 @@ export interface ColocacaoManual {
 export interface CreditoManual {
   readonly memoria: Memoria;
   readonly creditados: number;
+  /** Ja contado numa analise anterior: nao ha nada de errado, so nada de novo. */
+  readonly jaContados: number;
+  /**
+   * Nao esta na pasta de B-rolls configurada.
+   *
+   * Nao da para saber de que conceito e, e chutar seria pior que ignorar. Mas
+   * precisa ser DITO: sem isso, arrastar um arquivo de outra pasta ensina nada
+   * e parece que ensinou.
+   */
+  readonly foraDaBiblioteca: number;
+  /** Colocado onde ninguem fala: nao ha texto para ligar ao conceito. */
+  readonly semFala: number;
   /**
    * Escolhas que nenhum termo explica.
    *
@@ -208,18 +220,24 @@ export function creditarManuais(
   const vistos: Record<string, true> = { ...memoria.vistos };
   const semLigacao: string[] = [];
   let creditados = 0;
+  let jaContados = 0;
+  let foraDaBiblioteca = 0;
+  let semFala = 0;
 
   for (const manual of manuais) {
     const conceito = conceitos.find((c) => c.arquivos.includes(manual.arquivo));
-    // Arquivo que nao esta na biblioteca conhecida: nao da para dizer de que
-    // conceito ele e, e chutar seria pior que ignorar.
-    if (conceito === undefined) continue;
+    if (conceito === undefined) {
+      foraDaBiblioteca++;
+      continue;
+    }
 
     const frase = frases.find(
       (f) => manual.inicio >= f.inicio - FOLGA_DA_FRASE && manual.inicio < f.fim
     );
-    // B-roll sobre silencio nao ensina nada: nao ha fala para ligar a ele.
-    if (frase === undefined) continue;
+    if (frase === undefined) {
+      semFala++;
+      continue;
+    }
 
     const casados = conceito.termos.filter((t) => estaNaFrase(t, termos(frase.texto)));
 
@@ -233,7 +251,10 @@ export function creditarManuais(
     }
 
     const marca = `${sequencia}|${manual.arquivo}|${Math.round(manual.inicio)}`;
-    if (vistos[marca] === true) continue;
+    if (vistos[marca] === true) {
+      jaContados++;
+      continue;
+    }
     vistos[marca] = true;
 
     creditados++;
@@ -241,7 +262,14 @@ export function creditarManuais(
     for (const termo of casados) somar(pares, chave(conceito.rotulo, termo), true);
   }
 
-  return { memoria: { schema: 3, pares, arquivos, vistos }, creditados, semLigacao };
+  return {
+    memoria: { schema: 3, pares, arquivos, vistos },
+    creditados,
+    jaContados,
+    foraDaBiblioteca,
+    semFala,
+    semLigacao,
+  };
 }
 
 /**

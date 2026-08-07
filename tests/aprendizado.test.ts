@@ -258,10 +258,41 @@ test("creditarManuais: o corte entra um pouco antes da palavra e ainda acha a fr
   assert.equal(r.creditados, 1);
 });
 
-test("creditarManuais: arquivo de fora da biblioteca e ignorado", () => {
+test("creditarManuais: arquivo de fora da biblioteca e contado a parte, nao escondido", () => {
   const r = creditarManuais(MEMORIA_VAZIA, "Reels", [{ arquivo: "gato.mp4", inicio: 11 }], FALA, CONCEITOS);
   assert.equal(r.creditados, 0);
+  assert.equal(r.foraDaBiblioteca, 1, "tem de sair com o proprio nome, nao como 'ja contado'");
+  assert.equal(r.jaContados, 0);
   assert.deepEqual(r.semLigacao, []);
+});
+
+test("creditarManuais: cada motivo de nao aprender tem seu proprio numero", () => {
+  const r = creditarManuais(
+    MEMORIA_VAZIA,
+    "Reels",
+    [
+      { arquivo: "Viagra (1).mp4", inicio: 11 }, // aprende
+      { arquivo: "gato.mp4", inicio: 11 }, // fora da pasta
+      { arquivo: "Viagra (2).mp4", inicio: 50 }, // sobre silencio
+      { arquivo: "Vasos sanguineos (3).mp4", inicio: 31 }, // sem ligacao
+    ],
+    FALA,
+    CONCEITOS
+  );
+  assert.equal(r.creditados, 1);
+  assert.equal(r.foraDaBiblioteca, 1);
+  assert.equal(r.semFala, 1);
+  assert.equal(r.semLigacao.length, 1);
+  assert.equal(r.jaContados, 0);
+});
+
+test("creditarManuais: ja contado antes aparece como tal", () => {
+  const manuais = [{ arquivo: "Viagra (1).mp4", inicio: 11 }];
+  const uma = creditarManuais(MEMORIA_VAZIA, "Reels", manuais, FALA, CONCEITOS);
+  const outra = creditarManuais(uma.memoria, "Reels", manuais, FALA, CONCEITOS);
+  assert.equal(outra.jaContados, 1);
+  assert.equal(outra.foraDaBiblioteca, 0);
+  assert.equal(outra.semFala, 0);
 });
 
 // -------------------------------------------------------------- pendentes
