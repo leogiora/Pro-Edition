@@ -45,6 +45,7 @@ import {
   readJson,
   writeJson,
   type ArquivoBroll,
+  type SequenceInfo,
 } from "../premiere.ts";
 
 const CONFIG_FILE = "config.json";
@@ -155,17 +156,28 @@ function preencherFormulario(c: Config): void {
 
 // ------------------------------------------------------------- sequencia
 
+/**
+ * Preenche o cabecalho com a sequencia.
+ *
+ * Separado porque toda acao ja le a sequencia de qualquer forma: pintar o
+ * cabecalho junto custa nada e mantem o painel sempre falando da sequencia em
+ * que ele esta trabalhando de verdade. Foi isto que tornou o botao "Reler"
+ * dispensavel.
+ */
+function mostrarSequencia(info: SequenceInfo): void {
+  const nome = el("seqNome");
+  nome.textContent = info.name;
+  nome.setAttribute("data-vazio", "nao");
+  el("seqFormato").textContent = `${info.width}x${info.height}`;
+  el("seqFps").textContent = info.fps.toFixed(3).replace(".", ",");
+  el("seqDuracao").textContent = formatTimecode(info.durationSeconds, info.fps);
+  el("seqFaixas").textContent = `${info.videoTracks}V · ${info.audioTracks}A`;
+}
+
 async function relerSequencia(): Promise<void> {
   estado("lendo");
   try {
-    const info = await comLimite("ler sequencia", getSequenceInfo());
-    const nome = el("seqNome");
-    nome.textContent = info.name;
-    nome.setAttribute("data-vazio", "nao");
-    el("seqFormato").textContent = `${info.width}x${info.height}`;
-    el("seqFps").textContent = info.fps.toFixed(3).replace(".", ",");
-    el("seqDuracao").textContent = formatTimecode(info.durationSeconds, info.fps);
-    el("seqFaixas").textContent = `${info.videoTracks}V · ${info.audioTracks}A`;
+    mostrarSequencia(await comLimite("ler sequencia", getSequenceInfo()));
     estado("pronto", "ok");
   } catch (e) {
     const nome = el("seqNome");
@@ -380,7 +392,9 @@ async function lerContexto(): Promise<{
   const transcricoesJson = await comLimite("ler transcricoes", lerTranscricoes(nomes), 60000);
   registrar(`${transcricoesJson.size} de ${nomes.length} midias com transcricao`, "passo");
 
-  const { name: nomeSequencia } = await comLimite("ler sequencia", getSequenceInfo());
+  const info = await comLimite("ler sequencia", getSequenceInfo());
+  mostrarSequencia(info);
+  const nomeSequencia = info.name;
 
   const ligacoes = ligacoesFirmes(
     parseAssociacoes(await comLimite("ler ligacoes", readJson(ASSOCIACOES_FILE), 5000))
@@ -637,9 +651,6 @@ function iniciar(): void {
   });
   el("aprender").addEventListener("click", () => {
     void aprenderDaTimeline();
-  });
-  el("atualizar").addEventListener("click", () => {
-    void relerSequencia();
   });
   // Com os botoes ja vivos, o resto pode falhar sem deixar o painel inutil.
   preencherFormulario(DEFAULT_CONFIG);
