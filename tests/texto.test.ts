@@ -4,10 +4,13 @@ import assert from "node:assert/strict";
 import {
   corrigirEAcento,
   corrigirPorques,
+  distancia,
   normalizarColoquial,
   nucleo,
+  protegerTermos,
   type PalavraRevisada,
 } from "../src/texto.ts";
+import { PRESET_PADRAO } from "../src/preset.ts";
 
 /** Monta palavras com tempo previsivel: cada uma dura 1s. */
 function palavras(frase: string): PalavraRevisada[] {
@@ -109,4 +112,41 @@ test("porque no fim da oracao vira por quê", () => {
 
 test("porque precedido de artigo e substantivo", () => {
   assert.equal(texto(corrigirPorques(palavras("vou te explicar o porque"))), "vou te explicar o porquê");
+});
+
+const proteger = (frase: string): PalavraRevisada[] => protegerTermos(palavras(frase), PRESET_PADRAO);
+
+test("distancia de edicao", () => {
+  assert.equal(distancia("androclinic", "androclinic"), 0);
+  assert.equal(distancia("andro clinic", "androclinic"), 1);
+  assert.ok(distancia("estivalet", "equivalente") > 3);
+});
+
+test("caso 3 da spec: erro proximo e corrigido sozinho", () => {
+  assert.equal(texto(proteger("aqui na androclinica")), "aqui na Androclinic");
+});
+
+test("erro de duas palavras vira o termo canonico", () => {
+  assert.equal(texto(proteger("aqui na andro clinic hoje")), "aqui na Androclinic hoje");
+});
+
+test("caso 2 da spec: erro distante NAO e trocado sozinho, vira sugestao", () => {
+  const saida = proteger("Meu nome é Cristiano Equivalente");
+  // O texto continua o que o Premiere ouviu: nao inventar palavra.
+  assert.equal(texto(saida), "Meu nome é Cristiano Equivalente");
+  const suspeita = saida[saida.length - 1];
+  assert.equal(suspeita?.sugestao, "Estivalet");
+  assert.ok(suspeita?.motivo);
+});
+
+test("o termo ja correto nao vira sugestao", () => {
+  const saida = proteger("Meu nome é Cristiano Estivalet");
+  assert.equal(texto(saida), "Meu nome é Cristiano Estivalet");
+  assert.equal(saida[saida.length - 1]?.sugestao, null);
+});
+
+test("palavra comum longe de qualquer termo fica intacta", () => {
+  const saida = proteger("o paciente chegou cedo");
+  assert.equal(texto(saida), "o paciente chegou cedo");
+  assert.ok(saida.every((p) => p.sugestao === null));
 });

@@ -8,6 +8,7 @@
  * duvida vai para `sugestao` — a UI oferece a troca. Nunca inventar palavra.
  */
 
+import type { Preset } from "./preset.ts";
 import type { PalavraEditada } from "./transcript.ts";
 
 export interface PalavraRevisada {
@@ -275,6 +276,147 @@ export function corrigirPorques(palavras: readonly PalavraRevisada[]): PalavraRe
       confidence: Math.min(atual.confidence, ultimo.confidence),
     });
     i += alvo.consome;
+  }
+
+  return saida;
+}
+
+/* ----------------------------------------------------- termos protegidos */
+
+/** Distancia de edicao de Levenshtein. Duas linhas de matriz bastam. */
+export function distancia(a: string, b: string): number {
+  if (a === b) return 0;
+  if (a.length === 0) return b.length;
+  if (b.length === 0) return a.length;
+
+  let anterior = Array.from({ length: b.length + 1 }, (_, i) => i);
+  let atual = new Array<number>(b.length + 1).fill(0);
+
+  for (let i = 1; i <= a.length; i++) {
+    atual[0] = i;
+    for (let j = 1; j <= b.length; j++) {
+      const custo = a[i - 1] === b[j - 1] ? 0 : 1;
+      atual[j] = Math.min(
+        (atual[j - 1] ?? 0) + 1,
+        (anterior[j] ?? 0) + 1,
+        (anterior[j - 1] ?? 0) + custo
+      );
+    }
+    const troca = anterior;
+    anterior = atual;
+    atual = troca;
+  }
+  return anterior[b.length] ?? 0;
+}
+
+/** Forma comparavel: minuscula, sem acento, so letras e digitos. */
+function comparavel(texto: string): string {
+  return texto
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
+}
+
+/**
+ * Aplica o vocabulario protegido.
+ *
+ * Duas rotas, deliberadamente diferentes:
+ *
+ * - **Erro proximo** (`andro clinica` -> `Androclinic`): a distancia de edicao
+ *   sozinha ja e evidencia, e a troca acontece.
+ * - **Erro distante** (`Equivalente` no lugar de `Estivalet`): a distancia nao
+ *   ajuda, so o contexto — a palavra vem logo depois de "Cristiano". Contexto
+ *   sozinho NAO autoriza reescrever a fala, entao o texto fica como esta e a
+ *   duvida vai para `sugestao`, que a fila de revisao mostra ao usuario.
+ *
+ * E o que a spec pede na secao 5: preferir revisao manual rapida a inventar
+ * uma palavra.
+ */
+export function protegerTermos(
+  palavras: readonly PalavraRevisada[],
+  preset: Preset
+): PalavraRevisada[] {
+  /** Cada termo dividido em palavras, com a forma comparavel de cada uma. */
+  const termos = preset.termosProtegidos.map((t) => {
+    const partes = t.split(" ");
+    return { canonico: t, partes, chaves: partes.map(comparavel) };
+  });
+
+  const saida: PalavraRevisada[] = [];
+  let i = 0;
+
+  while (i < palavras.length) {
+    const atual = palavras[i];
+    if (atual === undefined) {
+      i++;
+      continue;
+    }
+
+    let aplicou = false;
+
+    for (const termo of termos) {
+      // A janela vai UMA palavra alem do termo porque o erro tipico do ASR e
+      // partir a palavra: "Androclinic" tem uma parte so, mas chega como
+      // "andro clinic". Ir muito alem disso so aumentaria fusao indevida.
+      const maxJanela = termo.partes.length + 1;
+      for (let n = 1; n <= maxJanela && i + n <= palavras.length; n++) {
+        const janela = palavras.slice(i, i + n);
+        const juntas = comparavel(janela.map((p) => nucleo(p.text).corpo).join(""));
+        const alvo = termo.chaves.join("");
+
+        // Tolerancia proporcional: 1 erro a cada 5 caracteres, minimo 1.
+        const limite = Math.max(1, Math.floor(alvo.length / 5));
+        if (juntas.length === 0 || distancia(juntas, alvo) > limite) continue;
+
+        // A janela tem de COMECAR onde o termo comeca.
+        //
+        // Sem isto, uma palavra curta antes do termo entra de graca: a janela
+        // "é Cristiano Estivalet" vira "ecristianoestivalet", que fica a 1 de
+        // distancia do alvo e passa na tolerancia — engolindo o "é". Erro de
+        // ASR na primeira letra cai na fila de revisao, que e o lado seguro.
+        if (juntas[0] !== alvo[0]) continue;
+
+        const ultima = janela[janela.length - 1] ?? atual;
+        saida.push({
+          ...atual,
+          text: termo.canonico + nucleo(ultima.text).sufixo,
+          fim: ultima.fim,
+          eos: ultima.eos,
+          confidence: Math.min(...janela.map((p) => p.confidence)),
+          sugestao: null,
+          motivo: null,
+        });
+        i += n;
+        aplicou = true;
+        break;
+      }
+      if (aplicou) break;
+    }
+    if (aplicou) continue;
+
+    // Contexto: palavra logo depois de uma parte inicial de termo composto.
+    const anterior = palavras[i - 1];
+    let sugestao: string | null = null;
+    if (anterior !== undefined) {
+      const chaveAnterior = comparavel(nucleo(anterior.text).corpo);
+      for (const termo of termos) {
+        if (termo.partes.length < 2) continue;
+        if (termo.chaves[0] !== chaveAnterior) continue;
+        const esperada = termo.partes[1];
+        if (esperada === undefined) continue;
+        if (comparavel(nucleo(atual.text).corpo) === comparavel(esperada)) break;
+        sugestao = esperada;
+        break;
+      }
+    }
+
+    saida.push(
+      sugestao === null
+        ? atual
+        : { ...atual, sugestao, motivo: `esperado depois de "${nucleo(anterior?.text ?? "").corpo}"` }
+    );
+    i++;
   }
 
   return saida;
