@@ -32,6 +32,21 @@ export function sourceToSequence(clip: TimelineClip, sourceSeconds: number): num
   return clip.startSeconds + (sourceSeconds - clip.inPointSeconds) / clip.speed;
 }
 
+/**
+ * Caminho inverso: instante da sequencia -> instante da midia de origem.
+ *
+ * Necessario porque a escrita e no `ClipProjectItem`, e o transcript de um
+ * clipe vive em tempo da ORIGEM. Sem isto as legendas sairiam deslocadas pelo
+ * tanto que o editor cortou antes daquele trecho.
+ *
+ * `null` quando o instante nao pertence a este clipe.
+ */
+export function sequenceToSource(clip: TimelineClip, sequenceSeconds: number): number | null {
+  if (sequenceSeconds < clip.startSeconds) return null;
+  if (sequenceSeconds >= clip.endSeconds) return null;
+  return clip.inPointSeconds + (sequenceSeconds - clip.startSeconds) * clip.speed;
+}
+
 /** mm:ss — para apontar um instante numa lista, nao para calcular com ele. */
 export function relogio(segundos: number): string {
   const total = Math.max(0, Math.round(segundos));

@@ -87,6 +87,14 @@ body {
 }
 .acao sp-button { flex: 1 1 140px; margin-right: 6px; }
 
+/*
+ * O log rola por dentro, com altura propria.
+ *
+ * Sem isto ele cresce para baixo e as ultimas linhas — que sao as que
+ * importam — nascem fora da area visivel do painel. Foi exatamente o que fez
+ * o plugin parecer morto: as mensagens estavam sendo escritas, so nao dava
+ * para ve-las.
+ */
 .log {
   font-family: "Source Code Pro", Consolas, monospace;
   font-size: 10px;
@@ -94,4 +102,6 @@ body {
   color: #b4b4b4;
   white-space: pre-wrap;
   word-break: break-word;
+  max-height: 320px;
+  overflow-y: auto;
 }

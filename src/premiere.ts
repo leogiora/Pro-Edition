@@ -5,6 +5,7 @@
  * Tudo aqui vem de prova executada no auto-broll. Ver docs/API_PROOFS.md.
  */
 
+import { ehNosso } from "./pipeline.ts";
 import type { ClipeComOrigem } from "./transcript.ts";
 
 declare function require(id: string): unknown;
@@ -178,18 +179,69 @@ function comTransacao(
   if (erro !== null) throw new Error(erro);
 }
 
+const seguro = (nome: string): string => nome.replace(/[^a-zA-Z0-9._-]/g, "_");
+
 /**
- * Guarda o transcript original antes de sobrescrever.
+ * Guarda o transcript ORIGINAL antes de sobrescrever, uma unica vez por midia.
  *
- * A rota de escrita e destrutiva e sobrevive ao Ctrl+Z: fechado o Premiere,
- * o desfazer nao existe mais. Sem este arquivo nao ha volta.
+ * A rota de escrita e destrutiva e sobrevive ao Ctrl+Z: fechado o Premiere, o
+ * desfazer nao existe mais. Sem este arquivo nao ha volta.
+ *
+ * O "uma unica vez" custou caro para aprender: a primeira versao gravava um
+ * backup por clique, e do segundo clique em diante ela salvava o texto que o
+ * proprio plugin acabara de escrever. Em oito cliques, sete backups eram lixo
+ * e a rede de seguranca so existia no primeiro arquivo.
+ *
+ * Devolve o caminho quando gravou, ou `null` quando ja havia backup bom.
  */
-export async function salvarBackup(nome: string, json: string): Promise<string> {
+export async function salvarBackup(nome: string, json: string): Promise<string | null> {
+  if (ehNosso(json)) return null; // nunca fazer backup do nosso proprio texto
+
   const pasta = await uxp.storage.localFileSystem.getDataFolder();
-  const carimbo = new Date().toISOString().replace(/[:.]/g, "-");
-  const seguro = nome.replace(/[^a-zA-Z0-9._-]/g, "_");
-  const arquivo = await pasta.createFile(`backup-${seguro}-${carimbo}.json`, { overwrite: true });
+  const alvo = `original-${seguro(nome)}.json`;
+
+  const existentes = (await pasta.getEntries()) as Array<{ name: string }>;
+  if (existentes.some((e) => e.name === alvo)) return null;
+
+  const arquivo = await pasta.createFile(alvo, { overwrite: false });
   await arquivo.write(json);
+  return arquivo.nativePath as string;
+}
+
+/** Devolve o transcript original guardado, ou `null` se nao houver. */
+export async function lerBackup(nome: string): Promise<string | null> {
+  const pasta = await uxp.storage.localFileSystem.getDataFolder();
+  try {
+    const arquivo = await pasta.getEntry(`original-${seguro(nome)}.json`);
+    return (await arquivo.read()) as string;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Grava o que aconteceu, com as dez execucoes mais recentes.
+ *
+ * O painel UXP nao deixa selecionar nem copiar texto, e o log rola para fora
+ * da area visivel. Ler este arquivo e a unica forma pratica de saber o que o
+ * plugin fez — sem ele, o diagnostico vira adivinhacao.
+ */
+export async function gravarLog(linhas: readonly string[]): Promise<string> {
+  const pasta = await uxp.storage.localFileSystem.getDataFolder();
+
+  let anteriores: unknown[] = [];
+  try {
+    const antigo = await pasta.getEntry("ultimo-log.json");
+    const bruto: unknown = JSON.parse((await antigo.read()) as string);
+    const lista = (bruto as { execucoes?: unknown })?.execucoes;
+    if (Array.isArray(lista)) anteriores = lista;
+  } catch {
+    // Primeiro log, ou arquivo ilegivel: comecar do zero e nao derrubar nada.
+  }
+
+  const execucoes = [{ quando: new Date().toISOString(), linhas: [...linhas] }, ...anteriores].slice(0, 10);
+  const arquivo = await pasta.createFile("ultimo-log.json", { overwrite: true });
+  await arquivo.write(JSON.stringify({ execucoes }, null, 2));
   return arquivo.nativePath as string;
 }
 

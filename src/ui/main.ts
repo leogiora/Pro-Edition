@@ -1,23 +1,26 @@
 /*
  * Painel. Nao chama `premierepro` direto: fala com src/premiere.ts.
+ *
+ * Duas acoes, so isso: gerar e restaurar. Tudo que a analise descobre vai para
+ * o log da tela E para um arquivo, porque o painel nao deixa copiar texto e o
+ * log some da area visivel.
  */
 
 import { relogio } from "../domain.ts";
+import { blocosParaTranscricao, gerarBlocos } from "../pipeline.ts";
 import {
   comLimite,
   escreverTranscricao,
   getSequenceInfo,
+  gravarLog,
+  lerBackup,
   lerClipes,
   lerCortes,
   lerTranscricoes,
   salvarBackup,
 } from "../premiere.ts";
-import {
-  agruparEmFrases,
-  parseTranscricao,
-  reconstruirTranscricao,
-  type TranscricaoOrigem,
-} from "../transcript.ts";
+import { validar } from "../segmentar.ts";
+import { parseTranscricao, reconstruirTranscricao, type TranscricaoOrigem } from "../transcript.ts";
 
 const elemento = (id: string): HTMLElement => {
   const el = document.getElementById(id);
@@ -25,32 +28,66 @@ const elemento = (id: string): HTMLElement => {
   return el;
 };
 
-const linhas: string[] = [];
+let linhas: string[] = [];
 
 function registrar(texto: string): void {
   linhas.push(texto);
-  elemento("log").textContent = linhas.join("\n");
+  const log = elemento("log");
+  log.textContent = linhas.join("\n");
+  // O que importa fica no fim; sem isto as ultimas linhas nascem fora da vista.
+  log.scrollTop = log.scrollHeight;
 }
 
 function estado(texto: string): void {
   elemento("estado").textContent = texto;
 }
 
-async function analisar(): Promise<void> {
-  estado("lendo sequencia");
+function ocupado(sim: boolean): void {
+  for (const id of ["gerar", "restaurar"]) {
+    const b = elemento(id) as HTMLElement & { disabled?: boolean };
+    b.disabled = sim;
+  }
+}
+
+/** Toda acao termina gravando o log, mesmo quando falha. */
+async function comLog(rotulo: string, tarefa: () => Promise<void>): Promise<void> {
+  linhas = [];
+  ocupado(true);
+  registrar(`== ${rotulo} ==`);
+  try {
+    await tarefa();
+  } catch (e) {
+    const err = e as Error;
+    registrar(`ERRO: ${err?.message ?? String(e)}`);
+    estado("erro");
+  } finally {
+    ocupado(false);
+    try {
+      const caminho = await gravarLog(linhas);
+      registrar("");
+      registrar(`log salvo em ${caminho}`);
+    } catch {
+      // Nao poder gravar o log nao pode derrubar o que ja foi feito.
+    }
+  }
+}
+
+/** Le a sequencia e devolve tudo que o nucleo precisa. */
+async function lerTudo(): Promise<{
+  clipes: Awaited<ReturnType<typeof lerClipes>>;
+  cortes: number[];
+  palavras: ReturnType<typeof reconstruirTranscricao>;
+}> {
   const info = await comLimite("sequencia", getSequenceInfo());
   const nome = elemento("seqNome");
   nome.textContent = info.name;
   nome.setAttribute("data-vazio", "nao");
-  registrar(`${info.fps.toFixed(4)} fps · ${info.videoTracks} video · ${info.captionTracks} caption`);
+  registrar(`${info.fps.toFixed(2)} fps · ${info.videoTracks} video · ${info.captionTracks} caption`);
 
   const clipes = await comLimite("clipes", lerClipes(0));
-  registrar(`V1: ${clipes.length} clipes`);
-
   const cortes = await comLimite("cortes", lerCortes(0));
-  registrar(`${cortes.length} cortes`);
+  registrar(`V1: ${clipes.length} clipes · ${cortes.length} cortes`);
 
-  estado("lendo transcricao");
   const brutas = await comLimite("transcricoes", lerTranscricoes(clipes.map((c) => c.sourceName)), 60000);
   registrar(`${brutas.size} midias com transcricao`);
 
@@ -62,84 +99,92 @@ async function analisar(): Promise<void> {
   }
 
   const palavras = reconstruirTranscricao(clipes, mapa);
-  const frases = agruparEmFrases(palavras);
-
-  // Resumo por ultimo: o log rola sozinho e so o fim fica visivel.
-  registrar("");
   registrar(`${palavras.length} palavras no corte final`);
-  registrar(`${frases.length} frases`);
-  for (const f of frases.slice(0, 5)) {
-    registrar(`  ${relogio(f.inicio)}  ${f.texto.slice(0, 60)}`);
-  }
-  estado("pronto");
+  return { clipes, cortes, palavras };
 }
 
-/**
- * Prova da Fase 0: cinco blocos forcados, curtos, cada um em seu proprio
- * `segment`. Se o Premiere gerar cinco legendas de uma linha, a aposta central
- * do desenho esta certa e o produto inteiro segue por este caminho.
- */
-async function provarEscrita(): Promise<void> {
-  estado("provando");
-  const clipes = await comLimite("clipes", lerClipes(0));
-  const primeiro = clipes[0];
-  if (!primeiro) throw new Error("V1 vazia: abra uma sequencia editada.");
+async function gerar(): Promise<void> {
+  estado("lendo sequencia");
+  const { clipes, cortes, palavras } = await lerTudo();
+  if (palavras.length === 0) {
+    throw new Error("Nenhuma palavra encontrada. A camera principal da V1 tem transcricao?");
+  }
 
-  const brutas = await comLimite("transcricoes", lerTranscricoes([primeiro.sourceName]), 60000);
-  const original = brutas.get(primeiro.sourceName);
-  if (!original) throw new Error(`${primeiro.sourceName} nao tem transcricao.`);
+  estado("montando legendas");
+  const blocos = gerarBlocos(palavras, cortes);
+  const problemas = validar(blocos);
+  const precos = blocos.filter((b) => b.estilo === "preco");
+  const revisar = blocos.filter((b) => b.precisaRevisao);
 
-  const caminho = await comLimite("backup", salvarBackup(primeiro.sourceName, original));
-  registrar(`backup salvo em ${caminho}`);
+  // Nunca renderizar antes da validacao final.
+  if (problemas.length > 0) {
+    registrar("");
+    registrar(`${problemas.length} bloco(s) reprovado(s) na validacao, nada foi escrito:`);
+    for (const p of problemas.slice(0, 10)) registrar(`  ${p}`);
+    estado("reprovado");
+    return;
+  }
 
-  const blocos = ["MEU NOME E", "CRISTIANO ESTIVALET", "HOJE TA POR", "197 REAIS", "E OLHA SO"];
-  const inicioBase = primeiro.inPointSeconds;
+  const porMidia = blocosParaTranscricao(blocos, clipes);
+  if (porMidia.size === 0) throw new Error("Nenhum bloco caiu dentro de um clipe da V1.");
 
-  const forcado = {
-    language: "pt-BR",
-    segments: blocos.map((texto, i) => {
-      const inicio = inicioBase + i * 1.5;
-      const partes = texto.split(" ");
-      return {
-        start: inicio,
-        duration: 1.5,
-        language: "pt-BR",
-        speaker: "0",
-        words: partes.map((p, j) => ({
-          text: p,
-          start: inicio + j * (1.5 / partes.length),
-          duration: 1.5 / partes.length,
-          confidence: 1,
-          eos: j === partes.length - 1,
-          tags: [],
-          type: "word",
-        })),
-      };
-    }),
-  };
+  estado("escrevendo");
+  for (const [midia, transcricao] of porMidia) {
+    const atual = (await comLimite("transcricao atual", lerTranscricoes([midia]), 60000)).get(midia);
+    if (atual !== undefined) {
+      const backup = await comLimite("backup", salvarBackup(midia, atual));
+      registrar(backup === null ? `${midia}: original ja guardado` : `${midia}: original guardado`);
+    }
+    await comLimite("escrita", escreverTranscricao(midia, JSON.stringify(transcricao)));
+    registrar(`${midia}: ${transcricao.segments.length} blocos escritos`);
+  }
 
-  await comLimite("escrita", escreverTranscricao(primeiro.sourceName, JSON.stringify(forcado)));
+  // Resumo no fim: o log rola sozinho e so as ultimas linhas ficam a vista.
+  registrar("");
+  registrar(`${blocos.length} blocos · ${precos.length} preco(s) · ${revisar.length} para revisar`);
+  registrar("");
+  for (const b of blocos.slice(0, 12)) {
+    const marca = b.estilo === "preco" ? "R$" : "  ";
+    registrar(`${marca} ${relogio(b.inicio)} ${b.texto}`);
+  }
+  if (blocos.length > 12) registrar(`   ... mais ${blocos.length - 12}`);
+
+  if (revisar.length > 0) {
+    registrar("");
+    registrar("precisam de revisao:");
+    for (const b of revisar.slice(0, 8)) registrar(`  ${relogio(b.inicio)} ${b.motivos.join("; ")}`);
+  }
 
   registrar("");
-  registrar(`escrito em ${primeiro.sourceName}: 5 segments`);
-  registrar("agora, no Premiere:");
-  registrar("  1. abrir Texto > Transcricao e conferir os 5 blocos");
-  registrar("  2. Criar legendas a partir da transcricao");
-  registrar("  3. contar quantas legendas sairam e se cada uma tem 1 linha");
-  estado("prova escrita");
+  registrar("AGORA, NO PREMIERE:");
+  registrar("  Texto > Legendas > Criar legendas a partir da transcricao");
+  estado(revisar.length > 0 ? `${revisar.length} para revisar` : "pronto");
 }
 
-function falhar(e: unknown): void {
-  const err = e as Error;
-  registrar(`ERRO: ${err?.message ?? String(e)}`);
-  estado("erro");
+async function restaurar(): Promise<void> {
+  const clipes = await comLimite("clipes", lerClipes(0));
+  const midias = [...new Set(clipes.map((c) => c.sourceName))];
+  let feitas = 0;
+
+  for (const midia of midias) {
+    const original = await comLimite("backup", lerBackup(midia));
+    if (original === null) {
+      registrar(`${midia}: sem backup guardado`);
+      continue;
+    }
+    await comLimite("escrita", escreverTranscricao(midia, original));
+    registrar(`${midia}: transcricao original restaurada`);
+    feitas++;
+  }
+
+  registrar("");
+  // Numero zero tambem se escreve: silencio e indistinguivel de coisa quebrada.
+  registrar(`${feitas} de ${midias.length} midia(s) restaurada(s)`);
+  estado(feitas > 0 ? "restaurado" : "nada a restaurar");
 }
 
-// Antes de qualquer await: se o I/O pendurar, o botao ja esta ligado.
+// Antes de qualquer await: se o I/O pendurar, os botoes ja estao ligados.
 estado("pronto");
 registrar("painel carregado");
-elemento("provar").addEventListener("click", () => {
-  void provarEscrita().catch(falhar);
-});
-
-void analisar().catch(falhar);
+elemento("gerar").addEventListener("click", () => void comLog("gerar legendas", gerar));
+elemento("restaurar").addEventListener("click", () => void comLog("restaurar original", restaurar));
