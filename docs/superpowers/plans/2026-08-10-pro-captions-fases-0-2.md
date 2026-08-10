@@ -1,4 +1,4 @@
-# Léo Captions — Plano de Implementação (Fases 0 a 2)
+# Pro Captions — Plano de Implementação (Fases 0 a 2)
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -123,7 +123,7 @@ O bloco `icons` não pode ficar vazio: com `scale: [1, 2]` o Premiere procura `i
 {
   "manifestVersion": 5,
   "id": "com.leogi.procaptions",
-  "name": "Leo Captions",
+  "name": "Pro Captions",
   "version": "0.1.0",
   "main": "dist/index.html",
   "host": {
@@ -134,7 +134,7 @@ O bloco `icons` não pode ficar vazio: com `scale: [1, 2]` o Premiere procura `i
     {
       "type": "panel",
       "id": "leoCaptionsPanel",
-      "label": { "default": "Leo Captions" },
+      "label": { "default": "Pro Captions" },
       "minimumSize": { "width": 320, "height": 400 },
       "preferredDockedSize": { "width": 420, "height": 640 }
     }
@@ -266,7 +266,7 @@ Write-Host "reinicie o Premiere Pro para carregar."
 <html lang="pt-BR">
   <head>
     <meta charset="utf-8" />
-    <title>Leo Captions</title>
+    <title>Pro Captions</title>
     <!-- O build substitui esta marca pelo conteudo de styles.css.
          <link rel="stylesheet"> nao carrega no UXP. -->
     <!--ESTILOS-->
@@ -274,7 +274,7 @@ Write-Host "reinicie o Premiere Pro para carregar."
   <body>
     <header class="topo">
       <div class="marca">
-        <span class="marca-nome">Leo Captions</span>
+        <span class="marca-nome">Pro Captions</span>
         <span class="marca-fase">Fase 0</span>
       </div>
       <div id="estado" class="estado">carregando</div>
@@ -465,7 +465,7 @@ Esperado: `0` nas duas. Qualquer valor diferente de zero significa painel morto 
 powershell -ExecutionPolicy Bypass -File scripts/install-link.ps1
 ```
 
-Rodar como administrador. Depois: reiniciar o Premiere, abrir `Janela > UXP Plugins > Leo Captions`.
+Rodar como administrador. Depois: reiniciar o Premiere, abrir `Janela > UXP Plugins > Pro Captions`.
 
 Esperado no painel: distintivo `pronto`, e no log `painel carregado` seguido de `modulo premierepro: N classes expostas`.
 
@@ -1040,7 +1040,7 @@ export async function escreverTranscricao(nomeDaMidia: string, json: string): Pr
 
   comTransacao(
     project as Parameters<typeof comTransacao>[0],
-    "Leo Captions: escrever transcricao",
+    "Pro Captions: escrever transcricao",
     (adicionar) => {
       // Tudo nasce dentro do lock, inclusive o TextSegments.
       const segmentos = ppro.Transcript.importFromJSON(json);
@@ -1193,7 +1193,7 @@ Esperado: tipos limpos, testes da Task 2 passando, build ok.
 Criar o arquivo com o resultado **medido**, não o esperado:
 
 ```markdown
-# API_PROOFS — Leo Captions
+# API_PROOFS — Pro Captions
 
 Premiere alvo: 26.3.2 (Windows x64). Nada entra em codigo de produto sem uma
 linha aqui com resultado real.

@@ -1,4 +1,4 @@
-# API_PROOFS — Leo Captions
+# API_PROOFS — Pro Captions
 
 Premiere alvo: 26.3.2 (Windows x64). Nada entra em codigo de produto sem uma
 linha aqui com resultado **real**, obtido na versao instalada.
@@ -56,6 +56,6 @@ blocos? Colar aqui o texto exato das legendas geradas.)_
    reinicio.
 3. Abrir um projeto de teste com sequencia editada e transcricao na camera
    principal da V1.
-4. `Janela > UXP Plugins > Leo Captions`.
+4. `Janela > UXP Plugins > Pro Captions`.
 5. Ao abrir, o painel ja roda a leitura sozinho. Para a escrita, clicar em
    **Prova da Fase 0**.

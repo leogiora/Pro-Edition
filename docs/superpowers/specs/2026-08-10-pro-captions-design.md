@@ -1,4 +1,4 @@
-# Léo Captions — desenho
+# Pro Captions — desenho
 
 **Data:** 2026-08-10
 **Status:** desenho aprovado, pronto para virar plano de implementação
@@ -318,6 +318,7 @@ manual provar ser insuficiente na prática — provavelmente não será.
 | D-07 | Segmentação baseada em `eos`, sem NLP | O Premiere já entrega fronteira de frase |
 | D-08 | Repositório novo, esqueleto copiado do auto-broll | Armadilhas do UXP já resolvidas; produtos independentes |
 | D-09 | `StyleType` é metadado, não renderização | Decorre de D-02 e D-03 |
+| D-10 | Nome do produto: **Pro Captions** | Fecha a pendência de nome comercial da §42 da spec funcional |
 
 ---
 
@@ -330,8 +331,9 @@ Não inventar requisito definitivo para nada disto:
 - limite exato de caracteres por bloco;
 - tolerância exata de snap em corte;
 - formato para centavos (§3.5 da spec: marcar para revisão, não inventar
-  convenção);
-- nome comercial definitivo.
+  convenção).
 
 Tudo isso vive em `preset.ts`, centralizado, para não exigir refatoração quando
 o valor mudar.
+
+O nome comercial saiu desta lista: ver D-10.
