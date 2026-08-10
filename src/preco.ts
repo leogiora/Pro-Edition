@@ -157,6 +157,17 @@ const CONTEXTO_FRACO: ReadonlySet<string> = new Set([
 
 const MOEDA: ReadonlySet<string> = new Set(["reais", "real"]);
 
+/**
+ * Abre o lado "antigo" de uma comparacao de preco: "de X por Y",
+ * "era X ... por Y", "custava X ... hoje sai por Y".
+ *
+ * So vale quando outro preco ja foi confirmado na frase. Ver a segunda passada
+ * em `detectarPrecos`.
+ */
+const ANCORA_DE_COMPARACAO: ReadonlySet<string> = new Set([
+  "de", "era", "eram", "custava", "custavam", "valia", "valiam",
+]);
+
 /** Quantas palavras antes do numero ainda contam como contexto. */
 const JANELA = 4;
 
@@ -236,6 +247,26 @@ export function detectarPrecos(palavras: readonly string[]): Preco[] {
       const apoiado = janela.some((w) => CONTEXTO_FRACO.has(w));
       saida.push({ ...num, certeza: apoiado ? "alta" : "media" });
     }
+  }
+
+  // Segunda passada: o preco antigo da comparacao.
+  //
+  // "essa consulta que ERA MIL hoje ta POR 197" tem a mesma estrutura do
+  // "de X por Y" da secao 2.3, so que com outro verbo — e o primeiro numero
+  // nao tem nenhum gatilho colado nele. So da para saber que ele e preco
+  // porque o segundo e. Sem esta passada, a secao 16 da spec nao sai certa.
+  //
+  // Exige um preco ja confirmado na frase, entao "eram mil homens" continua
+  // sendo contagem: sem outro preco, nada e promovido.
+  const temPrecoConfirmado = saida.some((pr) => pr.certeza === "alta");
+  if (temPrecoConfirmado) {
+    const jaEhPreco = new Set(saida.map((pr) => pr.inicio));
+    for (const num of numerais) {
+      if (jaEhPreco.has(num.inicio)) continue;
+      if (!ANCORA_DE_COMPARACAO.has(chave(num.inicio - 1))) continue;
+      saida.push({ ...num, certeza: "alta" });
+    }
+    saida.sort((a, b) => a.inicio - b.inicio);
   }
 
   return saida;

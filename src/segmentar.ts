@@ -53,10 +53,20 @@ const larguraDe = (palavras: readonly PalavraRevisada[]): number =>
 /**
  * Parte uma frase que nao cabe em uma linha.
  *
- * Guloso da esquerda: pega o maior prefixo que cabe. A escolha do ponto de
- * quebra dentro do que cabe entra na Task 13, junto com os cortes.
+ * Guloso da esquerda: pega o maior prefixo que cabe, depois recua ate o melhor
+ * ponto de quebra dentro do que cabe. Recuar importa — quebrar no limite exato
+ * do orcamento separa artigo de substantivo e deixa bloco de uma palavra so.
+ *
+ * O corte de video entra aqui como preferencia, nunca como obrigacao: a ordem
+ * de prioridade da secao 26 da spec poe timing da fala acima da harmonizacao
+ * com cortes, e o orcamento de caracteres e hard constraint. Um corte fora do
+ * que cabe simplesmente nao e considerado.
  */
-function partir(frase: readonly PalavraRevisada[], preset: Preset): PalavraRevisada[][] {
+function partir(
+  frase: readonly PalavraRevisada[],
+  preset: Preset,
+  cortes: readonly number[] = []
+): PalavraRevisada[][] {
   if (larguraDe(frase) <= preset.maxCaracteres) return [[...frase]];
 
   const partes: PalavraRevisada[][] = [];
@@ -70,10 +80,42 @@ function partir(frase: readonly PalavraRevisada[], preset: Preset): PalavraRevis
 
     // Maior prefixo que cabe. Pelo menos uma palavra, sempre: uma palavra
     // sozinha maior que o orcamento e melhor que um bloco vazio.
-    let corte = 1;
+    let maximo = 1;
     for (let n = 1; n <= resto.length; n++) {
       if (larguraDe(resto.slice(0, n)) > preset.maxCaracteres) break;
-      corte = n;
+      maximo = n;
+    }
+
+    let corte = maximo;
+    let melhor = -Infinity;
+
+    // Considera recuar ate a metade do prefixo. Menos que isso desperdicaria
+    // linha; mais apertado que isso deixa cortes de video fora de alcance e a
+    // harmonizacao nunca chega a acontecer.
+    const minimo = Math.max(1, Math.ceil(maximo * 0.5));
+    for (let n = minimo; n <= maximo; n++) {
+      const ultima = resto[n - 1];
+      if (ultima === undefined) continue;
+
+      let nota = 0;
+
+      // Quanto mais perto do limite, menos linha desperdicada.
+      nota += (n / maximo) * 2;
+
+      // Pontuacao ja e uma pausa: quebrar ali soa natural.
+      if (/[.,;:!?]$/.test(ultima.text)) nota += 3;
+
+      // Corte de video dentro da tolerancia: o diferencial do produto.
+      const distanciaCorte = Math.min(...cortes.map((c) => Math.abs(c - ultima.fim)), Infinity);
+      if (distanciaCorte <= preset.toleranciaCorteSegundos) nota += 4;
+
+      // Deixar uma palavra orfa no proximo bloco e feio.
+      if (resto.length - n === 1) nota -= 2;
+
+      if (nota > melhor) {
+        melhor = nota;
+        corte = n;
+      }
     }
 
     partes.push(resto.slice(0, corte));
@@ -159,7 +201,6 @@ export function segmentar(
   cortes: readonly number[],
   preset: Preset = PRESET_PADRAO
 ): BlocoLegenda[] {
-  void cortes; // usado a partir da Task 13
   const blocos: BlocoLegenda[] = [];
 
   for (const frase of emFrases(palavras, preset)) {
@@ -178,7 +219,7 @@ export function segmentar(
         });
         continue;
       }
-      for (const parte of partir(fatia.palavras, preset)) {
+      for (const parte of partir(fatia.palavras, preset, cortes)) {
         if (parte.length > 0) blocos.push(montarBloco(parte, "normal"));
       }
     }

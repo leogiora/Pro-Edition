@@ -78,6 +78,18 @@ test("porcentagem nao vira preco", () => {
   assert.deepEqual(p("noventa por cento dos homens"), []);
 });
 
+test("caso da secao 16 da spec: era X ... por Y sao os dois preco", () => {
+  const achados = p("essa consulta que era mil hoje tá por cento e noventa e sete");
+  assert.equal(achados.length, 2);
+  assert.equal(achados[0]?.valor, 1000);
+  assert.equal(achados[1]?.valor, 197);
+});
+
+test("promocao por outro preco na frase nao alcanca numero de contagem", () => {
+  // Sem preco confirmado na frase, "mil" continua sendo contagem.
+  assert.deepEqual(p("eram mil homens na sala"), []);
+});
+
 test("textoDoPreco monta o bloco no padrao fechado", () => {
   assert.equal(textoDoPreco(197), "197 REAIS");
   assert.equal(textoDoPreco(1000), "1.000 REAIS");

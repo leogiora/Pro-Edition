@@ -187,3 +187,42 @@ test("validar reprova bloco que estourou o orcamento", () => {
   ]);
   assert.equal(violacoes.length, 1);
 });
+
+test("com corte perto de uma quebra possivel, a quebra vai para o corte", () => {
+  // Uma palavra por segundo. Sem corte, o orcamento parte em outro ponto.
+  const frase = "VOCE PRECISA ENTENDER O QUE ESTA ACONTECENDO AGORA|";
+  const semCorte = seg(frase);
+  const comCorte = seg(frase, [3]);
+
+  // Com o corte em 3s, existe um bloco que termina exatamente ali.
+  assert.ok(comCorte.some((b) => b.fim === 3), "nenhum bloco terminou no corte");
+  assert.notDeepEqual(comCorte.map((b) => b.texto), semCorte.map((b) => b.texto));
+});
+
+test("corte fora da tolerancia nao move a quebra", () => {
+  const frase = "VOCE PRECISA ENTENDER O QUE ESTA ACONTECENDO AGORA|";
+  assert.deepEqual(
+    seg(frase, [100]).map((b) => b.texto),
+    seg(frase).map((b) => b.texto)
+  );
+});
+
+test("o corte nunca faz a legenda aparecer antes da fala", () => {
+  const frase = "VOCE PRECISA ENTENDER O QUE ESTA ACONTECENDO AGORA|";
+  for (const bloco of seg(frase, [3])) {
+    assert.ok(bloco.inicio >= 0);
+    assert.ok(bloco.fim > bloco.inicio);
+  }
+});
+
+test("o corte nao pode estourar o orcamento de caracteres", () => {
+  const frase = "VOCE PRECISA ENTENDER O QUE ESTA ACONTECENDO AGORA COM O SEU CORPO|";
+  for (const bloco of seg(frase, [2, 5, 9])) {
+    assert.ok(bloco.texto.length <= PRESET_PADRAO.maxCaracteres, `estourou: "${bloco.texto}"`);
+  }
+});
+
+test("o corte nao perde nem duplica palavra", () => {
+  const original = "VOCE PRECISA ENTENDER O QUE ESTA ACONTECENDO AGORA COM O SEU CORPO";
+  assert.equal(seg(`${original}|`, [2, 5, 9]).map((b) => b.texto).join(" "), original);
+});
