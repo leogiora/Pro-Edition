@@ -99,7 +99,18 @@ function montarBloco(palavras: readonly PalavraRevisada[], estilo: "normal" | "p
 
   return {
     // A regra de uma linha e absoluta: nenhuma quebra sobrevive daqui.
-    texto: palavras.map((p) => p.text).join(" ").replace(/\s*\n\s*/g, " "),
+    //
+    // A virgula pendurada na fronteira tambem cai: o bloco seguinte ja e a
+    // pausa visual, e a virgula fica orfa no fim da linha. A spec proibe na
+    // secao 11.1. Como a limpeza so olha as pontas, virgula no meio do bloco
+    // nunca e tocada.
+    texto: palavras
+      .map((p) => p.text)
+      .join(" ")
+      .replace(/\s*\n\s*/g, " ")
+      .replace(/[,;]+$/, "")
+      .replace(/^[,;]+\s*/, "")
+      .trim(),
     inicio: primeira.inicio,
     fim: ultima.fim,
     estilo,
@@ -174,4 +185,34 @@ export function segmentar(
   }
 
   return blocos;
+}
+
+/**
+ * Ultima barreira antes de escrever no Premiere.
+ *
+ * A spec e explicita na secao 7: nunca renderizar antes da validacao final.
+ * Devolve a lista de violacoes; vazia significa liberado.
+ */
+export function validar(
+  blocos: readonly BlocoLegenda[],
+  preset: Preset = PRESET_PADRAO
+): string[] {
+  const violacoes: string[] = [];
+
+  blocos.forEach((bloco, i) => {
+    const onde = `bloco ${i + 1} ("${bloco.texto}")`;
+
+    if (bloco.texto.includes("\n")) violacoes.push(`${onde}: tem quebra de linha`);
+    if (bloco.texto.trim().length === 0) violacoes.push(`${onde}: vazio`);
+    if (bloco.texto.length > preset.maxCaracteres) {
+      violacoes.push(`${onde}: ${bloco.texto.length} caracteres, orcamento e ${preset.maxCaracteres}`);
+    }
+    if (bloco.texto.endsWith(",")) violacoes.push(`${onde}: termina em virgula`);
+    if (bloco.estilo === "normal" && /\bREAIS\b/.test(bloco.texto)) {
+      violacoes.push(`${onde}: preco misturado com texto normal`);
+    }
+    if (bloco.fim < bloco.inicio) violacoes.push(`${onde}: termina antes de comecar`);
+  });
+
+  return violacoes;
 }

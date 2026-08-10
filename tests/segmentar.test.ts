@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { segmentar } from "../src/segmentar.ts";
+import { segmentar, validar } from "../src/segmentar.ts";
 import { PRESET_PADRAO } from "../src/preset.ts";
 import type { PalavraRevisada } from "../src/texto.ts";
 
@@ -133,4 +133,57 @@ test("preco de certeza media marca revisao", () => {
   const preco = blocos.find((b) => b.estilo === "preco");
   assert.ok(preco);
   assert.equal(preco.precisaRevisao, true);
+});
+
+test("caso 12 da spec: virgula na fronteira do bloco some", () => {
+  const blocos = seg("SE VOCE CONTINUAR ASSIM, O PROBLEMA PODE PIORAR MUITO MESMO|");
+  assert.ok(blocos.length > 1);
+  for (const bloco of blocos) {
+    assert.ok(!bloco.texto.endsWith(","), `bloco terminou em virgula: "${bloco.texto}"`);
+  }
+});
+
+test("nenhum bloco comeca com virgula", () => {
+  for (const bloco of seg("SE VOCE CONTINUAR ASSIM, O PROBLEMA PODE PIORAR MUITO MESMO|")) {
+    assert.ok(!bloco.texto.startsWith(","));
+  }
+});
+
+test("virgula no meio do bloco sobrevive", () => {
+  const blocos = seg("ASSIM, PIORA|");
+  assert.equal(blocos.length, 1);
+  assert.equal(blocos[0]?.texto, "ASSIM, PIORA");
+});
+
+test("validar aprova uma saida correta", () => {
+  assert.deepEqual(validar(seg("HOJE TÁ POR CENTO E NOVENTA E SETE|")), []);
+});
+
+test("validar reprova bloco com quebra de linha", () => {
+  const violacoes = validar([
+    { texto: "DUAS\nLINHAS", inicio: 0, fim: 1, estilo: "normal", precisaRevisao: false, motivos: [] },
+  ]);
+  assert.equal(violacoes.length, 1);
+  assert.ok(violacoes[0]?.includes("linha"));
+});
+
+test("validar reprova preco misturado com texto normal", () => {
+  const violacoes = validar([
+    { texto: "CUSTA 197 REAIS", inicio: 0, fim: 1, estilo: "normal", precisaRevisao: false, motivos: [] },
+  ]);
+  assert.equal(violacoes.length, 1);
+});
+
+test("validar reprova bloco que estourou o orcamento", () => {
+  const violacoes = validar([
+    {
+      texto: "UM BLOCO ABSURDAMENTE LONGO QUE JAMAIS CABERIA EM UMA LINHA SO",
+      inicio: 0,
+      fim: 1,
+      estilo: "normal",
+      precisaRevisao: false,
+      motivos: [],
+    },
+  ]);
+  assert.equal(violacoes.length, 1);
 });
