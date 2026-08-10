@@ -140,3 +140,103 @@ export function acharNumerais(palavras: readonly string[]): Numeral[] {
 
   return saida;
 }
+
+/* --------------------------------------------------- contexto monetario */
+
+/** Sinal forte: quando uma destas aparece perto, o numero e valor. */
+const GATILHOS: ReadonlySet<string> = new Set([
+  "custa", "custava", "custam", "custou", "custar", "valor", "preco",
+  "investimento", "pagar", "paga", "pagava", "pagamento", "apenas",
+  "sai", "sair", "fica", "ficar",
+]);
+
+/** Sinal fraco: sozinha nao decide, mas promove um "por" solto. */
+const CONTEXTO_FRACO: ReadonlySet<string> = new Set([
+  "ta", "esta", "e", "era", "eram", "hoje", "agora", "so", "somente", "apenas", "sai", "fica",
+]);
+
+const MOEDA: ReadonlySet<string> = new Set(["reais", "real"]);
+
+/** Quantas palavras antes do numero ainda contam como contexto. */
+const JANELA = 4;
+
+export interface Preco extends Numeral {
+  /** `media` entra na fila de revisao; `alta` passa direto. */
+  readonly certeza: "alta" | "media";
+}
+
+/** O bloco final do preco, ja no padrao fechado da spec. Nunca usa "R$". */
+export function textoDoPreco(valor: number): string {
+  return `${formatarBRL(valor)} REAIS`;
+}
+
+/**
+ * Decide quais numeros da frase sao dinheiro.
+ *
+ * A classificacao acontece ANTES da formatacao, senao "mais de mil homens"
+ * viraria "1.000 REAIS". Quando nao ha sinal nenhum, o numero fica como texto
+ * normal — o produto prefere revisao manual a inventar preco.
+ *
+ * Limitacao conhecida: "de X por cento" e lido como preco, nao como
+ * porcentagem. A desambiguacao usa o "de" que abre o padrao, entao
+ * "noventa por cento" (sem "de") continua sendo porcentagem.
+ */
+export function detectarPrecos(palavras: readonly string[]): Preco[] {
+  const numerais = acharNumerais(palavras);
+  const chave = (i: number): string => {
+    const t = palavras[i];
+    return t === undefined ? "" : chaveNumeral(t);
+  };
+
+  const saida: Preco[] = [];
+
+  for (let n = 0; n < numerais.length; n++) {
+    const num = numerais[n];
+    if (num === undefined) continue;
+
+    const anterior = chave(num.inicio - 1);
+    const seguinte = chave(num.fim + 1);
+    const depois = chave(num.fim + 2);
+    const proximo = numerais[n + 1];
+
+    // Padrao "de X por Y": os dois numeros sao preco. Verificado antes da
+    // porcentagem, senao "de mil por cento e noventa e sete" seria descartado.
+    if (anterior === "de" && seguinte === "por" && proximo !== undefined && proximo.inicio === num.fim + 2) {
+      saida.push({ ...num, certeza: "alta" });
+      saida.push({ ...proximo, certeza: "alta" });
+      n++; // o proximo ja foi consumido
+      continue;
+    }
+
+    // Porcentagem: "noventa por cento". Nao e dinheiro — e o "cento" que vem
+    // logo depois tambem nao. Sem consumir os dois, "cento" seria lido sozinho
+    // como um preco de 100.
+    if (seguinte === "por" && depois === "cento") {
+      if (proximo !== undefined && proximo.inicio === num.fim + 2) n++;
+      continue;
+    }
+
+    // A moeda dita confirma sozinha.
+    if (MOEDA.has(seguinte)) {
+      saida.push({ ...num, certeza: "alta" });
+      continue;
+    }
+
+    const janela: string[] = [];
+    for (let i = Math.max(0, num.inicio - JANELA); i < num.inicio; i++) janela.push(chave(i));
+
+    if (janela.some((w) => GATILHOS.has(w))) {
+      saida.push({ ...num, certeza: "alta" });
+      continue;
+    }
+
+    // "por" colado no numero e indicativo, mas fraco demais sozinho:
+    // "por tres motivos" nao e preco. Promove so com apoio na janela.
+    if (anterior === "por") {
+      const apoiado = janela.some((w) => CONTEXTO_FRACO.has(w));
+      saida.push({ ...num, certeza: apoiado ? "alta" : "media" });
+    }
+  }
+
+  return saida;
+}
