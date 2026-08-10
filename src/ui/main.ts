@@ -1,14 +1,15 @@
 /*
  * Painel. Nao chama `premierepro` direto: fala com src/premiere.ts.
- * Nesta tarefa ainda nao ha leitura — so a prova de que o painel carrega e o
- * script roda.
  */
 
-// `export {}` faz deste arquivo um modulo. Sem isso ele e script global e o
-// `declare` abaixo colide com o `require` do @types/node.
-export {};
-
-declare function require(id: string): unknown;
+import { relogio } from "../domain.ts";
+import { comLimite, getSequenceInfo, lerClipes, lerCortes, lerTranscricoes } from "../premiere.ts";
+import {
+  agruparEmFrases,
+  parseTranscricao,
+  reconstruirTranscricao,
+  type TranscricaoOrigem,
+} from "../transcript.ts";
 
 const elemento = (id: string): HTMLElement => {
   const el = document.getElementById(id);
@@ -27,14 +28,50 @@ function estado(texto: string): void {
   elemento("estado").textContent = texto;
 }
 
-// Antes de qualquer await: se o painel travar depois, isto ja apareceu.
+async function analisar(): Promise<void> {
+  estado("lendo sequencia");
+  const info = await comLimite("sequencia", getSequenceInfo());
+  const nome = elemento("seqNome");
+  nome.textContent = info.name;
+  nome.setAttribute("data-vazio", "nao");
+  registrar(`${info.fps.toFixed(4)} fps · ${info.videoTracks} video · ${info.captionTracks} caption`);
+
+  const clipes = await comLimite("clipes", lerClipes(0));
+  registrar(`V1: ${clipes.length} clipes`);
+
+  const cortes = await comLimite("cortes", lerCortes(0));
+  registrar(`${cortes.length} cortes`);
+
+  estado("lendo transcricao");
+  const brutas = await comLimite("transcricoes", lerTranscricoes(clipes.map((c) => c.sourceName)), 60000);
+  registrar(`${brutas.size} midias com transcricao`);
+
+  const mapa = new Map<string, TranscricaoOrigem>();
+  for (const [midia, json] of brutas) {
+    const t = parseTranscricao(json);
+    if (t) mapa.set(midia, t);
+    else registrar(`transcricao ilegivel: ${midia}`);
+  }
+
+  const palavras = reconstruirTranscricao(clipes, mapa);
+  const frases = agruparEmFrases(palavras);
+
+  // Resumo por ultimo: o log rola sozinho e so o fim fica visivel.
+  registrar("");
+  registrar(`${palavras.length} palavras no corte final`);
+  registrar(`${frases.length} frases`);
+  for (const f of frases.slice(0, 5)) {
+    registrar(`  ${relogio(f.inicio)}  ${f.texto.slice(0, 60)}`);
+  }
+  estado("pronto");
+}
+
+// Antes de qualquer await: se o I/O pendurar, isto ja aconteceu.
 estado("pronto");
 registrar("painel carregado");
 
-try {
-  const ppro = require("premierepro") as Record<string, unknown>;
-  registrar(`modulo premierepro: ${Object.keys(ppro).length} classes expostas`);
-} catch (e) {
-  registrar(`falha ao carregar premierepro: ${(e as Error).message}`);
+void analisar().catch((e: unknown) => {
+  const err = e as Error;
+  registrar(`ERRO: ${err?.message ?? String(e)}`);
   estado("erro");
-}
+});
