@@ -1,7 +1,13 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { normalizarColoquial, nucleo, type PalavraRevisada } from "../src/texto.ts";
+import {
+  corrigirEAcento,
+  corrigirPorques,
+  normalizarColoquial,
+  nucleo,
+  type PalavraRevisada,
+} from "../src/texto.ts";
 
 /** Monta palavras com tempo previsivel: cada uma dura 1s. */
 function palavras(frase: string): PalavraRevisada[] {
@@ -64,4 +70,43 @@ test("a pontuacao sobrevive a troca", () => {
 
 test("reducoes agressivas NAO sao aplicadas", () => {
   assert.equal(texto(normalizarColoquial(palavras("você vamos estamos"))), "você vamos estamos");
+});
+
+test("caso 9 da spec: nome e Cristiano vira nome é Cristiano", () => {
+  assert.equal(texto(corrigirEAcento(palavras("Meu nome e Cristiano"))), "Meu nome é Cristiano");
+});
+
+test("e como verbo depois de pronome ou demonstrativo", () => {
+  assert.equal(texto(corrigirEAcento(palavras("isso e importante"))), "isso é importante");
+  assert.equal(texto(corrigirEAcento(palavras("ele e médico"))), "ele é médico");
+  assert.equal(texto(corrigirEAcento(palavras("o problema e outro"))), "o problema é outro");
+});
+
+test("e por isso ganha acento", () => {
+  assert.equal(texto(corrigirEAcento(palavras("e por isso que acontece"))), "é por isso que acontece");
+});
+
+test("e como conjuncao NAO ganha acento", () => {
+  assert.equal(texto(corrigirEAcento(palavras("saúde e qualidade de vida"))), "saúde e qualidade de vida");
+  assert.equal(texto(corrigirEAcento(palavras("você e sua esposa"))), "você e sua esposa");
+  assert.equal(texto(corrigirEAcento(palavras("ele chegou e conversou comigo"))), "ele chegou e conversou comigo");
+});
+
+test("caso 10 da spec: pergunta usa por que separado", () => {
+  assert.equal(texto(corrigirPorques(palavras("Você sabe porque isso acontece"))), "Você sabe por que isso acontece");
+});
+
+test("caso 11 da spec: explicacao usa porque junto", () => {
+  assert.equal(
+    texto(corrigirPorques(palavras("Isso acontece por que o hormônio caiu"))),
+    "Isso acontece porque o hormônio caiu"
+  );
+});
+
+test("porque no fim da oracao vira por quê", () => {
+  assert.equal(texto(corrigirPorques(palavras("Isso acontece porque?"))), "Isso acontece por quê?");
+});
+
+test("porque precedido de artigo e substantivo", () => {
+  assert.equal(texto(corrigirPorques(palavras("vou te explicar o porque"))), "vou te explicar o porquê");
 });

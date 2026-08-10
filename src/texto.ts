@@ -125,3 +125,157 @@ export function normalizarColoquial(palavras: readonly PalavraRevisada[]): Palav
 
   return saida;
 }
+
+/* --------------------------------------------------------------- é / e */
+
+/**
+ * Palavras que, imediatamente antes de "e", indicam verbo de ligacao.
+ *
+ * Sujeito seguido de "e" quase sempre pede o verbo: "isso e", "ele e",
+ * "nome e". A conjuncao aparece depois de verbo ("chegou e") ou de
+ * substantivo em enumeracao ("saúde e"), que ficam de fora desta lista.
+ */
+const SUJEITOS: ReadonlySet<string> = new Set([
+  "isso", "isto", "aquilo", "ele", "ela", "eles", "elas",
+  "nome", "problema", "questao", "questão", "objetivo", "resultado", "segredo",
+  "verdade", "diferenca", "diferença", "motivo", "causa", "tudo", "nada",
+]);
+// "você" fica de fora de proposito: a propria spec usa "Você e sua esposa"
+// como exemplo de conjuncao. Perde-se "você é importante"; o inverso erraria
+// numa construcao mais comum.
+
+/**
+ * Corrige "e" para "é" quando o contexto indica verbo.
+ *
+ * Nao confia so na saida acustica: o ASR troca os dois o tempo todo. Na duvida
+ * mantem o que veio — errar para "é" numa enumeracao e mais visivel na tela do
+ * que o contrario.
+ */
+export function corrigirEAcento(palavras: readonly PalavraRevisada[]): PalavraRevisada[] {
+  return palavras.map((palavra, i) => {
+    const atual = nucleo(palavra.text);
+    if (atual.corpo.toLowerCase() !== "e") return palavra;
+
+    const anterior = palavras[i - 1];
+    const seguinte = palavras[i + 1];
+    const antes = anterior === undefined ? "" : nucleo(anterior.text).corpo.toLowerCase();
+    const depois = seguinte === undefined ? "" : nucleo(seguinte.text).corpo.toLowerCase();
+
+    // "é por isso que..."
+    const abreExplicacao =
+      depois === "por" && nucleo(palavras[i + 2]?.text ?? "").corpo.toLowerCase() === "isso";
+
+    if (SUJEITOS.has(antes) || abreExplicacao) {
+      return { ...palavra, text: comCaixaDe(atual.corpo, "é") + atual.sufixo };
+    }
+    return palavra;
+  });
+}
+
+/* ------------------------------------------------------------- porquês */
+
+/** Abre pergunta indireta ou direta: pede "por que" separado. */
+const INTERROGATIVOS: ReadonlySet<string> = new Set([
+  "sabe", "sabia", "sabem", "entende", "entendeu", "imagina", "adivinha", "explica",
+]);
+
+const ARTIGOS: ReadonlySet<string> = new Set(["o", "um", "esse", "este", "aquele", "meu", "seu"]);
+
+/**
+ * Escolhe entre as quatro formas.
+ *
+ * A decisao olha a oracao inteira, por isso roda ANTES da segmentacao: depois
+ * de partir em blocos, o fim da oracao ja nao e visivel.
+ */
+export function corrigirPorques(palavras: readonly PalavraRevisada[]): PalavraRevisada[] {
+  // Junta "por"+"que" num indice so para tratar as duas grafias igual.
+  const alvos: Array<{ i: number; consome: number; sufixo: string; caixa: string }> = [];
+  for (let i = 0; i < palavras.length; i++) {
+    const atual = palavras[i];
+    if (atual === undefined) continue;
+    const a = nucleo(atual.text);
+    const corpo = a.corpo.toLowerCase();
+
+    if (corpo === "porque" || corpo === "porquê") {
+      alvos.push({ i, consome: 1, sufixo: a.sufixo, caixa: a.corpo });
+      continue;
+    }
+    if (corpo === "por") {
+      const seguinte = palavras[i + 1];
+      if (seguinte === undefined) continue;
+      const b = nucleo(seguinte.text);
+      const corpoB = b.corpo.toLowerCase();
+      if (corpoB === "que" || corpoB === "quê") {
+        alvos.push({ i, consome: 2, sufixo: b.sufixo, caixa: a.corpo });
+      }
+    }
+  }
+
+  if (alvos.length === 0) return [...palavras];
+
+  const saida: PalavraRevisada[] = [];
+  let i = 0;
+  let a = 0;
+
+  while (i < palavras.length) {
+    const alvo = alvos[a];
+    const atual = palavras[i];
+    if (atual === undefined) {
+      i++;
+      continue;
+    }
+    if (alvo === undefined || alvo.i !== i) {
+      saida.push(atual);
+      i++;
+      continue;
+    }
+    a++;
+
+    const ultimo = palavras[i + alvo.consome - 1] ?? atual;
+    const anterior = palavras[i - 1];
+    const antes = anterior === undefined ? "" : nucleo(anterior.text).corpo.toLowerCase();
+
+    // Onde termina a oracao: usado para achar a interrogacao.
+    let fimDaOracao = i + alvo.consome;
+    while (fimDaOracao < palavras.length) {
+      const p = palavras[fimDaOracao];
+      fimDaOracao++;
+      if (p === undefined || p.eos) break;
+    }
+    const nadaDepois = i + alvo.consome >= palavras.length;
+
+    // Onde comeca a oracao: para procurar o gatilho de pergunta so nela.
+    let inicioDaOracao = i;
+    while (inicioDaOracao > 0) {
+      const p = palavras[inicioDaOracao - 1];
+      if (p === undefined || p.eos) break;
+      inicioDaOracao--;
+    }
+
+    let interrogativa = false;
+    for (let j = inicioDaOracao; j < i; j++) {
+      const p = palavras[j];
+      if (p !== undefined && INTERROGATIVOS.has(nucleo(p.text).corpo.toLowerCase())) interrogativa = true;
+    }
+    for (let j = i; j < fimDaOracao; j++) {
+      if ((palavras[j]?.text ?? "").includes("?")) interrogativa = true;
+    }
+
+    let forma: string;
+    if (ARTIGOS.has(antes)) forma = "porquê";
+    else if (nadaDepois) forma = "por quê";
+    else if (interrogativa) forma = "por que";
+    else forma = "porque";
+
+    saida.push({
+      ...atual,
+      text: comCaixaDe(alvo.caixa, forma) + alvo.sufixo,
+      fim: ultimo.fim,
+      eos: ultimo.eos,
+      confidence: Math.min(atual.confidence, ultimo.confidence),
+    });
+    i += alvo.consome;
+  }
+
+  return saida;
+}
