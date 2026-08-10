@@ -13,6 +13,7 @@ declare function require(id: string): unknown;
 // aqui, uma vez, e o resto do arquivo trabalha com as interfaces abaixo.
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const ppro = require("premierepro") as any;
+const uxp = require("uxp") as any;
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
 export interface SequenceInfo {
@@ -142,4 +143,72 @@ export async function lerTranscricoes(nomes: readonly string[]): Promise<Map<str
     }
   }
   return saida;
+}
+
+/* ------------------------------------------------------------- escrita */
+
+/**
+ * A regra que custou tres falhas distintas no auto-broll:
+ *
+ * - toda Action tem de ser CRIADA dentro de `lockedAccess`, senao o Premiere
+ *   responde "Requires locked access";
+ * - todo objeto passado para ela tambem, senao "The script object is no longer valid";
+ * - `lockedAccess` e SINCRONO — nenhum `await` cabe dentro;
+ * - erro lancado la dentro NAO propaga: sem capturar, falha passa por sucesso.
+ */
+function comTransacao(
+  project: {
+    lockedAccess: (cb: () => void) => void;
+    executeTransaction: (cb: (c: { addAction: (a: unknown) => void }) => void, undo: string) => boolean;
+  },
+  rotuloUndo: string,
+  montarAcoes: (adicionar: (acao: unknown) => void) => void
+): void {
+  let erro: string | null = null;
+  project.lockedAccess(() => {
+    try {
+      project.executeTransaction((compound) => {
+        montarAcoes((acao) => compound.addAction(acao));
+      }, rotuloUndo);
+    } catch (e) {
+      const err = e as Error;
+      erro = `${err?.name ?? "Erro"}: ${err?.message ?? String(e)}`;
+    }
+  });
+  if (erro !== null) throw new Error(erro);
+}
+
+/**
+ * Guarda o transcript original antes de sobrescrever.
+ *
+ * A rota de escrita e destrutiva e sobrevive ao Ctrl+Z: fechado o Premiere,
+ * o desfazer nao existe mais. Sem este arquivo nao ha volta.
+ */
+export async function salvarBackup(nome: string, json: string): Promise<string> {
+  const pasta = await uxp.storage.localFileSystem.getDataFolder();
+  const carimbo = new Date().toISOString().replace(/[:.]/g, "-");
+  const seguro = nome.replace(/[^a-zA-Z0-9._-]/g, "_");
+  const arquivo = await pasta.createFile(`backup-${seguro}-${carimbo}.json`, { overwrite: true });
+  await arquivo.write(json);
+  return arquivo.nativePath as string;
+}
+
+/** Escreve o transcript de volta no ClipProjectItem da midia. */
+export async function escreverTranscricao(nomeDaMidia: string, json: string): Promise<void> {
+  const { project, rootItem } = await handles();
+  const raiz = rootItem as { getItems: () => Promise<Array<{ name: string }>> };
+  const item = (await raiz.getItems()).find((i) => i.name === nomeDaMidia);
+  if (!item) throw new Error(`midia nao encontrada no projeto: ${nomeDaMidia}`);
+
+  const clip = ppro.ClipProjectItem.cast(item) ?? item;
+
+  comTransacao(
+    project as Parameters<typeof comTransacao>[0],
+    "Leo Captions: escrever transcricao",
+    (adicionar) => {
+      // Tudo nasce dentro do lock, inclusive o TextSegments.
+      const segmentos = ppro.Transcript.importFromJSON(json);
+      adicionar(ppro.Transcript.createImportTextSegmentsAction(segmentos, clip));
+    }
+  );
 }

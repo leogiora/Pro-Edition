@@ -3,7 +3,15 @@
  */
 
 import { relogio } from "../domain.ts";
-import { comLimite, getSequenceInfo, lerClipes, lerCortes, lerTranscricoes } from "../premiere.ts";
+import {
+  comLimite,
+  escreverTranscricao,
+  getSequenceInfo,
+  lerClipes,
+  lerCortes,
+  lerTranscricoes,
+  salvarBackup,
+} from "../premiere.ts";
 import {
   agruparEmFrases,
   parseTranscricao,
@@ -66,12 +74,72 @@ async function analisar(): Promise<void> {
   estado("pronto");
 }
 
-// Antes de qualquer await: se o I/O pendurar, isto ja aconteceu.
-estado("pronto");
-registrar("painel carregado");
+/**
+ * Prova da Fase 0: cinco blocos forcados, curtos, cada um em seu proprio
+ * `segment`. Se o Premiere gerar cinco legendas de uma linha, a aposta central
+ * do desenho esta certa e o produto inteiro segue por este caminho.
+ */
+async function provarEscrita(): Promise<void> {
+  estado("provando");
+  const clipes = await comLimite("clipes", lerClipes(0));
+  const primeiro = clipes[0];
+  if (!primeiro) throw new Error("V1 vazia: abra uma sequencia editada.");
 
-void analisar().catch((e: unknown) => {
+  const brutas = await comLimite("transcricoes", lerTranscricoes([primeiro.sourceName]), 60000);
+  const original = brutas.get(primeiro.sourceName);
+  if (!original) throw new Error(`${primeiro.sourceName} nao tem transcricao.`);
+
+  const caminho = await comLimite("backup", salvarBackup(primeiro.sourceName, original));
+  registrar(`backup salvo em ${caminho}`);
+
+  const blocos = ["MEU NOME E", "CRISTIANO ESTIVALET", "HOJE TA POR", "197 REAIS", "E OLHA SO"];
+  const inicioBase = primeiro.inPointSeconds;
+
+  const forcado = {
+    language: "pt-BR",
+    segments: blocos.map((texto, i) => {
+      const inicio = inicioBase + i * 1.5;
+      const partes = texto.split(" ");
+      return {
+        start: inicio,
+        duration: 1.5,
+        language: "pt-BR",
+        speaker: "0",
+        words: partes.map((p, j) => ({
+          text: p,
+          start: inicio + j * (1.5 / partes.length),
+          duration: 1.5 / partes.length,
+          confidence: 1,
+          eos: j === partes.length - 1,
+          tags: [],
+          type: "word",
+        })),
+      };
+    }),
+  };
+
+  await comLimite("escrita", escreverTranscricao(primeiro.sourceName, JSON.stringify(forcado)));
+
+  registrar("");
+  registrar(`escrito em ${primeiro.sourceName}: 5 segments`);
+  registrar("agora, no Premiere:");
+  registrar("  1. abrir Texto > Transcricao e conferir os 5 blocos");
+  registrar("  2. Criar legendas a partir da transcricao");
+  registrar("  3. contar quantas legendas sairam e se cada uma tem 1 linha");
+  estado("prova escrita");
+}
+
+function falhar(e: unknown): void {
   const err = e as Error;
   registrar(`ERRO: ${err?.message ?? String(e)}`);
   estado("erro");
+}
+
+// Antes de qualquer await: se o I/O pendurar, o botao ja esta ligado.
+estado("pronto");
+registrar("painel carregado");
+elemento("provar").addEventListener("click", () => {
+  void provarEscrita().catch(falhar);
 });
+
+void analisar().catch(falhar);

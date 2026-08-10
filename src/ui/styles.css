@@ -78,6 +78,15 @@ body {
 .seq-nome { font-size: 12px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; }
 .seq-nome[data-vazio="sim"] { color: #6f6f6f; font-weight: 400; font-style: italic; }
 
+.acao {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.acao sp-button { flex: 1 1 140px; margin-right: 6px; }
+
 .log {
   font-family: "Source Code Pro", Consolas, monospace;
   font-size: 10px;
