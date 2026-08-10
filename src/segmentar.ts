@@ -9,6 +9,7 @@
  *   3. escolha do ponto de quebra — heuristica, e o unico lugar com juizo
  */
 
+import { detectarPrecos, textoDoPreco, type Preco } from "./preco.ts";
 import { PRESET_PADRAO, type Preset } from "./preset.ts";
 import { nucleo, type PalavraRevisada } from "./texto.ts";
 
@@ -107,6 +108,41 @@ function montarBloco(palavras: readonly PalavraRevisada[], estilo: "normal" | "p
   };
 }
 
+/** Uma fatia de frase: texto normal, ou um preco que vira bloco sozinho. */
+interface Fatia {
+  readonly palavras: readonly PalavraRevisada[];
+  readonly estilo: "normal" | "preco";
+  /** Preenchido so quando `estilo` e "preco". */
+  readonly preco: Preco | null;
+}
+
+/**
+ * Parte a frase nos precos.
+ *
+ * Preco e hard boundary: mesmo que sobre um bloco de uma palavra so — "DE",
+ * "POR" — o valor continua isolado. A spec fecha essa regra na secao 2.3.
+ */
+function fatiarPorPreco(frase: readonly PalavraRevisada[]): Fatia[] {
+  const precos = detectarPrecos(frase.map((p) => nucleo(p.text).corpo));
+  if (precos.length === 0) return [{ palavras: frase, estilo: "normal", preco: null }];
+
+  const fatias: Fatia[] = [];
+  let cursor = 0;
+
+  for (const preco of precos) {
+    if (preco.inicio > cursor) {
+      fatias.push({ palavras: frase.slice(cursor, preco.inicio), estilo: "normal", preco: null });
+    }
+    fatias.push({ palavras: frase.slice(preco.inicio, preco.fim + 1), estilo: "preco", preco });
+    cursor = preco.fim + 1;
+  }
+
+  if (cursor < frase.length) {
+    fatias.push({ palavras: frase.slice(cursor), estilo: "normal", preco: null });
+  }
+  return fatias.filter((f) => f.palavras.length > 0);
+}
+
 export function segmentar(
   palavras: readonly PalavraRevisada[],
   cortes: readonly number[],
@@ -114,10 +150,28 @@ export function segmentar(
 ): BlocoLegenda[] {
   void cortes; // usado a partir da Task 13
   const blocos: BlocoLegenda[] = [];
+
   for (const frase of emFrases(palavras, preset)) {
-    for (const parte of partir(frase, preset)) {
-      if (parte.length > 0) blocos.push(montarBloco(parte, "normal"));
+    for (const fatia of fatiarPorPreco(frase)) {
+      if (fatia.estilo === "preco" && fatia.preco !== null) {
+        // O preco nunca e partido: o texto vem da formatacao, nao das palavras.
+        const bloco = montarBloco(fatia.palavras, "preco");
+        blocos.push({
+          ...bloco,
+          texto: textoDoPreco(fatia.preco.valor),
+          precisaRevisao: bloco.precisaRevisao || fatia.preco.certeza === "media",
+          motivos:
+            fatia.preco.certeza === "media"
+              ? [...bloco.motivos, "contexto monetario incerto"]
+              : bloco.motivos,
+        });
+        continue;
+      }
+      for (const parte of partir(fatia.palavras, preset)) {
+        if (parte.length > 0) blocos.push(montarBloco(parte, "normal"));
+      }
     }
   }
+
   return blocos;
 }

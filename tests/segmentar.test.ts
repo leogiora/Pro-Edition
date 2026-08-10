@@ -93,3 +93,44 @@ test("sugestao pendente marca o bloco para revisao", () => {
   const blocos = segmentar(ps, [], PRESET_PADRAO);
   assert.equal(blocos[0]?.precisaRevisao, true);
 });
+
+test("caso 4 da spec: preco sai isolado, com REAIS", () => {
+  const blocos = seg("HOJE TÁ POR CENTO E NOVENTA E SETE|");
+  assert.deepEqual(blocos.map((b) => b.texto), ["HOJE TÁ POR", "197 REAIS"]);
+  assert.deepEqual(blocos.map((b) => b.estilo), ["normal", "preco"]);
+});
+
+test("caso 5 da spec: dois precos, cada um no seu bloco", () => {
+  const blocos = seg("DE MIL POR CENTO E NOVENTA E SETE|");
+  assert.deepEqual(blocos.map((b) => b.texto), ["DE", "1.000 REAIS", "POR", "197 REAIS"]);
+  assert.deepEqual(blocos.map((b) => b.estilo), ["normal", "preco", "normal", "preco"]);
+});
+
+test("caso 7 da spec: numero que nao e preco fica no texto normal", () => {
+  const blocos = seg("MAIS DE MIL HOMENS|");
+  assert.equal(blocos.length, 1);
+  assert.equal(blocos[0]?.texto, "MAIS DE MIL HOMENS");
+  assert.equal(blocos[0]?.estilo, "normal");
+});
+
+test("o preco ocupa o tempo em que o valor e falado", () => {
+  // "HOJE TÁ POR CENTO E NOVENTA E SETE": o valor comeca na palavra 3.
+  const blocos = seg("HOJE TÁ POR CENTO E NOVENTA E SETE|");
+  const preco = blocos[1];
+  assert.equal(preco?.inicio, 3);
+  assert.equal(preco?.fim, 8);
+});
+
+test("nenhum bloco mistura preco com texto normal", () => {
+  for (const bloco of seg("A CONSULTA CUSTA MIL NOVECENTOS E NOVENTA E SETE|")) {
+    const temReais = bloco.texto.includes("REAIS");
+    assert.equal(temReais, bloco.estilo === "preco");
+  }
+});
+
+test("preco de certeza media marca revisao", () => {
+  const blocos = seg("POR CENTO E NOVENTA E SETE|");
+  const preco = blocos.find((b) => b.estilo === "preco");
+  assert.ok(preco);
+  assert.equal(preco.precisaRevisao, true);
+});
