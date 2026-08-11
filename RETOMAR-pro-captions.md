@@ -1,7 +1,8 @@
 # RETOMAR — Pro Captions
 
-**Última sessão:** 2026-08-10
-**Branch:** `fases-0-2` · último commit `99f7fd2`
+**Última sessão:** 2026-08-11
+**Branch:** `fases-0-2` · último commit `d210c62` (mais o `scripts/preview.mjs`
+novo, ainda não commitado — ver "O que mudou nesta sessão")
 **Gate:** `npm run verify` → 78 testes passando, tipos limpos, build ok
 
 Cole este arquivo numa conversa nova para continuar de onde paramos.
@@ -17,31 +18,49 @@ tudo na mão.
 
 ---
 
+## O que mudou nesta sessão (2026-08-11)
+
+O `scratchpad/preview.mjs` da sessão anterior morreu com o scratchpad (era
+fora do repo). Foi **reconstruído do zero** em `scripts/preview.mjs` — dublê
+de `premierepro`/`uxp` escrito como string de JS puro injetada antes do
+bundle (não dá pra serializar função do Node com closures pro browser, isso
+foi tentado e falhou na hora).
+
+Rodei `npm run preview` e cliquei em "Gerar legendas" e "Restaurar original"
+pelo Chrome de verdade: **nenhum dos dois travou.** Log completo, sem erro no
+console, os dois ciclos terminaram em `estado = pronto` / `restaurado`.
+
+**Conclusão da investigação:** com um dublê que se comporta direito, todo o
+caminho do produto (`main.ts` → `premiere.ts` → `pipeline.ts`) roda limpo.
+Isso derruba a hipótese "trava no clique do `sp-button`" e aponta com força
+para a hipótese que já estava na lista: **o `preview.mjs` antigo tinha algum
+`Promise` que nunca resolvia nem rejeitava** (talvez um método que faltava no
+dublê, ou algo fora do `comLimite()`) — produto são, andaime quebrado. Não dá
+pra confirmar a causa exata porque o arquivo antigo se perdeu; não vale
+reconstruir a causa de um bug que já não existe no novo andaime.
+
+`npm run verify` continua verde (78 testes) depois da troca.
+
+---
+
 ## PRIMEIRA COISA A FAZER
 
-**Um bug em aberto, sem causa encontrada.** Ao clicar em "Gerar legendas" no
-preview do navegador, o renderer congelou: sem exceção, sem mensagem no
-console, screenshot expirando em 30s. Isso é laço infinito, não erro.
+**Testar no Premiere real.** O preview no navegador não é mais suspeito — a
+próxima dúvida real só o Premiere de verdade responde:
 
-O que já foi descartado:
+1. Abrir o Premiere com uma sequência real editada.
+2. Painel Pro Captions → "Gerar legendas". Confirmar que não trava e que o
+   `estado` no canto muda para "pronto" (ou "N para revisar").
+3. Ler `ultimo-log.json` em
+   `%APPDATA%\Adobe\UXP\PluginsStorage\PPRO\26\External\com.leogi.procaptions\PluginData\`
+   e conferir que os blocos batem com o que a fala real dizia.
+4. **Medir o portão E5** (ver seção abaixo) — é o que decide se o produto
+   funciona ou vira plano B (`.srt`).
 
-- **Não é o núcleo puro.** `repro` em Node com exatamente os mesmos dados do
-  dublê roda limpo e produz 8 blocos corretos em milissegundos.
-- **Não é erro de JavaScript.** Nenhuma mensagem no console.
-
-O que ainda não foi investigado:
-
-- o código de UI em `src/ui/main.ts` (o laço `for` da escrita, `ocupado()`,
-  o `log.scrollTop = log.scrollHeight` a cada linha);
-- o dublê do preview em si, que pode ter um `Promise` que nunca resolve —
-  nesse caso o produto está são e o defeito é do andaime;
-- se o clique sequer acertou o `sp-button`, que no Chrome é elemento
-  desconhecido.
-
-**Como reproduzir:** subir `scratchpad/preview.mjs` (fora do repo, ver abaixo),
-abrir `http://localhost:8778`, clicar em "Gerar legendas".
-
-Investigar antes de qualquer coisa nova. Ver `superpowers:systematic-debugging`.
+Se travar de novo no Premiere real (diferente do preview), aí sim é bug de
+produto — voltar para `superpowers:systematic-debugging` com as ferramentas
+do UXP (não do Chrome): `ultimo-log.json`, e se nem esse arquivo aparecer, o
+travamento é antes do primeiro `comLimite`.
 
 ---
 
@@ -146,11 +165,13 @@ node demo.ts          # roda o pipeline num exemplo e imprime os blocos
 apontando para o repositório. Não precisa reinstalar; o `id` do plugin não mudou
 com o rename.
 
-**Preview no navegador** (útil porque não há hot reload): o andaime
-`preview.mjs` ficou no scratchpad da sessão, fora do repo. Ele serve
-`dist/index.html` com a API do Premiere dublada e com estado. Se for continuar
-usando, vale mover para `scripts/` — mas ele é quem pode estar causando o
-travamento, então investigar antes de confiar nele.
+**Preview no navegador** (útil porque não há hot reload): `npm run preview`
+sobe `scripts/preview.mjs` em `http://localhost:8778`. Ele serve
+`dist/index.html` (rodar `npm run build` antes) com a API do Premiere dublada
+— uma sequência, um clipe, uma transcrição fixa. Testado nesta sessão: os
+dois botões rodam sem travar. Útil para pegar erro de JS antes de reiniciar o
+Premiere, mas não substitui o teste real — a dublagem não sabe se o Premiere
+respeita um `segment` por legenda.
 
 ### Armadilhas do UXP
 
@@ -181,6 +202,9 @@ src/
   preset.ts       toda config: orçamento, tolerâncias, termos
   premiere.ts     única porta para a API do Premiere
   ui/             painel
+scripts/
+  build.mjs       empacota o painel em dist/
+  preview.mjs     dublê de premierepro/uxp no navegador, npm run preview
 docs/
   API_PROOFS.md                    tabela E1..E6 — E5 é o portão, ainda vazia
   superpowers/specs/...design.md   o desenho, com D-01 a D-10
@@ -193,8 +217,8 @@ CLAUDE_START_HERE_LEO_CAPTIONS.md  briefing original do usuário (nome antigo
 
 ## Ordem sugerida ao retomar
 
-1. **Achar o travamento** do preview. Núcleo está descartado; olhar `ui/main.ts`
-   e o dublê.
+1. ~~Achar o travamento do preview~~ — feito em 2026-08-11: reconstruído em
+   `scripts/preview.mjs`, roda limpo, produto está são.
 2. **Confirmar no Premiere real:** abrir o painel, ver a sequência aparecer,
    clicar em "Gerar legendas", ler `ultimo-log.json`.
 3. **Medir o portão E5** e registrar em `docs/API_PROOFS.md`. Se falhar, propor
