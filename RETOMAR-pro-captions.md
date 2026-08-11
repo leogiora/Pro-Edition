@@ -1,8 +1,7 @@
 # RETOMAR — Pro Captions
 
 **Última sessão:** 2026-08-11
-**Branch:** `fases-0-2` · último commit `d210c62` (mais o `scripts/preview.mjs`
-novo, ainda não commitado — ver "O que mudou nesta sessão")
+**Branch:** `fases-0-2` · último commit `db8492e`
 **Gate:** `npm run verify` → 78 testes passando, tipos limpos, build ok
 
 Cole este arquivo numa conversa nova para continuar de onde paramos.
@@ -41,12 +40,57 @@ reconstruir a causa de um bug que já não existe no novo andaime.
 
 `npm run verify` continua verde (78 testes) depois da troca.
 
+Depois disso rodei `/code-review high` na branch inteira. Três achados foram
+verificados linha a linha e são reais — **nenhum foi corrigido ainda**, ficou
+para a próxima sessão por decisão do usuário. Ver seção "Review de código"
+abaixo antes de mexer em `pipeline.ts` ou `premiere.ts`.
+
+---
+
+## Review de código (2026-08-11) — nada corrigido ainda
+
+### Corrigir antes de confiar na medição do portão E5
+
+1. **`pipeline.ts:96`, função `blocosParaTranscricao`.** Uma frase que cabe no
+   orçamento de caracteres vira um bloco só, mesmo que atravesse um corte de
+   vídeo (`segmentar.ts:70` só quebra por corte quando a frase não cabe). O
+   bloco inteiro é jogado no clipe onde ele *começa*; as palavras ditas no
+   clipe seguinte somem — não aparecem em lugar nenhum. **Isso vai bagunçar a
+   contagem de blocos que o teste do E5 depende** (ver "A pergunta que
+   bloqueia tudo" abaixo). Corrigir antes de medir o E5, ou os números não vão
+   bater e vai parecer culpa do Premiere quando é do pipeline.
+
+2. **`premiere.ts:138-144`, função `lerTranscricoes`.** O `catch` engole
+   qualquer erro, não só "mídia sem transcrição". Se der um erro passageiro ao
+   ler a transcrição atual antes de escrever, `main.ts` interpreta como "nada
+   para guardar" e **pula o backup** — mas escreve por cima assim mesmo.
+   Contraria a decisão D-05 ("backup antes de toda escrita") numa rota já
+   documentada como destrutiva.
+
+3. **`main.ts:66`, chamada a `gravarLog()`.** É a única chamada que toca o UXP
+   sem passar por `comLimite()`. Se pendurar, o log — a única forma prática de
+   diagnosticar — não é escrito, sem erro visível. Reintroduz o mesmo tipo de
+   bug silencioso que essa sessão inteira investigou.
+
+### Menor, sem urgência
+
+4. **`premiere.ts:122`, `lerCortes()`** busca os clipes de novo do zero;
+   `main.ts` já tinha essa lista. Dobra as chamadas ao Premiere por clique.
+
+Achados de prioridade ainda menor (regra do "por quê" comparando com o fim do
+vídeo em vez do fim da frase, uma sugestão de revisão perdida no "pra"/"pro",
+`agruparEmFrases` em `transcript.ts` sem uso no caminho real) — não bloqueiam
+nada, revisitar depois se sobrar tempo.
+
 ---
 
 ## PRIMEIRA COISA A FAZER
 
 **Testar no Premiere real.** O preview no navegador não é mais suspeito — a
-próxima dúvida real só o Premiere de verdade responde:
+próxima dúvida real só o Premiere de verdade responde. **Mas o achado #1 da
+seção acima ainda não foi corrigido:** se uma frase atravessar um corte
+durante o teste, a contagem de blocos pode não bater por causa dele, não por
+causa do Premiere. Considerar corrigir #1 antes de medir o E5 de verdade.
 
 1. Abrir o Premiere com uma sequência real editada.
 2. Painel Pro Captions → "Gerar legendas". Confirmar que não trava e que o
