@@ -57,6 +57,7 @@ Registre em `docs/API_PROOFS.md` toda API crítica validada no Premiere real, in
 - Use as tipagens oficiais `@adobe/premierepro` e o ESLint oficial quando compatíveis.
 - Para dúvidas sobre UXP, crie primeiro um experimento mínimo no UXP Developer Tool/Playground.
 - Ao encerrar uma sessão, atualize `docs/BUILD_STATUS.md` com feito, testes, bloqueios e próximo passo exato.
+- Sempre que uma mudança alterar o que o usuário vê ou como ele usa o painel (novo botão, novo comportamento, nova mensagem de log, nova limitação), atualize `docs/GUIA-DE-USO.md` na mesma sessão — é o documento de apresentação/treinamento, e fica desatualizado se só os docs técnicos forem mantidos.
 
 ## 6. Arquitetura-alvo
 ```text

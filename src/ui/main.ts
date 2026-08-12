@@ -280,14 +280,28 @@ async function julgarFaixa(
     } else {
       // 1. Sobrevivencia do que o plugin inseriu.
       if (pendente !== undefined && pendente.itens.length > 0) {
-        const r = aprender(atual, pendente, presentes);
-        atual = r.memoria;
-        // O pendente sai da lista na mesma rodada em que e contado.
-        julgado = comPendente(pendentes, sequencia, null);
-        resumo.push({
-          texto: `Aprendi da rodada anterior: voce manteve ${r.acertos} e apagou ${r.erros}.`,
-          tipo: "ok",
-        });
+        // O lote INTEIRO sumiu de uma vez so: mais provavel Ctrl+Z desfazendo
+        // a insercao (o proprio painel sugere "Tres Ctrl+Z desfazem tudo")
+        // do que voce ter apagado um por um todos os itens. Contar isso como
+        // erro puniria o conceito inteiro por um teste, nao por rejeicao real
+        // — mesmo raciocinio do "semEdicao" acima, so que para o outro extremo.
+        const sobreviveuAlgum = pendente.itens.some((i) => presentes.has(i.arquivo));
+        if (!sobreviveuAlgum) {
+          julgado = comPendente(pendentes, sequencia, null);
+          resumo.push({
+            texto: `Os ${pendente.itens.length} B-rolls da rodada anterior sumiram todos de uma vez — parece Ctrl+Z desfazendo o lote, nao rejeicao. Nao contei como erro.`,
+            tipo: "aviso",
+          });
+        } else {
+          const r = aprender(atual, pendente, presentes);
+          atual = r.memoria;
+          // O pendente sai da lista na mesma rodada em que e contado.
+          julgado = comPendente(pendentes, sequencia, null);
+          resumo.push({
+            texto: `Aprendi da rodada anterior: voce manteve ${r.acertos} e apagou ${r.erros}.`,
+            tipo: "ok",
+          });
+        }
       }
 
       // 2. O que esta na timeline sem ter vindo do plano foi voce quem pos.

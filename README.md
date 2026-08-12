@@ -47,7 +47,9 @@ Toda sugestão carrega o motivo, e toda recusa também.
 
 ## Instalação
 
-Requer **Premiere Pro 26.2+** e Node 24+.
+Requer **Premiere Pro 25.0+** e Node 24+. Testado nas séries 25 e 26; algumas
+APIs mudam de nome entre versões — o plugin trata isso com fallback (ver
+`docs/GUIA-DE-USO.md`).
 
 ```bash
 npm install
@@ -110,6 +112,7 @@ Ler nesta ordem antes de mexer em qualquer coisa:
 
 | Documento | Por quê |
 |---|---|
+| [`docs/GUIA-DE-USO.md`](docs/GUIA-DE-USO.md) | Uso do painel, sem jargão de código — apresentação e treinamento. |
 | [`docs/UXP_ARMADILHAS.md`](docs/UXP_ARMADILHAS.md) | Limitações do UXP descobertas errando dentro do Premiere. Cada linha custou pelo menos um reinício. |
 | [`docs/BUILD_STATUS.md`](docs/BUILD_STATUS.md) | Estado atual, pendências e próximo passo. |
 | [`docs/DECISIONS.md`](docs/DECISIONS.md) | D-001 a D-015, com o porquê de cada escolha — inclusive as que falharam. |
