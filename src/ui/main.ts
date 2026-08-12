@@ -89,8 +89,13 @@ async function lerTudo(): Promise<{
   const cortes = await comLimite("cortes", lerCortes(0));
   registrar(`V1: ${clipes.length} clipes · ${cortes.length} cortes`);
 
-  const brutas = await comLimite("transcricoes", lerTranscricoes(clipes.map((c) => c.sourceName)), 60000);
+  const { transcricoes: brutas, falhas } = await comLimite(
+    "transcricoes",
+    lerTranscricoes(clipes.map((c) => c.sourceName)),
+    60000
+  );
   registrar(`${brutas.size} midias com transcricao`);
+  for (const f of falhas) registrar(`"${f.nome}": ${f.motivo}`);
 
   const mapa = new Map<string, TranscricaoOrigem>();
   for (const [midia, json] of brutas) {

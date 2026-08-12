@@ -6,7 +6,7 @@
   "main": "dist/index.html",
   "host": {
     "app": "premierepro",
-    "minVersion": "26.2.0"
+    "minVersion": "25.0.0"
   },
   "entrypoints": [
     {

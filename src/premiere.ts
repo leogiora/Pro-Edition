@@ -59,19 +59,43 @@ async function handles(): Promise<Handles> {
 
 const CLIP = 1; // ppro.Constants.TrackItemType.CLIP, fixado na prova P0.3
 
+// getVideoFrameRate() nao existe no Premiere 25 (so aparece a partir da 26.x,
+// ver [[auto-broll-premiere]]). Tenta nomes alternativos plausiveis antes de
+// desistir; se nenhum bater, loga as chaves reais do objeto pra nao precisar
+// adivinhar num segundo reinicio do Premiere.
+async function taxaDeQuadros(settings: Record<string, unknown>): Promise<number> {
+  for (const nome of ["getVideoFrameRate", "getFrameRate"]) {
+    const fn = settings[nome];
+    if (typeof fn === "function") {
+      const r = await (fn as () => Promise<unknown>).call(settings);
+      return typeof r === "number" ? r : ((r as { value?: number })?.value ?? 0);
+    }
+  }
+  for (const nome of ["videoFrameRate", "frameRate"]) {
+    const v = settings[nome];
+    if (v !== undefined) return typeof v === "number" ? v : ((v as { value?: number })?.value ?? 0);
+  }
+  console.log(
+    "[pro-captions] settings sem taxa de quadros conhecida; chaves:",
+    Object.keys(settings),
+    Object.getOwnPropertyNames(Object.getPrototypeOf(settings ?? {}))
+  );
+  return 0;
+}
+
 export async function getSequenceInfo(): Promise<SequenceInfo> {
   const { sequence } = await handles();
   const seq = sequence as {
     name: string;
-    getSettings: () => Promise<{ getVideoFrameRate: () => Promise<{ value: number }> }>;
+    getSettings: () => Promise<Record<string, unknown>>;
     getVideoTrackCount: () => Promise<number>;
     getCaptionTrackCount: () => Promise<number>;
   };
   // getFrameSize() devolve {} e e inutil (P1.4); o frame rate vem de getSettings.
-  const taxa = await (await seq.getSettings()).getVideoFrameRate();
+  const fps = await taxaDeQuadros(await seq.getSettings());
   return {
     name: seq.name,
-    fps: taxa.value,
+    fps,
     videoTracks: await seq.getVideoTrackCount(),
     captionTracks: await seq.getCaptionTrackCount(),
   };
@@ -124,26 +148,59 @@ export async function lerCortes(videoTrackIndex = 0): Promise<number[]> {
   return clipes.slice(1).map((c) => c.startSeconds);
 }
 
+/**
+ * `FolderItem.getItems()` so devolve os filhos diretos — midia dentro de um
+ * bin (pasta do painel de Projeto) fica de fora. Desce recursivamente pra
+ * achar tudo, nao so o que esta solto na raiz.
+ */
+async function todosOsItens(pasta: { getItems: () => Promise<unknown[]> }): Promise<Array<{ name: string }>> {
+  const filhos = (await pasta.getItems()) as Array<{ name: string }>;
+  const saida: Array<{ name: string }> = [];
+  for (const filho of filhos) {
+    const bin = ppro.FolderItem.cast(filho);
+    if (bin) saida.push(...(await todosOsItens(bin)));
+    else saida.push(filho);
+  }
+  return saida;
+}
+
 /** Transcricao bruta de cada midia que tiver uma. Chave: nome do ProjectItem. */
-export async function lerTranscricoes(nomes: readonly string[]): Promise<Map<string, string>> {
+export async function lerTranscricoes(
+  nomes: readonly string[]
+): Promise<{ transcricoes: Map<string, string>; falhas: Array<{ nome: string; motivo: string }> }> {
   const { rootItem } = await handles();
-  const raiz = rootItem as { getItems: () => Promise<Array<{ name: string }>> };
-  const itens = await raiz.getItems();
-  const saida = new Map<string, string>();
+  const raiz = rootItem as { getItems: () => Promise<unknown[]> };
+  const itens = await todosOsItens(raiz);
+  const transcricoes = new Map<string, string>();
+  const falhas: Array<{ nome: string; motivo: string }> = [];
 
   for (const nome of new Set(nomes)) {
     const item = itens.find((i) => i.name === nome);
-    if (!item) continue;
+    if (!item) {
+      falhas.push({ nome, motivo: "nao encontrado no painel de Projeto (nome nao bate?)" });
+      continue;
+    }
     try {
-      const clip = ppro.ClipProjectItem.cast(item) ?? item;
-      if (!(await ppro.Transcript.hasTranscript(clip))) continue;
-      saida.set(nome, (await ppro.Transcript.exportToJSON(clip)) as string);
-    } catch {
-      // Midia sem transcricao ou offline: seguir sem ela. Desde que a rota
-      // de escrita morreu (D-13), esta leitura e so exploratoria.
+      // Cair no item cru quando cast() falha manda tipo errado pro nativo
+      // ("Illegal Parameter type") — item que nao e clipe de midia (bin,
+      // sequencia aninhada) so pode ser pulado, nao forcado.
+      const clip = ppro.ClipProjectItem.cast(item);
+      if (!clip) {
+        falhas.push({ nome, motivo: "nao e um ClipProjectItem (bin ou sequencia?)" });
+        continue;
+      }
+      // hasTranscript() nao existe no Premiere 25 (mesmo achado do
+      // auto-broll-premiere em 2026-08-12 — ppro.Transcript so tem
+      // importFromJSON, createImportTextSegmentsAction, exportToJSON).
+      // Tenta exportar direto; midia sem transcricao rejeita ou devolve
+      // vazio, os dois tratados como "sem transcricao" abaixo.
+      const json = (await ppro.Transcript.exportToJSON(clip)) as string | null | undefined;
+      if (json) transcricoes.set(nome, json);
+    } catch (e) {
+      falhas.push({ nome, motivo: (e as Error)?.message ?? String(e) });
     }
   }
-  return saida;
+  return { transcricoes, falhas };
 }
 
 /* ------------------------------------------------------------- escrita */
