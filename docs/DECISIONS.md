@@ -787,6 +787,32 @@ conviver. A lista se corrige sozinha em sequencia nova e a cada insercao nova.
 
 ---
 
+## D-034 — A frase de uma colocacao manual e a que ela COBRE (2026-08-12) — provisoria
+
+**Contexto.** Relato do uso real: "onde coloquei o B-roll nao esta batendo com
+o que esta no log". A reconstrucao estava certa (frases.json confere) e a V1
+nao tinha sido editada. O suspeito que sobra: o criterio escolhia a frase onde
+a colocacao COMECA — e editor poe B-roll um respiro antes da fala (o proprio
+planejador antecipa 0,3s). Esse respiro cai na rabeira da frase ANTERIOR: o
+log citava a frase errada e o aprendizado contava as palavras erradas.
+
+**Decisao.** `fraseMaisCoberta`: vale a frase com maior sobreposicao com
+[inicio, fim] da colocacao. Meio segundo sobre o fim de uma frase nunca ganha
+de tres segundos sobre a seguinte. Sem sobreposicao nenhuma, o criterio antigo
+(comeco ate 0,5s antes da frase, `FOLGA_DA_FRASE`) segue como fallback.
+
+**Provisoria** porque o diagnostico e por eliminacao, nao por confirmacao: o
+usuario ainda nao apontou um caso concreto conferido na timeline. Se depois
+desta mudanca o log ainda citar frase errada, o proximo passo e comparar um
+caso real (timecode + fala) com o frases.json da mesma rodada.
+
+**O que ja foi contado errado fica como esta.** As marcas `assoc|` das
+colocacoes de hoje nao sao reprocessadas: remover as marcas recontaria credito
+de take e palavra em dobro. O ruido e de +1 por palavra, abaixo do minimo de 3
+para firmar ligacao.
+
+---
+
 ## D-008 — Ferramental da Fase 1: esbuild e `node --test`, nada alem (2026-08-06) — firme
 
 **Contexto.** A Fase 1 pede TypeScript, lint e testes. O caminho habitual seria

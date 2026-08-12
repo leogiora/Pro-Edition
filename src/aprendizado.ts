@@ -236,6 +236,34 @@ function resumoDaFrase(texto: string): string {
 const FOLGA_DA_FRASE = 0.5;
 
 /**
+ * A frase que a colocacao MAIS COBRE — nao a frase onde ela comeca.
+ *
+ * Pelo criterio do inicio, o respiro que o editor deixa antes da fala caia na
+ * rabeira da frase ANTERIOR: o log citava a frase errada e o aprendizado
+ * contava as palavras erradas (D-034 — foi visto no uso real, "onde coloquei
+ * nao bate com o log"). Cobertura decide isso sozinha: meio segundo sobre o
+ * fim de uma frase nunca ganha de tres segundos sobre a seguinte.
+ */
+function fraseMaisCoberta(
+  frases: readonly Frase[],
+  manual: ColocacaoManual
+): Frase | undefined {
+  let melhor: Frase | undefined;
+  let maior = 0;
+  for (const f of frases) {
+    const coberto = Math.min(manual.fim, f.fim) - Math.max(manual.inicio, f.inicio);
+    if (coberto > maior) {
+      maior = coberto;
+      melhor = f;
+    }
+  }
+  if (melhor !== undefined) return melhor;
+  // Sem sobreposicao nenhuma: a folga ainda acha a frase de um B-roll
+  // encostado nela (comecando ate 0,5s antes de a fala abrir).
+  return frases.find((f) => manual.inicio >= f.inicio - FOLGA_DA_FRASE && manual.inicio < f.fim);
+}
+
+/**
  * Credita o que o usuario colocou por conta propria.
  *
  * E o sinal mais forte que existe: apagar diz "isto nao serviu", colocar diz
@@ -271,9 +299,7 @@ export function creditarManuais(
       continue;
     }
 
-    const frase = frases.find(
-      (f) => manual.inicio >= f.inicio - FOLGA_DA_FRASE && manual.inicio < f.fim
-    );
+    const frase = fraseMaisCoberta(frases, manual);
     if (frase === undefined) {
       semFala++;
       continue;

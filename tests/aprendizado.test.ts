@@ -568,3 +568,40 @@ test("creditarManuais: frase longa e cortada em palavra inteira, com aviso", () 
   assert.match(msg, /…/, "corte tem de avisar que cortou");
   assert.doesNotMatch(msg, /\bper…/, "nao pode partir palavra no meio");
 });
+
+// --------------- a frase certa e a que o B-roll cobre (D-034) ----------------
+
+test("creditarManuais: B-roll adiantado credita a frase que ele COBRE, nao a anterior", () => {
+  // O respiro antes da fala: comeca 0,2s antes do fim da frase A, mas cobre
+  // 2,6s da frase B. Pelo criterio antigo (onde comeca), creditava A.
+  const coladas = [
+    frase("primeiro voce perdeu foi a confianca", 10, 15),
+    frase("o viagra nao resolve isso sozinho", 15.2, 20),
+  ];
+  const r = creditarManuais(
+    MEMORIA_VAZIA,
+    "Reels",
+    [{ arquivo: "Viagra (1).mp4", inicio: 14.8, fim: 17.8 }],
+    coladas,
+    CONCEITOS
+  );
+  assert.equal(r.creditados, 1, "a frase coberta fala de viagra: credita o par");
+  assert.deepEqual(r.memoria.pares[chave("Viagra", "viagra")], { acertos: 1, erros: 0 });
+});
+
+test("creditarManuais: B-roll inteiro dentro de uma frase segue creditando ela", () => {
+  const r = creditarManuais(MEMORIA_VAZIA, "Reels", [{ arquivo: "Viagra (1).mp4", inicio: 11, fim: 14 }], FALA, CONCEITOS);
+  assert.equal(r.creditados, 1);
+});
+
+test("creditarManuais: encostado na frase sem cobrir nada ainda acha ela pela folga", () => {
+  // Termina exatamente onde a fala comeca: sobreposicao zero, folga resolve.
+  const r = creditarManuais(
+    MEMORIA_VAZIA,
+    "Reels",
+    [{ arquivo: "Viagra (1).mp4", inicio: 9.7, fim: 10 }],
+    FALA,
+    CONCEITOS
+  );
+  assert.equal(r.creditados, 1);
+});
