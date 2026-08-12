@@ -110,6 +110,13 @@ Mensagens mais comuns e o que significam:
   palavras ditas.
 - **Precisão da transcrição depende do motor de fala do próprio Premiere** —
   varia entre versões do Premiere, não é algo que o plugin controla.
+- **A legenda que você vê queimada na timeline pode divergir da transcrição
+  que o plugin lê.** São duas passadas de reconhecimento de fala diferentes
+  sobre o mesmo áudio — o plugin só tem acesso à do CLIPE de origem (a da
+  sequência não expõe texto por API, provado na Fase 0), e ela às vezes erra
+  uma palavra que a legenda da timeline acerta (ou vice-versa). Quando isso
+  faz um B-roll bom não casar sozinho com o dicionário, colocá-lo na mão
+  ainda credita o take (D-030) — só não gera a ligação automática de sinônimo.
 - Roda em **Premiere 25 e 26** (manifest sem versão máxima), mas algumas APIs
   mudam de nome entre versões — o plugin já trata isso com fallback, mas se
   aparecer um erro de "não é uma função" no log, é sinal de mais uma dessas
