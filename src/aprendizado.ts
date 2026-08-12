@@ -198,10 +198,11 @@ export interface CreditoManual {
   /**
    * Escolhas que nenhum termo explica.
    *
-   * Nao ha o que contar: o usuario ligou duas coisas que o dicionario nao liga.
-   * Contagem ajusta peso, nao inventa ligacao (D-016) — entao isto sai como
-   * sugestao para uma pessoa decidir, e e material direto para o dicionario
-   * de sinonimos.
+   * O take ganha credito de arquivo mesmo assim — se o usuario colocou, faz
+   * sentido, e isso ele pediu explicitamente. As palavras cobertas contam rumo
+   * a uma ligacao (D-022). O que NAO acontece e credito de par
+   * conceito-palavra: contagem ajusta peso, nao inventa ligacao (D-016). Sai
+   * tambem como sugestao, material direto para o dicionario de sinonimos.
    */
   readonly semLigacao: readonly string[];
 }
@@ -220,8 +221,9 @@ const FOLGA_DA_FRASE = 0.5;
  *
  * E o sinal mais forte que existe: apagar diz "isto nao serviu", colocar diz
  * "era isto que faltava", com arquivo e instante. So que ele nao vem rotulado —
- * e preciso descobrir o que estava sendo dito ali e quais termos ligam a fala ao
- * conceito escolhido. Quando nenhum liga, nao ha o que contar: vira sugestao.
+ * e preciso descobrir o que estava sendo dito ali e quais termos ligam a fala
+ * ao conceito escolhido. Quando nenhum liga, o take ainda ganha credito e as
+ * palavras cobertas viram contagem de ligacao; so o par fica de fora.
  *
  * Puro, e por isso testavel sem Premiere: recebe o que ja foi lido da timeline.
  */
@@ -261,23 +263,33 @@ export function creditarManuais(
     const casados = conceito.termos.filter((t) => estaNaFrase(t, termos(frase.texto)));
 
     if (casados.length === 0) {
-      // O dicionario nao explica a escolha — mas VOCE explicou, colocando. Conta
-      // as palavras que este B-roll cobriu; a que se repetir em colocacoes
-      // diferentes deste mesmo conceito e a ligacao de verdade.
+      // O dicionario nao explica a escolha — mas VOCE explicou, colocando, e
+      // isso vale por si: o take ganha credito de arquivo desde ja. Alem disso
+      // conta as palavras que este B-roll cobriu; a que se repetir em
+      // colocacoes diferentes deste mesmo conceito e a ligacao de verdade.
       //
-      // So o que ele cobriu, nao a frase inteira: a imagem entrou em cima
-      // daquelas palavras, e nao das quinze da frase toda.
-      const cobertas = new Set(
-        frase.termosNoTempo
-          .filter((t) => t.inicio >= manual.inicio - FOLGA_DA_FRASE && t.inicio <= manual.fim)
-          .map((t) => t.termo)
-      );
-      for (const termo of cobertas) assoc = comAssociacao(assoc, conceito.rotulo, termo);
+      // A marca propria garante "colocacoes DIFERENTES" de verdade: sem ela,
+      // tres cliques em Aprender com a MESMA colocacao parada na timeline
+      // firmavam a ligacao sozinhos, contra a intencao do D-022.
+      const marcaAssoc = `assoc|${sequencia}|${manual.arquivo}|${Math.round(manual.inicio)}`;
+      if (vistos[marcaAssoc] !== true) {
+        vistos[marcaAssoc] = true;
+        somar(arquivos, manual.arquivo, true);
 
-      // De proposito NAO entra em `vistos`: enquanto faltar a ligacao, a
-      // sugestao reaparece. No dia em que ela existir, isto vira credito.
+        // So o que ele cobriu, nao a frase inteira: a imagem entrou em cima
+        // daquelas palavras, e nao das quinze da frase toda.
+        const cobertas = new Set(
+          frase.termosNoTempo
+            .filter((t) => t.inicio >= manual.inicio - FOLGA_DA_FRASE && t.inicio <= manual.fim)
+            .map((t) => t.termo)
+        );
+        for (const termo of cobertas) assoc = comAssociacao(assoc, conceito.rotulo, termo);
+      }
+
+      // A marca SEM prefixo fica de fora de proposito: no dia em que a ligacao
+      // firmar, `casados` deixa de ser vazio e isto vira credito de par tambem.
       semLigacao.push(
-        `${relogio(manual.inicio)} voce colocou "${conceito.rotulo}" onde se diz "${frase.texto.slice(0, 60)}" — nenhum termo liga os dois. Estou contando as palavras que voce cobriu.`
+        `${relogio(manual.inicio)} voce colocou "${conceito.rotulo}" onde se diz "${frase.texto.slice(0, 60)}" — o dicionario nao explica, mas vale: o take ganhou credito e contei as palavras cobertas.`
       );
       continue;
     }

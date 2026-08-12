@@ -660,6 +660,36 @@ ja e o caso raro por construcao.
 
 ---
 
+## D-030 — Colocacao manual vale mesmo sem termo que a explique (2026-08-12) — firme
+
+**Contexto.** No uso real, o usuario colocou "Viagra" tres vezes em falas que o
+dicionario nao explica ("Uma noite especifica. Uma emergencia.", "Paciente meu
+comprou so aquela vez.") e o painel respondeu tres vezes "nenhum termo liga os
+dois". As tres frases nem compartilham palavra — a contagem do D-022 nunca
+firmaria ligacao ali. E o take, que ele escolheu de proposito, nao ganhava nada.
+Pedido dele, literal: "se coloquei o broll ali, tem realmente sentido".
+
+**Decisao.** Colocacao manual sem termo que ligue passa a creditar o ARQUIVO
+(`memoria.arquivos`), na hora. O par conceito-palavra continua de fora — credito
+de par sem termo seria ligacao inventada, e o D-016 continua valendo. A contagem
+de palavras cobertas (D-022) segue igual. A mensagem mudou de tom: "o dicionario
+nao explica, mas vale: o take ganhou credito e contei as palavras cobertas".
+
+**Bug consertado de carona.** A contagem de associacoes nao tinha trava de
+repeticao: tres cliques em Aprender com a MESMA colocacao parada na timeline
+firmavam ligacao sozinhos, contra o proprio texto do D-022 ("tres vezes em
+colocacoes DIFERENTES"). Agora cada colocacao conta uma vez, por marca propria
+(`assoc|sequencia|arquivo|instante`) em `vistos`. A marca sem prefixo fica de
+fora de proposito: quando a ligacao firmar e `casados` deixar de ser vazio, a
+mesma colocacao ainda vira credito de par.
+
+**O que isto NAO resolve.** Credito de arquivo melhora a escolha do take dentro
+do conceito; nao faz o conceito passar a casar com aquelas falas. Para isso os
+caminhos continuam os do D-027: dicionario de sinonimos, ou a ligacao do D-022
+quando as colocacoes compartilharem palavra.
+
+---
+
 ## D-008 — Ferramental da Fase 1: esbuild e `node --test`, nada alem (2026-08-06) — firme
 
 **Contexto.** A Fase 1 pede TypeScript, lint e testes. O caminho habitual seria

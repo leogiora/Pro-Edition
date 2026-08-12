@@ -55,7 +55,9 @@ O plugin **não tem modelo, não tem IA** — ele só conta o que sobreviveu.
   escolha.
 - B-roll que **você mesmo colocou**, sem ser sugestão dele → ele credita como
   ensinamento seu, e pode até aprender um sinônimo novo se isso acontecer
-  algumas vezes seguidas.
+  algumas vezes seguidas. Vale mesmo quando a fala não tem nada a ver com o
+  nome do arquivo: se você colocou, fez sentido — o take ganha crédito e o
+  painel diz "o take ganhou crédito e contei as palavras cobertas".
 
 Ou seja: **editar a timeline normalmente já ensina o plugin.** Não precisa de
 botão de "nota" nem configuração.

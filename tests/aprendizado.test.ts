@@ -229,7 +229,7 @@ test("creditarManuais: sinonimo do dicionario conta como ligacao", () => {
   assert.deepEqual(r.semLigacao, []);
 });
 
-test("creditarManuais: escolha que nenhum termo explica vira sugestao, nao contagem", () => {
+test("creditarManuais: escolha que nenhum termo explica credita o take, nao o par", () => {
   const r = creditarManuais(
     MEMORIA_VAZIA,
     "Reels",
@@ -240,7 +240,16 @@ test("creditarManuais: escolha que nenhum termo explica vira sugestao, nao conta
   assert.equal(r.creditados, 0);
   assert.equal(r.semLigacao.length, 1);
   assert.match(r.semLigacao[0] ?? "", /Vasos sanguineos/);
-  assert.deepEqual(r.memoria.pares, {}, "sem ligacao nao ha peso a ajustar");
+  assert.deepEqual(r.memoria.pares, {}, "par sem termo seria ligacao inventada (D-016)");
+  // Mas o take vale: se o usuario colocou, fez sentido.
+  assert.deepEqual(r.memoria.arquivos["Vasos sanguineos (3).mp4"], { acertos: 1, erros: 0 });
+});
+
+test("creditarManuais: o credito do take sem ligacao nao se repete a cada Aprender", () => {
+  const manuais = [{ arquivo: "Vasos sanguineos (3).mp4", inicio: 31, fim: 34 }];
+  const uma = creditarManuais(MEMORIA_VAZIA, "Reels", manuais, FALA, CONCEITOS);
+  const outra = creditarManuais(uma.memoria, "Reels", manuais, FALA, CONCEITOS);
+  assert.deepEqual(outra.memoria.arquivos["Vasos sanguineos (3).mp4"], { acertos: 1, erros: 0 });
 });
 
 // -------------------------- ligacoes aprendidas ------------------------------
@@ -296,6 +305,21 @@ test("ligacoesFirmes: uma vez nao vira ligacao — tres viram", () => {
 
   const firmes = ligacoesFirmes(a);
   assert.deepEqual(firmes.get("Vasos sanguineos")?.sort(), ["jardim", "mangueira"]);
+});
+
+test("associacoes: a MESMA colocacao vista tres vezes nao firma ligacao", () => {
+  // D-022 pede colocacoes DIFERENTES. Tres cliques em Aprender com o mesmo
+  // B-roll parado na timeline nao podem valer por tres colocacoes.
+  const manuais = [{ arquivo: "Vasos sanguineos (3).mp4", inicio: 10.2, fim: 13 }];
+  let memoria = MEMORIA_VAZIA;
+  let a = ASSOCIACOES_VAZIAS;
+  for (let i = 0; i < 3; i++) {
+    const r = creditarManuais(memoria, "Reels", manuais, FALA_COM_TEMPO, CONCEITOS, a);
+    memoria = r.memoria;
+    a = r.associacoes;
+  }
+  assert.equal(a.pares[chave("Vasos sanguineos", "mangueira")], 1);
+  assert.equal(ligacoesFirmes(a).size, 0);
 });
 
 test("parseAssociacoes: ida e volta, e lixo volta vazio", () => {
