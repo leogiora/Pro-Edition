@@ -27,12 +27,18 @@ const MULTIPLICADORES: ReadonlyMap<string, number> = new Map([
  * Tirar acento e seguro AQUI porque o vocabulario numeral nao tem par que so
  * se distinga pelo acento. Nao reaproveitar para texto comum, onde "esta" e
  * "está" sao palavras diferentes.
+ *
+ * "R$" e removido antes da limpeza: o ASR do Premiere gruda o simbolo no
+ * numero com espaco invisivel ("1.000 R$" e uma palavra so), e sem isto
+ * a chave viraria "1000r" — nem digito, nem numeral, preco invisivel.
+ * Comprovado no transcript real de IMG_1190.MOV em 2026-08-11.
  */
 export function chaveNumeral(texto: string): string {
   return texto
     .normalize("NFD")
     .replace(/\p{Diacritic}/gu, "")
     .toLowerCase()
+    .replace(/r\$/g, "")
     .replace(/[^a-z0-9]/g, "");
 }
 
@@ -227,8 +233,19 @@ export function detectarPrecos(palavras: readonly string[]): Preco[] {
       continue;
     }
 
-    // A moeda dita confirma sozinha.
+    // A moeda dita confirma sozinha. "reais"/"real" faz parte da frase do
+    // preco: sem estender o fim ate ela, fatiarPorPreco consome so o
+    // numeral e deixa a palavra da moeda sobrando como texto normal solto.
     if (MOEDA.has(seguinte)) {
+      saida.push({ ...num, fim: num.fim + 1, certeza: "alta" });
+      continue;
+    }
+
+    // "R$" escrito pelo ASR dentro do proprio token ("1.000 R$") tambem e
+    // moeda — chaveNumeral o descarta para ler o numero, entao a confirmacao
+    // precisa olhar o token cru.
+    const tokensCrus = palavras.slice(num.inicio, num.fim + 1);
+    if (tokensCrus.some((t) => /r\$/i.test(t))) {
       saida.push({ ...num, certeza: "alta" });
       continue;
     }

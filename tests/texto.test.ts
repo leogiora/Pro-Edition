@@ -130,13 +130,21 @@ test("erro de duas palavras vira o termo canonico", () => {
   assert.equal(texto(proteger("aqui na andro clinic hoje")), "aqui na Androclinic hoje");
 });
 
-test("caso 2 da spec: erro distante NAO e trocado sozinho, vira sugestao", () => {
-  const saida = proteger("Meu nome é Cristiano Equivalente");
-  // O texto continua o que o Premiere ouviu: nao inventar palavra.
-  assert.equal(texto(saida), "Meu nome é Cristiano Equivalente");
-  const suspeita = saida[saida.length - 1];
+test("depois de Cristiano exato, palavra parecida vira o sobrenome", () => {
+  // Regra nova de 2026-08-11 (primeiro video real): "Cristiano Valete" tem
+  // contexto exato E semelhanca — trocar direto, nao so sugerir.
+  assert.equal(texto(proteger("Meu nome é Cristiano Valete.")), "Meu nome é Cristiano Estivalet.");
+  // O caso 2 original da spec cai na mesma regra: "Equivalente" esta a
+  // distancia 4 do alvo, dentro da metade permitida.
+  assert.equal(texto(proteger("Meu nome é Cristiano Equivalente")), "Meu nome é Cristiano Estivalet");
+});
+
+test("depois de Cristiano, palavra SEM semelhanca nao e trocada", () => {
+  const saida = proteger("o Cristiano disse que sim");
+  assert.equal(texto(saida), "o Cristiano disse que sim");
+  // A duvida ainda aparece na fila de revisao, mas o texto fica intacto.
+  const suspeita = saida[2];
   assert.equal(suspeita?.sugestao, "Estivalet");
-  assert.ok(suspeita?.motivo);
 });
 
 test("o termo ja correto nao vira sugestao", () => {

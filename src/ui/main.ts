@@ -7,17 +7,19 @@
  */
 
 import { relogio } from "../domain.ts";
-import { blocosParaTranscricao, gerarBlocos } from "../pipeline.ts";
+import { blocosParaSrt, blocosParaTranscricao, gerarBlocos } from "../pipeline.ts";
 import {
   comLimite,
   escreverTranscricao,
   getSequenceInfo,
   gravarLog,
+  importarArquivos,
   lerBackup,
   lerClipes,
   lerCortes,
   lerTranscricoes,
   salvarBackup,
+  salvarSrt,
 } from "../premiere.ts";
 import { validar } from "../segmentar.ts";
 import { parseTranscricao, reconstruirTranscricao, type TranscricaoOrigem } from "../transcript.ts";
@@ -63,7 +65,7 @@ async function comLog(rotulo: string, tarefa: () => Promise<void>): Promise<void
   } finally {
     ocupado(false);
     try {
-      const caminho = await gravarLog(linhas);
+      const caminho = await comLimite("log", gravarLog(linhas));
       registrar("");
       registrar(`log salvo em ${caminho}`);
     } catch {
@@ -130,7 +132,16 @@ async function gerar(): Promise<void> {
 
   estado("escrevendo");
   for (const [midia, transcricao] of porMidia) {
-    const atual = (await comLimite("transcricao atual", lerTranscricoes([midia]), 60000)).get(midia);
+    let atual: string | undefined;
+    try {
+      atual = (
+        await comLimite("transcricao atual", lerTranscricoes([midia], { propagarErro: true }), 60000)
+      ).get(midia);
+    } catch (erro) {
+      const msg = erro instanceof Error ? erro.message : String(erro);
+      registrar(`${midia}: falha ao ler transcricao atual antes de escrever, pulando por seguranca (${msg})`);
+      continue;
+    }
     if (atual !== undefined) {
       const backup = await comLimite("backup", salvarBackup(midia, atual));
       registrar(backup === null ? `${midia}: original ja guardado` : `${midia}: original guardado`);
@@ -155,9 +166,37 @@ async function gerar(): Promise<void> {
     for (const b of revisar.slice(0, 8)) registrar(`  ${relogio(b.inicio)} ${b.motivos.join("; ")}`);
   }
 
+  // O E5 provou que "Criar legendas a partir da transcricao" re-segmenta os
+  // nossos blocos; o caminho que preserva um bloco por legenda e o .srt.
+  //
+  // Texto e preco saem em arquivos separados: cada um vai na sua faixa de
+  // legenda e o estilo da faixa resolve o tamanho (96 no texto, 150 no
+  // preco) sem mexer em legenda individual (D-16).
+  const normais = blocos.filter((b) => b.estilo === "normal");
+  const caminhos = [await comLimite("srt", salvarSrt("legendas.srt", blocosParaSrt(normais)))];
+  if (precos.length > 0) {
+    caminhos.push(await comLimite("srt precos", salvarSrt("precos.srt", blocosParaSrt(precos))));
+  }
   registrar("");
-  registrar("AGORA, NO PREMIERE:");
-  registrar("  Texto > Legendas > Criar legendas a partir da transcricao");
+  for (const c of caminhos) registrar(`gerado: ${c}`);
+
+  try {
+    await comLimite("importar", importarArquivos(caminhos));
+    registrar("");
+    registrar("importados no painel Projeto");
+  } catch (erro) {
+    const msg = erro instanceof Error ? erro.message : String(erro);
+    registrar(`importacao automatica falhou (${msg})`);
+    registrar("Importar na mao: Arquivo > Importar, escolher os arquivos acima");
+  }
+
+  // Levar o .srt a timeline por codigo nao existe (E7c falhou; API_PROOFS).
+  registrar("");
+  registrar("AGORA, NO PREMIERE (2 arrastos + 2 estilos, e o minimo que a API permite):");
+  registrar("  1. Arrastar legendas.srt do painel Projeto para a timeline");
+  registrar("  2. Arrastar precos.srt na area vazia ACIMA da faixa criada");
+  registrar("  3. Estilo Pro-Captions (96) na faixa de texto");
+  registrar("  4. Estilo Pro-Captions Preco (150) na faixa de preco");
   estado(revisar.length > 0 ? `${revisar.length} para revisar` : "pronto");
 }
 

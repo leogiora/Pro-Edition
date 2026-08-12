@@ -30,6 +30,19 @@ test("frase curta vira um bloco so", () => {
   assert.equal(blocos[0]?.texto, "MEU NOME É CRISTIANO");
 });
 
+test("corte de video quebra o bloco mesmo cabendo no orcamento", () => {
+  // "MEU NOME" cai no clipe 1, "E CRISTIANO" cai no clipe 2 (corte em 2s).
+  // Frase inteira cabe facil no orcamento de 32 caracteres: sem a quebra
+  // forcada pelo corte, vira um bloco so e blocosParaTranscricao jogaria as
+  // palavras do segundo clipe fora (achado do code-review em pipeline.ts:96).
+  const blocos = seg("MEU NOME É CRISTIANO|", [2]);
+  assert.ok(blocos.length > 1, "corte nao quebrou o bloco");
+  for (const bloco of blocos) {
+    assert.ok(bloco.fim <= 2 || bloco.inicio >= 2, `bloco atravessa o corte: "${bloco.texto}"`);
+  }
+  assert.equal(blocos.map((b) => b.texto).join(" "), "MEU NOME É CRISTIANO");
+});
+
 test("cada eos abre um bloco novo", () => {
   const blocos = seg("PRIMEIRA FRASE| SEGUNDA FRASE|");
   assert.equal(blocos.length, 2);
@@ -128,11 +141,34 @@ test("nenhum bloco mistura preco com texto normal", () => {
   }
 });
 
+test("preco confirmado por reais nao deixa a palavra sobrando", () => {
+  // Achado real: "reais" confirmava o preco mas ficava de fora do fim do
+  // Numeral, sobrando como bloco normal solto (preco.ts, MOEDA.has).
+  const blocos = seg("SÃO CENTO E NOVENTA E SETE REAIS POR MES|");
+  const soltos = blocos.filter((b) => b.estilo === "normal" && /\bREAIS\b/.test(b.texto));
+  assert.equal(soltos.length, 0, `"reais" vazou para fora do bloco de preco: ${JSON.stringify(blocos)}`);
+});
+
+test("corte no meio de um preco nao o quebra", () => {
+  // Preco e hard boundary: nem orcamento nem corte de video pode partir.
+  const blocos = seg("SÃO CENTO E NOVENTA E SETE REAIS|", [6]);
+  const precos = blocos.filter((b) => b.estilo === "preco");
+  assert.equal(precos.length, 1);
+  assert.equal(precos[0]?.texto, "197 REAIS");
+});
+
 test("preco de certeza media marca revisao", () => {
   const blocos = seg("POR CENTO E NOVENTA E SETE|");
   const preco = blocos.find((b) => b.estilo === "preco");
   assert.ok(preco);
   assert.equal(preco.precisaRevisao, true);
+});
+
+test("D-15: ponto final some, interrogacao fica, 1.000 nao e tocado", () => {
+  assert.equal(seg("BOMBA RELOGIO.|")[0]?.texto, "BOMBA RELOGIO");
+  assert.equal(seg("VAI ENFRENTAR ISSO?|")[0]?.texto, "VAI ENFRENTAR ISSO?");
+  // Digito com ponto de milhar termina em digito; a limpeza nao alcanca.
+  assert.equal(seg("PAGUE 1.000|")[0]?.texto.endsWith("1.000"), true);
 });
 
 test("caso 12 da spec: virgula na fronteira do bloco some", () => {

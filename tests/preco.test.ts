@@ -74,6 +74,29 @@ test("a palavra reais confirma o preco sozinha", () => {
   assert.equal(achados[0]?.certeza, "alta");
 });
 
+test("o fim do preco inclui a palavra reais que confirmou", () => {
+  // Sem isso, fatiarPorPreco consome so o numeral e deixa "reais" sobrando
+  // como texto normal solto (achado real do teste no Premiere).
+  const frase = "são cento e noventa e sete reais";
+  const achados = p(frase);
+  assert.equal(achados[0]?.fim, frase.split(" ").length - 1);
+});
+
+test("token com R$ grudado pelo ASR e preco confirmado", () => {
+  // O ASR real escreveu "custa 1.000 R$" com espaco invisivel: "1.000 R$"
+  // e UMA palavra. Transcript real de IMG_1190.MOV, 2026-08-11.
+  const achados = p("essa consulta custa 1.000 R$ hoje");
+  assert.equal(achados.length, 1);
+  assert.equal(achados[0]?.valor, 1000);
+  assert.equal(achados[0]?.certeza, "alta");
+});
+
+test("R$ grudado confirma sozinho, sem gatilho por perto", () => {
+  const achados = p("o plano novo por 197 R$ mensais");
+  assert.equal(achados[0]?.valor, 197);
+  assert.equal(achados[0]?.certeza, "alta");
+});
+
 test("porcentagem nao vira preco", () => {
   assert.deepEqual(p("noventa por cento dos homens"), []);
 });

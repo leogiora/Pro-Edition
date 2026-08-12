@@ -125,8 +125,19 @@ export async function lerCortes(videoTrackIndex = 0): Promise<number[]> {
   return clipes.slice(1).map((c) => c.startSeconds);
 }
 
-/** Transcricao bruta de cada midia que tiver uma. Chave: nome do ProjectItem. */
-export async function lerTranscricoes(nomes: readonly string[]): Promise<Map<string, string>> {
+/**
+ * Transcricao bruta de cada midia que tiver uma. Chave: nome do ProjectItem.
+ *
+ * `propagarErro` distingue os dois usos: a leitura exploratoria (varias
+ * midias, antes de gerar) pode seguir sem uma midia que falhar — mas a
+ * leitura de seguranca antes de escrever (D-05) precisa saber se a falta de
+ * transcricao e real ou so um erro passageiro, senao um erro transiente vira
+ * "nada para guardar" e o backup e pulado numa rota destrutiva.
+ */
+export async function lerTranscricoes(
+  nomes: readonly string[],
+  opts: { propagarErro?: boolean } = {}
+): Promise<Map<string, string>> {
   const { rootItem } = await handles();
   const raiz = rootItem as { getItems: () => Promise<Array<{ name: string }>> };
   const itens = await raiz.getItems();
@@ -139,7 +150,8 @@ export async function lerTranscricoes(nomes: readonly string[]): Promise<Map<str
       const clip = ppro.ClipProjectItem.cast(item) ?? item;
       if (!(await ppro.Transcript.hasTranscript(clip))) continue;
       saida.set(nome, (await ppro.Transcript.exportToJSON(clip)) as string);
-    } catch {
+    } catch (erro) {
+      if (opts.propagarErro) throw erro;
       // Midia sem transcricao ou offline: seguir sem ela.
     }
   }
@@ -244,6 +256,32 @@ export async function gravarLog(linhas: readonly string[]): Promise<string> {
   await arquivo.write(JSON.stringify({ execucoes }, null, 2));
   return arquivo.nativePath as string;
 }
+
+/** Grava um .srt em PluginData e devolve o caminho para o log. */
+export async function salvarSrt(nome: string, conteudo: string): Promise<string> {
+  const pasta = await uxp.storage.localFileSystem.getDataFolder();
+  const arquivo = await pasta.createFile(nome, { overwrite: true });
+  await arquivo.write(conteudo);
+  return arquivo.nativePath as string;
+}
+
+/**
+ * Importa arquivos direto para o painel Projeto, sem dialogo.
+ *
+ * `Project.importFiles` existe na tipagem 26.3; se o Premiere reimportar o
+ * mesmo caminho como item duplicado, o usuario apaga o antigo — melhor que
+ * abrir o dialogo de importacao a cada video.
+ */
+export async function importarArquivos(caminhos: readonly string[]): Promise<boolean> {
+  const { project } = await handles();
+  const p = project as { importFiles: (fs: string[], suppressUI?: boolean) => Promise<boolean> };
+  return p.importFiles([...caminhos], true);
+}
+
+// E7c (inserir o .srt na timeline por codigo) foi tentado e FALHOU em
+// silencio: createInsertProjectItemAction executa sem erro e nada aparece —
+// a acao nao roteia item de legenda para caption track. Veredito em
+// docs/API_PROOFS.md; nao reimplementar sem API nova de caption track.
 
 /** Escreve o transcript de volta no ClipProjectItem da midia. */
 export async function escreverTranscricao(nomeDaMidia: string, json: string): Promise<void> {

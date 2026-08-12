@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 
 import { sequenceToSource } from "../src/domain.ts";
-import { blocosParaTranscricao, gerarBlocos } from "../src/pipeline.ts";
+import { blocosParaSrt, blocosParaTranscricao, gerarBlocos } from "../src/pipeline.ts";
 import { PRESET_PADRAO } from "../src/preset.ts";
 import type { PalavraEditada } from "../src/transcript.ts";
 import type { ClipeComOrigem } from "../src/transcript.ts";
@@ -41,11 +41,12 @@ function palavras(frase: string): PalavraEditada[] {
 
 test("gerarBlocos aplica a cadeia inteira de regras", () => {
   const blocos = gerarBlocos(palavras("Essa consulta que era mil hoje está por cento e noventa e sete|"), [], PRESET_PADRAO);
+  // "Essa consulta que era" tem 21 caracteres e o orcamento medido e 20.
   assert.deepEqual(
     blocos.map((b) => b.texto),
-    ["Essa consulta que era", "1.000 REAIS", "hoje tá por", "197 REAIS"]
+    ["Essa consulta", "que era", "1.000 REAIS", "hoje tá por", "197 REAIS"]
   );
-  assert.deepEqual(blocos.map((b) => b.estilo), ["normal", "preco", "normal", "preco"]);
+  assert.deepEqual(blocos.map((b) => b.estilo), ["normal", "normal", "preco", "normal", "preco"]);
 });
 
 test("gerarBlocos corrige termo protegido e coloquial na mesma passada", () => {
@@ -97,8 +98,21 @@ test("blocos de clipes diferentes vao para midias diferentes", () => {
     outPointSeconds: 104,
     speed: 1,
   };
-  const blocos = gerarBlocos(palavras("UM DOIS TRES QUATRO CINCO SEIS SETE OITO|"), [], PRESET_PADRAO);
+  // O corte em 5s coincide com a fronteira dos clipes: o bloco seguinte
+  // comeca exatamente onde "outro" comeca.
+  const blocos = gerarBlocos(palavras("UM DOIS TRES QUATRO CINCO SEIS SETE OITO|"), [5], PRESET_PADRAO);
   const porMidia = blocosParaTranscricao(blocos, [CLIPE, outro]);
   assert.ok(porMidia.has("IMG_1190.MOV"));
   assert.ok(porMidia.has("IMG_1193.MOV"));
+});
+
+test("blocosParaSrt gera um cue por bloco no formato srt", () => {
+  const blocos = gerarBlocos(palavras("BOMBA RELOGIO.| MUITO PERIGOSA.|"), [], PRESET_PADRAO);
+  const srt = blocosParaSrt(blocos);
+  const cues = srt.trim().split("\n\n");
+  assert.equal(cues.length, blocos.length);
+  // Tempos com virgula de milissegundo: e srt, nao timecode de video.
+  // Sem ponto final no texto: D-15.
+  assert.match(cues[0] ?? "", /^1\n00:00:00,000 --> 00:00:02,000\nBOMBA RELOGIO$/);
+  assert.match(cues[1] ?? "", /^2\n00:00:0/);
 });

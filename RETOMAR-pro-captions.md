@@ -1,8 +1,8 @@
 # RETOMAR — Pro Captions
 
-**Última sessão:** 2026-08-11
-**Branch:** `fases-0-2` · último commit `db8492e`
-**Gate:** `npm run verify` → 78 testes passando, tipos limpos, build ok
+**Última sessão:** 2026-08-11 (continuação)
+**Branch:** `fases-0-2` · último commit antes desta sessão `d8f9167` (working tree tinha mudanças não commitadas ao gravar este arquivo)
+**Gate:** `npm run verify` → 82 testes passando, tipos limpos, build ok
 
 Cole este arquivo numa conversa nova para continuar de onde paramos.
 
@@ -47,32 +47,63 @@ abaixo antes de mexer em `pipeline.ts` ou `premiere.ts`.
 
 ---
 
-## Review de código (2026-08-11) — nada corrigido ainda
+## Review de código (2026-08-11) — os três bloqueantes foram corrigidos
 
-### Corrigir antes de confiar na medição do portão E5
+Corrigidos nesta sessão, `npm run verify` verde (79 testes, um novo teste
+cobrindo o achado #1):
 
-1. **`pipeline.ts:96`, função `blocosParaTranscricao`.** Uma frase que cabe no
-   orçamento de caracteres vira um bloco só, mesmo que atravesse um corte de
-   vídeo (`segmentar.ts:70` só quebra por corte quando a frase não cabe). O
-   bloco inteiro é jogado no clipe onde ele *começa*; as palavras ditas no
-   clipe seguinte somem — não aparecem em lugar nenhum. **Isso vai bagunçar a
-   contagem de blocos que o teste do E5 depende** (ver "A pergunta que
-   bloqueia tudo" abaixo). Corrigir antes de medir o E5, ou os números não vão
-   bater e vai parecer culpa do Premiere quando é do pipeline.
+1. **`pipeline.ts:96` / `segmentar.ts`.** A causa raiz não estava em
+   `pipeline.ts`: `blocosParaTranscricao` só jogava fora as palavras do
+   segundo clipe porque `segmentar.ts` nunca forçava quebra num corte de
+   vídeo quando a frase já cabia no orçamento de caracteres. Corrigido com
+   `partirPorCorte()`, uma quebra dura aplicada *antes* de `fatiarPorPreco` e
+   `partir` — nenhum bloco atravessa mais um corte, caiba ele no orçamento ou
+   não. Teste novo: "corte de video quebra o bloco mesmo cabendo no
+   orcamento" em `tests/segmentar.test.ts`.
 
-2. **`premiere.ts:138-144`, função `lerTranscricoes`.** O `catch` engole
-   qualquer erro, não só "mídia sem transcrição". Se der um erro passageiro ao
-   ler a transcrição atual antes de escrever, `main.ts` interpreta como "nada
-   para guardar" e **pula o backup** — mas escreve por cima assim mesmo.
-   Contraria a decisão D-05 ("backup antes de toda escrita") numa rota já
-   documentada como destrutiva.
+2. **`premiere.ts:138-144`, função `lerTranscricoes`.** Ganhou um parâmetro
+   `{ propagarErro: true }`: a leitura exploratória (várias mídias, antes de
+   gerar) continua tolerante a falha; a leitura de segurança antes de
+   escrever (`main.ts`, dentro do loop de escrita) agora propaga o erro, e
+   `main.ts` trata isso como "pular esta mídia por segurança" em vez de
+   "nada para guardar, escreve por cima". D-05 preservado mesmo com erro
+   transiente.
 
-3. **`main.ts:66`, chamada a `gravarLog()`.** É a única chamada que toca o UXP
-   sem passar por `comLimite()`. Se pendurar, o log — a única forma prática de
-   diagnosticar — não é escrito, sem erro visível. Reintroduz o mesmo tipo de
-   bug silencioso que essa sessão inteira investigou.
+3. **`main.ts:66`, chamada a `gravarLog()`.** Agora passa por `comLimite()`,
+   como todas as outras chamadas ao UXP.
 
-### Menor, sem urgência
+### Achado no teste real (2026-08-11, mesma continuação) — corrigido
+
+Você rodou "Gerar legendas" com sequência real e o painel mostrou
+**reprovado**. O `ultimo-log.json` deu a causa: `bloco 45 ("REAIS"): preco
+misturado com texto normal`, reproduzível mesmo depois de "Restaurar
+original" (não era reprocessamento do próprio texto — era determinístico a
+partir da transcrição real).
+
+Causa raiz, achada com um script de repro isolado (sem precisar do
+Premiere): em `preco.ts`, quando "reais"/"real" confirma um preço sozinho
+(regra `MOEDA.has(seguinte)`), o `fim` do `Numeral` retornado não incluía a
+própria palavra "reais" — só o numeral. `fatiarPorPreco` em `segmentar.ts`
+usa esse `fim` para saber onde parar de consumir palavras, então "reais"
+sobrava como bloco de texto normal solto logo depois do preço. **Não tinha
+nada a ver com a correção de corte de vídeo de hoje** — reproduz igual sem
+nenhum corte.
+
+Corrigido em `preco.ts` (o `fim` agora inclui a palavra da moeda) e, por
+tabela, reordenado `segmentar.ts`: a detecção de preço agora roda ANTES da
+quebra forçada por corte, não depois — senão um corte caindo bem no meio de
+um preço (raro, mas achei testando) quebraria o preço em texto solto sem
+nem disparar a validação, o que seria pior. Preço segue sendo hard boundary:
+nunca quebra, nem por orçamento nem por corte. Dois testes novos cobrindo os
+dois casos (`tests/segmentar.test.ts`, `tests/preco.test.ts`). `npm run
+verify` verde, 82 testes.
+
+**Você precisa refazer o teste no Premiere** com esse código (reinicie o
+Premiere, o `dist/` já está reconstruído): apague a caption track antiga,
+"Restaurar original", "Gerar legendas" uma vez, e só então "Criar legendas a
+partir da transcrição" para medir o E5 de verdade.
+
+### Menor, sem urgência — não corrigido, sem bloqueio
 
 4. **`premiere.ts:122`, `lerCortes()`** busca os clipes de novo do zero;
    `main.ts` já tinha essa lista. Dobra as chamadas ao Premiere por clique.
@@ -86,20 +117,21 @@ nada, revisitar depois se sobrar tempo.
 
 ## PRIMEIRA COISA A FAZER
 
-**Testar no Premiere real.** O preview no navegador não é mais suspeito — a
-próxima dúvida real só o Premiere de verdade responde. **Mas o achado #1 da
-seção acima ainda não foi corrigido:** se uma frase atravessar um corte
-durante o teste, a contagem de blocos pode não bater por causa dele, não por
-causa do Premiere. Considerar corrigir #1 antes de medir o E5 de verdade.
+**Medir o E5b: o caminho `.srt`.** O E5 original já foi medido e FALHOU (ver
+seção "A pergunta que bloqueava tudo"); o `.srt` é o caminho agora.
 
-1. Abrir o Premiere com uma sequência real editada.
-2. Painel Pro Captions → "Gerar legendas". Confirmar que não trava e que o
-   `estado` no canto muda para "pronto" (ou "N para revisar").
-3. Ler `ultimo-log.json` em
-   `%APPDATA%\Adobe\UXP\PluginsStorage\PPRO\26\External\com.leogi.procaptions\PluginData\`
-   e conferir que os blocos batem com o que a fala real dizia.
-4. **Medir o portão E5** (ver seção abaixo) — é o que decide se o produto
-   funciona ou vira plano B (`.srt`).
+1. Reiniciar o Premiere (não há hot reload; o `dist/` novo já está pronto).
+2. Apagar qualquer caption track antiga da timeline.
+3. Painel Pro Captions → "Gerar legendas". O log termina com o caminho do
+   `legendas.srt` gerado em PluginData.
+4. Arquivo > Importar → escolher esse `legendas.srt` → arrastar para a
+   timeline.
+5. **Contar:** número de legendas na faixa == número de blocos do log? Cada
+   uma em UMA linha (orçamento agora é 24 caracteres)? Pontuação viva?
+   `1.000 REAIS` e `197 REAIS` isolados?
+6. Aplicar o estilo Pro-Captions salvo na faixa (Essential Graphics) e
+   conferir se com fonte 96 nenhuma linha dobra.
+7. Registrar o resultado em `docs/API_PROOFS.md`, linha E5b.
 
 Se travar de novo no Premiere real (diferente do preview), aí sim é bug de
 produto — voltar para `superpowers:systematic-debugging` com as ferramentas
@@ -121,24 +153,64 @@ travamento é antes do primeiro `comLimite`.
 
 ---
 
-## A pergunta que bloqueia tudo
+## E5b MEDIDO E APROVADO (2026-08-11, mais tarde)
 
-O Premiere não tem API para escrever legenda direto na caption track. Isso foi
-confirmado na tipagem oficial: `CaptionTrack` só expõe nome, mute, índice e
-`getTrackItems`. O único caminho é escrever o transcript de volta no
-`ClipProjectItem` e o usuário mandar "Criar legendas a partir da transcrição".
+O usuário importou o `legendas.srt` e os prints provaram: cada cue virou uma
+legenda com a fronteira exata do arquivo — o `.srt` é o caminho definitivo
+(D-13). Da mesma rodada saíram três ajustes, todos já no código (86 testes):
 
-**Ninguém sabe se o Premiere respeita um `segment` por legenda ou se ele
-re-segmenta com as regras dele.** Se re-segmentar, a regra de uma linha morre
-na última etapa — que é onde está todo o valor do produto.
+- **Orçamento 24 → 20**: 21 caracteres couberam na tela, 23 e 24 dobraram.
+- **"Cristiano Valete" → "Estivalet" automático** (D-14): contexto exato +
+  semelhança agora trocam direto; "Cristiano disse" continua intocado.
+- Os dois preços saíram isolados ("1.000 REAIS", "197 REAIS") — a correção
+  do "R$" grudado funcionou.
 
-Plano B, se falhar: gerar um arquivo `.srt` e o usuário arrasta para a C1.
-Sem re-segmentação, custo de um arrasto manual.
+**2026-08-12 — o mistério da pontuação era o contrário:** ele não quer ponto
+final nenhum nas legendas (D-15) — a limpeza de fronteira agora tira o "."
+junto com a vírgula; "?" e "!" ficam, "1.000" não é atingido, e o `validar`
+reprova bloco terminando em ponto. Da mesma conversa: **D-16** — texto e
+preço saem em `.srt` separados (`legendas.srt` + `precos.srt`), um por faixa
+de legenda, estilo 96 numa e 150 na outra — o preço nunca mais fica em 96
+nem precisa de ajuste manual. **E7 provado** — `importFiles` leva os
+dois ao painel Projeto sem diálogo (print do usuário). O "preço veio com
+tudo junto" que ele reportou era o arrasto caindo na mesma faixa C1; a
+segunda faixa se cria arrastando na área vazia acima da C1. **E7c FALHOU** — a inserção por código
+executa sem erro e nada aparece na timeline (falha silenciosa clássica do
+UXP); experimento removido, veredito no `API_PROOFS.md`. **Teto final da
+automação, fechado:** importar pro painel Projeto é o máximo que a API
+alcança; o piso manual por vídeo é 2 arrastos + 2 dropdowns de estilo.
+Aplicar estilo por código é impossível (D-02). 87 testes verdes. **Falta o usuário criar o segundo Caption Style
+(150) no Premiere** — mesmo processo do Pro-Captions, nome sugerido
+"Pro-Captions Preco".
 
-**Como medir:** clicar em "Gerar legendas" com uma sequência real, depois
-`Texto > Legendas > Criar legendas a partir da transcrição`, e contar quantas
-legendas saíram contra quantos blocos o log reportou. Registrar em
-`docs/API_PROOFS.md`, tabela E5.
+## A pergunta que bloqueava tudo — RESPONDIDA em 2026-08-11: E5 FALHOU
+
+**O Premiere re-segmenta.** Medido com sequência real (49 segments → 47
+legendas com fronteiras movidas — palavras migraram entre legendas). A prova
+foi extraída de dentro do próprio `.prproj` (as legendas ficam em base64 no
+XML; script de decodificação ficou na sessão). Detalhe completo e evidência
+em `docs/API_PROOFS.md`, veredito do E5.
+
+**O plano B virou o caminho principal:** o botão "Gerar legendas" agora
+também grava `legendas.srt` em PluginData (um bloco = um cue) e o log
+instrui a importar. O que falta provar é o **E5b**: importar o `.srt` no
+Premiere e confirmar que ele preserva um cue por legenda, sem re-segmentar.
+É a primeira coisa a fazer na próxima sessão de teste.
+
+Descobertas de plataforma da mesma medição, já absorvidas no código:
+
+- **Largura real medida:** com Bebas Neue 96 em 1080, 21 caracteres cabem,
+  29 dobram a linha. `maxCaracteres` foi de 32 → **24** no `preset.ts`.
+- **O ASR gruda "R$" no número** ("1.000 R$" é uma palavra só, com espaço
+  invisível). O detector de preço agora entende isso — era por isso que o
+  "custa 1.000" saiu cru, sem virar "1.000 REAIS" isolado.
+- A telinha "Create captions" tem piso de 1,2s no Minimum duration e vem com
+  "Remove Punctuation" marcado — irrelevantes agora que o caminho é `.srt`,
+  mas registrados no `API_PROOFS.md`.
+
+**Pergunta aberta decorrente:** com o `.srt` funcionando, a escrita do
+transcript no clipe (D-04, rota destrutiva, backup, restaurar) ainda serve
+para alguma coisa? Decisão do usuário — não remover nada sem ele.
 
 ---
 
@@ -187,6 +259,44 @@ provaram:
 | D-08 | Repositório novo, esqueleto do auto-broll | Armadilhas do UXP já resolvidas |
 | D-09 | `StyleType` é metadado, não renderização | Decorre de D-02 e D-03 |
 | D-10 | Nome: **Pro Captions** | Fecha a §42 do briefing |
+| D-11 | Estilo visual fixo (ver seção abaixo) | Preset obrigatório do usuário, fechado em 2026-08-11 |
+
+### Estilo visual obrigatório das legendas
+
+A API não escreve aparência (D-02, D-09) — este preset é aplicado à mão pelo
+usuário no style da caption track, uma vez. **Não trocar por conta própria.**
+Detalhe completo em
+`docs/superpowers/specs/2026-08-10-pro-captions-design.md` §1.6.
+
+| Propriedade | Valor |
+|---|---|
+| Fonte | Bebas Neue, Regular |
+| Tamanho | 96 (bloco normal) · 150 no bloco de preço (D-03) |
+| Alinhamento / posicionamento | Centralizado |
+| Posição (X, Y) | 0, -329 |
+| Tracking / espaçamento vertical | 0 / 0 |
+| Sombra | ativada, preta, opacidade 96, ângulo 137°, distância 11,3, blur 15,6, último parâmetro 40 |
+
+**D-12, confirmado em 2026-08-11 na tipagem oficial (`API_PROOFS.md`,
+P4.1-P4.3):** não dá pra automatizar "Criar legendas a partir da
+transcrição" nem passar esse estilo por código — a API não tem esse
+comando, nem controle de layout/estilo/duração mínima, nem escape hatch de
+comando de menu. Não é falta de esforço, é teto da plataforma. Não tentar
+de novo sem uma tipagem nova do Premiere.
+
+**Mitigação (reduz a 2 cliques por vídeo, sem código):**
+1. Uma vez: criar um Caption Style no Premiere com os valores da tabela
+   acima e salvar.
+2. Uma vez: na telinha "Create captions" (abre ao clicar em "Criar legendas
+   a partir da transcrição"), ajustar **Layout → Single Line** (vem em
+   "Double Line" por padrão — quebra a regra de uma linha) e **Minimum
+   duration → o mais baixo possível** (vem em 3.0s por padrão; muitos dos
+   nossos blocos duram menos que isso e o Premiere funde blocos vizinhos
+   pra bater o mínimo, o que quebra a contagem do E5). Selecionar o Caption
+   Style salvo no passo 1 no campo **Style**. Salvar tudo isso junto como um
+   **Caption preset** novo.
+3. Por vídeo, daí em diante: escolher esse preset salvo + "Create
+   captions". Só isso é manual.
 
 **Três premissas do briefing são falsas** e já estão corrigidas no desenho:
 não existe transcrição no nível da sequência; `CaptionTrack` não aceita

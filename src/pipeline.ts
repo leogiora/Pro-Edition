@@ -136,6 +136,30 @@ export function blocosParaTranscricao(
   return saida;
 }
 
+/* ----------------------------------------------------- blocos para .srt */
+
+function tempoSrt(segundos: number): string {
+  const ms = Math.max(0, Math.round(segundos * 1000));
+  const h = Math.floor(ms / 3600000);
+  const m = Math.floor((ms % 3600000) / 60000);
+  const s = Math.floor((ms % 60000) / 1000);
+  const mil = ms % 1000;
+  const p = (n: number, d: number): string => String(n).padStart(d, "0");
+  return `${p(h, 2)}:${p(m, 2)}:${p(s, 2)},${p(mil, 3)}`;
+}
+
+/**
+ * Um bloco = um cue. E o plano B que virou plano A: o E5 provou que o
+ * "Criar legendas a partir da transcricao" do Premiere re-segmenta os nossos
+ * segments (fronteiras migram entre blocos), enquanto a importacao de .srt
+ * preserva os cues como estao. Evidencia em docs/API_PROOFS.md, E5.
+ */
+export function blocosParaSrt(blocos: readonly BlocoLegenda[]): string {
+  return blocos
+    .map((b, i) => `${i + 1}\n${tempoSrt(b.inicio)} --> ${tempoSrt(b.fim)}\n${b.texto}\n`)
+    .join("\n");
+}
+
 /** Este transcript foi escrito por nos? Usado para nao sobrescrever o backup bom. */
 export function ehNosso(json: string): boolean {
   try {

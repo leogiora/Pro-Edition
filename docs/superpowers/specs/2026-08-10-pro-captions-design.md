@@ -92,6 +92,38 @@ O JSON de transcrição do Premiere entrega, por palavra:
   nunca.
 - **`type`** nem sempre é `"word"`. Não presumir.
 
+### 1.6. Padrão obrigatório do estilo visual das legendas
+
+Como a API não escreve aparência (§1.3), este estilo é aplicado à mão pelo
+usuário, uma vez, no style da caption track. Não é referência solta — é o
+preset obrigatório, fechado em 2026-08-11. **Não trocar fonte, tamanho,
+alinhamento, posição ou sombra por conta própria.** Se um nome de propriedade
+não bater exatamente com a UI do Premiere, achar o parâmetro equivalente e
+preservar o mesmo resultado visual, nunca "melhorar" o valor.
+
+| Propriedade | Valor |
+|---|---|
+| Fonte | Bebas Neue |
+| Estilo | Regular |
+| Tamanho da fonte | 96 — bate com `STYLE_NORMAL` da §2.2; preço vai a 150 (§1.3, D-03) |
+| Alinhamento do texto | Centralizado |
+| Posicionamento horizontal | Centralizado |
+| Posição (X, Y) | X = 0, Y = -329 |
+| Tracking (espaçamento entre caracteres) | 0 |
+| Espaçamento vertical | 0 |
+
+Sombra da legenda:
+
+| Propriedade | Valor |
+|---|---|
+| Ativada | Sim |
+| Cor | Preta |
+| Opacidade / intensidade | 96 |
+| Ângulo | 137° |
+| Distância | 11,3 |
+| Suavização / blur | 15,6 |
+| Último parâmetro (nome não confirmado na UI) | 40 |
+
 ---
 
 ## 2. Como as legendas chegam na timeline
@@ -319,6 +351,12 @@ manual provar ser insuficiente na prática — provavelmente não será.
 | D-08 | Repositório novo, esqueleto copiado do auto-broll | Armadilhas do UXP já resolvidas; produtos independentes |
 | D-09 | `StyleType` é metadado, não renderização | Decorre de D-02 e D-03 |
 | D-10 | Nome do produto: **Pro Captions** | Fecha a pendência de nome comercial da §42 da spec funcional |
+| D-11 | Estilo visual fixo (fonte, tamanho, posição, sombra) — ver §1.6 | Preset obrigatório do usuário, fechado em 2026-08-11; não é mais aberto de propósito |
+| D-12 | "Criar legendas a partir da transcrição" continua manual, sem tentativa de automação | Confirmado na tipagem 26.3 (P4.1-P4.3, `API_PROOFS.md`): nenhuma classe expõe esse comando nem controle de layout/estilo/duração mínima, e não há escape hatch genérico de comando de menu |
+| D-13 | O caminho das legendas é o `.srt`, não o transcript | E5 falhou (o Premiere re-segmenta os segments); E5b provou que a importação de `.srt` preserva um cue por legenda. Evidência em `API_PROOFS.md` |
+| D-14 | Depois de "Cristiano" exato, palavra a até metade de distância do sobrenome vira "Estivalet" automaticamente | Decisão do usuário em 2026-08-11 ("Cristiano Valete" no primeiro vídeo real); substitui a rota só-sugestão da §5 para este caso — contexto sem semelhança continua intocado |
+| D-15 | Sem ponto final nas legendas | Decisão do usuário em 2026-08-12 depois do primeiro export real; "?" e "!" ficam, "1.000" não é atingido (limpeza só olha o fim do texto) |
+| D-16 | Texto e preço em `.srt` separados, uma faixa de legenda cada | O estilo é da faixa (D-02): faixa de texto com estilo 96, faixa de preço com estilo 150 — elimina o ajuste manual por legenda que a D-03 aceitava |
 
 ---
 
@@ -326,8 +364,6 @@ manual provar ser insuficiente na prática — provavelmente não será.
 
 Não inventar requisito definitivo para nada disto:
 
-- fonte, stroke, shadow, cor, posição Y da legenda — o usuário define no style da
-  track, fora do plugin;
 - limite exato de caracteres por bloco;
 - tolerância exata de snap em corte;
 - formato para centavos (§3.5 da spec: marcar para revisão, não inventar

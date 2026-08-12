@@ -321,17 +321,16 @@ function comparavel(texto: string): string {
 /**
  * Aplica o vocabulario protegido.
  *
- * Duas rotas, deliberadamente diferentes:
+ * Tres rotas, deliberadamente diferentes:
  *
  * - **Erro proximo** (`andro clinica` -> `Androclinic`): a distancia de edicao
  *   sozinha ja e evidencia, e a troca acontece.
- * - **Erro distante** (`Equivalente` no lugar de `Estivalet`): a distancia nao
- *   ajuda, so o contexto — a palavra vem logo depois de "Cristiano". Contexto
- *   sozinho NAO autoriza reescrever a fala, entao o texto fica como esta e a
- *   duvida vai para `sugestao`, que a fila de revisao mostra ao usuario.
- *
- * E o que a spec pede na secao 5: preferir revisao manual rapida a inventar
- * uma palavra.
+ * - **Contexto + semelhanca** (`Cristiano Valete` -> `Cristiano Estivalet`):
+ *   depois da primeira parte exata do termo, uma palavra a ate metade de
+ *   distancia do sobrenome e o sobrenome. Decisao do usuario em 2026-08-11,
+ *   depois do primeiro video real — substitui a regra antiga de so sugerir.
+ * - **Contexto sem semelhanca** (`Cristiano disse`): contexto sozinho NAO
+ *   autoriza reescrever a fala; o texto fica e a duvida vai para `sugestao`.
  */
 export function protegerTermos(
   palavras: readonly PalavraRevisada[],
@@ -396,8 +395,15 @@ export function protegerTermos(
     if (aplicou) continue;
 
     // Contexto: palavra logo depois de uma parte inicial de termo composto.
+    //
+    // Quando a palavra ainda LEMBRA o sobrenome (distancia ate metade do
+    // alvo), o contexto exato + a semelhanca juntos autorizam a troca — foi
+    // o "Cristiano Valete" do primeiro video real (2026-08-11) que derrubou
+    // a regra antiga de so sugerir. Palavra sem semelhanca nenhuma
+    // ("Cristiano disse") continua intacta: contexto sozinho nao reescreve.
     const anterior = palavras[i - 1];
     let sugestao: string | null = null;
+    let trocaPorContexto: string | null = null;
     if (anterior !== undefined) {
       const chaveAnterior = comparavel(nucleo(anterior.text).corpo);
       for (const termo of termos) {
@@ -405,10 +411,22 @@ export function protegerTermos(
         if (termo.chaves[0] !== chaveAnterior) continue;
         const esperada = termo.partes[1];
         if (esperada === undefined) continue;
-        if (comparavel(nucleo(atual.text).corpo) === comparavel(esperada)) break;
-        sugestao = esperada;
+        const chaveAtual = comparavel(nucleo(atual.text).corpo);
+        const chaveEsperada = comparavel(esperada);
+        if (chaveAtual === chaveEsperada) break;
+        if (distancia(chaveAtual, chaveEsperada) <= Math.ceil(chaveEsperada.length / 2)) {
+          trocaPorContexto = esperada;
+        } else {
+          sugestao = esperada;
+        }
         break;
       }
+    }
+
+    if (trocaPorContexto !== null) {
+      saida.push({ ...atual, text: trocaPorContexto + nucleo(atual.text).sufixo, sugestao: null, motivo: null });
+      i++;
+      continue;
     }
 
     saida.push(

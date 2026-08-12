@@ -9,8 +9,10 @@ export interface Preset {
   /**
    * Orcamento de caracteres por bloco.
    *
-   * A fonte da caption track e inacessivel pela API, entao largura real nao e
-   * mensuravel. 32 e o ponto de partida para 1080x1920.
+   * Medido na tela em 2026-08-11 com o estilo obrigatorio (Bebas Neue 96,
+   * 1080x1920), duas rodadas: 21 caracteres couberam ("QUANDO O HOMEM
+   * COMEÇA", "A PERDER O DESEMPENHO"); 23 e 24 dobraram a linha. A fronteira
+   * fica entre 21 e 23 e varia com a largura dos glifos, entao 20 da folga.
    */
   readonly maxCaracteres: number;
   /** Silencio maior que isto quebra a frase mesmo sem `eos`. */
@@ -25,7 +27,7 @@ export interface Preset {
 }
 
 export const PRESET_PADRAO: Preset = {
-  maxCaracteres: 32,
+  maxCaracteres: 20,
   pausaQuebraSegundos: 1.5,
   toleranciaCorteSegundos: 0.25,
   termosProtegidos: ["Androclinic", "Cristiano Estivalet"],

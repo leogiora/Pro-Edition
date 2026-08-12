@@ -144,14 +144,16 @@ function montarBloco(palavras: readonly PalavraRevisada[], estilo: "normal" | "p
     //
     // A virgula pendurada na fronteira tambem cai: o bloco seguinte ja e a
     // pausa visual, e a virgula fica orfa no fim da linha. A spec proibe na
-    // secao 11.1. Como a limpeza so olha as pontas, virgula no meio do bloco
-    // nunca e tocada.
+    // secao 11.1. O ponto final cai junto — decisao do usuario em 2026-08-12,
+    // legendas dele nao usam ponto (D-15); "1.000" nao e atingido porque a
+    // limpeza so olha o fim do texto, e "?" e "!" ficam. Virgula ou ponto no
+    // meio do bloco nunca sao tocados.
     texto: palavras
       .map((p) => p.text)
       .join(" ")
       .replace(/\s*\n\s*/g, " ")
-      .replace(/[,;]+$/, "")
-      .replace(/^[,;]+\s*/, "")
+      .replace(/[,;.]+$/, "")
+      .replace(/^[,;.]+\s*/, "")
       .trim(),
     inicio: primeira.inicio,
     fim: ultima.fim,
@@ -159,6 +161,38 @@ function montarBloco(palavras: readonly PalavraRevisada[], estilo: "normal" | "p
     precisaRevisao: motivos.length > 0,
     motivos,
   };
+}
+
+/**
+ * Forca quebra nos cortes de video, antes de qualquer outra regra.
+ *
+ * `blocosParaTranscricao` joga o bloco inteiro no clipe onde ele comeca; um
+ * bloco que atravessa um corte perde, em silencio, as palavras do clipe
+ * seguinte. Isso independe do orcamento de caracteres caber ou nao — por
+ * isso vem antes de `fatiarPorPreco` e de `partir`, nao dentro deles.
+ */
+function partirPorCorte(
+  frase: readonly PalavraRevisada[],
+  cortes: readonly number[]
+): PalavraRevisada[][] {
+  if (cortes.length === 0) return [[...frase]];
+
+  const partes: PalavraRevisada[][] = [];
+  let atual: PalavraRevisada[] = [];
+
+  for (const palavra of frase) {
+    const anterior = atual[atual.length - 1];
+    if (
+      anterior !== undefined &&
+      cortes.some((c) => c >= anterior.fim && c <= palavra.inicio)
+    ) {
+      partes.push(atual);
+      atual = [];
+    }
+    atual.push(palavra);
+  }
+  if (atual.length > 0) partes.push(atual);
+  return partes;
 }
 
 /** Uma fatia de frase: texto normal, ou um preco que vira bloco sozinho. */
@@ -204,6 +238,8 @@ export function segmentar(
   const blocos: BlocoLegenda[] = [];
 
   for (const frase of emFrases(palavras, preset)) {
+    // Preco primeiro, na frase inteira: e um hard boundary que nao pode ser
+    // partido nem pelo orcamento nem por um corte de video no meio dele.
     for (const fatia of fatiarPorPreco(frase)) {
       if (fatia.estilo === "preco" && fatia.preco !== null) {
         // O preco nunca e partido: o texto vem da formatacao, nao das palavras.
@@ -219,8 +255,10 @@ export function segmentar(
         });
         continue;
       }
-      for (const parte of partir(fatia.palavras, preset, cortes)) {
-        if (parte.length > 0) blocos.push(montarBloco(parte, "normal"));
+      for (const pedaco of partirPorCorte(fatia.palavras, cortes)) {
+        for (const parte of partir(pedaco, preset, cortes)) {
+          if (parte.length > 0) blocos.push(montarBloco(parte, "normal"));
+        }
       }
     }
   }
@@ -249,6 +287,7 @@ export function validar(
       violacoes.push(`${onde}: ${bloco.texto.length} caracteres, orcamento e ${preset.maxCaracteres}`);
     }
     if (bloco.texto.endsWith(",")) violacoes.push(`${onde}: termina em virgula`);
+    if (bloco.texto.endsWith(".")) violacoes.push(`${onde}: termina em ponto (D-15)`);
     if (bloco.estilo === "normal" && /\bREAIS\b/.test(bloco.texto)) {
       violacoes.push(`${onde}: preco misturado com texto normal`);
     }
