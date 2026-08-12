@@ -179,11 +179,22 @@ export interface Frase {
 const PAUSA_QUE_QUEBRA = 1.5;
 
 /**
+ * Silencio minimo depois de uma palavra `eos` para confiar que e fim de frase.
+ *
+ * Medido numa transcricao real sem pontuacao: o Premiere marcou `eos` em quase
+ * toda palavra. Nas fronteiras verdadeiras sempre havia ~0,15s de respiro; nas
+ * espurias o fim de uma palavra era EXATAMENTE o inicio da proxima (0,00s) —
+ * ruido do reconhecedor, nao fala. 0,05s fica em folga dos dois lados.
+ */
+const PAUSA_MINIMA_PARA_EOS = 0.05;
+
+/**
  * Agrupa palavras em frases.
  *
- * O Premiere ja marca fim de frase em `eos`, entao nao ha NLP aqui. A unica
- * regra extra e a pausa: quando o editor corta no meio de uma frase, o `eos`
- * nunca chega e o texto grudaria em trechos que na tela estao separados.
+ * O Premiere ja marca fim de frase em `eos`, entao nao ha NLP aqui — mas `eos`
+ * sozinho nao basta (ver `PAUSA_MINIMA_PARA_EOS`). A pausa longa e a segunda
+ * regra: quando o editor corta no meio de uma frase, o `eos` nunca chega e o
+ * texto grudaria em trechos que na tela estao separados.
  */
 export function agruparEmFrases(palavras: readonly PalavraEditada[]): Frase[] {
   const frases: Frase[] = [];
@@ -211,11 +222,16 @@ export function agruparEmFrases(palavras: readonly PalavraEditada[]): Frase[] {
     atual = [];
   };
 
-  for (const palavra of palavras) {
+  for (let i = 0; i < palavras.length; i++) {
+    const palavra = palavras[i];
+    if (!palavra) continue;
     const anterior = atual[atual.length - 1];
     if (anterior && palavra.inicio - anterior.fim > PAUSA_QUE_QUEBRA) fechar();
     atual.push(palavra);
-    if (palavra.eos) fechar();
+
+    const proxima = palavras[i + 1];
+    const silencioDepois = proxima ? proxima.inicio - palavra.fim : Number.POSITIVE_INFINITY;
+    if (palavra.eos && silencioDepois >= PAUSA_MINIMA_PARA_EOS) fechar();
   }
   fechar();
 

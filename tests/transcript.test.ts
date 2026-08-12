@@ -163,6 +163,19 @@ test("agruparEmFrases: quebra no eos que o proprio Premiere marca", () => {
   assert.equal(frases[1]?.texto, "Isso muda");
 });
 
+test("agruparEmFrases: eos colado na proxima palavra, sem pausa nenhuma, nao quebra", () => {
+  // Medido numa transcricao real: o Premiere marcou eos em quase toda palavra,
+  // sem ponto no texto. Nas fronteiras verdadeiras sempre havia ~0,15s de
+  // silencio; nas espurias o fim de uma palavra era EXATAMENTE o inicio da
+  // proxima. So a pausa distingue as duas.
+  const frases = agruparEmFrases([
+    { text: "sensação", inicio: 3.21, fim: 4.03, confidence: 1, eos: true, sourceName: "x" },
+    { text: "que", inicio: 4.03, fim: 4.2, confidence: 1, eos: false, sourceName: "x" },
+  ]);
+  assert.equal(frases.length, 1);
+  assert.equal(frases[0]?.texto, "sensação que");
+});
+
 test("agruparEmFrases: pausa longa quebra mesmo sem eos", () => {
   // O editor cortou no meio da frase: o eos nunca chega.
   const frases = agruparEmFrases([palavra("antes", 0), palavra("depois", 10)]);
