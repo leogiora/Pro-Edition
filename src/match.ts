@@ -122,6 +122,12 @@ export const SINONIMOS_PADRAO: ReadonlyMap<string, readonly string[]> = new Map(
   ["jogando", ["jogar", "largar", "parar", "abandonar", "livrar"]],
   ["comparacao", ["comparar", "antes", "depois", "diferenca"]],
   ["jovem", ["jovens", "idade"]],
+  // Termos abaixo vieram de revisao visual dos arquivos em 2026-08-12 (frames
+  // extraidos com ffmpeg): "paciente" e "reservada" nao tinham sinonimo
+  // nenhum, entao "Jovem paciente" e "Sala reservada" so casavam com a
+  // palavra exata do nome do arquivo saindo na fala — bem raro.
+  ["paciente", ["atendido", "avaliado", "diagnostico"]],
+  ["reservada", ["privacidade", "discricao", "sigilo", "particular"]],
 ]);
 
 /**

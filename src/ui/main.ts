@@ -389,8 +389,13 @@ async function lerContexto(): Promise<{
   registrar(`${clipes.length} clipes em V1`, "passo");
 
   const nomes = [...new Set(clipes.map((c) => c.sourceName))];
-  const transcricoesJson = await comLimite("ler transcricoes", lerTranscricoes(nomes), 60000);
+  const { transcricoes: transcricoesJson, falhas } = await comLimite(
+    "ler transcricoes",
+    lerTranscricoes(nomes),
+    60000
+  );
   registrar(`${transcricoesJson.size} de ${nomes.length} midias com transcricao`, "passo");
+  for (const f of falhas) registrar(`"${f.nome}": ${f.motivo}`, "aviso");
 
   const info = await comLimite("ler sequencia", getSequenceInfo());
   mostrarSequencia(info);
