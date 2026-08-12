@@ -5,7 +5,6 @@
  * Tudo aqui vem de prova executada no auto-broll. Ver docs/API_PROOFS.md.
  */
 
-import { ehNosso } from "./pipeline.ts";
 import type { ClipeComOrigem } from "./transcript.ts";
 
 declare function require(id: string): unknown;
@@ -125,19 +124,8 @@ export async function lerCortes(videoTrackIndex = 0): Promise<number[]> {
   return clipes.slice(1).map((c) => c.startSeconds);
 }
 
-/**
- * Transcricao bruta de cada midia que tiver uma. Chave: nome do ProjectItem.
- *
- * `propagarErro` distingue os dois usos: a leitura exploratoria (varias
- * midias, antes de gerar) pode seguir sem uma midia que falhar — mas a
- * leitura de seguranca antes de escrever (D-05) precisa saber se a falta de
- * transcricao e real ou so um erro passageiro, senao um erro transiente vira
- * "nada para guardar" e o backup e pulado numa rota destrutiva.
- */
-export async function lerTranscricoes(
-  nomes: readonly string[],
-  opts: { propagarErro?: boolean } = {}
-): Promise<Map<string, string>> {
+/** Transcricao bruta de cada midia que tiver uma. Chave: nome do ProjectItem. */
+export async function lerTranscricoes(nomes: readonly string[]): Promise<Map<string, string>> {
   const { rootItem } = await handles();
   const raiz = rootItem as { getItems: () => Promise<Array<{ name: string }>> };
   const itens = await raiz.getItems();
@@ -150,9 +138,9 @@ export async function lerTranscricoes(
       const clip = ppro.ClipProjectItem.cast(item) ?? item;
       if (!(await ppro.Transcript.hasTranscript(clip))) continue;
       saida.set(nome, (await ppro.Transcript.exportToJSON(clip)) as string);
-    } catch (erro) {
-      if (opts.propagarErro) throw erro;
-      // Midia sem transcricao ou offline: seguir sem ela.
+    } catch {
+      // Midia sem transcricao ou offline: seguir sem ela. Desde que a rota
+      // de escrita morreu (D-13), esta leitura e so exploratoria.
     }
   }
   return saida;
@@ -193,32 +181,9 @@ function comTransacao(
 
 const seguro = (nome: string): string => nome.replace(/[^a-zA-Z0-9._-]/g, "_");
 
-/**
- * Guarda o transcript ORIGINAL antes de sobrescrever, uma unica vez por midia.
- *
- * A rota de escrita e destrutiva e sobrevive ao Ctrl+Z: fechado o Premiere, o
- * desfazer nao existe mais. Sem este arquivo nao ha volta.
- *
- * O "uma unica vez" custou caro para aprender: a primeira versao gravava um
- * backup por clique, e do segundo clique em diante ela salvava o texto que o
- * proprio plugin acabara de escrever. Em oito cliques, sete backups eram lixo
- * e a rede de seguranca so existia no primeiro arquivo.
- *
- * Devolve o caminho quando gravou, ou `null` quando ja havia backup bom.
- */
-export async function salvarBackup(nome: string, json: string): Promise<string | null> {
-  if (ehNosso(json)) return null; // nunca fazer backup do nosso proprio texto
-
-  const pasta = await uxp.storage.localFileSystem.getDataFolder();
-  const alvo = `original-${seguro(nome)}.json`;
-
-  const existentes = (await pasta.getEntries()) as Array<{ name: string }>;
-  if (existentes.some((e) => e.name === alvo)) return null;
-
-  const arquivo = await pasta.createFile(alvo, { overwrite: false });
-  await arquivo.write(json);
-  return arquivo.nativePath as string;
-}
+// salvarBackup morreu com a rota de escrita (D-13): gerar legendas nao toca
+// mais no transcript do clipe, entao nao ha o que proteger. lerBackup fica
+// porque "Restaurar original" ainda desfaz escritas de versoes antigas.
 
 /** Devolve o transcript original guardado, ou `null` se nao houver. */
 export async function lerBackup(nome: string): Promise<string | null> {

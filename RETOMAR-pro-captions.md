@@ -208,9 +208,11 @@ Descobertas de plataforma da mesma medição, já absorvidas no código:
   "Remove Punctuation" marcado — irrelevantes agora que o caminho é `.srt`,
   mas registrados no `API_PROOFS.md`.
 
-**Pergunta aberta decorrente:** com o `.srt` funcionando, a escrita do
-transcript no clipe (D-04, rota destrutiva, backup, restaurar) ainda serve
-para alguma coisa? Decisão do usuário — não remover nada sem ele.
+**Resolvido em 2026-08-12 (D-17):** a rota destrutiva foi removida com
+aprovação do usuário — "Gerar legendas" não toca mais no transcript do
+clipe; morreram `blocosParaTranscricao`, `salvarBackup`, `ehNosso` e
+`sequenceToSource`. "Restaurar original" continua no painel para desfazer
+escritas das versões antigas (os backups em PluginData permanecem).
 
 ---
 

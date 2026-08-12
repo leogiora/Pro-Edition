@@ -7,7 +7,7 @@
  */
 
 import { relogio } from "../domain.ts";
-import { blocosParaSrt, blocosParaTranscricao, gerarBlocos } from "../pipeline.ts";
+import { blocosParaSrt, gerarBlocos } from "../pipeline.ts";
 import {
   comLimite,
   escreverTranscricao,
@@ -18,7 +18,6 @@ import {
   lerClipes,
   lerCortes,
   lerTranscricoes,
-  salvarBackup,
   salvarSrt,
 } from "../premiere.ts";
 import { validar } from "../segmentar.ts";
@@ -127,28 +126,10 @@ async function gerar(): Promise<void> {
     return;
   }
 
-  const porMidia = blocosParaTranscricao(blocos, clipes);
-  if (porMidia.size === 0) throw new Error("Nenhum bloco caiu dentro de um clipe da V1.");
-
-  estado("escrevendo");
-  for (const [midia, transcricao] of porMidia) {
-    let atual: string | undefined;
-    try {
-      atual = (
-        await comLimite("transcricao atual", lerTranscricoes([midia], { propagarErro: true }), 60000)
-      ).get(midia);
-    } catch (erro) {
-      const msg = erro instanceof Error ? erro.message : String(erro);
-      registrar(`${midia}: falha ao ler transcricao atual antes de escrever, pulando por seguranca (${msg})`);
-      continue;
-    }
-    if (atual !== undefined) {
-      const backup = await comLimite("backup", salvarBackup(midia, atual));
-      registrar(backup === null ? `${midia}: original ja guardado` : `${midia}: original guardado`);
-    }
-    await comLimite("escrita", escreverTranscricao(midia, JSON.stringify(transcricao)));
-    registrar(`${midia}: ${transcricao.segments.length} blocos escritos`);
-  }
+  // A escrita do transcript no clipe (rota destrutiva, D-04) foi removida em
+  // 2026-08-12: o .srt e o caminho (D-13) e nao ha motivo para tocar na
+  // midia do projeto. "Restaurar original" fica para desfazer escritas de
+  // versoes antigas.
 
   // Resumo no fim: o log rola sozinho e so as ultimas linhas ficam a vista.
   registrar("");

@@ -357,6 +357,7 @@ manual provar ser insuficiente na prática — provavelmente não será.
 | D-14 | Depois de "Cristiano" exato, palavra a até metade de distância do sobrenome vira "Estivalet" automaticamente | Decisão do usuário em 2026-08-11 ("Cristiano Valete" no primeiro vídeo real); substitui a rota só-sugestão da §5 para este caso — contexto sem semelhança continua intocado |
 | D-15 | Sem ponto final nas legendas | Decisão do usuário em 2026-08-12 depois do primeiro export real; "?" e "!" ficam, "1.000" não é atingido (limpeza só olha o fim do texto) |
 | D-16 | Texto e preço em `.srt` separados, uma faixa de legenda cada | O estilo é da faixa (D-02): faixa de texto com estilo 96, faixa de preço com estilo 150 — elimina o ajuste manual por legenda que a D-03 aceitava |
+| D-17 | Rota destrutiva de escrita no clipe removida (revoga D-04/D-05 na prática) | Com D-13, escrever o transcript não serve pra nada e só arrisca a mídia do usuário; "Restaurar original" fica para desfazer escritas de versões antigas. Aprovado pelo usuário em 2026-08-12 |
 
 ---
 
