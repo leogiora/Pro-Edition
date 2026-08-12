@@ -17,6 +17,7 @@ import {
   aprender,
   comPendente,
   creditarManuais,
+  foiOPlugin,
   LIGACAO_MINIMA,
   ligacoesFirmes,
   parseAssociacoes,
@@ -257,10 +258,11 @@ async function julgarFaixa(
 
     // Tudo que veio do plugin — o que espera julgamento e o que ja foi julgado.
     // Sem a segunda parte, o proprio trabalho do plugin vira "colocacao sua".
-    const doPlano = new Set([...(pendente?.itens.map((i) => i.arquivo) ?? []), ...(pendente?.postos ?? [])]);
+    // Por POSICAO (D-033): so por nome, colocacao manual sua com arquivo que o
+    // plugin ja usou era engolida como trabalho dele e nunca creditada.
     const presentes = new Set(naTimeline.map((c) => c.sourceName));
     const manuais = naTimeline
-      .filter((c) => !doPlano.has(c.sourceName))
+      .filter((c) => !foiOPlugin({ arquivo: c.sourceName, inicio: c.startSeconds }, pendente))
       .map((c) => ({ arquivo: c.sourceName, inicio: c.startSeconds, fim: c.endSeconds }));
 
     // Nada apagado e nada colocado desde o plano anterior significa que ninguem
@@ -350,8 +352,10 @@ async function julgarFaixa(
           texto: `Voce colocou ${manuais.length} por conta propria: ${detalhe.join(", ")}.`,
           tipo: credito.creditados > 0 ? "ok" : "aviso",
         });
-        // Nao ha o que contar aqui, mas ha o que dizer: falta ligacao no dicionario.
-        for (const sugestao of credito.semLigacao.slice(0, 3)) {
+        // Nao ha o que contar aqui, mas ha o que dizer: falta ligacao no
+        // dicionario. TODAS, sem cortar em tres — a lista cortada fazia
+        // parecer que as colocacoes mais adiante nao tinham sido vistas.
+        for (const sugestao of credito.semLigacao) {
           resumo.push({ texto: sugestao, tipo: "aviso" });
         }
       }

@@ -8,6 +8,7 @@ import {
   chave,
   comPendente,
   creditarManuais,
+  foiOPlugin,
   ligacoesFirmes,
   parseAssociacoes,
   type Associacoes,
@@ -407,10 +408,10 @@ test("comPendente: julgar esvazia os itens mas nunca esquece o que o plugin pos"
   const posto = comPendente(PENDENTES_VAZIO, "Reels", PLANO);
   const julgado = comPendente(posto, "Reels", null);
   // Sem isto, o proprio trabalho do plugin virava "colocacao do usuario".
-  assert.deepEqual([...(julgado.porSequencia["Reels"]?.postos ?? [])].sort(), [
-    "Casal feliz (3).mp4",
-    "Viagra (1).mp4",
-  ]);
+  assert.deepEqual(
+    (julgado.porSequencia["Reels"]?.postos ?? []).map((p) => p.arquivo).sort(),
+    ["Casal feliz (3).mp4", "Viagra (1).mp4"]
+  );
 });
 
 test("comPendente: a lista do que o plugin pos acumula entre rodadas", () => {
@@ -509,4 +510,61 @@ test("parsePendentes: o inicio de cada item sobrevive a ida e volta do disco", (
   });
   const relido = parsePendentes(JSON.parse(JSON.stringify(p)));
   assert.equal(relido.porSequencia["Reels"]?.itens[0]?.inicio, 380);
+});
+
+// ------------- o que e do plugin, por posicao e nao so por nome (D-033) ------
+
+test("foiOPlugin: colocacao manual com arquivo que o plugin ja usou NAO e do plugin", () => {
+  // O caso real: 7 de 14 colocacoes manuais sumiam do credito por homonimo.
+  const p = comPendente(PENDENTES_VAZIO, "Reels", {
+    quando: "",
+    itens: [{ arquivo: "Viagra (1).mp4", conceito: "Viagra", termosCasados: ["viagra"], inicio: 380 }],
+  }).porSequencia["Reels"];
+  assert.equal(foiOPlugin({ arquivo: "Viagra (1).mp4", inicio: 25 }, p), false, "longe do lugar: e manual");
+  assert.equal(foiOPlugin({ arquivo: "Viagra (1).mp4", inicio: 380.8 }, p), true, "no lugar: e do plugin");
+});
+
+test("foiOPlugin: posto de rodada julgada continua reconhecido no lugar dele", () => {
+  let pendentes = comPendente(PENDENTES_VAZIO, "Reels", {
+    quando: "",
+    itens: [{ arquivo: "Doutor (5).mp4", conceito: "Doutor", termosCasados: ["doutor"], inicio: 100 }],
+  });
+  pendentes = comPendente(pendentes, "Reels", null); // julgado: vira so `postos`
+  const p = pendentes.porSequencia["Reels"];
+  assert.equal(foiOPlugin({ arquivo: "Doutor (5).mp4", inicio: 100.5 }, p), true);
+  assert.equal(foiOPlugin({ arquivo: "Doutor (5).mp4", inicio: 200 }, p), false);
+});
+
+test("foiOPlugin: posto antigo sem posicao cai no criterio por nome", () => {
+  const p = parsePendentes({
+    schema: 1,
+    porSequencia: { Reels: { quando: "", itens: [], postos: ["Viagra (1).mp4"] } },
+  }).porSequencia["Reels"];
+  assert.equal(foiOPlugin({ arquivo: "Viagra (1).mp4", inicio: 999 }, p), true);
+  assert.equal(foiOPlugin({ arquivo: "Outro.mp4", inicio: 999 }, p), false);
+});
+
+test("parsePendentes: postos novos guardam a posicao na ida e volta", () => {
+  const p = comPendente(PENDENTES_VAZIO, "Reels", {
+    quando: "",
+    itens: [{ arquivo: "Viagra (1).mp4", conceito: "Viagra", termosCasados: ["viagra"], inicio: 42 }],
+  });
+  const relido = parsePendentes(JSON.parse(JSON.stringify(p)));
+  assert.deepEqual(relido.porSequencia["Reels"]?.postos, [{ arquivo: "Viagra (1).mp4", inicio: 42 }]);
+});
+
+test("creditarManuais: frase longa e cortada em palavra inteira, com aviso", () => {
+  const longa = [
+    frase("depois veio o mito, em seguida a ansiedade e quando voce percebeu ja era tarde demais", 30, 40),
+  ];
+  const r = creditarManuais(
+    MEMORIA_VAZIA,
+    "Reels",
+    [{ arquivo: "Viagra (2).mp4", inicio: 31, fim: 34 }],
+    longa,
+    CONCEITOS
+  );
+  const msg = r.semLigacao[0] ?? "";
+  assert.match(msg, /…/, "corte tem de avisar que cortou");
+  assert.doesNotMatch(msg, /\bper…/, "nao pode partir palavra no meio");
 });

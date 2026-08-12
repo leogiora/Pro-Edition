@@ -755,6 +755,38 @@ casamento) e se corrigem com o uso; ficaram como estao.
 
 ---
 
+## D-033 — Colocacao sua nao se confunde com trabalho do plugin (2026-08-12) — firme
+
+**Contexto.** Terceira aparicao da mesma doenca do D-032: comparar por nome.
+As 16:37 o usuario tinha 14 colocacoes manuais reconhecidas; as 16:57, so 7.
+As outras 7 foram engolidas pela lista `postos` — depois da rodada de 88
+insercoes, os nomes entraram em "isso foi o plugin que pos", e colocacao manual
+com o mesmo arquivo passou a ser classificada como trabalho do plugin: sem
+credito, sem mensagem, sem sinal de que sumiu. O usuario percebeu pelo log
+parar em 01:28 quando havia edicao mais adiante.
+
+**Decisao.** `postos` guarda posicao junto com o nome, e a classificacao
+"foi o plugin?" (`foiOPlugin`) exige o clipe a menos de 2s de onde o plugin
+inseriu. Entrada legado, so-nome, continua valendo por nome — sem regressao,
+mas com a limitacao registrada abaixo.
+
+**Duas correcoes de log na mesma causa-raiz ("silencio parece falha"):**
+
+- O painel mostrava so as TRES primeiras sugestoes sem ligacao (`slice(0, 3)`)
+  — parecia que as colocacoes mais adiante nao tinham sido vistas. Agora
+  mostra todas.
+- A frase citada era cortada em 60 caracteres NO MEIO da palavra, sem aviso
+  ("e quando voce per") — parecia log quebrado. Agora corta em palavra
+  inteira e termina com "…".
+
+**Limitacao que fica.** Os `postos` gravados antes desta decisao (118 nomes na
+sequencia real) nao tem posicao e nunca expiram: colocacao manual NOVA usando
+um arquivo que o plugin ja usou NAQUELA sequencia ainda e engolida por nome.
+Corrigir exigiria adivinhar onde o plugin pos cada um, e chutar e pior que
+conviver. A lista se corrige sozinha em sequencia nova e a cada insercao nova.
+
+---
+
 ## D-008 — Ferramental da Fase 1: esbuild e `node --test`, nada alem (2026-08-06) — firme
 
 **Contexto.** A Fase 1 pede TypeScript, lint e testes. O caminho habitual seria

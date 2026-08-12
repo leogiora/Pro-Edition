@@ -73,10 +73,15 @@ export interface PlanoPendente {
    * "colocacao manual" na rodada seguinte — e o painel dizia "voce colocou 7 por
    * conta propria" para sete arquivos que o usuario nunca tocou.
    *
+   * COM posicao (D-033): so o nome fazia o caminho inverso — colocacao manual
+   * SUA com um arquivo que o plugin ja usou em qualquer rodada era engolida
+   * como trabalho do plugin e nunca creditada. Entrada antiga, so-nome
+   * (`inicio` ausente), continua valendo por nome.
+   *
    * Estado derivado: quem monta um plano nao preenche isto. `comPendente`
    * acumula sozinho, e e ele que garante que a lista nunca se perca.
    */
-  readonly postos?: readonly string[];
+  readonly postos?: readonly { readonly arquivo: string; readonly inicio?: number }[];
 }
 
 /**
@@ -210,6 +215,18 @@ export interface CreditoManual {
 }
 
 /**
+ * Corta a frase para o log SEM partir palavra no meio, e avisa que cortou.
+ *
+ * O `slice(0, 60)` cru produzia "e quando voce per" — parecia log quebrado,
+ * nao frase longa.
+ */
+function resumoDaFrase(texto: string): string {
+  if (texto.length <= 60) return texto;
+  const corte = texto.lastIndexOf(" ", 60);
+  return `${texto.slice(0, corte > 20 ? corte : 60)}…`;
+}
+
+/**
  * Tolerancia ao procurar a frase de uma colocacao manual.
  *
  * Um corte costuma entrar um pouco ANTES da palavra — o proprio planejador usa
@@ -291,7 +308,7 @@ export function creditarManuais(
       // A marca SEM prefixo fica de fora de proposito: no dia em que a ligacao
       // firmar, `casados` deixa de ser vazio e isto vira credito de par tambem.
       semLigacao.push(
-        `${relogio(manual.inicio)} voce colocou "${conceito.rotulo}" onde se diz "${frase.texto.slice(0, 60)}" — o dicionario nao explica, mas vale: o take ganhou credito e contei as palavras cobertas.`
+        `${relogio(manual.inicio)} voce colocou "${conceito.rotulo}" onde se diz "${resumoDaFrase(frase.texto)}" — o dicionario nao explica, mas vale: o take ganhou credito e contei as palavras cobertas.`
       );
       continue;
     }
@@ -390,16 +407,50 @@ export function comPendente(
   plano: PlanoPendente | null
 ): Pendentes {
   const antes = pendentes.porSequencia[sequencia];
-  const postos = new Set(antes?.postos ?? []);
-  for (const item of plano?.itens ?? []) postos.add(item.arquivo);
+  // Dedupe por arquivo+lugar: o mesmo take pode legitimamente ter sido posto
+  // em dois pontos (repeticao do D-029, ou re-insercao depois de exclusao).
+  const postos = new Map<string, { arquivo: string; inicio?: number }>();
+  for (const p of antes?.postos ?? []) postos.set(chaveDoPosto(p), p);
+  for (const item of plano?.itens ?? []) {
+    const p = { arquivo: item.arquivo, ...(item.inicio !== undefined ? { inicio: item.inicio } : {}) };
+    postos.set(chaveDoPosto(p), p);
+  }
 
   const porSequencia = { ...pendentes.porSequencia };
   porSequencia[sequencia] = {
     quando: plano?.quando ?? antes?.quando ?? "",
     itens: plano?.itens ?? [],
-    postos: [...postos],
+    postos: [...postos.values()],
   };
   return { schema: 1, porSequencia };
+}
+
+function chaveDoPosto(p: { arquivo: string; inicio?: number }): string {
+  return p.inicio === undefined ? p.arquivo : `${p.arquivo}|${Math.round(p.inicio)}`;
+}
+
+/**
+ * Este clipe da timeline foi o PLUGIN quem pos?
+ *
+ * Nome sozinho nao basta (D-033): colocacao manual do usuario com um arquivo
+ * que o plugin ja usou era classificada como trabalho do plugin e sumia do
+ * credito — 7 das 14 colocacoes manuais do uso real sumiram assim. Com
+ * posicao, so conta como "do plano" o clipe que esta onde o plugin inseriu.
+ * Entrada antiga sem `inicio` continua valendo por nome, o comportamento
+ * anterior.
+ */
+export function foiOPlugin(
+  clipe: { arquivo: string; inicio: number },
+  pendente: PlanoPendente | undefined
+): boolean {
+  if (pendente === undefined) return false;
+  const bate = (arquivo: string, inicio?: number): boolean =>
+    arquivo === clipe.arquivo &&
+    (inicio === undefined || Math.abs(inicio - clipe.inicio) <= TOLERANCIA_DO_LUGAR);
+  return (
+    pendente.itens.some((i) => bate(i.arquivo, i.inicio)) ||
+    (pendente.postos ?? []).some((p) => bate(p.arquivo, p.inicio))
+  );
 }
 
 // -------------------------------------------------- ligacoes aprendidas
@@ -511,12 +562,23 @@ export function parsePendentes(raw: unknown): Pendentes {
         ...(typeof i.inicio === "number" && Number.isFinite(i.inicio) ? { inicio: i.inicio } : {}),
       });
     }
+    const postos: { arquivo: string; inicio?: number }[] = [];
+    for (const p of Array.isArray(o.postos) ? (o.postos as unknown[]) : []) {
+      // Formato antigo: so o nome. Formato novo: { arquivo, inicio }.
+      if (typeof p === "string") postos.push({ arquivo: p });
+      else if (typeof p === "object" && p !== null) {
+        const cru = p as Record<string, unknown>;
+        if (typeof cru.arquivo !== "string") continue;
+        postos.push({
+          arquivo: cru.arquivo,
+          ...(typeof cru.inicio === "number" && Number.isFinite(cru.inicio) ? { inicio: cru.inicio } : {}),
+        });
+      }
+    }
     porSequencia[k] = {
       quando: typeof o.quando === "string" ? o.quando : "",
       itens,
-      postos: Array.isArray(o.postos)
-        ? (o.postos as unknown[]).filter((p): p is string => typeof p === "string")
-        : [],
+      postos,
     };
   }
   return { schema: 1, porSequencia };
