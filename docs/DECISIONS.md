@@ -720,6 +720,41 @@ diz como limpar. Confirmar ao vivo nas duas versoes antes de promover a firme.
 
 ---
 
+## D-032 — A trava anti-Ctrl+Z confere posicao, nao so nome (2026-08-12) — firme
+
+**Contexto.** Segundo incidente de aprendizado envenenado por undo (o primeiro
+foi o do commit `9c2d4b0`, que criou a trava "todos sumiram = nao conta"). Aqui
+a trava FUROU: o usuario inseriu 88 na timeline inteira, desfez o lote com
+Ctrl+Z e passou a trabalhar por in/out (D-031). Na analise seguinte, 21 dos 88
+"sobreviveram" — mas por colisao de nome: o julgamento conferia presenca do
+arquivo em qualquer lugar das faixas, e B-roll manual mais sobra de rodada
+antiga usam os mesmos arquivos. Com 21 falsos vivos, a trava nao disparou e os
+67 restantes viraram rejeicao: `Corpo do homem` foi a -13, `Doutor` e
+`Comparacao` a -11. Sintoma visivel: "nenhuma sugestao passou (melhor: 100%)".
+
+**Decisao.** Cada item do pendente agora grava `inicio`. A trava pergunta
+"algum item ainda esta ONDE o plugin o pos?" (mesmo arquivo a menos de 2s do
+lugar) — undo em lote nao deixa ninguem no lugar, entao ela dispara mesmo com
+homonimos espalhados pela timeline. Pendente antigo sem `inicio` cai no
+criterio por nome, que era o comportamento anterior. O julgamento item a item
+continua por nome: mover um B-roll para longe e mante-lo, e nao pode virar
+punicao.
+
+**De carona, o descarte parou de mentir.** "nenhuma sugestao passou (melhor:
+100%)" mostrava o score CRU e escondia que foi o aprendizado que derrubou.
+Agora: "melhor: 100%, caiu para 55% pelo aprendizado".
+
+**Reparo do incidente.** Os 7 pares com saldo negativo foram removidos do
+`aprendizado.json` do Premiere 25 (voltam ao fator neutro; backup em
+`aprendizado.json.bak-antes-reparo-d032`). Reconstruir o valor exato era
+impossivel — o dano por par nao fica registrado — e neutralizar e o unico
+reparo que nao inventa historia: se algum daqueles pares merecia mesmo cair,
+as proximas exclusoes reais o derrubam de novo. As contagens de `arquivos`
+tambem absorveram erros falsos, mas distorcem pouco (escolha de take, nao
+casamento) e se corrigem com o uso; ficaram como estao.
+
+---
+
 ## D-008 — Ferramental da Fase 1: esbuild e `node --test`, nada alem (2026-08-06) — firme
 
 **Contexto.** A Fase 1 pede TypeScript, lint e testes. O caminho habitual seria

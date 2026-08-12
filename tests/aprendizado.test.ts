@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 
 import {
+  algumNoLugar,
   aprender,
   ASSOCIACOES_VAZIAS,
   chave,
@@ -470,4 +471,42 @@ test("parse: descarta entrada malformada e mantem o resto", () => {
     { arquivo: "a.mp4", conceito: "A", termosCasados: ["a"] },
   ]);
   assert.equal(p.porSequencia["ruim"], undefined);
+});
+
+// ------------------- trava anti-Ctrl+Z por posicao (D-032) -------------------
+
+const ITENS_COM_LUGAR = [
+  { arquivo: "Viagra (1).mp4", conceito: "Viagra", termosCasados: ["viagra"], inicio: 380 },
+  { arquivo: "Doutor (5).mp4", conceito: "Doutor", termosCasados: ["doutor"], inicio: 402 },
+];
+
+test("algumNoLugar: undo em lote nao deixa ninguem no lugar — nome igual longe nao conta", () => {
+  // O caso real: os itens sumiram, mas os MESMOS arquivos existem em outros
+  // pontos (B-roll manual, sobra de rodada antiga). Nome colide; posicao nao.
+  const clipes = [
+    { arquivo: "Viagra (1).mp4", inicio: 25 },
+    { arquivo: "Doutor (5).mp4", inicio: 60 },
+  ];
+  const presentes = new Set(clipes.map((c) => c.arquivo));
+  assert.equal(algumNoLugar(ITENS_COM_LUGAR, clipes, presentes), false);
+});
+
+test("algumNoLugar: mantido no lugar (ou so empurrado de leve) conta como sobrevivente", () => {
+  const clipes = [{ arquivo: "Viagra (1).mp4", inicio: 381.4 }];
+  assert.equal(algumNoLugar(ITENS_COM_LUGAR, clipes, new Set(["Viagra (1).mp4"])), true);
+});
+
+test("algumNoLugar: pendente antigo sem inicio cai no criterio por nome", () => {
+  const semLugar = [{ arquivo: "Viagra (1).mp4", conceito: "Viagra", termosCasados: ["viagra"] }];
+  assert.equal(algumNoLugar(semLugar, [], new Set(["Viagra (1).mp4"])), true);
+  assert.equal(algumNoLugar(semLugar, [], new Set()), false);
+});
+
+test("parsePendentes: o inicio de cada item sobrevive a ida e volta do disco", () => {
+  const p = comPendente({ schema: 1, porSequencia: {} }, "Reels", {
+    quando: "2026-08-12",
+    itens: ITENS_COM_LUGAR,
+  });
+  const relido = parsePendentes(JSON.parse(JSON.stringify(p)));
+  assert.equal(relido.porSequencia["Reels"]?.itens[0]?.inicio, 380);
 });

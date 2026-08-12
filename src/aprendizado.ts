@@ -63,6 +63,8 @@ export interface PlanoPendente {
     readonly arquivo: string;
     readonly conceito: string;
     readonly termosCasados: readonly string[];
+    /** Onde entrou na sequencia, em segundos. Ausente em pendente antigo. */
+    readonly inicio?: number;
   }[];
   /**
    * Tudo o que o PLUGIN ja pos nesta sequencia, mesmo depois de julgado.
@@ -342,6 +344,40 @@ export function melhorArquivo(memoria: Memoria, arquivos: readonly string[]): st
 }
 
 /**
+ * Tolerancia entre onde o plugin pos e onde o clipe esta agora.
+ *
+ * Aparar o comeco ou empurrar para sincronizar move o inicio em ate um segundo
+ * e pouco; mover para OUTRO ponto da fala move muito mais. 2s separa "ajustou"
+ * de "nao e mais aquela colocacao".
+ */
+const TOLERANCIA_DO_LUGAR = 2;
+
+/**
+ * Algum item do plano ainda esta ONDE o plugin o pos?
+ *
+ * A trava anti-Ctrl+Z conferia so o nome, e nome se repete: B-roll manual e
+ * sobra de rodada antiga com o mesmo arquivo "sobreviviam" por um item que o
+ * undo ja tinha desfeito. No uso real, 21 falsos sobreviventes furaram a trava
+ * e 67 pares apanharam por uma rejeicao que nunca houve (D-032). Posicao nao
+ * colide: undo em lote nao deixa ninguem no lugar. Item sem `inicio` (pendente
+ * gravado antes disto existir) cai no criterio por nome, o comportamento
+ * anterior.
+ */
+export function algumNoLugar(
+  itens: PlanoPendente["itens"],
+  clipes: ReadonlyArray<{ arquivo: string; inicio: number }>,
+  presentes: ReadonlySet<string>
+): boolean {
+  return itens.some((i) => {
+    const planejado = i.inicio;
+    if (planejado === undefined) return presentes.has(i.arquivo);
+    return clipes.some(
+      (c) => c.arquivo === i.arquivo && Math.abs(c.inicio - planejado) <= TOLERANCIA_DO_LUGAR
+    );
+  });
+}
+
+/**
  * Grava o pendente de uma sequencia, ou o esvazia com `null`.
  *
  * Esvaziar apaga os itens a julgar, **nunca a lista de `postos`**: o plugin
@@ -472,6 +508,7 @@ export function parsePendentes(raw: unknown): Pendentes {
         termosCasados: Array.isArray(i.termosCasados)
           ? (i.termosCasados as unknown[]).filter((t): t is string => typeof t === "string")
           : [],
+        ...(typeof i.inicio === "number" && Number.isFinite(i.inicio) ? { inicio: i.inicio } : {}),
       });
     }
     porSequencia[k] = {

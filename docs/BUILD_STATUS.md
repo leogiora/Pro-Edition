@@ -131,11 +131,15 @@ Arquivos de estado, na pasta de dados do plugin (ver secao 8 das armadilhas):
 
 ## Nao provado ainda — o que conferir na proxima sessao
 
-0. **In/out como recorte (D-031).** `getInPoint`/`getOutPoint` nunca foram
-   chamados ao vivo em NENHUMA das versoes. Conferir: (a) com in/out marcado,
-   o log anuncia o trecho e so insere dentro; (b) SEM in/out marcado, nada
-   muda — se aparecer "In/out marcados" sem o usuario ter marcado, e o caso
-   do out fossilizado descrito no D-031, e o `recorte()` precisa de ajuste.
+0. **In/out como recorte (D-031).** O caso (a) ja foi provado ao vivo no 25
+   (16:57 de 2026-08-12: "inserindo so de 06:20 a 08:20", 9 inseridos, todos
+   dentro). Falta o caso (b): SEM in/out marcado, nada muda — se aparecer
+   "In/out marcados" sem o usuario ter marcado, e o out fossilizado descrito
+   no D-031, e o `recorte()` precisa de ajuste.
+0b. **Trava anti-Ctrl+Z por posicao (D-032).** Codigo novo, nunca rodou ao
+   vivo. O proximo pendente ja tera `inicio`; provar: inserir, Ctrl+Z, analisar
+   — deve dizer "parece Ctrl+Z, nao contei como erro" mesmo com B-rolls
+   manuais dos mesmos arquivos na timeline.
 
 1. **Nao sobrescrever** (D-023). Clicar em *Analisar* duas vezes sem editar nada
    deve dizer *"Tudo o que eu sugeriria ja esta na timeline"* e nao mexer em

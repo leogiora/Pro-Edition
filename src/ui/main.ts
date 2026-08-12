@@ -13,6 +13,7 @@ import {
 } from "../domain.ts";
 import { analisar, type Analise } from "../analise.ts";
 import {
+  algumNoLugar,
   aprender,
   comPendente,
   creditarManuais,
@@ -287,7 +288,13 @@ async function julgarFaixa(
         // do que voce ter apagado um por um todos os itens. Contar isso como
         // erro puniria o conceito inteiro por um teste, nao por rejeicao real
         // — mesmo raciocinio do "semEdicao" acima, so que para o outro extremo.
-        const sobreviveuAlgum = pendente.itens.some((i) => presentes.has(i.arquivo));
+        // "Sobreviver" aqui e POR POSICAO (D-032): nome sozinho colide com
+        // B-roll manual e sobra de rodada antiga, e ja furou esta trava.
+        const sobreviveuAlgum = algumNoLugar(
+          pendente.itens,
+          naTimeline.map((c) => ({ arquivo: c.sourceName, inicio: c.startSeconds })),
+          presentes
+        );
         if (!sobreviveuAlgum) {
           julgado = comPendente(pendentes, sequencia, null);
           resumo.push({
@@ -641,6 +648,7 @@ async function analisarSequencia(): Promise<void> {
             arquivo: c.arquivo,
             conceito: c.conceito,
             termosCasados: c.termosCasados,
+            inicio: c.inicio,
           })),
         })
       );

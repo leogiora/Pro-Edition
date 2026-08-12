@@ -242,6 +242,10 @@ export function planejar(
       continue;
     }
     let algumPassou = false;
+    // O melhor score DEPOIS do aprendizado: e ele que briga com o corte, e e
+    // ele que o descarte tem de mostrar. "melhor: 100%" com nada passando era
+    // o ajuste escondido do log — parecia bug, e custou uma investigacao.
+    let melhorAjustado: number | null = null;
     for (const s of o.sugestoes) {
       // O historico entra AQUI, antes do corte: par que o usuario ja apagou
       // algumas vezes deixa de passar sozinho, sem ninguem editar dicionario.
@@ -257,6 +261,7 @@ export function planejar(
 
       const ajuste = fator(memoria, s.conceito.rotulo, s.termosCasados);
       const score = s.score * ajuste;
+      melhorAjustado = Math.max(melhorAjustado ?? 0, score);
       if (score < regras.scoreMinimo) continue;
       algumPassou = true;
       candidatos.push({
@@ -271,8 +276,12 @@ export function planejar(
       });
     }
     if (!algumPassou) {
+      const cru = o.sugestoes[0]?.score;
+      const caiu = cru !== undefined && melhorAjustado !== null && melhorAjustado < cru - 0.005;
       descartes.push(
-        `${relogio(o.frase.inicio)} nenhuma sugestao passou (melhor: ${porcento(o.sugestoes[0]?.score)})`
+        caiu
+          ? `${relogio(o.frase.inicio)} nenhuma sugestao passou (melhor: ${porcento(cru)}, caiu para ${porcento(melhorAjustado ?? 0)} pelo aprendizado)`
+          : `${relogio(o.frase.inicio)} nenhuma sugestao passou (melhor: ${porcento(cru)})`
       );
     }
   }

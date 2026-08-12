@@ -496,3 +496,17 @@ function p0<T>(lista: readonly T[]): T {
   if (primeiro === undefined) throw new Error("plano vazio");
   return primeiro;
 }
+
+test("planejar: o descarte diz quando foi o aprendizado que derrubou o score", () => {
+  // Raw 100%, mas o par apanhou tres vezes: ajuste 0,55 fica abaixo do corte.
+  let memoria = MEMORIA_VAZIA;
+  const pendente = {
+    quando: "",
+    itens: [{ arquivo: "Viagra (1).mp4", conceito: "Viagra", termosCasados: VIAGRA.termos }],
+  };
+  for (let i = 0; i < 3; i++) memoria = aprender(memoria, pendente, new Set()).memoria;
+
+  const p = planejar([oportunidade(10, 3, [{ c: VIAGRA, score: 1 }])], BIBLIOTECA, REGRAS_PADRAO, memoria);
+  assert.equal(p.colocacoes.length, 0);
+  assert.match(p.descartes.join(" "), /melhor: 100%, caiu para 55% pelo aprendizado/);
+});

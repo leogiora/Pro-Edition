@@ -93,6 +93,7 @@ Mensagens mais comuns e o que significam:
 | Mensagem | Significado |
 |---|---|
 | `nenhuma sugestao passou (melhor: 50%)` | Achou algo parecido, mas não o bastante (limite é 60%). Não é erro — é o filtro de qualidade funcionando. |
+| `nenhuma sugestao passou (melhor: 100%, caiu para 55% pelo aprendizado)` | O casamento era bom, mas você já apagou esse par vezes demais e ele não entra mais sozinho. Se foi engano, coloque um B-roll desse conceito na mão — o crédito reabilita. |
 | `já há B-roll aí, deixei como está` | Tem alguma coisa em cima daquele instante em **qualquer** faixa de vídeo acima da V1 (não só a que ele usa). Nunca insere por cima. |
 | `muito perto do B-roll anterior` / `conceito repetido há menos de 8s` | Regra de espaçamento — ative "Densidade máxima" se quiser afrouxar isso. |
 | `todas as variações apareceram há menos de 60s` | Todos os arquivos daquele conceito já estão na timeline, perto demais para repetir. Depois de 60 segundos o mesmo take pode voltar. |
