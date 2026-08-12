@@ -690,6 +690,36 @@ quando as colocacoes compartilharem palavra.
 
 ---
 
+## D-031 — In/out da sequencia recorta onde o plugin insere (2026-08-12) — provisoria
+
+**Contexto.** A sequencia real do usuario e um lote: "AS 20 SELECIONADAS" tem
+20 reels emendados, 508 clipes em V1. Analisar sempre a timeline inteira
+significa nao poder tratar um reel de cada vez. Pedido: marcar in/out e inserir
+so ali.
+
+**Decisao.** `Sequence.getInPoint()/getOutPoint()` lidos com fallback (existem
+na tipagem do 26; no 25, nunca provados — qualquer falha vira null). A funcao
+pura `recorte()` em domain.ts decide se o par lido e um recorte DE VERDADE:
+sub-trecho proprio da sequencia vale; zero-ate-o-fim, invertido, vazio ou
+NaN e "sem recorte", analisar tudo. O filtro corta as oportunidades ANTES do
+planejamento (espacamento e janelas valem dentro do trecho, sem candidato de
+fora consumindo espaco) e uma borda dura depois dele (frase que atravessa o in
+ou o out pode ancorar fora — o que comeca fora nao entra).
+
+**So o Analisar respeita o recorte.** O Aprender le a sequencia inteira de
+proposito: apagar ou colocar B-roll fora do trecho continua ensinando. Recortar
+o aprendizado transformaria o in/out num vazamento silencioso de sinal.
+
+**Risco conhecido, e por isso provisoria:** o que getInPoint/getOutPoint
+devolvem quando o usuario NUNCA marcou in/out nao foi provado em nenhuma das
+duas versoes. A aposta e que devolvem 0-ate-o-fim (vira null pelo `recorte`) ou
+lancam (vira null pelo catch). Se devolverem outra coisa — um out fossilizado de
+uma marcacao antiga, por exemplo — o plugin restringiria a insercao sem o
+usuario querer. Mitigacao: o log SEMPRE anuncia quando um recorte esta ativo, e
+diz como limpar. Confirmar ao vivo nas duas versoes antes de promover a firme.
+
+---
+
 ## D-008 — Ferramental da Fase 1: esbuild e `node --test`, nada alem (2026-08-06) — firme
 
 **Contexto.** A Fase 1 pede TypeScript, lint e testes. O caminho habitual seria

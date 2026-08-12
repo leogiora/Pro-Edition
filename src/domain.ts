@@ -50,6 +50,29 @@ export function fillScalePercent(clip: Size, sequence: Size): number {
 }
 
 /**
+ * Decide se o in/out lido da sequencia e um recorte DE VERDADE.
+ *
+ * Sem in/out marcado, o Premiere devolve algo — zero ate o fim, ou valores que
+ * nunca foram provados no 25. Nada disso e intencao de recortar. So vale o par
+ * que descreve um pedaco proprio da sequencia; o resto devolve null, e null
+ * significa "analisar tudo", o comportamento de sempre.
+ */
+const FOLGA_DO_RECORTE = 0.1;
+
+export function recorte(
+  inicio: number,
+  fim: number,
+  duracaoDaSequencia: number
+): { inicio: number; fim: number } | null {
+  if (!Number.isFinite(inicio) || !Number.isFinite(fim)) return null;
+  const ini = Math.max(0, inicio);
+  const f = Math.min(fim, duracaoDaSequencia);
+  if (f - ini < FOLGA_DO_RECORTE) return null;
+  if (ini <= FOLGA_DO_RECORTE && f >= duracaoDaSequencia - FOLGA_DO_RECORTE) return null;
+  return { inicio: ini, fim: f };
+}
+
+/**
  * Timecode HH:MM:SS:FF para exibicao.
  *
  * ponytail: usa fps arredondado. Numa sequencia de 29,9928 fps isso acumula

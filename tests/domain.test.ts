@@ -8,6 +8,7 @@ import {
   fillScalePercent,
   formatTimecode,
   parseConfig,
+  recorte,
   sourceToSequence,
   trackLabel,
   type TimelineClip,
@@ -162,4 +163,38 @@ test("trackLabel: indice 0 e a primeira faixa", () => {
   assert.equal(trackLabel("V", 1), "V2");
   assert.equal(trackLabel("A", 2), "A3");
   assert.equal(trackLabel("V", 0), "V1");
+});
+
+// ------------------------------- recorte por in/out --------------------------
+
+test("recorte: um pedaco proprio da sequencia vale", () => {
+  assert.deepEqual(recorte(30, 60, 300), { inicio: 30, fim: 60 });
+});
+
+test("recorte: comecando no zero ainda e recorte, desde que nao va ate o fim", () => {
+  assert.deepEqual(recorte(0, 30, 300), { inicio: 0, fim: 30 });
+});
+
+test("recorte: a sequencia inteira nao e recorte — e o padrao sem in/out", () => {
+  assert.equal(recorte(0, 300, 300), null);
+});
+
+test("recorte: vazio, invertido ou fora da sequencia devolve null", () => {
+  assert.equal(recorte(60, 60, 300), null);
+  assert.equal(recorte(60, 30, 300), null);
+  assert.equal(recorte(400, 500, 300), null, "in depois do fim: nada sobra ao aparar");
+});
+
+test("recorte: valores que nao sao numero de verdade devolvem null", () => {
+  assert.equal(recorte(Number.NaN, 60, 300), null);
+  assert.equal(recorte(0, Number.POSITIVE_INFINITY, 300), null);
+});
+
+test("recorte: out alem do fim e aparado, nao rejeitado", () => {
+  assert.deepEqual(recorte(250, 400, 300), { inicio: 250, fim: 300 });
+});
+
+test("recorte: duracao desconhecida (zero) nunca vira recorte", () => {
+  // getEndTime pode falhar e devolver 0 — nesse caso, analisar tudo.
+  assert.equal(recorte(10, 60, 0), null);
 });

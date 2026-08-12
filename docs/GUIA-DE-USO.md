@@ -43,6 +43,14 @@ dicionário de sinônimos) contra o texto da fala.
 | **Analisar e inserir** | O botão principal: faz tudo — lê, casa, planeja e insere. |
 | **Aprender** | Só ensina, não insere nada. Use depois de editar a timeline na mão (apagar o que não serviu, adicionar B-roll seu) sem rodar uma análise nova. |
 
+**Trabalhando num trecho só (in/out):** marque o in e o out na timeline (teclas
+`I` e `O` do Premiere) e clique em Analisar — os B-rolls entram **só dentro do
+trecho marcado**. É o jeito de tratar um reel de cada vez numa sequência que
+tem vários. O log avisa: *"In/out marcados: inserindo só de X a Y"*. Sem
+in/out (ou com o in/out cobrindo a sequência toda), ele analisa tudo, como
+sempre. O **Aprender ignora o in/out de propósito**: edição sua ensina em
+qualquer ponto da timeline.
+
 ---
 
 ## O sistema de aprendizado

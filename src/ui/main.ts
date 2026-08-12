@@ -7,6 +7,7 @@ import {
   DEFAULT_CONFIG,
   formatTimecode,
   parseConfig,
+  recorte,
   relogio,
   type Config,
 } from "../domain.ts";
@@ -39,6 +40,7 @@ import {
   inserirPlano,
   lerBrollsAcimaDeV1,
   lerClipes,
+  lerInOut,
   lerTranscricoes,
   listarPastaBrolls,
   medirBiblioteca,
@@ -387,6 +389,7 @@ async function lerContexto(): Promise<{
   arquivos: ArquivoBroll[];
   resultado: Analise;
   nomeSequencia: string;
+  duracaoDaSequencia: number;
 }> {
   const pasta = el<Campo>("libraryPath").value.trim();
   if (!pasta) throw new Error("Informe a pasta de B-rolls.");
@@ -434,7 +437,7 @@ async function lerContexto(): Promise<{
     "passo"
   );
 
-  return { arquivos, resultado, nomeSequencia };
+  return { arquivos, resultado, nomeSequencia, duracaoDaSequencia: info.durationSeconds };
 }
 
 /**
@@ -481,9 +484,21 @@ async function analisarSequencia(): Promise<void> {
 
   try {
     const config = lerFormulario();
-    const { arquivos, resultado, nomeSequencia } = await lerContexto();
+    const { arquivos, resultado, nomeSequencia, duracaoDaSequencia } = await lerContexto();
 
     for (const aviso of resultado.avisos.slice(0, 6)) registrar(aviso, "aviso");
+
+    // In/out marcados na timeline recortam ONDE o plugin insere. So o
+    // Analisar respeita o recorte — o Aprender continua lendo a sequencia
+    // inteira, senao colocacao sua fora do trecho deixaria de ensinar.
+    const marcado = await comLimite("ler in/out", lerInOut(), 5000);
+    const selecao = marcado === null ? null : recorte(marcado.inicio, marcado.fim, duracaoDaSequencia);
+    if (selecao !== null) {
+      registrar(
+        `In/out marcados: inserindo so de ${relogio(selecao.inicio)} a ${relogio(selecao.fim)}. Para a sequencia inteira, limpe o in/out.`,
+        "passo"
+      );
+    }
 
     // Depois da analise, de proposito: creditar o que voce colocou na mao exige
     // saber o que estava sendo dito naquele instante, e isso so existe agora.
@@ -494,8 +509,21 @@ async function analisarSequencia(): Promise<void> {
     );
     resumoAprendizado = resumo;
 
-    if (resultado.oportunidades.length === 0) {
-      registrar("Nenhuma oportunidade de B-roll encontrada.", "vazio");
+    // Frases que nem encostam no trecho marcado ficam de fora ANTES do
+    // planejamento: espacamento e janela de repeticao valem dentro do trecho,
+    // sem colocacao fantasma de fora consumindo o espaco de quem esta dentro.
+    const oportunidades =
+      selecao === null
+        ? resultado.oportunidades
+        : resultado.oportunidades.filter((o) => o.frase.fim > selecao.inicio && o.frase.inicio < selecao.fim);
+
+    if (oportunidades.length === 0) {
+      registrar(
+        selecao === null
+          ? "Nenhuma oportunidade de B-roll encontrada."
+          : "Nenhuma oportunidade de B-roll no trecho marcado.",
+        "vazio"
+      );
       estado("nada a inserir", "ok");
       return;
     }
@@ -527,7 +555,7 @@ async function analisarSequencia(): Promise<void> {
     }
 
     const plano = planejar(
-      resultado.oportunidades,
+      oportunidades,
       { caminhos: new Map(arquivos.map((a) => [a.name, a.nativePath])) },
       config.densidadeMaxima ? REGRAS_DENSAS : REGRAS_PADRAO,
       memoria,
@@ -549,9 +577,19 @@ async function analisarSequencia(): Promise<void> {
 
     for (const descarte of plano.descartes) registrar(`  ${descarte}`, "vazio");
 
+    // Uma frase que atravessa o in ou o out ainda pode ancorar fora do trecho.
+    // A borda e dura: o que comeca fora, nao entra.
+    let colocacoes = plano.colocacoes;
+    if (selecao !== null) {
+      for (const fora of colocacoes.filter((c) => c.inicio < selecao.inicio || c.inicio >= selecao.fim)) {
+        registrar(`  ${relogio(fora.inicio)} ${fora.conceito}: fora do trecho marcado`, "vazio");
+      }
+      colocacoes = colocacoes.filter((c) => c.inicio >= selecao.inicio && c.inicio < selecao.fim);
+    }
+
     // O planejador monta o plano ideal do zero, cego para o que ja foi feito.
     // Aqui o que ja esta na timeline manda: nada entra por cima.
-    const { entram, bloqueadas } = semSobrepor(plano.colocacoes, ocupado);
+    const { entram, bloqueadas } = semSobrepor(colocacoes, ocupado);
     for (const b of bloqueadas) registrar(`  ${b}`, "vazio");
 
     if (entram.length === 0 && bloqueadas.length > 0) {

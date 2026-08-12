@@ -131,6 +131,12 @@ Arquivos de estado, na pasta de dados do plugin (ver secao 8 das armadilhas):
 
 ## Nao provado ainda — o que conferir na proxima sessao
 
+0. **In/out como recorte (D-031).** `getInPoint`/`getOutPoint` nunca foram
+   chamados ao vivo em NENHUMA das versoes. Conferir: (a) com in/out marcado,
+   o log anuncia o trecho e so insere dentro; (b) SEM in/out marcado, nada
+   muda — se aparecer "In/out marcados" sem o usuario ter marcado, e o caso
+   do out fossilizado descrito no D-031, e o `recorte()` precisa de ajuste.
+
 1. **Nao sobrescrever** (D-023). Clicar em *Analisar* duas vezes sem editar nada
    deve dizer *"Tudo o que eu sugeriria ja esta na timeline"* e nao mexer em
    nada. **E o mais importante da lista: e a trava que protege a edicao.**

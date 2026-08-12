@@ -156,6 +156,32 @@ export async function getSequenceInfo(): Promise<SequenceInfo> {
   };
 }
 
+/**
+ * O in/out marcado na sequencia, em segundos — ou null quando nao da para ler.
+ *
+ * `getInPoint`/`getOutPoint` existem na tipagem do 26; no 25 nunca foram
+ * provados. Qualquer falha vira null, e null significa "sem recorte": o plugin
+ * analisa a timeline inteira, como sempre fez. Decidir se o par lido e um
+ * recorte DE VERDADE (e nao a sequencia inteira) e trabalho de `recorte()`,
+ * que e puro e testavel.
+ */
+export async function lerInOut(): Promise<{ inicio: number; fim: number } | null> {
+  try {
+    const { sequence } = await handles();
+    const seq = sequence as {
+      getInPoint?: () => Promise<{ seconds: number }>;
+      getOutPoint?: () => Promise<{ seconds: number }>;
+    };
+    if (typeof seq.getInPoint !== "function" || typeof seq.getOutPoint !== "function") return null;
+    const inicio = (await seq.getInPoint())?.seconds;
+    const fim = (await seq.getOutPoint())?.seconds;
+    if (typeof inicio !== "number" || typeof fim !== "number") return null;
+    return { inicio, fim };
+  } catch {
+    return null;
+  }
+}
+
 export interface ArquivoBroll {
   readonly name: string;
   readonly nativePath: string;
