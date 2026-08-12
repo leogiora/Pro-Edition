@@ -632,6 +632,34 @@ porque de a contagem nao alcancar a segunda.
 
 ---
 
+## D-029 — Repetir take e fallback, nao proibicao (2026-08-12) — firme
+
+**Contexto.** O planejador proibia repetir qualquer arquivo na sequencia inteira,
+via `Set`. A secao 8 do CLAUDE.md nunca pediu isso: ela diz "nao repetir o mesmo
+shot em uma sequencia, **salvo ausencia de alternativa**". O codigo implementou a
+versao mais rigida, e o usuario sentiu o custo no uso real: conceito com menos
+takes que mencoes deixava frase boa sem B-roll — o descarte "todas as variacoes
+ja usadas" era regra de espacamento se passando por falta de material.
+
+**Decisao.** O `Set` virou `Map` arquivo -> quando apareceu. Take inedito continua
+tendo prioridade absoluta; repetir so acontece quando nao sobrou nenhum, e mesmo
+assim so depois de `janelaMesmoArquivo` (60s, a olho — botao, nao constante) desde
+a ultima aparicao daquele arquivo. A colocacao repetida diz no motivo: "take
+repetido, nao sobrou inedito".
+
+**Por que 60s e nao a `janelaSemRepetir`.** A janela de conceito (20s, 8s em
+densidade) protege contra o mesmo **assunto** insistir. O mesmo **shot** e mais
+reconhecivel que o mesmo assunto: o espectador esquece que ja ouviu "medico" ha
+15s, mas lembra da imagem exata. Janela propria, mais longa, que a densidade nao
+encurta.
+
+**Limite conhecido no aprendizado.** O julgamento compara por nome de arquivo.
+Com repeticao possivel, apagar UMA das copias nao registra erro — o nome continua
+na faixa. Aceito sem correcao: quem manteve uma copia manteve o take, e repetir
+ja e o caso raro por construcao.
+
+---
+
 ## D-008 — Ferramental da Fase 1: esbuild e `node --test`, nada alem (2026-08-06) — firme
 
 **Contexto.** A Fase 1 pede TypeScript, lint e testes. O caminho habitual seria

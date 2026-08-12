@@ -119,8 +119,10 @@ export interface Aprendizado {
  * Compara o plano inserido com o que sobrou na faixa e devolve a memoria nova.
  *
  * `sobreviventes` sao os nomes de arquivo ainda presentes na faixa de destino.
- * Comparar por nome basta: o planejador nunca repete um arquivo na mesma
- * sequencia.
+ * Comparar por nome tem um limite conhecido: o planejador pode repetir um
+ * arquivo quando o conceito nao tem take inedito (secao 8), e nesse caso
+ * apagar UMA das copias nao registra erro — o nome continua na faixa. Aceito:
+ * quem manteve uma copia manteve o take.
  */
 export function aprender(
   memoria: Memoria,

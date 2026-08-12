@@ -46,7 +46,8 @@ le sinonimos.json (dicionario editavel) e ligacoes.json (o que voce ensinou)
      exigindo que as palavras do conceito tenham sido ditas JUNTAS (D-021)
   -> JULGA a timeline: o que voce apagou, o que voce colocou (D-016/17/18/20)
   -> mede a agitacao de cada arquivo pelo stsz do mp4, com cache (D-019)
-  -> planeja: ancora na palavra, take pelo ritmo da fala, sem repetir
+  -> planeja: ancora na palavra, take pelo ritmo da fala, inedito primeiro
+     (repete um take so sem alternativa e depois de 60s — D-029)
   -> DESCARTA o que cairia em cima do que ja existe (D-023)
   -> insere, apara, escala para preencher, remove o audio
   -> guarda o plano para a proxima rodada julgar

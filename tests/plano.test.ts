@@ -89,7 +89,8 @@ test("planejar: nao repete o mesmo arquivo", () => {
   assert.notEqual(p.colocacoes[0]?.arquivo, p.colocacoes[1]?.arquivo);
 });
 
-test("planejar: sem variacao sobrando, descarta em vez de repetir", () => {
+test("planejar: repetir perto demais nao entra — o espectador reconhece o shot", () => {
+  // 50s de distancia, janela de mesmo arquivo e 60s: a segunda cai fora.
   const p = planejar(
     [
       oportunidade(10, 3, [{ c: VIAGRA, score: 1 }]),
@@ -98,6 +99,34 @@ test("planejar: sem variacao sobrando, descarta em vez de repetir", () => {
     BIBLIOTECA
   );
   assert.equal(p.colocacoes.length, 1);
+  assert.match(p.descartes.join(" "), /apareceram ha menos de 60s/);
+});
+
+test("planejar: sem take inedito, repete o que ja saiu da tela ha tempo", () => {
+  // Secao 8: "salvo ausencia de alternativa". 80s de distancia passa da janela.
+  const p = planejar(
+    [
+      oportunidade(10, 3, [{ c: VIAGRA, score: 1 }]),
+      oportunidade(90, 3, [{ c: VIAGRA, score: 1 }]),
+    ],
+    BIBLIOTECA
+  );
+  assert.equal(p.colocacoes.length, 2);
+  assert.equal(p.colocacoes[1]?.arquivo, "Viagra (1).mp4");
+  assert.match(p.colocacoes[1]?.motivo ?? "", /take repetido/);
+});
+
+test("planejar: inedito continua tendo prioridade sobre repetir", () => {
+  // Frustrado tem dois takes: mesmo com o (1) elegivel de novo, vem o (2).
+  const p = planejar(
+    [
+      oportunidade(10, 3, [{ c: FRUSTRADO, score: 1 }]),
+      oportunidade(90, 3, [{ c: FRUSTRADO, score: 1 }]),
+    ],
+    BIBLIOTECA
+  );
+  assert.notEqual(p.colocacoes[0]?.arquivo, p.colocacoes[1]?.arquivo);
+  assert.doesNotMatch(p.colocacoes[1]?.motivo ?? "", /take repetido/);
 });
 
 test("planejar: nao repete o mesmo conceito dentro da janela", () => {

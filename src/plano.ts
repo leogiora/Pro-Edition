@@ -54,6 +54,13 @@ export interface RegrasPlano {
   /** Nao repetir o mesmo conceito antes de passar este tempo. */
   readonly janelaSemRepetir: number;
   /**
+   * Repetir o MESMO ARQUIVO e fallback, nunca escolha (secao 8: "salvo
+   * ausencia de alternativa"). So acontece quando o conceito nao tem take
+   * inedito sobrando, e mesmo assim so depois deste tempo desde a ultima
+   * aparicao — perto demais, o espectador reconhece o shot.
+   */
+  readonly janelaMesmoArquivo: number;
+  /**
    * Quanto o corte entra ANTES da palavra que casou.
    *
    * Cortar exatamente na silaba chega tarde: o espectador ve a imagem depois
@@ -78,6 +85,8 @@ export const REGRAS_PADRAO: RegrasPlano = {
   // Mais exigente que a analise: aqui entra na timeline sem ninguem revisar.
   scoreMinimo: 0.6,
   janelaSemRepetir: 20,
+  // ponytail: 60s a olho, nao medido — apertar se o mesmo shot incomodar, afrouxar se sobrar frase sem B-roll
+  janelaMesmoArquivo: 60,
   antecipacao: 0.3,
   toleranciaIntensidade: 0.35,
 };
@@ -271,8 +280,8 @@ export function planejar(
   // Ordem cronologica; empate no mesmo instante resolve pelo melhor score.
   candidatos.sort((a, b) => (a.ancoraEm !== b.ancoraEm ? a.ancoraEm - b.ancoraEm : b.score - a.score));
 
-  /** Arquivos ja usados: a secao 8 proibe repetir o mesmo shot na sequencia. */
-  const arquivosUsados = new Set<string>();
+  /** Arquivo -> quando apareceu pela ultima vez. Inedito tem prioridade. */
+  const quandoUsou = new Map<string, number>();
   /** Conceito -> quando apareceu pela ultima vez. */
   const ultimoUso = new Map<string, number>();
   let fimDoAnterior = Number.NEGATIVE_INFINITY;
@@ -291,16 +300,22 @@ export function planejar(
       continue;
     }
 
-    // O que o usuario apagou cede a vez a outra variacao do mesmo conceito. O
-    // assunto continua valendo; so muda o take.
-    const disponiveis = c.arquivos.filter((a) => !arquivosUsados.has(a));
+    // Secao 8: nao repetir o mesmo shot, SALVO ausencia de alternativa. Take
+    // inedito primeiro; esgotados, aceita repetir um que ja saiu da tela ha
+    // tempo suficiente. Proibir de vez deixava frase boa sem B-roll sempre que
+    // o conceito tinha menos takes que mencoes.
+    const ineditos = c.arquivos.filter((a) => !quandoUsou.has(a));
+    const repetiu = ineditos.length === 0;
+    const disponiveis = repetiu
+      ? c.arquivos.filter((a) => c.ancoraEm - (quandoUsou.get(a) ?? 0) >= regras.janelaMesmoArquivo)
+      : ineditos;
 
     // A intensidade FILTRA, o historico ESCOLHE. Sem isso o historico trava no
     // primeiro take creditado e os outros 42 nunca aparecem.
     const cabem = filtrarPorIntensidade(disponiveis, c.frase, intensidade, regras, ritmoOrdenado);
     const arquivo = melhorArquivo(memoria, cabem.arquivos);
     if (arquivo === undefined) {
-      descartes.push(`${onde}: todas as variacoes ja usadas`);
+      descartes.push(`${onde}: todas as variacoes apareceram ha menos de ${regras.janelaMesmoArquivo}s`);
       continue;
     }
     // Sem historico o escolhido e sempre o primeiro. Se divergiu, foi a contagem
@@ -325,14 +340,14 @@ export function planejar(
       caminho,
       conceito: c.conceito,
       score: c.score,
-      motivo: montarMotivo(c.motivo, trocouTake, cabem.rotulo),
+      motivo: montarMotivo(c.motivo, trocouTake, cabem.rotulo, repetiu),
       termosCasados: c.termosCasados,
       textoDaFrase: c.frase.texto,
       ancoradoEm: c.palavraEm,
       inicio: c.ancoraEm,
       duracao,
     });
-    arquivosUsados.add(arquivo);
+    quandoUsou.set(arquivo, c.ancoraEm);
     ultimoUso.set(c.conceito, c.ancoraEm);
     fimDoAnterior = c.ancoraEm + duracao;
   }
@@ -382,10 +397,11 @@ function maisProximo(ordenados: readonly number[], alvo: number): number {
 }
 
 /** O motivo carrega tudo o que mexeu na escolha, na ordem em que mexeu. */
-function montarMotivo(base: string, trocouTake: boolean, intensidade: string | null): string {
+function montarMotivo(base: string, trocouTake: boolean, intensidade: string | null, repetiu = false): string {
   let texto = base;
   if (intensidade !== null) texto += ` · ${intensidade}`;
   if (trocouTake) texto += " · outro take, o anterior foi apagado";
+  if (repetiu) texto += " · take repetido, nao sobrou inedito";
   return texto;
 }
 

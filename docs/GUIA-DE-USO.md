@@ -18,7 +18,8 @@ Você edita a sequência normalmente na V1. Um clique em **Analisar e inserir**:
    sobrevive, e é só isso que importa.
 3. Compara o que foi dito com os nomes dos arquivos de B-roll da sua pasta
    (`Viagra.mp4`, `Falhou na cama.mp4`, etc.) e com um dicionário de sinônimos.
-4. Escolhe onde encaixar cada B-roll, evita repetir o mesmo take, evita
+4. Escolhe onde encaixar cada B-roll, prefere take inédito (só repete um já
+   usado depois de 60 segundos, e só quando não sobrou nenhum novo), evita
    sobrepor o que já está na timeline.
 5. Insere em V2, corta no tamanho certo, escala pra preencher a tela e tira o
    áudio — tudo isso sem você revisar antes.
@@ -84,7 +85,8 @@ Mensagens mais comuns e o que significam:
 | `nenhuma sugestao passou (melhor: 50%)` | Achou algo parecido, mas não o bastante (limite é 60%). Não é erro — é o filtro de qualidade funcionando. |
 | `já há B-roll aí, deixei como está` | Tem alguma coisa em cima daquele instante em **qualquer** faixa de vídeo acima da V1 (não só a que ele usa). Nunca insere por cima. |
 | `muito perto do B-roll anterior` / `conceito repetido há menos de 8s` | Regra de espaçamento — ative "Densidade máxima" se quiser afrouxar isso. |
-| `todas as variações já usadas` | Já usou todos os arquivos daquele conceito na timeline; não repete o mesmo take. |
+| `todas as variações apareceram há menos de 60s` | Todos os arquivos daquele conceito já estão na timeline, perto demais para repetir. Depois de 60 segundos o mesmo take pode voltar. |
+| `take repetido, não sobrou inédito` | Não é descarte — o B-roll entrou, repetindo um take que já apareceu há mais de 60 segundos, porque o conceito não tinha arquivo novo. |
 | `Trecho incerto (confiança X)` | Aviso da própria transcrição do Premiere, não do plugin — a fala reconhecida ali tem baixa confiança. |
 
 ---
