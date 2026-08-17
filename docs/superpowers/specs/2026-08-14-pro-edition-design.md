@@ -155,13 +155,25 @@ outros dois, já provado ao vivo no 25 pelo Auto B-roll). Instalação por
 
 ### Dados e aprendizado
 
-Cada plugin original continua lendo/escrevendo seu próprio `PluginData`
-(`%APPDATA%\...\PPRO\<versão>\External\com.leogi.autobroll\...` e
-`com.leogi.procaptions\...`) — esses caminhos vêm do `id` de cada plugin
-original no manifest dele, que não muda. O `Pro Edition` tem seu próprio
-`id`/`PluginData`, essencialmente vazio (não guarda nada hoje). **Nenhuma
-migração necessária**, o aprendizado real do Auto B-roll continua intacto e
-funcionando do mesmo jeito, seja aberto pelo plugin original ou pelo shell.
+**Risco confirmado por spike ao vivo (2026-08-16, `teste-dois-paineis`):**
+`getDataFolder()` resolve pela identidade do plugin em execução, não por um
+caminho fixo — chamado de dentro de um plugin com `id` diferente, devolveu a
+pasta *desse* plugin. Ou seja: se o código do Auto B-roll rodar dentro do
+bundle do Pro Edition (`com.leogi.proedition`), ele lê/escreve numa pasta
+`PluginData` nova e vazia, não na de `com.leogi.autobroll`. Acesso cruzado
+direto a outra `PluginData` também falhou (`getEntryWithUrl` num caminho de
+outro plugin: `Could not find an entry` — sandbox do UXP bloqueia).
+
+**Decisão:** sem migração automática por código (não vale a complexidade,
+o sandbox bloquearia a leitura de qualquer forma sem um picker nativo, e é
+passo único). Documentar como passo manual: antes do primeiro uso do Pro
+Edition, o usuário copia pelo Explorer o conteúdo de
+`...\External\com.leogi.autobroll\PluginData\` para
+`...\External\com.leogi.proedition\PluginData\` (mesma ideia para
+`com.leogi.procaptions`, se aplicável). Esse passo entra no guia de uso do
+Pro Edition. Depois da cópia inicial, os dois pluginData divergem — o
+plugin standalone e o shell passam a acumular aprendizado separado a partir
+daí, o que é aceitável (decisão aprovada em chat, sem objeção).
 
 ## Testes
 
