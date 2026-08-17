@@ -709,6 +709,7 @@ async function carregarSinonimos(): Promise<void> {
 
 export function mount(root: HTMLElement): void {
   log = el("log");
+  const meuLog = log; // snapshot desta chamada — log e reatribuido a cada mount()
 
   // Primeira coisa visivel: se o distintivo continuar dizendo "carregando",
   // o script nao rodou, e o problema esta no carregamento — nao na logica.
@@ -729,7 +730,7 @@ export function mount(root: HTMLElement): void {
   registrar("Painel pronto.", "vazio");
 
   void (async () => {
-    if (!document.body.contains(log)) return;
+    if (!document.body.contains(meuLog)) return;
 
     try {
       const salva = await comLimite("ler configuracao", readJson(CONFIG_FILE), 5000);
@@ -738,7 +739,7 @@ export function mount(root: HTMLElement): void {
       registrar(`Configuracao nao carregou, usando padrao. ${mensagemDeErro(e)}`, "aviso");
     }
     await carregarSinonimos();
-    if (!document.body.contains(log)) return;
+    if (!document.body.contains(meuLog)) return;
     await relerSequencia();
   })();
 }
