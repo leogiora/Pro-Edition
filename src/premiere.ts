@@ -265,7 +265,7 @@ export async function gravarLog(linhas: readonly string[]): Promise<string> {
 
   let anteriores: unknown[] = [];
   try {
-    const antigo = await pasta.getEntry("ultimo-log.json");
+    const antigo = await pasta.getEntry("ultimo-log-captions.json");
     const bruto: unknown = JSON.parse((await antigo.read()) as string);
     const lista = (bruto as { execucoes?: unknown })?.execucoes;
     if (Array.isArray(lista)) anteriores = lista;
@@ -274,7 +274,7 @@ export async function gravarLog(linhas: readonly string[]): Promise<string> {
   }
 
   const execucoes = [{ quando: new Date().toISOString(), linhas: [...linhas] }, ...anteriores].slice(0, 10);
-  const arquivo = await pasta.createFile("ultimo-log.json", { overwrite: true });
+  const arquivo = await pasta.createFile("ultimo-log-captions.json", { overwrite: true });
   await arquivo.write(JSON.stringify({ execucoes }, null, 2));
   return arquivo.nativePath as string;
 }

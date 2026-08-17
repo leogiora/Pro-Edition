@@ -209,6 +209,8 @@ async function restaurar(): Promise<void> {
 }
 
 export function mount(root: HTMLElement): void {
+  linhas = [];
+
   // Antes de qualquer await: se o I/O pendurar, os botoes ja estao ligados.
   estado("pronto");
   registrar("painel carregado");
