@@ -28,6 +28,21 @@ acumular aprendizado **separado** a partir daí — abrir pelo plugin original
 ou pelo shell não mantém os dois sincronizados automaticamente depois do
 passo inicial. Isso é esperado.
 
+## Instalação
+
+Antes do primeiro uso, dentro do repositório `Pro-Edition`:
+
+```
+npm install
+npm run build
+```
+
+**Sempre que o Auto B-roll ou o Pro Captions mudar a UI deles (`src/ui/*`),
+rode `npm run build` de novo aqui dentro do `Pro-Edition`.** O shell inclui o
+HTML/CSS/mount.ts dos dois plugins irmãos no seu próprio bundle em tempo de
+build — não lê os arquivos deles ao vivo — então uma mudança na UI de um dos
+dois só aparece no Pro Edition depois de reconstruir o shell.
+
 ## Uso
 
 Abra `Window > Extensions > Pro Edition` no Premiere. A tela inicial mostra
