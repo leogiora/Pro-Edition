@@ -682,12 +682,14 @@ async function analisarSequencia(): Promise<void> {
  * Arquivo quebrado nunca vira dicionario vazio: cai no padrao e avisa. Um
  * dicionario vazio degradaria o casamento inteiro em silencio.
  */
-async function carregarSinonimos(): Promise<void> {
+async function carregarSinonimos(aindaValido: () => boolean): Promise<void> {
   try {
     const bruto = await comLimite("ler sinonimos", readJson(SINONIMOS_FILE), 5000);
+    if (!aindaValido()) return;
     if (bruto === null) {
       // Primeira vez: grava o padrao para o usuario ter o que editar.
       await writeJson(SINONIMOS_FILE, sinonimosParaJson(SINONIMOS_PADRAO));
+      if (!aindaValido()) return;
       registrar(`Dicionario criado em ${SINONIMOS_FILE}, na pasta de dados do plugin.`, "vazio");
       return;
     }
@@ -701,6 +703,7 @@ async function carregarSinonimos(): Promise<void> {
     usarSinonimos(doDisco);
     registrar(`Dicionario: ${doDisco.size} entradas de ${SINONIMOS_FILE}`, "vazio");
   } catch (e) {
+    if (!aindaValido()) return;
     registrar(`Dicionario nao carregou, usando o padrao. ${mensagemDeErro(e)}`, "aviso");
   }
 }
@@ -730,16 +733,20 @@ export function mount(root: HTMLElement): void {
   registrar("Painel pronto.", "vazio");
 
   void (async () => {
-    if (!document.body.contains(meuLog)) return;
+    const aindaValido = () => document.body.contains(meuLog);
+    if (!aindaValido()) return;
 
     try {
       const salva = await comLimite("ler configuracao", readJson(CONFIG_FILE), 5000);
+      if (!aindaValido()) return;
       if (salva !== null) preencherFormulario(parseConfig(salva));
     } catch (e) {
+      if (!aindaValido()) return;
       registrar(`Configuracao nao carregou, usando padrao. ${mensagemDeErro(e)}`, "aviso");
     }
-    await carregarSinonimos();
-    if (!document.body.contains(meuLog)) return;
+    if (!aindaValido()) return;
+    await carregarSinonimos(aindaValido);
+    if (!aindaValido()) return;
     await relerSequencia();
   })();
 }
