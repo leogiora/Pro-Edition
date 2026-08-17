@@ -131,6 +131,18 @@ function mensagemDeErro(e: unknown): string {
   return err?.message ?? String(e);
 }
 
+/**
+ * Sinaliza que o painel foi desmontado (troca de tela no shell) enquanto uma
+ * operacao assincrona ainda rodava. Nunca deve virar log nem mudar `estado`:
+ * o #log e o #estado atuais, se existirem, pertencem a um mount() diferente
+ * — escrever neles corromperia o log/status do painel que esta na tela agora.
+ */
+class PainelDesmontado extends Error {}
+
+function checarMontado(aindaValido: () => boolean): void {
+  if (!aindaValido()) throw new PainelDesmontado();
+}
+
 // --------------------------------------------------------------- config
 
 /**
@@ -399,7 +411,7 @@ function trecho(texto: string, limite = 70): string {
  * Tudo o que os dois botoes precisam antes de divergir: a biblioteca no disco, o
  * corte de V1, a transcricao reconstruida e as ligacoes ja aprendidas.
  */
-async function lerContexto(): Promise<{
+async function lerContexto(aindaValido: () => boolean): Promise<{
   arquivos: ArquivoBroll[];
   resultado: Analise;
   nomeSequencia: string;
@@ -409,6 +421,7 @@ async function lerContexto(): Promise<{
   if (!pasta) throw new Error("Informe a pasta de B-rolls.");
 
   const arquivos = await comLimite("listar pasta de B-rolls", listarPastaBrolls(pasta), 30000);
+  checarMontado(aindaValido);
   if (arquivos.length === 0) throw new Error(`Nenhum video em ${pasta}.`);
   registrar(`${arquivos.length} B-rolls na pasta`, "passo");
 
@@ -416,6 +429,7 @@ async function lerContexto(): Promise<{
   void writeJson(CONFIG_FILE, lerFormulario()).catch(() => undefined);
 
   const clipes = await comLimite("ler clipes de V1", lerClipes(0), 30000);
+  checarMontado(aindaValido);
   if (clipes.length === 0) throw new Error("V1 esta vazia. Nao ha o que analisar.");
   registrar(`${clipes.length} clipes em V1`, "passo");
 
@@ -425,16 +439,19 @@ async function lerContexto(): Promise<{
     lerTranscricoes(nomes),
     60000
   );
+  checarMontado(aindaValido);
   registrar(`${transcricoesJson.size} de ${nomes.length} midias com transcricao`, "passo");
   for (const f of falhas) registrar(`"${f.nome}": ${f.motivo}`, "aviso");
 
   const info = await comLimite("ler sequencia", getSequenceInfo());
+  checarMontado(aindaValido);
   mostrarSequencia(info);
   const nomeSequencia = info.name;
 
   const ligacoes = ligacoesFirmes(
     parseAssociacoes(await comLimite("ler ligacoes", readJson(ASSOCIACOES_FILE), 5000))
   );
+  checarMontado(aindaValido);
   if (ligacoes.size > 0) {
     registrar(`${ligacoes.size} conceitos com ligacao que voce ensinou`, "passo");
   }
@@ -461,7 +478,7 @@ async function lerContexto(): Promise<{
  * e clique aqui. O plugin le a timeline, entende o que voce fez e guarda. Antes
  * disto, a unica forma de ensinar era deixar ele inserir de novo.
  */
-async function aprenderDaTimeline(): Promise<void> {
+async function aprenderDaTimeline(aindaValido: () => boolean): Promise<void> {
   const botao = el<HTMLButtonElement & { disabled: boolean }>("aprender");
   botao.disabled = true;
   estado("aprendendo");
@@ -469,24 +486,29 @@ async function aprenderDaTimeline(): Promise<void> {
 
   let resumoAprendizado: Julgamento["resumo"] = [];
   try {
-    const { resultado, nomeSequencia } = await lerContexto();
+    const { resultado, nomeSequencia } = await lerContexto(aindaValido);
     const { resumo } = await julgarFaixa(nomeSequencia, resultado.frases, resultado.conceitos);
+    checarMontado(aindaValido);
     resumoAprendizado = resumo;
     // Este botao nao insere nada, entao o log dele e curto e some no clique
     // seguinte. Vale dizer que terminou.
     registrar("Aprendizado gravado. Nada foi inserido na timeline.", "ok");
     estado("pronto", "ok");
   } catch (e) {
-    registrar(mensagemDeErro(e), "erro");
-    estado("falhou", "erro");
+    if (!(e instanceof PainelDesmontado)) {
+      registrar(mensagemDeErro(e), "erro");
+      estado("falhou", "erro");
+    }
   } finally {
-    for (const linha of resumoAprendizado) registrar(linha.texto, linha.tipo);
+    if (aindaValido()) {
+      for (const linha of resumoAprendizado) registrar(linha.texto, linha.tipo);
+    }
     botao.disabled = false;
     await salvarLog(LOG_APRENDER);
   }
 }
 
-async function analisarSequencia(): Promise<void> {
+async function analisarSequencia(aindaValido: () => boolean): Promise<void> {
   const botao = el<HTMLButtonElement & { disabled: boolean }>("analisar");
   botao.disabled = true;
   estado("analisando");
@@ -498,7 +520,7 @@ async function analisarSequencia(): Promise<void> {
 
   try {
     const config = lerFormulario();
-    const { arquivos, resultado, nomeSequencia, duracaoDaSequencia } = await lerContexto();
+    const { arquivos, resultado, nomeSequencia, duracaoDaSequencia } = await lerContexto(aindaValido);
 
     for (const aviso of resultado.avisos.slice(0, 6)) registrar(aviso, "aviso");
 
@@ -506,6 +528,7 @@ async function analisarSequencia(): Promise<void> {
     // Analisar respeita o recorte — o Aprender continua lendo a sequencia
     // inteira, senao colocacao sua fora do trecho deixaria de ensinar.
     const marcado = await comLimite("ler in/out", lerInOut(), 5000);
+    checarMontado(aindaValido);
     const selecao = marcado === null ? null : recorte(marcado.inicio, marcado.fim, duracaoDaSequencia);
     if (selecao !== null) {
       registrar(
@@ -521,6 +544,7 @@ async function analisarSequencia(): Promise<void> {
       resultado.frases,
       resultado.conceitos
     );
+    checarMontado(aindaValido);
     resumoAprendizado = resumo;
 
     // Frases que nem encostam no trecho marcado ficam de fora ANTES do
@@ -545,20 +569,24 @@ async function analisarSequencia(): Promise<void> {
     // Medir a biblioteca: a primeira vez custa dezenas de segundos, as
     // seguintes nao custam nada. Falhar aqui so tira a escolha de take pelo
     // momento; nao pode tirar a insercao.
+    checarMontado(aindaValido);
     const cache = parseCacheIntensidade(
       await comLimite("ler intensidade", readJson(INTENSIDADE_FILE), 5000)
     );
+    checarMontado(aindaValido);
     let medido = cache;
     try {
       medido = await comLimite(
         "medir intensidade",
-        medirBiblioteca(arquivos, cache, (feitos, total) =>
-          registrar(`  medindo intensidade: ${feitos} de ${total}`, "passo")
-        ),
+        medirBiblioteca(arquivos, cache, (feitos, total) => {
+          if (aindaValido()) registrar(`  medindo intensidade: ${feitos} de ${total}`, "passo");
+        }),
         300000
       );
+      checarMontado(aindaValido);
       if (medido !== cache) await writeJson(INTENSIDADE_FILE, medido);
     } catch (e) {
+      if (e instanceof PainelDesmontado) throw e;
       registrar(`Intensidade nao medida, seguindo sem ela. ${mensagemDeErro(e)}`, "aviso");
       medido = CACHE_VAZIO;
     }
@@ -640,6 +668,7 @@ async function analisarSequencia(): Promise<void> {
       }),
       120000
     );
+    checarMontado(aindaValido);
     for (const passo of feito.passos) registrar(`  ${passo}`, "ok");
     for (const aviso of feito.avisos) registrar(`  ${aviso}`, "aviso");
     registrar("Tres Ctrl+Z desfazem tudo.", "vazio");
@@ -659,17 +688,23 @@ async function analisarSequencia(): Promise<void> {
           })),
         })
       );
+      checarMontado(aindaValido);
       registrar("Apague os que nao serviram: a proxima analise aprende com isso.", "vazio");
     } catch (e) {
+      if (e instanceof PainelDesmontado) throw e;
       registrar(`Plano nao ficou guardado, esta rodada nao vai ensinar nada. ${mensagemDeErro(e)}`, "aviso");
     }
 
     estado("pronto", "ok");
   } catch (e) {
-    registrar(mensagemDeErro(e), "erro");
-    estado("falhou", "erro");
+    if (!(e instanceof PainelDesmontado)) {
+      registrar(mensagemDeErro(e), "erro");
+      estado("falhou", "erro");
+    }
   } finally {
-    for (const linha of resumoAprendizado) registrar(linha.texto, linha.tipo);
+    if (aindaValido()) {
+      for (const linha of resumoAprendizado) registrar(linha.texto, linha.tipo);
+    }
     botao.disabled = false;
     await salvarLog(LOG_ANALISE);
   }
@@ -716,6 +751,11 @@ async function carregarSinonimos(aindaValido: () => boolean): Promise<void> {
 export function mount(root: HTMLElement): void {
   log = el("log");
   const meuLog = log; // snapshot desta chamada — log e reatribuido a cada mount()
+  // Vale para QUALQUER operacao assincrona disparada por este mount: boot e
+  // cliques nos botoes. Sem isto, uma Analise ainda em andamento quando o
+  // shell troca de tela (Pro Edition) escreve seu resultado tardio no #log
+  // e no #estado do painel que esta na tela agora, nao mais no seu.
+  const aindaValido = () => document.body.contains(meuLog);
 
   // Primeira coisa visivel: se o distintivo continuar dizendo "carregando",
   // o script nao rodou, e o problema esta no carregamento — nao na logica.
@@ -725,10 +765,10 @@ export function mount(root: HTMLElement): void {
   // pode pendurar para sempre; se a ligacao viesse depois, um `await` travado
   // deixaria o painel inteiro inerte — sem log, sem erro, sem reacao ao clique.
   el("analisar").addEventListener("click", () => {
-    void analisarSequencia();
+    void analisarSequencia(aindaValido);
   });
   el("aprender").addEventListener("click", () => {
-    void aprenderDaTimeline();
+    void aprenderDaTimeline(aindaValido);
   });
   // Com os botoes ja vivos, o resto pode falhar sem deixar o painel inutil.
   preencherFormulario(DEFAULT_CONFIG);
@@ -736,7 +776,6 @@ export function mount(root: HTMLElement): void {
   registrar("Painel pronto.", "vazio");
 
   void (async () => {
-    const aindaValido = () => document.body.contains(meuLog);
     if (!aindaValido()) return;
 
     try {
