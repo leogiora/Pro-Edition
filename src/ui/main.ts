@@ -17,6 +17,23 @@ import { mount as mountCaptions } from "../../../Pro-Captions/src/ui/mount.ts";
 import htmlSeletor from "./seletor.html";
 import cssSeletor from "./seletor.css";
 
+const CSS_VOLTAR = `
+.pe-voltar {
+  margin: 8px 12px 0;
+  align-self: flex-start;
+  background: none;
+  border: none;
+  color: #9aa4b2;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 4px 0;
+}
+
+.pe-voltar:hover {
+  color: #ffffff;
+}
+`;
+
 function montarSeletor(root: HTMLElement): void {
   root.querySelector<HTMLButtonElement>("#cardBroll")!.addEventListener("click", () => mostrar("broll"));
   root.querySelector<HTMLButtonElement>("#cardCaptions")!.addEventListener("click", () => mostrar("captions"));
@@ -35,7 +52,7 @@ function mostrar(ferramenta: Ferramenta): void {
 
   // Substitui o document.body inteiro: elimina o <style> anterior junto com
   // o HTML anterior, nunca acumula duas telas no mesmo documento.
-  document.body.innerHTML = `${botaoVoltar}<style>\n${tela.css}\n</style>\n${tela.html}`;
+  document.body.innerHTML = `${botaoVoltar}<style>\n${CSS_VOLTAR}\n${tela.css}\n</style>\n${tela.html}`;
 
   if (ferramenta !== "seletor") {
     document.getElementById("peVoltar")!.addEventListener("click", () => mostrar("seletor"));

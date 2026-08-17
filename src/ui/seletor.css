@@ -68,18 +68,3 @@ body {
   font-size: 12px;
   color: #9aa4b2;
 }
-
-.pe-voltar {
-  margin: 8px 12px 0;
-  align-self: flex-start;
-  background: none;
-  border: none;
-  color: #9aa4b2;
-  font-size: 12px;
-  cursor: pointer;
-  padding: 4px 0;
-}
-
-.pe-voltar:hover {
-  color: #ffffff;
-}
