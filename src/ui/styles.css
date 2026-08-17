@@ -1,19 +1,40 @@
 /*
  * Flexbox em tudo. `display: grid` e ignorado pelo UXP, e `gap` e `var()`
- * nao sao confiaveis — margens e valores literais.
+ * nao sao confiaveis — margens e valores literais, sem excecao (por isso a
+ * paleta abaixo e comentario, nao `:root { --token: ... }`).
  *
  * Num flex column os filhos NAO esticam: encolhem ate o conteudo e ficam no
  * meio. `align-items: stretch` explicito e o que resolve; `text-align: left`
  * sozinho nao basta.
+ *
+ * Mesma identidade visual da familia (Auto B-roll, Pro Captions, Pro
+ * Edition): mesma paleta e tipografia, cada plugin com seu proprio acento
+ * de cor. Aqui o acento e ambar — o domain deste plugin e o preco isolado
+ * na legenda, e ambar e a cor que ja marca esse destaque no painel.
+ *
+ * Paleta (valores literais, ver auto-broll-premiere/src/ui/styles.css):
+ *   bg #12141a · surface #191c24 · surface-2 #1e222b · border #2a2f3b
+ *   text #e8eaf0 · text-muted #8890a0 · text-dim #5b6270
+ *   accent-captions #eeab4c (ambar) · accent-ok #4ecb8d · accent-erro #ff7d71
  */
 
+html,
 body {
+  height: 100%;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
   margin: 0;
   padding: 0;
-  background: #1d1d1d;
-  color: #e8e8e8;
-  font-family: "Adobe Clean", "Segoe UI", sans-serif;
-  font-size: 12px;
+  background-color: #12141a;
+  color: #e8eaf0;
+  font-family: adobe-clean, "Source Sans 3", "Segoe UI", sans-serif;
+  font-size: 13px;
+  line-height: 1.45;
+  overflow: hidden;
+  text-align: left;
 }
 
 .topo {
@@ -21,27 +42,71 @@ body {
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 12px;
-  border-bottom: 1px solid #2f2f2f;
+  flex: none;
+  padding: 9px 12px;
+  background-color: #1e222b;
+  border-bottom: 1px solid #2a2f3b;
 }
 
-.marca { display: flex; flex-direction: row; align-items: baseline; }
-.marca-nome { font-size: 13px; font-weight: 700; letter-spacing: 0.02em; }
-.marca-fase { margin-left: 8px; font-size: 10px; color: #8a8a8a; }
+.marca {
+  display: flex;
+  flex-direction: row;
+  align-items: baseline;
+  min-width: 0;
+}
+
+/* Tarja de 3px antes do nome: mesma linguagem de cor das canaletas, so que
+   na marca — o acento deste plugin (ambar) aparece antes mesmo de abrir uma
+   faixa. */
+.marca-nome::before {
+  content: "";
+  display: inline-block;
+  width: 3px;
+  height: 11px;
+  margin-right: 8px;
+  vertical-align: -1px;
+  background-color: #eeab4c;
+  border-radius: 1px;
+}
+
+.marca-nome {
+  text-align: left;
+  font-size: 14px;
+  font-weight: 700;
+  color: #ffffff;
+  white-space: nowrap;
+}
+
+.marca-fase {
+  margin-left: 8px;
+  font-family: "Roboto Mono", Consolas, monospace;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #5b6270;
+  white-space: nowrap;
+}
 
 .estado {
+  font-family: "Roboto Mono", Consolas, monospace;
   font-size: 10px;
-  color: #9a9a9a;
+  letter-spacing: 0.04em;
+  color: #8890a0;
   padding: 2px 8px;
-  border: 1px solid #3a3a3a;
+  border: 1px solid #2a2f3b;
   border-radius: 9px;
+  white-space: nowrap;
 }
 
 .conteudo {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  padding: 10px;
+  padding: 12px;
 }
 
 .faixa {
@@ -49,43 +114,73 @@ body {
   flex-direction: row;
   align-items: stretch;
   margin-bottom: 8px;
-  background: #242424;
-  border: 1px solid #303030;
-  border-radius: 4px;
+  background-color: #191c24;
+  border: 1px solid #2a2f3b;
+  border-radius: 6px;
+  overflow: hidden;
 }
 
 .canaleta {
+  flex: none;
+  width: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  min-width: 40px;
-  background: #1f1f1f;
-  border-right: 1px solid #303030;
+  background-color: #1e222b;
+  border-right: 1px solid #2a2f3b;
 }
 
-.cod { font-size: 10px; font-weight: 700; color: #7a7a7a; letter-spacing: 0.06em; }
+.cod {
+  font-family: "Roboto Mono", Consolas, monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #6b7381;
+  white-space: nowrap;
+}
 
 .corpo {
   display: flex;
   flex-direction: column;
   align-items: stretch;
   flex: 1 1 auto;
-  padding: 8px 10px;
   min-width: 0;
+  padding: 10px 12px;
 }
 
-.seq-nome { font-size: 12px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; }
-.seq-nome[data-vazio="sim"] { color: #6f6f6f; font-weight: 400; font-style: italic; }
+.seq-nome {
+  text-align: left;
+  font-size: 14px;
+  font-weight: 600;
+  color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.seq-nome[data-vazio="sim"] {
+  font-size: 13px;
+  font-weight: 400;
+  font-style: normal;
+  color: #5b6270;
+}
 
 .acao {
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
   align-items: center;
+  margin-left: -3px;
+  margin-right: -3px;
   margin-bottom: 8px;
 }
-.acao sp-button { flex: 1 1 140px; margin-right: 6px; }
+
+.acao sp-button {
+  flex: 1 1 140px;
+  margin-left: 3px;
+  margin-right: 3px;
+  margin-bottom: 4px;
+}
 
 /*
  * O log rola por dentro, com altura propria.
@@ -95,13 +190,23 @@ body {
  * o plugin parecer morto: as mensagens estavam sendo escritas, so nao dava
  * para ve-las.
  */
+.faixa-log {
+  margin-bottom: 0;
+}
+
+.faixa-log .corpo {
+  padding: 0;
+}
+
 .log {
-  font-family: "Source Code Pro", Consolas, monospace;
-  font-size: 10px;
-  line-height: 1.5;
-  color: #b4b4b4;
+  height: 220px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 8px 12px;
+  font-family: "Roboto Mono", Consolas, monospace;
+  font-size: 11px;
+  line-height: 1.6;
+  color: #8890a0;
   white-space: pre-wrap;
   word-break: break-word;
-  max-height: 320px;
-  overflow-y: auto;
 }
