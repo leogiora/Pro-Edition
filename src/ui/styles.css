@@ -1,34 +1,64 @@
 /*
- * Restricoes do UXP, descobertas na marra ao ver o painel renderizado:
+ * ============================================================================
+ * FAMILIA PRO EDITION — folha de componentes do Auto B-roll
+ * ============================================================================
+ *
+ * Restricoes do UXP que ditam TODA a estrutura abaixo (ver
+ * docs/UXP_ARMADILHAS.md, cada uma custou um ciclo de reiniciar o Premiere):
  *
  *  - `<link rel="stylesheet">` NAO carrega. Este arquivo e embutido como
- *    <style> pelo scripts/build.mjs.
- *  - CSS Grid NAO funciona. Layout inteiro em flexbox.
- *  - `gap` e custom properties (var()) nao sao confiaveis. Margens e valores
- *    literais, sem excecao — por isso a paleta abaixo e documentada em
- *    comentario, nao em `:root { --token: ... }`.
+ *    <style> por scripts/build.mjs.
+ *  - `display: grid` e IGNORADO. Layout inteiro em flexbox.
+ *  - `gap` e `var()` NAO sao confiaveis. Por isso os tokens abaixo sao um
+ *    bloco documentado com valores literais, e nao `:root { --token: ... }`;
+ *    espacamento sai de margin, nunca de gap.
+ *  - Media query nao e confiavel, e este painel nunca roda em telefone. A
+ *    responsividade real e a largura do painel acoplado no Premiere, e sai de
+ *    `flex-wrap` com `flex: 1 1 <base>`: blocos lado a lado quando ha largura,
+ *    empilhados quando nao ha.
+ *  - Num flex column os filhos NAO esticam: encolhem ate o conteudo e ficam
+ *    centralizados. `align-items: stretch` explicito e o que resolve;
+ *    `text-align: left` sozinho nao basta.
+ *  - `<button>` nativo e renderizado como controle do host: ignora o CSS do
+ *    proprio elemento e achata os filhos numa linha so. Onde precisamos de um
+ *    botao estilizado usamos `div[role="button"][tabindex="0"]`.
  *
- * A responsividade sai de `flex-wrap` com `flex: 1 1 <base>`: os blocos ficam
- * lado a lado quando ha largura e quebram sozinhos quando nao ha.
+ * ---------------------------------------------------------------- TOKENS ---
+ * Mesma tabela nos tres plugins da familia (Auto B-roll, Pro Captions, Pro
+ * Edition). Repetida de proposito em cada folha: sao repos independentes que
+ * precisam construir sozinhos, e var() nao funciona aqui.
  *
- * O painel toma emprestada a gramatica da timeline: cada bloco e uma faixa com
- * uma canaleta a esquerda, tingida com as cores que o Premiere da aos clipes —
- * violeta para video, verde para audio. Essa e a identidade visual dos tres
- * plugins da familia (Auto B-roll, Pro Captions, Pro Edition) — mesma paleta,
- * mesma tipografia, cada um com seu proprio acento de cor.
+ *   SUPERFICIE
+ *     bg-0        #0d0f13   fundo do painel (quase preto)
+ *     bg-1        #14171d   superficie: secoes e cards
+ *     bg-2        #1a1e26   superficie elevada: topo, cabeca de secao, chips
+ *     bg-3        #202631   hover de superficie clicavel
+ *     line        #232830   borda sutil (padrao)
+ *     line-2      #333b47   borda em hover
  *
- * Paleta (valores literais, repetidos aqui de proposito — ver nota acima):
- *   bg            #12141a   fundo do painel
- *   surface       #191c24   faixas/cards
- *   surface-2     #1e222b   topo, canaleta
- *   border        #2a2f3b   bordas
- *   text          #e8eaf0   texto principal
- *   text-muted    #8890a0   texto secundario/rotulo
- *   text-dim      #5b6270   texto apagado (vazio, placeholder)
- *   accent-broll  #8d82f5   violeta — acento deste plugin (V2, marca)
- *   accent-audio  #4ecb8d   verde — faixa de audio, status "ok"
- *   accent-aviso  #eeab4c   ambar — status "aviso"
- *   accent-erro   #ff7d71   vermelho — status "erro"
+ *   TEXTO
+ *     txt         #eceef2   conteudo principal
+ *     txt-2       #9098a6   secundario, rotulos
+ *     txt-3       #5f6774   apagado: vazio, placeholder, dica
+ *
+ *   SEMANTICA
+ *     azul        #3b82f6   acao primaria, foco
+ *     verde       #4ecb8d   sucesso / pronto / faixa de audio
+ *     ambar       #eeab4c   atencao / processando
+ *     vermelho    #ff7d71   erro
+ *     violeta     #8d82f5   acento do Auto B-roll / faixa de video
+ *
+ *   FORMA
+ *     raio-lg     10px      secoes e cards
+ *     raio-md     8px       campos e controles
+ *     raio-full   999px     chips de status
+ *     transicao   150ms     hover, focus, active
+ *
+ *   TIPOGRAFIA
+ *     sans        Inter, adobe-clean, Segoe UI      (Inter se instalada)
+ *     mono        Roboto Mono, Consolas             (dado tecnico e codigo)
+ *     escala      15/13/12/11/9 px
+ * ============================================================================
  */
 
 html,
@@ -41,9 +71,9 @@ body {
 body {
   display: flex;
   flex-direction: column;
-  background-color: #12141a;
-  color: #e8eaf0;
-  font-family: adobe-clean, "Source Sans 3", "Segoe UI", sans-serif;
+  background-color: #0d0f13;
+  color: #eceef2;
+  font-family: Inter, adobe-clean, "Source Sans 3", "Segoe UI", sans-serif;
   font-size: 13px;
   line-height: 1.45;
   overflow: hidden;
@@ -52,7 +82,7 @@ body {
   text-align: left;
 }
 
-/* ------------------------------------------------------------- cabecalho */
+/* =============================================================== HEADER === */
 
 .topo {
   display: flex;
@@ -60,9 +90,9 @@ body {
   align-items: center;
   justify-content: space-between;
   flex: none;
-  padding: 9px 12px;
-  background-color: #1e222b;
-  border-bottom: 1px solid #2a2f3b;
+  padding: 10px 12px;
+  background-color: #1a1e26;
+  border-bottom: 1px solid #232830;
 }
 
 .marca {
@@ -72,24 +102,25 @@ body {
   min-width: 0;
 }
 
-/* Tarja de 3px antes do nome: mesma linguagem de cor das canaletas, so que na
-   marca — o aceso deste plugin (violeta) aparece antes mesmo de abrir uma
-   faixa. */
+/* Tarja de 3px antes do nome: a mesma linguagem de cor dos codigos de faixa,
+   so que na marca — o acento deste plugin (violeta) aparece antes mesmo de
+   abrir qualquer secao. E o fio que costura os tres plugins da familia. */
 .marca-nome::before {
   content: "";
   display: inline-block;
   width: 3px;
-  height: 11px;
+  height: 12px;
   margin-right: 8px;
   vertical-align: -1px;
   background-color: #8d82f5;
-  border-radius: 1px;
+  border-radius: 2px;
 }
 
 .marca-nome {
   text-align: left;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 700;
+  letter-spacing: -0.01em;
   color: #ffffff;
   white-space: nowrap;
 }
@@ -100,34 +131,78 @@ body {
   font-size: 10px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #5b6270;
+  color: #5f6774;
   white-space: nowrap;
 }
 
-.estado {
+/* ========================================================= STATUS BADGE === */
+
+/* Discreto por definicao: chip de contorno, nunca preenchido. O glifo antes do
+   texto e o que faz o status nao depender so de cor. */
+.badge {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex: none;
+  padding: 2px 9px;
+  background-color: #14171d;
+  border: 1px solid #232830;
+  border-radius: 999px;
   font-family: "Roboto Mono", Consolas, monospace;
   font-size: 10px;
-  letter-spacing: 0.04em;
-  color: #8890a0;
-  padding: 2px 8px;
-  border: 1px solid #2a2f3b;
-  border-radius: 9px;
+  letter-spacing: 0.02em;
+  color: #9098a6;
   white-space: nowrap;
 }
 
-.estado[data-tom="ok"] {
+.badge::before {
+  content: "\2022";
+  margin-right: 5px;
+  font-size: 10px;
+}
+
+.badge[data-tom="ok"] {
   color: #4ecb8d;
-  border-color: #2c5341;
+  border-color: #26493a;
 }
 
-.estado[data-tom="erro"] {
+.badge[data-tom="ok"]::before {
+  content: "\2713";
+}
+
+.badge[data-tom="ativo"] {
+  color: #eeab4c;
+  border-color: #4a3a20;
+}
+
+.badge[data-tom="ativo"]::before {
+  content: "\25cc";
+}
+
+.badge[data-tom="aviso"] {
+  color: #eeab4c;
+  border-color: #4a3a20;
+}
+
+.badge[data-tom="aviso"]::before {
+  content: "!";
+}
+
+.badge[data-tom="erro"] {
   color: #ff7d71;
-  border-color: #5c3230;
+  border-color: #542c29;
 }
 
-/* ---------------------------------------------------------------- corpo */
+.badge[data-tom="erro"]::before {
+  content: "\00d7";
+}
+
+/* ================================================================ CORPO === */
 
 .conteudo {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
@@ -135,47 +210,71 @@ body {
   padding: 12px;
 }
 
-/* Linha que quebra sozinha: e isto que torna o painel responsivo sem grid. */
+/* Linha que quebra sozinha: e isto que torna o painel responsivo sem grid nem
+   media query. Duas colunas quando o painel esta largo, uma quando esta
+   acoplado estreito. */
+/*
+ * `flex: none` em TODO filho direto de `.conteudo`, aqui e nas duas regras
+ * abaixo.
+ *
+ * `.conteudo` e um flex column de altura definida (o painel inteiro), e num
+ * flex column o filho encolhe por padrao. Sem isto, o conteudo que nao cabe
+ * espreme as secoes em vez de rolar: medido no Chrome, a secao SRC ficava 18px
+ * mais baixa que o proprio conteudo e cortava a ultima linha dentro do
+ * `overflow: hidden`. Quem rola e `.conteudo`; as secoes nunca encolhem.
+ */
 .par {
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
+  align-items: stretch;
+  flex: none;
   margin-left: -4px;
   margin-right: -4px;
 }
 
-.par > .faixa {
-  flex: 1 1 190px;
+/* 180px: V2 e A3 pareiam a partir de ~390px de painel e empilham abaixo
+   disso. Medido no Chrome com as previas de 300px e 420px. */
+.par > .secao {
+  flex: 1 1 180px;
   margin-left: 4px;
   margin-right: 4px;
 }
 
-/* ---------------------------------------------------------------- faixa */
+/* ============================================================== SECTION === */
 
-.faixa {
+/*
+ * A secao substituiu a canaleta vertical de 44px que existia antes. O codigo
+ * da faixa (SEQ, V2, A3, SRC, LOG) continua sendo a identidade do painel, mas
+ * agora mora numa cabeca horizontal: devolve 44px de largura ao conteudo em
+ * todas as secoes — o que importa muito num painel acoplado estreito — e poe o
+ * rotulo acima do que ele rotula, em vez de ao lado.
+ */
+.secao {
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
   align-items: stretch;
+  flex: none;
   margin-bottom: 8px;
-  background-color: #191c24;
-  border: 1px solid #2a2f3b;
-  border-radius: 6px;
+  background-color: #14171d;
+  border: 1px solid #232830;
+  border-radius: 10px;
   overflow: hidden;
 }
 
-.canaleta {
-  flex: none;
-  width: 44px;
+.secao-cabeca {
   display: flex;
   flex-direction: row;
-  align-items: flex-start;
-  justify-content: center;
-  padding-top: 11px;
-  background-color: #1e222b;
-  border-right: 1px solid #2a2f3b;
+  align-items: center;
+  flex: none;
+  padding: 7px 12px;
+  background-color: #1a1e26;
+  border-bottom: 1px solid #232830;
 }
 
 .cod {
+  flex: none;
+  margin-right: 9px;
   font-family: "Roboto Mono", Consolas, monospace;
   font-size: 10px;
   font-weight: 700;
@@ -192,32 +291,55 @@ body {
   color: #4ecb8d;
 }
 
-.corpo {
+.secao-rotulo {
   flex: 1 1 auto;
   min-width: 0;
-  padding: 10px 12px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 500;
+  color: #9098a6;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.secao-corpo {
   display: flex;
   flex-direction: column;
   align-items: stretch;
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 11px 12px;
 }
 
-/* ------------------------------------------------------------- sequencia */
+/* ============================================================ SEQUENCIA === */
 
 .seq-nome {
   text-align: left;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
+  letter-spacing: -0.01em;
   color: #ffffff;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  margin-bottom: 8px;
+  margin-bottom: 9px;
 }
 
 .seq-nome[data-vazio="sim"] {
   font-size: 13px;
-  font-weight: 400;
-  color: #5b6270;
+  font-weight: 500;
+  color: #9098a6;
+}
+
+/* EmptyState: a dica so existe enquanto nao ha sequencia. Quem esconde e o
+   mount(), nao o CSS — seletor de irmao adjacente nao e garantido no UXP e
+   uma dica presa na tela mentiria sobre o estado real. */
+.dica {
+  text-align: left;
+  font-size: 12px;
+  color: #5f6774;
+  margin-bottom: 9px;
 }
 
 .fatos {
@@ -226,6 +348,7 @@ body {
   flex-wrap: wrap;
   margin-left: -6px;
   margin-right: -6px;
+  margin-bottom: -4px;
 }
 
 .fato {
@@ -240,9 +363,9 @@ body {
   text-align: left;
   display: block;
   font-size: 9px;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.09em;
   text-transform: uppercase;
-  color: #5b6270;
+  color: #5f6774;
   white-space: nowrap;
 }
 
@@ -251,80 +374,153 @@ body {
   display: block;
   font-family: "Roboto Mono", Consolas, monospace;
   font-size: 12px;
-  color: #e8eaf0;
+  color: #eceef2;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-/* --------------------------------------------------------------- campos */
+/* ============================================================ FORMFIELD === */
 
-/* `align-items: flex-start` e obrigatorio: no UXP os filhos de um flex column
-   nao esticam, encolhem e ficam centralizados — e ai `text-align` nao adianta,
+/* `align-items: stretch` e obrigatorio: no UXP os filhos de um flex column nao
+   esticam, encolhem e ficam centralizados — e ai `text-align` nao adianta,
    porque a caixa do texto ja e do tamanho do texto. */
 .campo {
   display: flex;
   flex-direction: column;
   align-items: stretch;
   min-width: 0;
-  margin-bottom: 8px;
 }
 
 .campo-rotulo {
   display: block;
-  font-size: 11px;
-  color: #8890a0;
-  margin-bottom: 3px;
   text-align: left;
+  font-size: 11px;
+  color: #9098a6;
+  margin-bottom: 4px;
 }
 
 .campo sp-textfield {
   width: 100%;
 }
 
-/* Nao mexer no `display` do sp-checkbox: ele e inline-flex por dentro, e
-   forcar block joga o rotulo para baixo da caixa. */
-.corpo sp-checkbox {
-  font-size: 12px;
+.campo-nota {
+  display: block;
+  text-align: left;
+  font-size: 11px;
+  color: #5f6774;
+  margin-top: 5px;
 }
 
-/* --------------------------------------------------------------- acoes */
+/* ======================================================= TOGGLE/CHECKBOX === */
 
+/* Nao mexer no `display` do sp-checkbox: ele e inline-flex por dentro, e
+   forcar block joga o rotulo para baixo da caixa. So espacamento e tamanho. */
+.secao-corpo sp-checkbox {
+  font-size: 12px;
+  margin-bottom: 6px;
+}
+
+.secao-corpo sp-checkbox:last-child {
+  margin-bottom: 0;
+}
+
+/* =============================================================== BUTTON === */
+
+/*
+ * Hierarquia de acao: a primaria ganha o dobro de base flexivel da secundaria,
+ * entao ela e sempre visualmente maior quando as duas cabem na mesma linha, e
+ * e a primeira a ocupar a linha inteira quando o painel estreita. A secundaria
+ * e `quiet` (so texto) para nao disputar com ela.
+ */
 .acao {
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
+  align-items: center;
+  flex: none;
   margin-left: -4px;
   margin-right: -4px;
   margin-bottom: 8px;
 }
 
 .acao sp-button {
-  flex: 1 1 130px;
   margin-left: 4px;
   margin-right: 4px;
   margin-bottom: 4px;
 }
 
-/* ------------------------------------------------------------------ log */
+.acao sp-button#analisar {
+  flex: 2 1 180px;
+}
 
-.faixa-log {
+.acao sp-button#aprender {
+  flex: 1 1 110px;
+}
+
+/* ============================================================== LOGPANEL === */
+
+/*
+ * O log rola por dentro, com altura propria e recolhivel.
+ *
+ * Sem altura propria ele cresce para baixo e as ultimas linhas — que sao as que
+ * importam — nascem fora da area visivel do painel. Foi exatamente o que fez o
+ * plugin parecer morto: as mensagens estavam sendo escritas, so nao dava para
+ * ve-las. Por isso nasce ABERTO: recolher e escolha do usuario, nunca o padrao.
+ */
+.secao-log {
   margin-bottom: 0;
 }
 
-.faixa-log .corpo {
+.secao-log .secao-corpo {
   padding: 0;
+}
+
+.secao[data-aberto="nao"] .secao-corpo {
+  display: none;
+}
+
+/* Acao de cabeca de secao. `div[role=button]` e nao `<button>`: o botao nativo
+   do UXP ignora o CSS do proprio elemento e vira pilula cinza. */
+.secao-acao {
+  flex: none;
+  margin-left: 8px;
+  padding: 2px 8px;
+  background-color: #14171d;
+  border: 1px solid #232830;
+  border-radius: 8px;
+  font-size: 11px;
+  color: #9098a6;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 150ms, border-color 150ms, color 150ms;
+}
+
+.secao-acao:hover {
+  background-color: #202631;
+  border-color: #333b47;
+  color: #eceef2;
+}
+
+.secao-acao:active {
+  background-color: #1a1e26;
+}
+
+.secao-acao:focus {
+  border-color: #3b82f6;
+  color: #eceef2;
+  outline: none;
 }
 
 .log {
   height: 132px;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 8px 12px;
+  padding: 9px 12px;
   font-family: "Roboto Mono", Consolas, monospace;
   font-size: 11px;
   line-height: 1.6;
-  color: #8890a0;
+  color: #9098a6;
   white-space: pre-wrap;
   word-break: break-word;
 }
@@ -346,5 +542,5 @@ body {
 }
 
 .l-vazio {
-  color: #565e6a;
+  color: #5f6774;
 }

@@ -43,6 +43,21 @@ dicionário de sinônimos) contra o texto da fala.
 | **Analisar e inserir** | O botão principal: faz tudo — lê, casa, planeja e insere. |
 | **Aprender** | Só ensina, não insere nada. Use depois de editar a timeline na mão (apagar o que não serviu, adicionar B-roll seu) sem rodar uma análise nova. |
 
+**O botão diz em que pé está.** "Analisar e inserir" vira "Analisando..."
+enquanto trabalha e, quando termina, confirma por alguns segundos com
+"✓ N B-rolls inseridos" antes de voltar ao normal. O distintivo no canto
+superior direito conta a mesma história em uma palavra, com um símbolo antes
+do texto (✓ pronto, ◌ analisando, ! atenção, × falhou) — dá pra ler sem
+depender de enxergar a cor.
+
+**O registro (log) pode ser recolhido.** No cabeçalho dele, à direita, tem
+"Recolher" / "Mostrar". Ele nasce sempre aberto de propósito: é o único canal
+em que o plugin conta o que fez.
+
+**Quando não há sequência aberta**, o painel diz o que fazer em vez de só
+dizer que está vazio. A instrução some sozinha assim que você abre uma
+sequência.
+
 **Trabalhando num trecho só (in/out):** marque o in e o out na timeline (teclas
 `I` e `O` do Premiere) e clique em Analisar — os B-rolls entram **só dentro do
 trecho marcado**. É o jeito de tratar um reel de cada vez numa sequência que

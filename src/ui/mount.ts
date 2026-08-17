@@ -120,10 +120,30 @@ async function salvarLog(arquivo: string): Promise<void> {
   }
 }
 
-function estado(texto: string, tom: "" | "ok" | "erro" = ""): void {
+function estado(texto: string, tom: "" | "ativo" | "ok" | "aviso" | "erro" = ""): void {
   const node = el("estado");
   node.textContent = texto;
   node.setAttribute("data-tom", tom);
+}
+
+// Rotulos padrao dos dois botoes. Ficam aqui porque o botao troca de texto
+// enquanto a acao roda, e precisa de para onde voltar.
+const ROTULO_ANALISAR = "Analisar e inserir";
+const ROTULO_APRENDER = "Aprender";
+
+/**
+ * Troca o texto de um botao. Puramente cosmetico — nunca lanca e nunca
+ * interrompe nada.
+ *
+ * `aindaValido` nao e opcional de proposito: um rotulo tardio (o `setTimeout`
+ * de sucesso, por exemplo) escreveria no botao do painel que estiver na tela
+ * agora, que pode ser o do outro plugin dentro do shell. Mesma classe de bug
+ * que o guard do log resolve.
+ */
+function rotular(id: string, texto: string, aindaValido: () => boolean): void {
+  if (!aindaValido()) return;
+  const botao = document.getElementById(id);
+  if (botao) botao.textContent = texto;
 }
 
 function mensagemDeErro(e: unknown): string {
@@ -184,6 +204,9 @@ function mostrarSequencia(info: SequenceInfo): void {
   const nome = el("seqNome");
   nome.textContent = info.name;
   nome.setAttribute("data-vazio", "nao");
+  // A dica do estado vazio some assim que ha sequencia de verdade: instrucao
+  // que continua na tela depois de cumprida vira ruido.
+  el("seqDica").style.display = "none";
   el("seqFormato").textContent = `${info.width}x${info.height}`;
   el("seqFps").textContent = info.fps.toFixed(3).replace(".", ",");
   el("seqDuracao").textContent = formatTimecode(info.durationSeconds, info.fps);
@@ -191,7 +214,7 @@ function mostrarSequencia(info: SequenceInfo): void {
 }
 
 async function relerSequencia(aindaValido: () => boolean): Promise<void> {
-  estado("lendo");
+  estado("lendo", "ativo");
   try {
     const info = await comLimite("ler sequencia", getSequenceInfo());
     if (!aindaValido()) return;
@@ -200,12 +223,13 @@ async function relerSequencia(aindaValido: () => boolean): Promise<void> {
   } catch (e) {
     if (!aindaValido()) return;
     const nome = el("seqNome");
-    nome.textContent = "nenhuma sequencia ativa";
+    nome.textContent = "Nenhuma sequencia selecionada";
     nome.setAttribute("data-vazio", "sim");
+    el("seqDica").style.display = "";
     for (const id of ["seqFormato", "seqFps", "seqDuracao", "seqFaixas"]) {
       el(id).textContent = "—";
     }
-    estado("sem sequencia", "erro");
+    estado("sem sequencia", "aviso");
     registrar(mensagemDeErro(e), "erro");
   }
 }
@@ -481,7 +505,8 @@ async function lerContexto(aindaValido: () => boolean): Promise<{
 async function aprenderDaTimeline(aindaValido: () => boolean): Promise<void> {
   const botao = el<HTMLButtonElement & { disabled: boolean }>("aprender");
   botao.disabled = true;
-  estado("aprendendo");
+  rotular("aprender", "Aprendendo...", aindaValido);
+  estado("aprendendo", "ativo");
   limparLog();
 
   let resumoAprendizado: Julgamento["resumo"] = [];
@@ -503,6 +528,7 @@ async function aprenderDaTimeline(aindaValido: () => boolean): Promise<void> {
     if (aindaValido()) {
       for (const linha of resumoAprendizado) registrar(linha.texto, linha.tipo);
     }
+    rotular("aprender", ROTULO_APRENDER, aindaValido);
     botao.disabled = false;
     await salvarLog(LOG_APRENDER);
   }
@@ -511,12 +537,16 @@ async function aprenderDaTimeline(aindaValido: () => boolean): Promise<void> {
 async function analisarSequencia(aindaValido: () => boolean): Promise<void> {
   const botao = el<HTMLButtonElement & { disabled: boolean }>("analisar");
   botao.disabled = true;
-  estado("analisando");
+  rotular("analisar", "Analisando...", aindaValido);
+  estado("analisando", "ativo");
   limparLog();
 
   // Sai no `finally`: assim aparece por ultimo — visivel — em qualquer saida,
   // inclusive quando a analise nao acha oportunidade ou falha no meio.
   let resumoAprendizado: Julgamento["resumo"] = [];
+  // Quantos entraram de verdade na timeline: e o que o rotulo do botao anuncia
+  // no fim. Zero e uma resposta legitima (nada a inserir), nao um sucesso.
+  let inseridos = 0;
 
   try {
     const config = lerFormulario();
@@ -657,7 +687,7 @@ async function analisarSequencia(aindaValido: () => boolean): Promise<void> {
       registrar(`        "${trecho(c.textoDaFrase)}"`, "vazio");
     }
 
-    estado("inserindo");
+    estado("inserindo", "ativo");
     const feito = await comLimite(
       "inserir plano",
       inserirPlano(entram, {
@@ -669,6 +699,7 @@ async function analisarSequencia(aindaValido: () => boolean): Promise<void> {
       120000
     );
     checarMontado(aindaValido);
+    inseridos = entram.length;
     for (const passo of feito.passos) registrar(`  ${passo}`, "ok");
     for (const aviso of feito.avisos) registrar(`  ${aviso}`, "aviso");
     registrar("Tres Ctrl+Z desfazem tudo.", "vazio");
@@ -704,6 +735,15 @@ async function analisarSequencia(aindaValido: () => boolean): Promise<void> {
   } finally {
     if (aindaValido()) {
       for (const linha of resumoAprendizado) registrar(linha.texto, linha.tipo);
+    }
+    if (inseridos > 0) {
+      // Confirmacao curta no proprio botao, e depois ele volta a convidar o
+      // clique seguinte. Um botao que fica "✓ inserido" para sempre deixa de
+      // dizer o que faz.
+      rotular("analisar", `✓ ${inseridos} B-rolls inseridos`, aindaValido);
+      setTimeout(() => rotular("analisar", ROTULO_ANALISAR, aindaValido), 2500);
+    } else {
+      rotular("analisar", ROTULO_ANALISAR, aindaValido);
     }
     botao.disabled = false;
     await salvarLog(LOG_ANALISE);
@@ -746,6 +786,44 @@ async function carregarSinonimos(aindaValido: () => boolean): Promise<void> {
   }
 }
 
+// ------------------------------------------------------------ log panel
+
+/**
+ * Liga um `div[role="button"]` — clique E teclado.
+ *
+ * Um `<button>` nativo daria o teclado de graca, mas o UXP o renderiza como
+ * controle do host: ignora o CSS do proprio elemento e achata os filhos numa
+ * linha so (foi assim que os cards do Pro Edition viraram pilula cinza). Com
+ * div o visual e nosso, e o Enter/Espaco volta a ser responsabilidade nossa.
+ */
+function ligarAcao(node: HTMLElement, acao: () => void): void {
+  node.addEventListener("click", acao);
+  node.addEventListener("keydown", (evento) => {
+    const tecla = (evento as KeyboardEvent).key;
+    if (tecla !== "Enter" && tecla !== " ") return;
+    evento.preventDefault();
+    acao();
+  });
+}
+
+/**
+ * Recolhe/mostra o registro.
+ *
+ * Nasce SEMPRE aberto: o log e o unico canal de resposta do painel, e um log
+ * escondido por padrao repete o erro que ja fez este plugin parecer morto duas
+ * vezes (docs/UXP_ARMADILHAS.md §8). Recolher e escolha de quem ja sabe o que
+ * esta acontecendo.
+ */
+function alternarLog(): void {
+  const secao = el("secaoLog");
+  const alternador = el("logToggle");
+  const aberto = secao.getAttribute("data-aberto") !== "nao";
+  secao.setAttribute("data-aberto", aberto ? "nao" : "sim");
+  alternador.textContent = aberto ? "Mostrar" : "Recolher";
+  alternador.setAttribute("aria-expanded", aberto ? "false" : "true");
+  alternador.setAttribute("aria-label", aberto ? "Mostrar o registro" : "Recolher o registro");
+}
+
 // ---------------------------------------------------------------- inicio
 
 /**
@@ -767,7 +845,7 @@ export function mount(root: HTMLElement): void {
 
   // Primeira coisa visivel: se o distintivo continuar dizendo "carregando",
   // o script nao rodou, e o problema esta no carregamento — nao na logica.
-  estado("ligando");
+  estado("ligando", "ativo");
 
   // Os botoes sao ligados PRIMEIRO e de forma sincrona. Qualquer I/O do UXP
   // pode pendurar para sempre; se a ligacao viesse depois, um `await` travado
@@ -778,6 +856,7 @@ export function mount(root: HTMLElement): void {
   el("aprender").addEventListener("click", () => {
     void aprenderDaTimeline(aindaValido);
   });
+  ligarAcao(el("logToggle"), alternarLog);
   // Com os botoes ja vivos, o resto pode falhar sem deixar o painel inutil.
   preencherFormulario(DEFAULT_CONFIG);
   estado("pronto", "ok");

@@ -38,6 +38,23 @@ esta escrito no HTML, o script nao rodou.
   forcar `block` joga o rotulo para baixo da caixa.
 - **`sp-textfield type="number"` exibe `nan`.** Foi removido do painel: as faixas
   V2 e A3 sao requisito fixo e nao precisavam de campo.
+- **`<button>` nativo ignora o CSS do proprio elemento.** O UXP o renderiza
+  como controle do host: fundo/borda/raio nao pegam, e os filhos sao achatados
+  numa linha so, centralizada. Os cards do Pro Edition eram `<button>` com dois
+  `<span>` em coluna e apareciam como pilula cinza com o nome e a descricao
+  colados — com o CSS certo no disco o tempo todo. **Onde o visual e nosso, usar
+  `div[role="button"][tabindex="0"]`** e ligar `click` + `keydown` (Enter e
+  Espaco) na mao. Para botao com cara de Spectrum, `sp-button` funciona
+  normalmente (`variant="cta"` para primaria, `variant="secondary" quiet` para
+  a secundaria de texto).
+- **`width: 100%` + `padding` lateral transborda.** Sem `box-sizing:
+  border-box` garantido, o padding soma por fora e abre rolagem horizontal.
+  Num filho de flex column, `align-self: stretch` resolve sem depender de
+  box-sizing.
+- **Num flex column de altura definida, o filho ENCOLHE.** O painel inteiro e
+  um flex column, entao o container que rola (`.conteudo`) espreme as secoes
+  em vez de deixar rolar, e o `overflow: hidden` delas corta a ultima linha.
+  `flex: none` em todo filho direto do container que rola.
 
 ---
 

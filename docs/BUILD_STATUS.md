@@ -1,5 +1,60 @@
 # BUILD_STATUS
 
+## 2026-08-17 — redesign de UI da familia (Auto B-roll, Pro Captions, Pro Edition)
+
+**Feito.** So camada de apresentacao: nenhuma regra de dominio, nenhuma
+chamada ao Premiere e nenhum arquivo de dados mudou.
+
+- Vocabulario unico de componentes CSS nas tres folhas (`.topo`, `.badge`,
+  `.secao`/`.secao-cabeca`/`.secao-corpo`, `.campo`, `.acao`, `.log`,
+  `.dica`, `.card`), com a mesma tabela de tokens documentada no topo de cada
+  uma. Tokens continuam **literais**: `var()` nao e confiavel no UXP.
+- A canaleta vertical de 44px virou cabeca de secao horizontal. Devolve 44px
+  de largura ao conteudo em toda secao — o que importa num painel acoplado
+  estreito — e poe o rotulo acima do que ele rotula.
+- `#estado` virou distintivo com glifo (`✓ ◌ ! ×`) alem da cor, e ganhou o tom
+  `ativo` para operacoes em andamento.
+- Log recolhivel (`#logToggle`), nascendo sempre aberto.
+- "Analisar e inserir" troca de rotulo durante a acao e confirma o resultado
+  por 2,5s; "Aprender" virou `quiet` (acao secundaria, so texto).
+- Estado vazio da sequencia agora diz o proximo passo, e a instrucao some
+  quando deixa de valer.
+
+**Dois bugs reais achados medindo no Chrome** (previa estatica das tres telas,
+`sp-*` stubados — serve para conferir o CSS proprio, nao o UXP):
+
+1. `.conteudo` como flex column dava `flex-shrink: 1` aos filhos: a secao SRC
+   ficava 18px mais baixa que o proprio conteudo e cortava a ultima linha
+   dentro do `overflow: hidden`. Corrigido com `flex: none` em todo filho
+   direto de `.conteudo`.
+2. `.pe-nav`/`.pe-voltar` com `width: 100%` + `padding: 0 12px` transbordava
+   24px (sem box-sizing garantido no UXP) e abria rolagem horizontal. Trocado
+   por `align-self: stretch`.
+
+**Achado que explica um bug antigo:** `<button>` nativo no UXP e renderizado
+como controle do host — ignora o CSS do proprio elemento e achata os filhos
+numa linha so. Era por isso que os cards do Pro Edition apareciam como pilulas
+cinzas de texto centralizado apesar do CSS correto no disco. Card, alternador
+de log e barra de navegacao agora sao `div[role="button"][tabindex="0"]`, com
+Enter/Espaco ligados na mao. Registrado em `UXP_ARMADILHAS.md` §2.
+
+**Testes.** `npm run verify` verde nos tres repos: 218 (auto-broll) + 81
+(Pro Captions) + 3 (Pro Edition), tipos limpos, build ok.
+
+**Bloqueio / proximo passo.** Nada disto foi visto dentro do Premiere ainda —
+nao ha hot reload, exige reiniciar o app. O que a previa do Chrome NAO cobre:
+`sp-button`/`sp-checkbox`/`sp-textfield` reais, `content` de texto em
+`::before` (o `::before` vazio da marca ja e provado, o com glifo nao),
+`:focus` em `div[tabindex]`, e `align-self: stretch`. Abrir o Pro Edition e
+conferir estes cinco pontos.
+
+**Nao entregue, de proposito:** botao de procurar pasta de B-rolls. O usuario
+pediu, mas `getFileForOpening()` pendura para sempre no UXP
+(`UXP_ARMADILHAS.md` §3) e `getFolder()` nunca foi provado aqui. Precisa de um
+spike antes, nao de um botao.
+
+---
+
 Ultima atualizacao: 2026-08-07 (fim da sessao 2)
 Estado: **produto util dentro do Premiere.** Insere B-roll pela transcricao,
 aprende com a edicao do usuario, escolhe o take pelo ritmo da fala, e nunca
