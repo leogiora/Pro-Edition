@@ -58,9 +58,15 @@ dois só aparece no Pro Edition depois de reconstruir o shell.
 ## Uso
 
 Abra `Window > Extensions > Pro Edition` no Premiere. A tela inicial mostra
-dois cards — escolha a ferramenta. Um botão "← Voltar" no topo volta para a
-tela de seleção a qualquer momento, sem perder nada (nenhuma das duas
+dois cards — clique em qualquer ponto do card para abrir a ferramenta (ou
+navegue por `Tab` e confirme com `Enter`). Dentro de uma ferramenta, a barra
+do topo mostra o caminho — `← Pro Edition / Auto B-roll` — e clicar nela volta
+para a tela de seleção a qualquer momento, sem perder nada (nenhuma das duas
 ferramentas guarda estado não salvo em memória entre uma ação e outra).
+
+Quando o painel está acoplado estreito, os cards e as seções empilham
+sozinhos; quando há largura, eles ficam lado a lado. Não há nada para
+configurar nisso.
 
 Cada ferramenta funciona exatamente como no plugin standalone — mesmos
 botões, mesmo comportamento. Consulte o guia de cada uma para o dia a dia:

@@ -2,23 +2,53 @@
   <div class="marca">
     <span class="marca-nome">Pro Edition</span>
   </div>
+  <div class="badge">2 ferramentas</div>
 </header>
 
 <main class="conteudo">
+  <p class="hall-intro">Escolha uma ferramenta. Ela abre neste mesmo painel.</p>
+
   <div class="cards">
-    <button id="cardBroll" class="card card-broll">
-      <span class="card-canaleta"></span>
-      <span class="card-texto">
+    <div
+      id="cardBroll"
+      class="card card-broll"
+      role="button"
+      tabindex="0"
+      aria-label="Abrir Auto B-roll"
+    >
+      <span class="card-topo">
         <span class="card-nome">Auto B-roll</span>
-        <span class="card-desc">Insere B-rolls automaticamente a partir da transcricao da sequencia.</span>
+        <span class="card-seta">&rarr;</span>
       </span>
-    </button>
-    <button id="cardCaptions" class="card card-captions">
-      <span class="card-canaleta"></span>
-      <span class="card-texto">
+      <span class="card-desc">
+        Insere B-rolls na V2 a partir da transcricao da sequencia, e aprende com o que voce mantem na timeline.
+      </span>
+      <span class="card-rodape">
+        <span class="card-meta">Video · V2 e A3</span>
+      </span>
+    </div>
+
+    <div
+      id="cardCaptions"
+      class="card card-captions"
+      role="button"
+      tabindex="0"
+      aria-label="Abrir Pro Captions"
+    >
+      <span class="card-topo">
         <span class="card-nome">Pro Captions</span>
-        <span class="card-desc">Gera legendas em .srt a partir da transcricao, com preco isolado.</span>
+        <span class="card-seta">&rarr;</span>
       </span>
-    </button>
+      <span class="card-desc">
+        Gera legendas em .srt a partir da transcricao, com o preco isolado no proprio arquivo.
+      </span>
+      <span class="card-rodape">
+        <span class="card-meta">Legendas · .srt</span>
+      </span>
+    </div>
   </div>
+
+  <p class="hall-nota">
+    As duas trabalham na sequencia que estiver ativa no Premiere. Depois de atualizar qualquer uma delas, reinicie o Premiere.
+  </p>
 </main>

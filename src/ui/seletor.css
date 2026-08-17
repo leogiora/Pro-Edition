@@ -1,12 +1,59 @@
 /*
- * Tela de selecao do Pro Edition — mesma paleta/tipografia da familia (ver
- * auto-broll-premiere/src/ui/styles.css para a lista completa), mas SEM
- * acento de cor no topo: o seletor e o hall neutro, a cor de cada ferramenta
- * so aparece na canaleta do card dela (previa do que tem lá dentro) e depois
- * de fato dentro da ferramenta escolhida.
+ * ============================================================================
+ * FAMILIA PRO EDITION — folha de componentes da tela de selecao (o hall)
+ * ============================================================================
  *
- * Flexbox em tudo, gap/var() evitados — mesmas restricoes de UXP dos outros
- * dois plugins.
+ * Restricoes do UXP que ditam TODA a estrutura abaixo (lista completa em
+ * auto-broll-premiere/docs/UXP_ARMADILHAS.md):
+ *
+ *  - `display: grid` e IGNORADO. Layout inteiro em flexbox.
+ *  - `gap` e `var()` NAO sao confiaveis. Tokens sao um bloco documentado com
+ *    valores literais; espacamento sai de margin, nunca de gap.
+ *  - Media query nao e confiavel, e este painel nunca roda em telefone. A
+ *    responsividade real e a largura do painel acoplado no Premiere: os cards
+ *    ficam lado a lado com `flex-wrap` + `flex: 1 1 250px` e empilham sozinhos
+ *    quando o painel estreita.
+ *  - Num flex column os filhos NAO esticam. `align-items: stretch` explicito.
+ *
+ *  - **`<button>` nativo e renderizado como controle do host.** Ele ignora o
+ *    CSS do proprio elemento e achata os filhos numa linha so — foi
+ *    exatamente por isso que estes cards apareciam como pilulas cinzas de
+ *    texto centralizado, apesar do CSS correto no disco. Card e alternador
+ *    agora sao `div[role="button"][tabindex="0"]`, com Enter/Espaco ligados na
+ *    mao em main.ts.
+ *
+ * ---------------------------------------------------------------- TOKENS ---
+ * Mesma tabela nos tres plugins da familia. Repetida de proposito em cada
+ * folha: sao repos independentes que precisam construir sozinhos, e var() nao
+ * funciona aqui.
+ *
+ *   SUPERFICIE
+ *     bg-0        #0d0f13   fundo do painel (quase preto)
+ *     bg-1        #14171d   superficie: secoes e cards
+ *     bg-2        #1a1e26   superficie elevada: topo, chips
+ *     bg-3        #202631   hover de superficie clicavel
+ *     line        #232830   borda sutil (padrao)
+ *     line-2      #333b47   borda em hover
+ *
+ *   TEXTO
+ *     txt         #eceef2   conteudo principal
+ *     txt-2       #9098a6   secundario, rotulos
+ *     txt-3       #5f6774   apagado: dica, nota de rodape
+ *
+ *   SEMANTICA
+ *     azul        #3b82f6   foco
+ *     verde       #4ecb8d   sucesso
+ *     ambar       #eeab4c   acento do Pro Captions
+ *     vermelho    #ff7d71   erro
+ *     violeta     #8d82f5   acento do Auto B-roll
+ *
+ *   FORMA
+ *     raio-lg     10px · raio-md 8px · raio-full 999px · transicao 150ms
+ *
+ * O hall e neutro de proposito: nao tem acento de cor proprio. A cor de cada
+ * ferramenta aparece so na tarja do card dela — previa do que tem la dentro —
+ * e depois de fato dentro da ferramenta escolhida.
+ * ============================================================================
  */
 
 html,
@@ -19,29 +66,83 @@ body {
   flex-direction: column;
   margin: 0;
   padding: 0;
-  background-color: #12141a;
-  color: #e8eaf0;
-  font-family: adobe-clean, "Source Sans 3", "Segoe UI", sans-serif;
+  background-color: #0d0f13;
+  color: #eceef2;
+  font-family: Inter, adobe-clean, "Source Sans 3", "Segoe UI", sans-serif;
   font-size: 13px;
   line-height: 1.45;
   overflow: hidden;
   text-align: left;
 }
 
+/* =============================================================== HEADER === */
+
 .topo {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
   flex: none;
-  padding: 9px 12px;
-  background-color: #1e222b;
-  border-bottom: 1px solid #2a2f3b;
+  padding: 10px 12px;
+  background-color: #1a1e26;
+  border-bottom: 1px solid #232830;
+}
+
+.marca {
+  display: flex;
+  flex-direction: row;
+  align-items: baseline;
+  min-width: 0;
 }
 
 .marca-nome {
-  font-size: 14px;
+  text-align: left;
+  font-size: 15px;
   font-weight: 700;
+  letter-spacing: -0.01em;
   color: #ffffff;
+  white-space: nowrap;
 }
 
+/* ========================================================= STATUS BADGE === */
+
+.badge {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex: none;
+  padding: 2px 9px;
+  background-color: #14171d;
+  border: 1px solid #232830;
+  border-radius: 999px;
+  font-family: "Roboto Mono", Consolas, monospace;
+  font-size: 10px;
+  letter-spacing: 0.02em;
+  color: #9098a6;
+  white-space: nowrap;
+}
+
+.badge::before {
+  content: "\2022";
+  margin-right: 5px;
+  font-size: 10px;
+}
+
+.badge[data-tom="ok"] {
+  color: #4ecb8d;
+  border-color: #26493a;
+}
+
+.badge[data-tom="ok"]::before {
+  content: "\2713";
+}
+
+/* ================================================================ CORPO === */
+
 .conteudo {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
@@ -49,64 +150,154 @@ body {
   padding: 14px 12px;
 }
 
+/* `flex: none` aqui, em `.cards` e em `.hall-nota`: sao filhos diretos de
+   `.conteudo`, que e um flex column de altura definida. Sem isto o filho
+   encolhe em vez de deixar `.conteudo` rolar, e o texto e cortado. */
+.hall-intro {
+  flex: none;
+  margin: 0 0 12px 0;
+  text-align: left;
+  font-size: 12px;
+  color: #9098a6;
+}
+
+/* A nota de rodape ocupa o vazio que sobra num painel alto sem inventar
+   funcionalidade: e a unica instrucao que as duas ferramentas compartilham. */
+.hall-nota {
+  flex: none;
+  margin: 14px 0 0 0;
+  padding-top: 12px;
+  border-top: 1px solid #232830;
+  text-align: left;
+  font-size: 11px;
+  line-height: 1.55;
+  color: #5f6774;
+}
+
+/* ================================================================= CARD === */
+
+/* Lado a lado quando ha largura, empilhados quando nao ha. Sem media query. */
 .cards {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  flex-wrap: wrap;
   align-items: stretch;
+  flex: none;
+  margin-left: -4px;
+  margin-right: -4px;
 }
 
 .card {
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
   align-items: stretch;
+  flex: 1 1 250px;
+  min-width: 0;
+  margin: 0 4px 8px 4px;
+  padding: 13px 14px;
+  background-color: #14171d;
+  border: 1px solid #232830;
+  border-radius: 10px;
   text-align: left;
-  margin-bottom: 10px;
-  padding: 0;
-  background-color: #191c24;
-  border: 1px solid #2a2f3b;
-  border-radius: 6px;
   color: inherit;
   cursor: pointer;
-  overflow: hidden;
+  transition: background-color 150ms, border-color 150ms;
 }
 
 .card:hover {
-  border-color: #454c5c;
+  background-color: #1a1e26;
+  border-color: #333b47;
 }
 
-/* Canaleta do card: previa da cor da ferramenta, mesma gramatica das faixas
-   de dentro de cada plugin. */
-.card-canaleta {
-  flex: none;
-  width: 6px;
-  background-color: #2a2f3b;
+.card:active {
+  background-color: #14171d;
 }
 
-.card-broll .card-canaleta {
+.card:focus {
+  border-color: #3b82f6;
+  outline: none;
+}
+
+.card-topo {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+/* Tarja de 3px antes do nome: mesma linguagem das marcas dos dois plugins.
+   E aqui que a cor de cada ferramenta aparece — previa do que tem la dentro. */
+.card-nome::before {
+  content: "";
+  display: inline-block;
+  width: 3px;
+  height: 12px;
+  margin-right: 8px;
+  vertical-align: -1px;
+  background-color: #333b47;
+  border-radius: 2px;
+}
+
+.card-broll .card-nome::before {
   background-color: #8d82f5;
 }
 
-.card-captions .card-canaleta {
+.card-captions .card-nome::before {
   background-color: #eeab4c;
 }
 
-.card-texto {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
+.card-nome {
   flex: 1 1 auto;
   min-width: 0;
-  padding: 12px 14px;
+  text-align: left;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.card-nome {
-  font-size: 13px;
-  font-weight: 700;
-  color: #ffffff;
-  margin-bottom: 4px;
+.card-seta {
+  flex: none;
+  margin-left: 10px;
+  font-size: 14px;
+  color: #5f6774;
+  transition: color 150ms;
+}
+
+.card:hover .card-seta {
+  color: #eceef2;
 }
 
 .card-desc {
+  display: block;
+  text-align: left;
   font-size: 12px;
-  color: #8890a0;
+  line-height: 1.5;
+  color: #9098a6;
+  margin-bottom: 10px;
+}
+
+.card-rodape {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding-top: 9px;
+  border-top: 1px solid #1e232b;
+}
+
+.card-meta {
+  flex: 1 1 auto;
+  min-width: 0;
+  text-align: left;
+  font-family: "Roboto Mono", Consolas, monospace;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  color: #5f6774;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
