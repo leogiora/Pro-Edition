@@ -729,6 +729,8 @@ export function mount(root: HTMLElement): void {
   registrar("Painel pronto.", "vazio");
 
   void (async () => {
+    if (!document.body.contains(log)) return;
+
     try {
       const salva = await comLimite("ler configuracao", readJson(CONFIG_FILE), 5000);
       if (salva !== null) preencherFormulario(parseConfig(salva));
@@ -736,6 +738,7 @@ export function mount(root: HTMLElement): void {
       registrar(`Configuracao nao carregou, usando padrao. ${mensagemDeErro(e)}`, "aviso");
     }
     await carregarSinonimos();
+    if (!document.body.contains(log)) return;
     await relerSequencia();
   })();
 }
