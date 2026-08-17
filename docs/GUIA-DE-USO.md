@@ -37,6 +37,18 @@ npm install
 npm run build
 ```
 
+Depois, registre o plugin no Premiere (uma vez só, como administrador — o
+UXP Developer Tool não conecta neste ambiente, então a instalação é sempre
+por link de diretório):
+
+```
+powershell -ExecutionPolicy Bypass -File scripts\install-link.ps1
+```
+
+Reinicie o Premiere para carregar. Editar o repositório depois disso reflete
+direto no plugin — só é preciso rodar `npm run build` de novo quando o
+código muda (ver nota abaixo).
+
 **Sempre que o Auto B-roll ou o Pro Captions mudar a UI deles (`src/ui/*`),
 rode `npm run build` de novo aqui dentro do `Pro-Edition`.** O shell inclui o
 HTML/CSS/mount.ts dos dois plugins irmãos no seu próprio bundle em tempo de
