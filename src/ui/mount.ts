@@ -748,6 +748,14 @@ async function carregarSinonimos(aindaValido: () => boolean): Promise<void> {
 
 // ---------------------------------------------------------------- inicio
 
+/**
+ * `root` nao e usado no corpo: el() busca por id em `document` inteiro, nao
+ * escopado a `root`. So e seguro porque o shell (Pro Edition) nunca monta
+ * duas ferramentas ao mesmo tempo — troca document.body.innerHTML inteiro
+ * antes de cada mount() (contrato documentado no spec do Pro Edition). Se
+ * isso mudar (montagem parcial, mount() chamado 2x sem substituir o DOM),
+ * el() precisa passar a escopar a busca a partir de `root`.
+ */
 export function mount(root: HTMLElement): void {
   log = el("log");
   const meuLog = log; // snapshot desta chamada — log e reatribuido a cada mount()
