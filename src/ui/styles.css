@@ -1,41 +1,86 @@
 /*
- * Flexbox em tudo. `display: grid` e ignorado pelo UXP, e `gap` e `var()`
- * nao sao confiaveis — margens e valores literais, sem excecao (por isso a
- * paleta abaixo e comentario, nao `:root { --token: ... }`).
+ * ============================================================================
+ * FAMILIA PRO EDITION — folha de componentes do Pro Captions
+ * ============================================================================
  *
- * Num flex column os filhos NAO esticam: encolhem ate o conteudo e ficam no
- * meio. `align-items: stretch` explicito e o que resolve; `text-align: left`
- * sozinho nao basta.
+ * Restricoes do UXP que ditam TODA a estrutura abaixo (a lista completa, com o
+ * custo de cada descoberta, esta em auto-broll-premiere/docs/UXP_ARMADILHAS.md):
  *
- * Mesma identidade visual da familia (Auto B-roll, Pro Captions, Pro
- * Edition): mesma paleta e tipografia, cada plugin com seu proprio acento
- * de cor. Aqui o acento e ambar — o domain deste plugin e o preco isolado
- * na legenda, e ambar e a cor que ja marca esse destaque no painel.
+ *  - `<link rel="stylesheet">` NAO carrega. Este arquivo e embutido como
+ *    <style> por scripts/build.mjs.
+ *  - `display: grid` e IGNORADO. Layout inteiro em flexbox.
+ *  - `gap` e `var()` NAO sao confiaveis. Por isso os tokens abaixo sao um
+ *    bloco documentado com valores literais, e nao `:root { --token: ... }`;
+ *    espacamento sai de margin, nunca de gap.
+ *  - Media query nao e confiavel, e este painel nunca roda em telefone. A
+ *    responsividade real e a largura do painel acoplado no Premiere, e sai de
+ *    `flex-wrap` com `flex: 1 1 <base>`.
+ *  - Num flex column os filhos NAO esticam: encolhem ate o conteudo e ficam
+ *    centralizados. `align-items: stretch` explicito e o que resolve.
+ *  - `<button>` nativo e renderizado como controle do host: ignora o CSS do
+ *    proprio elemento e achata os filhos numa linha so. Onde precisamos de um
+ *    botao estilizado usamos `div[role="button"][tabindex="0"]`.
  *
- * Paleta (valores literais, ver auto-broll-premiere/src/ui/styles.css):
- *   bg #12141a · surface #191c24 · surface-2 #1e222b · border #2a2f3b
- *   text #e8eaf0 · text-muted #8890a0 · text-dim #5b6270
- *   accent-captions #eeab4c (ambar) · accent-ok #4ecb8d · accent-erro #ff7d71
+ * ---------------------------------------------------------------- TOKENS ---
+ * Mesma tabela nos tres plugins da familia. Repetida de proposito em cada
+ * folha: sao repos independentes que precisam construir sozinhos, e var() nao
+ * funciona aqui.
+ *
+ *   SUPERFICIE
+ *     bg-0        #0d0f13   fundo do painel (quase preto)
+ *     bg-1        #14171d   superficie: secoes e cards
+ *     bg-2        #1a1e26   superficie elevada: topo, cabeca de secao, chips
+ *     bg-3        #202631   hover de superficie clicavel
+ *     line        #232830   borda sutil (padrao)
+ *     line-2      #333b47   borda em hover
+ *
+ *   TEXTO
+ *     txt         #eceef2   conteudo principal
+ *     txt-2       #9098a6   secundario, rotulos
+ *     txt-3       #5f6774   apagado: vazio, placeholder, dica
+ *
+ *   SEMANTICA
+ *     azul        #3b82f6   acao primaria, foco
+ *     verde       #4ecb8d   sucesso / pronto
+ *     ambar       #eeab4c   atencao / processando / acento do Pro Captions
+ *     vermelho    #ff7d71   erro
+ *
+ *   FORMA
+ *     raio-lg     10px      secoes e cards
+ *     raio-md     8px       campos e controles
+ *     raio-full   999px     chips de status
+ *     transicao   150ms     hover, focus, active
+ *
+ *   TIPOGRAFIA
+ *     sans        Inter, adobe-clean, Segoe UI      (Inter se instalada)
+ *     mono        Roboto Mono, Consolas             (dado tecnico e codigo)
+ *     escala      15/13/12/11/9 px
+ *
+ * O acento deste plugin e o ambar: o domain aqui e o preco isolado na legenda,
+ * e ambar e a cor que ja marca esse destaque no painel.
+ * ============================================================================
  */
 
 html,
 body {
   height: 100%;
+  margin: 0;
+  padding: 0;
 }
 
 body {
   display: flex;
   flex-direction: column;
-  margin: 0;
-  padding: 0;
-  background-color: #12141a;
-  color: #e8eaf0;
-  font-family: adobe-clean, "Source Sans 3", "Segoe UI", sans-serif;
+  background-color: #0d0f13;
+  color: #eceef2;
+  font-family: Inter, adobe-clean, "Source Sans 3", "Segoe UI", sans-serif;
   font-size: 13px;
   line-height: 1.45;
   overflow: hidden;
   text-align: left;
 }
+
+/* =============================================================== HEADER === */
 
 .topo {
   display: flex;
@@ -43,9 +88,9 @@ body {
   align-items: center;
   justify-content: space-between;
   flex: none;
-  padding: 9px 12px;
-  background-color: #1e222b;
-  border-bottom: 1px solid #2a2f3b;
+  padding: 10px 12px;
+  background-color: #1a1e26;
+  border-bottom: 1px solid #232830;
 }
 
 .marca {
@@ -55,24 +100,24 @@ body {
   min-width: 0;
 }
 
-/* Tarja de 3px antes do nome: mesma linguagem de cor das canaletas, so que
-   na marca — o acento deste plugin (ambar) aparece antes mesmo de abrir uma
-   faixa. */
+/* Tarja de 3px antes do nome: a mesma linguagem de cor das secoes, so que na
+   marca. E o fio que costura os tres plugins da familia. */
 .marca-nome::before {
   content: "";
   display: inline-block;
   width: 3px;
-  height: 11px;
+  height: 12px;
   margin-right: 8px;
   vertical-align: -1px;
   background-color: #eeab4c;
-  border-radius: 1px;
+  border-radius: 2px;
 }
 
 .marca-nome {
   text-align: left;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 700;
+  letter-spacing: -0.01em;
   color: #ffffff;
   white-space: nowrap;
 }
@@ -83,54 +128,125 @@ body {
   font-size: 10px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #5b6270;
+  color: #5f6774;
   white-space: nowrap;
 }
 
-.estado {
+/* ========================================================= STATUS BADGE === */
+
+/* Discreto por definicao: chip de contorno, nunca preenchido. O glifo antes do
+   texto e o que faz o status nao depender so de cor. */
+.badge {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex: none;
+  padding: 2px 9px;
+  background-color: #14171d;
+  border: 1px solid #232830;
+  border-radius: 999px;
   font-family: "Roboto Mono", Consolas, monospace;
   font-size: 10px;
-  letter-spacing: 0.04em;
-  color: #8890a0;
-  padding: 2px 8px;
-  border: 1px solid #2a2f3b;
-  border-radius: 9px;
+  letter-spacing: 0.02em;
+  color: #9098a6;
   white-space: nowrap;
 }
 
+.badge::before {
+  content: "\2022";
+  margin-right: 5px;
+  font-size: 10px;
+}
+
+.badge[data-tom="ok"] {
+  color: #4ecb8d;
+  border-color: #26493a;
+}
+
+.badge[data-tom="ok"]::before {
+  content: "\2713";
+}
+
+.badge[data-tom="ativo"] {
+  color: #eeab4c;
+  border-color: #4a3a20;
+}
+
+.badge[data-tom="ativo"]::before {
+  content: "\25cc";
+}
+
+.badge[data-tom="aviso"] {
+  color: #eeab4c;
+  border-color: #4a3a20;
+}
+
+.badge[data-tom="aviso"]::before {
+  content: "!";
+}
+
+.badge[data-tom="erro"] {
+  color: #ff7d71;
+  border-color: #542c29;
+}
+
+.badge[data-tom="erro"]::before {
+  content: "\00d7";
+}
+
+/* ================================================================ CORPO === */
+
 .conteudo {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
   padding: 12px;
 }
 
-.faixa {
+/* ============================================================== SECTION === */
+
+/*
+ * A secao substituiu a canaleta vertical de 44px. O codigo da faixa (SEQ, LOG)
+ * continua sendo a identidade do painel, mas agora mora numa cabeca
+ * horizontal: devolve 44px de largura ao conteudo — o que importa muito num
+ * painel acoplado estreito — e poe o rotulo acima do que ele rotula.
+ */
+/*
+ * `flex: none` aqui e em `.acao`: sao filhos diretos de `.conteudo`, que e um
+ * flex column de altura definida (o painel inteiro). Num flex column o filho
+ * encolhe por padrao, e o conteudo que nao cabe espremeria a secao em vez de
+ * rolar — medido no Chrome, cortava a ultima linha dentro do `overflow:
+ * hidden`. Quem rola e `.conteudo`; as secoes nunca encolhem.
+ */
+.secao {
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
   align-items: stretch;
+  flex: none;
   margin-bottom: 8px;
-  background-color: #191c24;
-  border: 1px solid #2a2f3b;
-  border-radius: 6px;
+  background-color: #14171d;
+  border: 1px solid #232830;
+  border-radius: 10px;
   overflow: hidden;
 }
 
-.canaleta {
-  flex: none;
-  width: 44px;
+.secao-cabeca {
   display: flex;
+  flex-direction: row;
   align-items: center;
-  justify-content: center;
-  background-color: #1e222b;
-  border-right: 1px solid #2a2f3b;
+  flex: none;
+  padding: 7px 12px;
+  background-color: #1a1e26;
+  border-bottom: 1px solid #232830;
 }
 
 .cod {
+  flex: none;
+  margin-right: 9px;
   font-family: "Roboto Mono", Consolas, monospace;
   font-size: 10px;
   font-weight: 700;
@@ -139,74 +255,163 @@ body {
   white-space: nowrap;
 }
 
-.corpo {
+.secao-rotulo {
+  flex: 1 1 auto;
+  min-width: 0;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 500;
+  color: #9098a6;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.secao-corpo {
   display: flex;
   flex-direction: column;
   align-items: stretch;
   flex: 1 1 auto;
   min-width: 0;
-  padding: 10px 12px;
+  padding: 11px 12px;
 }
+
+/* ============================================================ SEQUENCIA === */
 
 .seq-nome {
   text-align: left;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
+  letter-spacing: -0.01em;
   color: #ffffff;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
+/*
+ * EMPTY STATE
+ *
+ * "nenhuma sequencia ativa" dizia o que faltava e nao dizia o que fazer. O
+ * estado vazio agora e um titulo mais uma instrucao: qual e o proximo passo, e
+ * onde ele acontece (no Premiere, nao aqui — nao existe API para o plugin
+ * escolher a sequencia; quem escolhe e voce, na timeline).
+ *
+ * Quem esconde a dica e o mount(), nao o CSS: seletor de irmao adjacente nao e
+ * garantido no UXP, e uma instrucao presa na tela depois de cumprida mentiria
+ * sobre o estado real.
+ */
 .seq-nome[data-vazio="sim"] {
   font-size: 13px;
-  font-weight: 400;
+  font-weight: 500;
   font-style: normal;
-  color: #5b6270;
+  color: #9098a6;
 }
 
+.dica {
+  text-align: left;
+  font-size: 12px;
+  color: #5f6774;
+  margin-top: 5px;
+}
+
+/* =============================================================== BUTTON === */
+
+/*
+ * Hierarquia de acao: "Gerar legendas" ganha o dobro de base flexivel de
+ * "Restaurar original", entao e sempre visualmente maior quando as duas cabem
+ * na mesma linha, e e a primeira a ocupar a linha inteira quando o painel
+ * estreita. A secundaria e `quiet` (so texto) para nao disputar com ela —
+ * restaurar backup e acao rara e destrutiva, nao merece peso visual.
+ */
 .acao {
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
   align-items: center;
-  margin-left: -3px;
-  margin-right: -3px;
+  flex: none;
+  margin-left: -4px;
+  margin-right: -4px;
   margin-bottom: 8px;
 }
 
 .acao sp-button {
-  flex: 1 1 140px;
-  margin-left: 3px;
-  margin-right: 3px;
+  margin-left: 4px;
+  margin-right: 4px;
   margin-bottom: 4px;
 }
 
+.acao sp-button#gerar {
+  flex: 2 1 180px;
+}
+
+.acao sp-button#restaurar {
+  flex: 1 1 130px;
+}
+
+/* ============================================================== LOGPANEL === */
+
 /*
- * O log rola por dentro, com altura propria.
+ * O log rola por dentro, com altura propria e recolhivel.
  *
- * Sem isto ele cresce para baixo e as ultimas linhas — que sao as que
- * importam — nascem fora da area visivel do painel. Foi exatamente o que fez
- * o plugin parecer morto: as mensagens estavam sendo escritas, so nao dava
- * para ve-las.
+ * Sem altura propria ele cresce para baixo e as ultimas linhas — que sao as que
+ * importam — nascem fora da area visivel do painel. Foi exatamente o que fez o
+ * plugin parecer morto. Por isso nasce ABERTO: recolher e escolha do usuario,
+ * nunca o padrao.
  */
-.faixa-log {
+.secao-log {
   margin-bottom: 0;
 }
 
-.faixa-log .corpo {
+.secao-log .secao-corpo {
   padding: 0;
 }
 
+.secao[data-aberto="nao"] .secao-corpo {
+  display: none;
+}
+
+/* Acao de cabeca de secao. `div[role=button]` e nao `<button>`: o botao nativo
+   do UXP ignora o CSS do proprio elemento e vira pilula cinza. */
+.secao-acao {
+  flex: none;
+  margin-left: 8px;
+  padding: 2px 8px;
+  background-color: #14171d;
+  border: 1px solid #232830;
+  border-radius: 8px;
+  font-size: 11px;
+  color: #9098a6;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 150ms, border-color 150ms, color 150ms;
+}
+
+.secao-acao:hover {
+  background-color: #202631;
+  border-color: #333b47;
+  color: #eceef2;
+}
+
+.secao-acao:active {
+  background-color: #1a1e26;
+}
+
+.secao-acao:focus {
+  border-color: #3b82f6;
+  color: #eceef2;
+  outline: none;
+}
+
 .log {
-  height: 220px;
+  height: 160px;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 8px 12px;
+  padding: 9px 12px;
   font-family: "Roboto Mono", Consolas, monospace;
   font-size: 11px;
   line-height: 1.6;
-  color: #8890a0;
+  color: #9098a6;
   white-space: pre-wrap;
   word-break: break-word;
 }

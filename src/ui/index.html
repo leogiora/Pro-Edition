@@ -14,14 +14,20 @@
         <span class="marca-nome">Pro Captions</span>
         <span class="marca-fase">Fase 0</span>
       </div>
-      <div id="estado" class="estado">carregando</div>
+      <div id="estado" class="badge">carregando</div>
     </header>
 
     <main class="conteudo">
-      <section class="faixa">
-        <div class="canaleta"><span class="cod">SEQ</span></div>
-        <div class="corpo">
-          <div id="seqNome" class="seq-nome" data-vazio="sim">nenhuma sequencia ativa</div>
+      <section class="secao">
+        <div class="secao-cabeca">
+          <span class="cod">SEQ</span>
+          <span class="secao-rotulo">Sequencia ativa</span>
+        </div>
+        <div class="secao-corpo">
+          <div id="seqNome" class="seq-nome" data-vazio="sim">Nenhuma sequencia selecionada</div>
+          <div id="seqDica" class="dica">
+            Abra a sequencia no Premiere e clique em Gerar legendas. O painel le a que estiver ativa na hora do clique.
+          </div>
         </div>
       </section>
 
@@ -30,9 +36,23 @@
         <sp-button id="restaurar" variant="secondary" quiet>Restaurar original</sp-button>
       </div>
 
-      <section class="faixa faixa-log">
-        <div class="canaleta"><span class="cod">LOG</span></div>
-        <div class="corpo">
+      <section id="secaoLog" class="secao secao-log" data-aberto="sim">
+        <div class="secao-cabeca">
+          <span class="cod">LOG</span>
+          <span class="secao-rotulo">Registro da execucao</span>
+          <div
+            id="logToggle"
+            class="secao-acao"
+            role="button"
+            tabindex="0"
+            aria-expanded="true"
+            aria-controls="log"
+            aria-label="Recolher o registro"
+          >
+            Recolher
+          </div>
+        </div>
+        <div class="secao-corpo">
           <div id="log" class="log"></div>
         </div>
       </section>

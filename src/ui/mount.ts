@@ -39,8 +39,10 @@ function registrar(texto: string): void {
   log.scrollTop = log.scrollHeight;
 }
 
-function estado(texto: string): void {
-  elemento("estado").textContent = texto;
+function estado(texto: string, tom: "" | "ativo" | "ok" | "aviso" | "erro" = ""): void {
+  const node = elemento("estado");
+  node.textContent = texto;
+  node.setAttribute("data-tom", tom);
 }
 
 function ocupado(sim: boolean): void {
@@ -50,19 +52,37 @@ function ocupado(sim: boolean): void {
   }
 }
 
-/** Toda acao termina gravando o log, mesmo quando falha. */
-async function comLog(rotulo: string, tarefa: () => Promise<void>): Promise<void> {
+/** Rotulos padrao dos dois botoes: para onde o texto volta quando a acao
+ *  termina, de sucesso ou de erro. */
+const ROTULOS: Readonly<Record<string, string>> = {
+  gerar: "Gerar legendas",
+  restaurar: "Restaurar original",
+};
+
+/**
+ * Toda acao termina gravando o log, mesmo quando falha.
+ *
+ * `botao` e so cosmetico: enquanto a acao roda, o proprio botao diz que esta
+ * rodando, em vez de deixar o distintivo de status carregar isso sozinho.
+ */
+async function comLog(
+  rotulo: string,
+  tarefa: () => Promise<void>,
+  botao?: { readonly id: string; readonly enquanto: string }
+): Promise<void> {
   linhas = [];
   ocupado(true);
+  if (botao) elemento(botao.id).textContent = botao.enquanto;
   registrar(`== ${rotulo} ==`);
   try {
     await tarefa();
   } catch (e) {
     const err = e as Error;
     registrar(`ERRO: ${err?.message ?? String(e)}`);
-    estado("erro");
+    estado("erro", "erro");
   } finally {
     ocupado(false);
+    if (botao) elemento(botao.id).textContent = ROTULOS[botao.id] ?? botao.enquanto;
     try {
       const caminho = await comLimite("log", gravarLog(linhas));
       registrar("");
@@ -83,6 +103,9 @@ async function lerTudo(): Promise<{
   const nome = elemento("seqNome");
   nome.textContent = info.name;
   nome.setAttribute("data-vazio", "nao");
+  // A instrucao do estado vazio some assim que ha sequencia de verdade:
+  // instrucao que continua na tela depois de cumprida vira ruido.
+  elemento("seqDica").style.display = "none";
   registrar(`${info.fps.toFixed(2)} fps · ${info.videoTracks} video · ${info.captionTracks} caption`);
 
   const clipes = await comLimite("clipes", lerClipes(0));
@@ -110,13 +133,13 @@ async function lerTudo(): Promise<{
 }
 
 async function gerar(): Promise<void> {
-  estado("lendo sequencia");
+  estado("lendo sequencia", "ativo");
   const { clipes, cortes, palavras } = await lerTudo();
   if (palavras.length === 0) {
     throw new Error("Nenhuma palavra encontrada. A camera principal da V1 tem transcricao?");
   }
 
-  estado("montando legendas");
+  estado("montando legendas", "ativo");
   const blocos = gerarBlocos(palavras, cortes);
   const problemas = validar(blocos);
   const precos = blocos.filter((b) => b.estilo === "preco");
@@ -127,7 +150,7 @@ async function gerar(): Promise<void> {
     registrar("");
     registrar(`${problemas.length} bloco(s) reprovado(s) na validacao, nada foi escrito:`);
     for (const p of problemas.slice(0, 10)) registrar(`  ${p}`);
-    estado("reprovado");
+    estado("reprovado", "aviso");
     return;
   }
 
@@ -183,7 +206,10 @@ async function gerar(): Promise<void> {
   registrar("  2. Arrastar precos.srt na area vazia ACIMA da faixa criada");
   registrar("  3. Estilo Pro-Captions (96) na faixa de texto");
   registrar("  4. Estilo Pro-Captions Preco (150) na faixa de preco");
-  estado(revisar.length > 0 ? `${revisar.length} para revisar` : "pronto");
+  estado(
+    revisar.length > 0 ? `${revisar.length} para revisar` : "legendas geradas",
+    revisar.length > 0 ? "aviso" : "ok"
+  );
 }
 
 async function restaurar(): Promise<void> {
@@ -205,7 +231,42 @@ async function restaurar(): Promise<void> {
   registrar("");
   // Numero zero tambem se escreve: silencio e indistinguivel de coisa quebrada.
   registrar(`${feitas} de ${midias.length} midia(s) restaurada(s)`);
-  estado(feitas > 0 ? "restaurado" : "nada a restaurar");
+  estado(feitas > 0 ? "restaurado" : "nada a restaurar", feitas > 0 ? "ok" : "aviso");
+}
+
+/**
+ * Liga um `div[role="button"]` — clique E teclado.
+ *
+ * Um `<button>` nativo daria o teclado de graca, mas o UXP o renderiza como
+ * controle do host: ignora o CSS do proprio elemento e achata os filhos numa
+ * linha so. Com div o visual e nosso, e o Enter/Espaco volta a ser
+ * responsabilidade nossa.
+ */
+function ligarAcao(node: HTMLElement, acao: () => void): void {
+  node.addEventListener("click", acao);
+  node.addEventListener("keydown", (evento) => {
+    const tecla = (evento as KeyboardEvent).key;
+    if (tecla !== "Enter" && tecla !== " ") return;
+    evento.preventDefault();
+    acao();
+  });
+}
+
+/**
+ * Recolhe/mostra o registro.
+ *
+ * Nasce SEMPRE aberto: o log e o unico canal de resposta do painel, e um log
+ * escondido por padrao repete o erro que ja fez este plugin parecer morto.
+ * Recolher e escolha de quem ja sabe o que esta acontecendo.
+ */
+function alternarLog(): void {
+  const secao = elemento("secaoLog");
+  const alternador = elemento("logToggle");
+  const aberto = secao.getAttribute("data-aberto") !== "nao";
+  secao.setAttribute("data-aberto", aberto ? "nao" : "sim");
+  alternador.textContent = aberto ? "Mostrar" : "Recolher";
+  alternador.setAttribute("aria-expanded", aberto ? "false" : "true");
+  alternador.setAttribute("aria-label", aberto ? "Mostrar o registro" : "Recolher o registro");
 }
 
 /**
@@ -222,8 +283,13 @@ export function mount(root: HTMLElement): void {
   linhas = [];
 
   // Antes de qualquer await: se o I/O pendurar, os botoes ja estao ligados.
-  estado("pronto");
+  estado("pronto", "ok");
   registrar("painel carregado");
-  elemento("gerar").addEventListener("click", () => void comLog("gerar legendas", gerar));
-  elemento("restaurar").addEventListener("click", () => void comLog("restaurar original", restaurar));
+  elemento("gerar").addEventListener("click", () => {
+    void comLog("gerar legendas", gerar, { id: "gerar", enquanto: "Gerando..." });
+  });
+  elemento("restaurar").addEventListener("click", () => {
+    void comLog("restaurar original", restaurar, { id: "restaurar", enquanto: "Restaurando..." });
+  });
+  ligarAcao(elemento("logToggle"), alternarLog);
 }
