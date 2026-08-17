@@ -5,14 +5,30 @@
  *    <style> pelo scripts/build.mjs.
  *  - CSS Grid NAO funciona. Layout inteiro em flexbox.
  *  - `gap` e custom properties (var()) nao sao confiaveis. Margens e valores
- *    literais, sem excecao.
+ *    literais, sem excecao — por isso a paleta abaixo e documentada em
+ *    comentario, nao em `:root { --token: ... }`.
  *
  * A responsividade sai de `flex-wrap` com `flex: 1 1 <base>`: os blocos ficam
  * lado a lado quando ha largura e quebram sozinhos quando nao ha.
  *
  * O painel toma emprestada a gramatica da timeline: cada bloco e uma faixa com
  * uma canaleta a esquerda, tingida com as cores que o Premiere da aos clipes —
- * violeta para video, verde para audio.
+ * violeta para video, verde para audio. Essa e a identidade visual dos tres
+ * plugins da familia (Auto B-roll, Pro Captions, Pro Edition) — mesma paleta,
+ * mesma tipografia, cada um com seu proprio acento de cor.
+ *
+ * Paleta (valores literais, repetidos aqui de proposito — ver nota acima):
+ *   bg            #12141a   fundo do painel
+ *   surface       #191c24   faixas/cards
+ *   surface-2     #1e222b   topo, canaleta
+ *   border        #2a2f3b   bordas
+ *   text          #e8eaf0   texto principal
+ *   text-muted    #8890a0   texto secundario/rotulo
+ *   text-dim      #5b6270   texto apagado (vazio, placeholder)
+ *   accent-broll  #8d82f5   violeta — acento deste plugin (V2, marca)
+ *   accent-audio  #4ecb8d   verde — faixa de audio, status "ok"
+ *   accent-aviso  #eeab4c   ambar — status "aviso"
+ *   accent-erro   #ff7d71   vermelho — status "erro"
  */
 
 html,
@@ -25,8 +41,8 @@ body {
 body {
   display: flex;
   flex-direction: column;
-  background-color: #101216;
-  color: #e6e9ee;
+  background-color: #12141a;
+  color: #e8eaf0;
   font-family: adobe-clean, "Source Sans 3", "Segoe UI", sans-serif;
   font-size: 13px;
   line-height: 1.45;
@@ -45,8 +61,8 @@ body {
   justify-content: space-between;
   flex: none;
   padding: 9px 12px;
-  background-color: #1a1e25;
-  border-bottom: 1px solid #2e343d;
+  background-color: #1e222b;
+  border-bottom: 1px solid #2a2f3b;
 }
 
 .marca {
@@ -54,6 +70,20 @@ body {
   flex-direction: row;
   align-items: baseline;
   min-width: 0;
+}
+
+/* Tarja de 3px antes do nome: mesma linguagem de cor das canaletas, so que na
+   marca — o aceso deste plugin (violeta) aparece antes mesmo de abrir uma
+   faixa. */
+.marca-nome::before {
+  content: "";
+  display: inline-block;
+  width: 3px;
+  height: 11px;
+  margin-right: 8px;
+  vertical-align: -1px;
+  background-color: #8d82f5;
+  border-radius: 1px;
 }
 
 .marca-nome {
@@ -68,27 +98,30 @@ body {
   margin-left: 8px;
   font-family: "Roboto Mono", Consolas, monospace;
   font-size: 10px;
-  color: #626a76;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #5b6270;
   white-space: nowrap;
 }
 
 .estado {
   font-family: "Roboto Mono", Consolas, monospace;
   font-size: 10px;
-  color: #8b93a0;
+  letter-spacing: 0.04em;
+  color: #8890a0;
   padding: 2px 8px;
-  border: 1px solid #2e343d;
+  border: 1px solid #2a2f3b;
   border-radius: 9px;
   white-space: nowrap;
 }
 
 .estado[data-tom="ok"] {
-  color: #5cc38f;
+  color: #4ecb8d;
   border-color: #2c5341;
 }
 
 .estado[data-tom="erro"] {
-  color: #ff7a6b;
+  color: #ff7d71;
   border-color: #5c3230;
 }
 
@@ -124,9 +157,9 @@ body {
   flex-direction: row;
   align-items: stretch;
   margin-bottom: 8px;
-  background-color: #1a1e25;
-  border: 1px solid #2a303a;
-  border-radius: 4px;
+  background-color: #191c24;
+  border: 1px solid #2a2f3b;
+  border-radius: 6px;
   overflow: hidden;
 }
 
@@ -138,24 +171,25 @@ body {
   align-items: flex-start;
   justify-content: center;
   padding-top: 11px;
-  background-color: #22272f;
-  border-right: 1px solid #2a303a;
+  background-color: #1e222b;
+  border-right: 1px solid #2a2f3b;
 }
 
 .cod {
   font-family: "Roboto Mono", Consolas, monospace;
   font-size: 10px;
   font-weight: 700;
+  letter-spacing: 0.08em;
   color: #6b7381;
   white-space: nowrap;
 }
 
 .cod-video {
-  color: #8b97ff;
+  color: #8d82f5;
 }
 
 .cod-audio {
-  color: #5cc38f;
+  color: #4ecb8d;
 }
 
 .corpo {
@@ -183,7 +217,7 @@ body {
 .seq-nome[data-vazio="sim"] {
   font-size: 13px;
   font-weight: 400;
-  color: #767e8b;
+  color: #5b6270;
 }
 
 .fatos {
@@ -207,7 +241,8 @@ body {
   display: block;
   font-size: 9px;
   letter-spacing: 0.08em;
-  color: #626a76;
+  text-transform: uppercase;
+  color: #5b6270;
   white-space: nowrap;
 }
 
@@ -216,7 +251,7 @@ body {
   display: block;
   font-family: "Roboto Mono", Consolas, monospace;
   font-size: 12px;
-  color: #e6e9ee;
+  color: #e8eaf0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -238,7 +273,7 @@ body {
 .campo-rotulo {
   display: block;
   font-size: 11px;
-  color: #8b93a0;
+  color: #8890a0;
   margin-bottom: 3px;
   text-align: left;
 }
@@ -289,17 +324,17 @@ body {
   font-family: "Roboto Mono", Consolas, monospace;
   font-size: 11px;
   line-height: 1.6;
-  color: #8b93a0;
+  color: #8890a0;
   white-space: pre-wrap;
   word-break: break-word;
 }
 
 .l-ok {
-  color: #5cc38f;
+  color: #4ecb8d;
 }
 
 .l-erro {
-  color: #ff7a6b;
+  color: #ff7d71;
 }
 
 .l-passo {
@@ -307,7 +342,7 @@ body {
 }
 
 .l-aviso {
-  color: #e0b062;
+  color: #eeab4c;
 }
 
 .l-vazio {
