@@ -17,20 +17,29 @@ import { mount as mountCaptions } from "../../../Pro-Captions/src/ui/mount.ts";
 import htmlSeletor from "./seletor.html";
 import cssSeletor from "./seletor.css";
 
+// Mesma paleta da familia (ver auto-broll-premiere/src/ui/styles.css) — uma
+// tira fina acima do cabecalho da ferramenta, nao um link solto boiando.
 const CSS_VOLTAR = `
 .pe-voltar {
-  margin: 8px 12px 0;
-  align-self: flex-start;
-  background: none;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  margin: 0;
+  padding: 5px 12px;
+  background-color: #1e222b;
   border: none;
-  color: #9aa4b2;
-  font-size: 12px;
+  border-bottom: 1px solid #2a2f3b;
+  color: #8890a0;
+  font-family: adobe-clean, "Source Sans 3", "Segoe UI", sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  text-align: left;
   cursor: pointer;
-  padding: 4px 0;
 }
 
 .pe-voltar:hover {
   color: #ffffff;
+  background-color: #20242e;
 }
 `;
 
