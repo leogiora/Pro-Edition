@@ -178,12 +178,15 @@ function mostrarSequencia(info: SequenceInfo): void {
   el("seqFaixas").textContent = `${info.videoTracks}V · ${info.audioTracks}A`;
 }
 
-async function relerSequencia(): Promise<void> {
+async function relerSequencia(aindaValido: () => boolean): Promise<void> {
   estado("lendo");
   try {
-    mostrarSequencia(await comLimite("ler sequencia", getSequenceInfo()));
+    const info = await comLimite("ler sequencia", getSequenceInfo());
+    if (!aindaValido()) return;
+    mostrarSequencia(info);
     estado("pronto", "ok");
   } catch (e) {
+    if (!aindaValido()) return;
     const nome = el("seqNome");
     nome.textContent = "nenhuma sequencia ativa";
     nome.setAttribute("data-vazio", "sim");
@@ -747,6 +750,6 @@ export function mount(root: HTMLElement): void {
     if (!aindaValido()) return;
     await carregarSinonimos(aindaValido);
     if (!aindaValido()) return;
-    await relerSequencia();
+    await relerSequencia(aindaValido);
   })();
 }
