@@ -208,6 +208,16 @@ async function restaurar(): Promise<void> {
   estado(feitas > 0 ? "restaurado" : "nada a restaurar");
 }
 
+/**
+ * `root` nao e usado no corpo: elemento() busca por id em `document` inteiro,
+ * nao escopado a `root`. So e seguro porque o shell (Pro Edition) nunca
+ * monta duas ferramentas ao mesmo tempo — troca document.body.innerHTML
+ * inteiro antes de cada mount() (contrato documentado no spec do Pro
+ * Edition), o que tambem reseta `linhas` e os listeners junto (elementos
+ * novos a cada chamada, nunca reaproveitados). Se isso mudar (montagem
+ * parcial, mount() chamado 2x sem substituir o DOM), elemento() precisa
+ * passar a escopar a busca a partir de `root`.
+ */
 export function mount(root: HTMLElement): void {
   linhas = [];
 
