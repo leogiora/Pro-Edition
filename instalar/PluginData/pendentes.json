@@ -1,0 +1,862 @@
+{
+  "schema": 1,
+  "porSequencia": {
+    "AS 20 SELECIONADAS — TELEPROMPTER - Quadrado": {
+      "quando": "2026-08-17T13:51:56.943Z",
+      "itens": [],
+      "postos": [
+        {
+          "arquivo": "Viagra (18).mp4",
+          "inicio": 1341.74
+        },
+        {
+          "arquivo": "Doutor (10).mp4",
+          "inicio": 1352.8500000000001
+        },
+        {
+          "arquivo": "Viagra (3).mp4",
+          "inicio": 1357.0600000000002
+        },
+        {
+          "arquivo": "Doppler.mp4",
+          "inicio": 1368.24
+        },
+        {
+          "arquivo": "Doutor (13).mp4",
+          "inicio": 1373.1499999999999
+        },
+        {
+          "arquivo": "Corpo do homem (2).mp4",
+          "inicio": 1377.6100000000001
+        },
+        {
+          "arquivo": "Consulta médica (1).mp4",
+          "inicio": 1386.62
+        },
+        {
+          "arquivo": "Teleconsulta (13).mp4",
+          "inicio": 1395.24
+        }
+      ]
+    },
+    "BLOCO 2: CARRO - IA - Reels": {
+      "quando": "2026-08-18T11:53:20.395Z",
+      "itens": [
+        {
+          "arquivo": "Viagra (3).mp4",
+          "conceito": "Viagra",
+          "termosCasados": [
+            "viagra"
+          ],
+          "inicio": 10.210000000000003
+        },
+        {
+          "arquivo": "Viagra (18).mp4",
+          "conceito": "Viagra",
+          "termosCasados": [
+            "viagra"
+          ],
+          "inicio": 20.589999999999996
+        },
+        {
+          "arquivo": "Doutor (17).mp4",
+          "conceito": "Doutor",
+          "termosCasados": [
+            "doutor"
+          ],
+          "inicio": 23.109999999999996
+        },
+        {
+          "arquivo": "Doppler.mp4",
+          "conceito": "Doppler",
+          "termosCasados": [
+            "doppler"
+          ],
+          "inicio": 28.390000000000004
+        },
+        {
+          "arquivo": "Viagra (23).mp4",
+          "conceito": "Viagra",
+          "termosCasados": [
+            "viagra"
+          ],
+          "inicio": 30.540000000000003
+        },
+        {
+          "arquivo": "Consulta médica (3).mp4",
+          "conceito": "Consulta médica",
+          "termosCasados": [
+            "consulta"
+          ],
+          "inicio": 39
+        },
+        {
+          "arquivo": "Teleconsulta (13).mp4",
+          "conceito": "Teleconsulta",
+          "termosCasados": [
+            "teleconsulta"
+          ],
+          "inicio": 41.61000000000001
+        },
+        {
+          "arquivo": "Teleconsulta (11).mp4",
+          "conceito": "Teleconsulta",
+          "termosCasados": [
+            "teleconsulta"
+          ],
+          "inicio": 53.150000000000006
+        },
+        {
+          "arquivo": "Vasos sanguíneos (1).mp4",
+          "conceito": "Vasos sanguíneos",
+          "termosCasados": [
+            "vaso",
+            "sanguineo"
+          ],
+          "inicio": 75.46999999999606
+        },
+        {
+          "arquivo": "Falhou na cama (10).mp4",
+          "conceito": "Falhou na cama",
+          "termosCasados": [
+            "cama"
+          ],
+          "inicio": 78.34000000000002
+        },
+        {
+          "arquivo": "Corpo do homem (2).mp4",
+          "conceito": "Corpo do homem",
+          "termosCasados": [
+            "corpo"
+          ],
+          "inicio": 81.34
+        },
+        {
+          "arquivo": "Viagra (22).mp4",
+          "conceito": "Viagra",
+          "termosCasados": [
+            "viagra"
+          ],
+          "inicio": 91.13000000000001
+        },
+        {
+          "arquivo": "Vasos sanguíneos (5).mp4",
+          "conceito": "Vasos sanguíneos",
+          "termosCasados": [
+            "vaso",
+            "sanguineo"
+          ],
+          "inicio": 97.47000000000001
+        },
+        {
+          "arquivo": "Corpo do homem (6).mp4",
+          "conceito": "Corpo do homem",
+          "termosCasados": [
+            "corpo",
+            "homem"
+          ],
+          "inicio": 103.29
+        },
+        {
+          "arquivo": "Teleconsulta (15).mp4",
+          "conceito": "Teleconsulta",
+          "termosCasados": [
+            "teleconsulta"
+          ],
+          "inicio": 109.32000000000001
+        },
+        {
+          "arquivo": "Teleconsulta (10).mp4",
+          "conceito": "Teleconsulta",
+          "termosCasados": [
+            "teleconsulta"
+          ],
+          "inicio": 118.74999999999999
+        },
+        {
+          "arquivo": "Doutor (13).mp4",
+          "conceito": "Doutor",
+          "termosCasados": [
+            "doutor"
+          ],
+          "inicio": 149.07
+        },
+        {
+          "arquivo": "Frustrado (13).mp4",
+          "conceito": "Frustrado",
+          "termosCasados": [
+            "frustrado"
+          ],
+          "inicio": 153.79999999999998
+        },
+        {
+          "arquivo": "Doutor (21).mp4",
+          "conceito": "Doutor",
+          "termosCasados": [
+            "doutor"
+          ],
+          "inicio": 166.07999999999998
+        },
+        {
+          "arquivo": "Consulta médica (1).mp4",
+          "conceito": "Consulta médica",
+          "termosCasados": [
+            "consulta"
+          ],
+          "inicio": 175.55999999999605
+        },
+        {
+          "arquivo": "Teleconsulta (14).mp4",
+          "conceito": "Teleconsulta",
+          "termosCasados": [
+            "teleconsulta"
+          ],
+          "inicio": 178.88999999999996
+        },
+        {
+          "arquivo": "Teleconsulta (12).mp4",
+          "conceito": "Teleconsulta",
+          "termosCasados": [
+            "teleconsulta"
+          ],
+          "inicio": 187.12999999999997
+        },
+        {
+          "arquivo": "Viagra (4).mp4",
+          "conceito": "Viagra",
+          "termosCasados": [
+            "viagra"
+          ],
+          "inicio": 212.56999999999996
+        },
+        {
+          "arquivo": "Doppler.mp4",
+          "conceito": "Doppler",
+          "termosCasados": [
+            "doppler"
+          ],
+          "inicio": 233.37999999999997
+        },
+        {
+          "arquivo": "Doutor (20).mp4",
+          "conceito": "Doutor",
+          "termosCasados": [
+            "doutor"
+          ],
+          "inicio": 237.35
+        },
+        {
+          "arquivo": "Consulta médica (5).mp4",
+          "conceito": "Consulta médica",
+          "termosCasados": [
+            "consulta"
+          ],
+          "inicio": 245.6
+        },
+        {
+          "arquivo": "Teleconsulta (19).mp4",
+          "conceito": "Teleconsulta",
+          "termosCasados": [
+            "teleconsulta"
+          ],
+          "inicio": 256.98
+        },
+        {
+          "arquivo": "Corpo do homem (8).mp4",
+          "conceito": "Corpo do homem",
+          "termosCasados": [
+            "corpo",
+            "homem"
+          ],
+          "inicio": 280.12
+        },
+        {
+          "arquivo": "Exames.mp4",
+          "conceito": "Exames",
+          "termosCasados": [
+            "exame"
+          ],
+          "inicio": 283.39
+        },
+        {
+          "arquivo": "Vasos sanguíneos (6).mp4",
+          "conceito": "Vasos sanguíneos",
+          "termosCasados": [
+            "sanguineo"
+          ],
+          "inicio": 293.60999999999996
+        },
+        {
+          "arquivo": "Sala reservada.mp4",
+          "conceito": "Sala reservada",
+          "termosCasados": [
+            "sala",
+            "reservada"
+          ],
+          "inicio": 297.48
+        },
+        {
+          "arquivo": "Viagra (32).mp4",
+          "conceito": "Viagra",
+          "termosCasados": [
+            "vez"
+          ],
+          "inicio": 308.36
+        },
+        {
+          "arquivo": "Consulta médica (7).mp4",
+          "conceito": "Consulta médica",
+          "termosCasados": [
+            "consulta"
+          ],
+          "inicio": 311.14
+        },
+        {
+          "arquivo": "Teleconsulta (20).mp4",
+          "conceito": "Teleconsulta",
+          "termosCasados": [
+            "teleconsulta"
+          ],
+          "inicio": 317.53999999999996
+        },
+        {
+          "arquivo": "Frustrado (11).mp4",
+          "conceito": "Frustrado",
+          "termosCasados": [
+            "frustrado"
+          ],
+          "inicio": 371.78
+        },
+        {
+          "arquivo": "Medicamento.mp4",
+          "conceito": "Medicamento",
+          "termosCasados": [
+            "medicamento"
+          ],
+          "inicio": 375.04999999999995
+        },
+        {
+          "arquivo": "Consulta médica (6).mp4",
+          "conceito": "Consulta médica",
+          "termosCasados": [
+            "consulta"
+          ],
+          "inicio": 382.22999999999996
+        },
+        {
+          "arquivo": "Consulta médica (4).mp4",
+          "conceito": "Consulta médica",
+          "termosCasados": [
+            "consulta"
+          ],
+          "inicio": 400.91
+        },
+        {
+          "arquivo": "Teleconsulta (22).mp4",
+          "conceito": "Teleconsulta",
+          "termosCasados": [
+            "teleconsulta"
+          ],
+          "inicio": 405.14
+        },
+        {
+          "arquivo": "Milhares de homens (3).mp4",
+          "conceito": "Milhares de homens",
+          "termosCasados": [
+            "milhare"
+          ],
+          "inicio": 454.69000000000005
+        },
+        {
+          "arquivo": "Doppler.mp4",
+          "conceito": "Doppler",
+          "termosCasados": [
+            "doppler"
+          ],
+          "inicio": 460.23
+        },
+        {
+          "arquivo": "Separação (1).mp4",
+          "conceito": "Separação",
+          "termosCasados": [
+            "separacao"
+          ],
+          "inicio": 464.5
+        },
+        {
+          "arquivo": "Consulta médica (2).mp4",
+          "conceito": "Consulta médica",
+          "termosCasados": [
+            "consulta"
+          ],
+          "inicio": 468.48
+        },
+        {
+          "arquivo": "Teleconsulta (16).mp4",
+          "conceito": "Teleconsulta",
+          "termosCasados": [
+            "teleconsulta"
+          ],
+          "inicio": 481.63
+        },
+        {
+          "arquivo": "Frustrado (1).mp4",
+          "conceito": "Frustrado",
+          "termosCasados": [
+            "frustrado"
+          ],
+          "inicio": 503.5299999999999
+        },
+        {
+          "arquivo": "Falhou na cama (21).mp4",
+          "conceito": "Falhou na cama",
+          "termosCasados": [
+            "cama"
+          ],
+          "inicio": 507.79999999999995
+        },
+        {
+          "arquivo": "Diabetes.mp4",
+          "conceito": "Diabetes",
+          "termosCasados": [
+            "diabete"
+          ],
+          "inicio": 514.4900000000001
+        },
+        {
+          "arquivo": "Vasos sanguíneos (7).mp4",
+          "conceito": "Vasos sanguíneos",
+          "termosCasados": [
+            "vaso",
+            "sanguineo"
+          ],
+          "inicio": 521.16
+        },
+        {
+          "arquivo": "Viagra (27).mp4",
+          "conceito": "Viagra",
+          "termosCasados": [
+            "viagra"
+          ],
+          "inicio": 526.6800000000001
+        },
+        {
+          "arquivo": "Doutor (15).mp4",
+          "conceito": "Doutor",
+          "termosCasados": [
+            "doutor"
+          ],
+          "inicio": 531.9100000000001
+        },
+        {
+          "arquivo": "Medicamento.mp4",
+          "conceito": "Medicamento",
+          "termosCasados": [
+            "medicamento"
+          ],
+          "inicio": 534.6899999999999
+        },
+        {
+          "arquivo": "Teleconsulta (24).mp4",
+          "conceito": "Teleconsulta",
+          "termosCasados": [
+            "teleconsulta"
+          ],
+          "inicio": 544.2900000000001
+        },
+        {
+          "arquivo": "Corpo do homem (7).mp4",
+          "conceito": "Corpo do homem",
+          "termosCasados": [
+            "corpo"
+          ],
+          "inicio": 551.8900000000001
+        },
+        {
+          "arquivo": "Teleconsulta (6).mp4",
+          "conceito": "Teleconsulta",
+          "termosCasados": [
+            "teleconsulta"
+          ],
+          "inicio": 553.8100000000001
+        },
+        {
+          "arquivo": "Viagra (1).mp4",
+          "conceito": "Viagra",
+          "termosCasados": [
+            "mesma"
+          ],
+          "inicio": 578.24
+        },
+        {
+          "arquivo": "Falhou na cama (17).mp4",
+          "conceito": "Falhou na cama",
+          "termosCasados": [
+            "cama"
+          ],
+          "inicio": 582.3900000000001
+        },
+        {
+          "arquivo": "Frustrado (15).mp4",
+          "conceito": "Frustrado",
+          "termosCasados": [
+            "frustrado"
+          ],
+          "inicio": 587.8200000000002
+        },
+        {
+          "arquivo": "Academia.mp4",
+          "conceito": "Academia",
+          "termosCasados": [
+            "academia"
+          ],
+          "inicio": 598.07
+        },
+        {
+          "arquivo": "Doutor (23).mp4",
+          "conceito": "Doutor",
+          "termosCasados": [
+            "doutor"
+          ],
+          "inicio": 606.2900000000001
+        },
+        {
+          "arquivo": "Consulta médica (1).mp4",
+          "conceito": "Consulta médica",
+          "termosCasados": [
+            "consulta"
+          ],
+          "inicio": 610.06
+        },
+        {
+          "arquivo": "Teleconsulta (4).mp4",
+          "conceito": "Teleconsulta",
+          "termosCasados": [
+            "teleconsulta"
+          ],
+          "inicio": 621.3000000000001
+        },
+        {
+          "arquivo": "Doutor (12).mp4",
+          "conceito": "Doutor",
+          "termosCasados": [
+            "doutor"
+          ],
+          "inicio": 644.1
+        },
+        {
+          "arquivo": "Exames.mp4",
+          "conceito": "Exames",
+          "termosCasados": [
+            "exame"
+          ],
+          "inicio": 660.5100000000001
+        },
+        {
+          "arquivo": "Vasos sanguíneos (2).mp4",
+          "conceito": "Vasos sanguíneos",
+          "termosCasados": [
+            "vaso",
+            "sanguineo"
+          ],
+          "inicio": 663.5900000000001
+        },
+        {
+          "arquivo": "Sala reservada.mp4",
+          "conceito": "Sala reservada",
+          "termosCasados": [
+            "sala",
+            "reservada"
+          ],
+          "inicio": 669.7700000000001
+        },
+        {
+          "arquivo": "Consulta médica (1).mp4",
+          "conceito": "Consulta médica",
+          "termosCasados": [
+            "consulta"
+          ],
+          "inicio": 673.4900000000001
+        },
+        {
+          "arquivo": "Teleconsulta (5).mp4",
+          "conceito": "Teleconsulta",
+          "termosCasados": [
+            "teleconsulta"
+          ],
+          "inicio": 681.2200000000001
+        }
+      ],
+      "postos": [
+        {
+          "arquivo": "Viagra (3).mp4",
+          "inicio": 10.210000000000003
+        },
+        {
+          "arquivo": "Viagra (18).mp4",
+          "inicio": 20.589999999999996
+        },
+        {
+          "arquivo": "Doutor (17).mp4",
+          "inicio": 23.109999999999996
+        },
+        {
+          "arquivo": "Doppler.mp4",
+          "inicio": 28.390000000000004
+        },
+        {
+          "arquivo": "Viagra (23).mp4",
+          "inicio": 30.540000000000003
+        },
+        {
+          "arquivo": "Consulta médica (3).mp4",
+          "inicio": 39
+        },
+        {
+          "arquivo": "Teleconsulta (13).mp4",
+          "inicio": 41.61000000000001
+        },
+        {
+          "arquivo": "Teleconsulta (11).mp4",
+          "inicio": 53.150000000000006
+        },
+        {
+          "arquivo": "Vasos sanguíneos (1).mp4",
+          "inicio": 75.46999999999606
+        },
+        {
+          "arquivo": "Falhou na cama (10).mp4",
+          "inicio": 78.34000000000002
+        },
+        {
+          "arquivo": "Corpo do homem (2).mp4",
+          "inicio": 81.34
+        },
+        {
+          "arquivo": "Viagra (22).mp4",
+          "inicio": 91.13000000000001
+        },
+        {
+          "arquivo": "Vasos sanguíneos (5).mp4",
+          "inicio": 97.47000000000001
+        },
+        {
+          "arquivo": "Corpo do homem (6).mp4",
+          "inicio": 103.29
+        },
+        {
+          "arquivo": "Teleconsulta (15).mp4",
+          "inicio": 109.32000000000001
+        },
+        {
+          "arquivo": "Teleconsulta (10).mp4",
+          "inicio": 118.74999999999999
+        },
+        {
+          "arquivo": "Doutor (13).mp4",
+          "inicio": 149.07
+        },
+        {
+          "arquivo": "Frustrado (13).mp4",
+          "inicio": 153.79999999999998
+        },
+        {
+          "arquivo": "Doutor (21).mp4",
+          "inicio": 166.07999999999998
+        },
+        {
+          "arquivo": "Consulta médica (1).mp4",
+          "inicio": 175.55999999999605
+        },
+        {
+          "arquivo": "Teleconsulta (14).mp4",
+          "inicio": 178.88999999999996
+        },
+        {
+          "arquivo": "Teleconsulta (12).mp4",
+          "inicio": 187.12999999999997
+        },
+        {
+          "arquivo": "Viagra (4).mp4",
+          "inicio": 212.56999999999996
+        },
+        {
+          "arquivo": "Doppler.mp4",
+          "inicio": 233.37999999999997
+        },
+        {
+          "arquivo": "Doutor (20).mp4",
+          "inicio": 237.35
+        },
+        {
+          "arquivo": "Consulta médica (5).mp4",
+          "inicio": 245.6
+        },
+        {
+          "arquivo": "Teleconsulta (19).mp4",
+          "inicio": 256.98
+        },
+        {
+          "arquivo": "Corpo do homem (8).mp4",
+          "inicio": 280.12
+        },
+        {
+          "arquivo": "Exames.mp4",
+          "inicio": 283.39
+        },
+        {
+          "arquivo": "Vasos sanguíneos (6).mp4",
+          "inicio": 293.60999999999996
+        },
+        {
+          "arquivo": "Sala reservada.mp4",
+          "inicio": 297.48
+        },
+        {
+          "arquivo": "Viagra (32).mp4",
+          "inicio": 308.36
+        },
+        {
+          "arquivo": "Consulta médica (7).mp4",
+          "inicio": 311.14
+        },
+        {
+          "arquivo": "Teleconsulta (20).mp4",
+          "inicio": 317.53999999999996
+        },
+        {
+          "arquivo": "Frustrado (11).mp4",
+          "inicio": 371.78
+        },
+        {
+          "arquivo": "Medicamento.mp4",
+          "inicio": 375.04999999999995
+        },
+        {
+          "arquivo": "Consulta médica (6).mp4",
+          "inicio": 382.22999999999996
+        },
+        {
+          "arquivo": "Consulta médica (4).mp4",
+          "inicio": 400.91
+        },
+        {
+          "arquivo": "Teleconsulta (22).mp4",
+          "inicio": 405.14
+        },
+        {
+          "arquivo": "Milhares de homens (3).mp4",
+          "inicio": 454.69000000000005
+        },
+        {
+          "arquivo": "Doppler.mp4",
+          "inicio": 460.23
+        },
+        {
+          "arquivo": "Separação (1).mp4",
+          "inicio": 464.5
+        },
+        {
+          "arquivo": "Consulta médica (2).mp4",
+          "inicio": 468.48
+        },
+        {
+          "arquivo": "Teleconsulta (16).mp4",
+          "inicio": 481.63
+        },
+        {
+          "arquivo": "Frustrado (1).mp4",
+          "inicio": 503.5299999999999
+        },
+        {
+          "arquivo": "Falhou na cama (21).mp4",
+          "inicio": 507.79999999999995
+        },
+        {
+          "arquivo": "Diabetes.mp4",
+          "inicio": 514.4900000000001
+        },
+        {
+          "arquivo": "Vasos sanguíneos (7).mp4",
+          "inicio": 521.16
+        },
+        {
+          "arquivo": "Viagra (27).mp4",
+          "inicio": 526.6800000000001
+        },
+        {
+          "arquivo": "Doutor (15).mp4",
+          "inicio": 531.9100000000001
+        },
+        {
+          "arquivo": "Medicamento.mp4",
+          "inicio": 534.6899999999999
+        },
+        {
+          "arquivo": "Teleconsulta (24).mp4",
+          "inicio": 544.2900000000001
+        },
+        {
+          "arquivo": "Corpo do homem (7).mp4",
+          "inicio": 551.8900000000001
+        },
+        {
+          "arquivo": "Teleconsulta (6).mp4",
+          "inicio": 553.8100000000001
+        },
+        {
+          "arquivo": "Viagra (1).mp4",
+          "inicio": 578.24
+        },
+        {
+          "arquivo": "Falhou na cama (17).mp4",
+          "inicio": 582.3900000000001
+        },
+        {
+          "arquivo": "Frustrado (15).mp4",
+          "inicio": 587.8200000000002
+        },
+        {
+          "arquivo": "Academia.mp4",
+          "inicio": 598.07
+        },
+        {
+          "arquivo": "Doutor (23).mp4",
+          "inicio": 606.2900000000001
+        },
+        {
+          "arquivo": "Consulta médica (1).mp4",
+          "inicio": 610.06
+        },
+        {
+          "arquivo": "Teleconsulta (4).mp4",
+          "inicio": 621.3000000000001
+        },
+        {
+          "arquivo": "Doutor (12).mp4",
+          "inicio": 644.1
+        },
+        {
+          "arquivo": "Exames.mp4",
+          "inicio": 660.5100000000001
+        },
+        {
+          "arquivo": "Vasos sanguíneos (2).mp4",
+          "inicio": 663.5900000000001
+        },
+        {
+          "arquivo": "Sala reservada.mp4",
+          "inicio": 669.7700000000001
+        },
+        {
+          "arquivo": "Consulta médica (1).mp4",
+          "inicio": 673.4900000000001
+        },
+        {
+          "arquivo": "Teleconsulta (5).mp4",
+          "inicio": 681.2200000000001
+        }
+      ]
+    }
+  }
+}

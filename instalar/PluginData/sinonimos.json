@@ -1,0 +1,313 @@
+{
+  "schema": 1,
+  "sinonimos": {
+    "viagra": [
+      "disfuncao",
+      "eretil",
+      "impotencia",
+      "erecao",
+      "ereto",
+      "remedio",
+      "comprimido",
+      "pilula",
+      "azul",
+      "potencia",
+      "desempenho",
+      "ejaculacao",
+      "precoce",
+      "libido",
+      "rigidez"
+    ],
+    "teleconsulta": [
+      "telemedicina",
+      "online",
+      "distancia",
+      "videochamada",
+      "atendimento",
+      "clicando",
+      "botao",
+      "link",
+      "celular",
+      "aplicativo"
+    ],
+    "doutor": [
+      "medico",
+      "urologista",
+      "especialista",
+      "profissional",
+      "clinica",
+      "andrologista"
+    ],
+    "falhou": [
+      "brochar",
+      "brochou",
+      "falha",
+      "falhar",
+      "vexame",
+      "fracasso",
+      "decepcionar",
+      "perder",
+      "ejaculacao",
+      "precoce"
+    ],
+    "cama": [
+      "sexual",
+      "sexo",
+      "relacao",
+      "intimidade",
+      "transar",
+      "desempenho",
+      "performance",
+      "noite"
+    ],
+    "frustrado": [
+      "frustracao",
+      "vergonha",
+      "humilhacao",
+      "deprimido",
+      "triste",
+      "desanimo",
+      "briga",
+      "problema",
+      "piora",
+      "sofrimento"
+    ],
+    "desanimado": [
+      "desanimo",
+      "animo",
+      "cansado",
+      "abatido",
+      "energia",
+      "apatia",
+      "disfuncao",
+      "eretil",
+      "ejaculacao",
+      "precoce",
+      "impotencia",
+      "libido"
+    ],
+    "separacao": [
+      "divorcio",
+      "separar",
+      "terminar",
+      "briga",
+      "distanciamento",
+      "afastamento",
+      "traicao",
+      "casamento"
+    ],
+    "infarto": [
+      "cardiaco",
+      "coracao",
+      "avc",
+      "entupimento",
+      "pressao",
+      "risco",
+      "derrame",
+      "circulatorio"
+    ],
+    "sanguineo": [
+      "circulacao",
+      "sangue",
+      "arteria",
+      "veia",
+      "fluxo",
+      "irrigacao",
+      "vascular",
+      "entupimento"
+    ],
+    "vaso": [
+      "arteria",
+      "veia",
+      "circulacao",
+      "irrigacao"
+    ],
+    "tratamento": [
+      "tratar",
+      "solucao",
+      "cura",
+      "protocolo",
+      "terapia",
+      "adequado",
+      "resolver"
+    ],
+    "consulta": [
+      "consultorio",
+      "avaliacao",
+      "diagnostico",
+      "atendimento",
+      "exame"
+    ],
+    "medica": [
+      "medico",
+      "saude",
+      "clinica"
+    ],
+    "exames": [
+      "exame",
+      "diagnostico",
+      "laboratorio",
+      "ultrassom",
+      "doppler",
+      "sangue"
+    ],
+    "doppler": [
+      "ultrassom",
+      "exame",
+      "circulacao",
+      "fluxo"
+    ],
+    "medicamento": [
+      "remedio",
+      "comprimido",
+      "medicacao",
+      "tarja",
+      "receita",
+      "dose"
+    ],
+    "injetaveis": [
+      "injecao",
+      "injetavel",
+      "aplicacao",
+      "agulha",
+      "aplicar"
+    ],
+    "paliativa": [
+      "paliativo",
+      "temporario",
+      "tapar",
+      "disfarcar",
+      "provisorio",
+      "engana"
+    ],
+    "medida": [
+      "solucao",
+      "saida",
+      "alternativa"
+    ],
+    "diabetes": [
+      "diabetico",
+      "glicemia",
+      "acucar",
+      "glicose"
+    ],
+    "academia": [
+      "exercicio",
+      "treino",
+      "musculacao",
+      "atividade",
+      "fisica",
+      "esporte"
+    ],
+    "corpo": [
+      "fisico",
+      "saude",
+      "organismo"
+    ],
+    "casal": [
+      "casais",
+      "relacionamento",
+      "parceira",
+      "esposa",
+      "mulher",
+      "namorada",
+      "conjuge"
+    ],
+    "feliz": [
+      "felicidade",
+      "alegria",
+      "satisfacao",
+      "prazer"
+    ],
+    "milhare": [
+      "milhoes",
+      "milhao",
+      "muitos",
+      "maioria",
+      "brasileiros"
+    ],
+    "homem": [
+      "homens",
+      "masculino",
+      "cara",
+      "rapaz"
+    ],
+    "alivio": [
+      "aliviar",
+      "melhora",
+      "solucao",
+      "conforto",
+      "tranquilidade"
+    ],
+    "emocional": [
+      "emocao",
+      "sentimento",
+      "psicologico",
+      "distanciamento",
+      "autoestima"
+    ],
+    "tempo": [
+      "bomba",
+      "relogio",
+      "urgente",
+      "urgencia",
+      "prazo",
+      "demora",
+      "adiar",
+      "piora"
+    ],
+    "acabando": [
+      "acabar",
+      "explodir",
+      "estourar",
+      "limite",
+      "fim"
+    ],
+    "disposicao": [
+      "energia",
+      "animo",
+      "vitalidade",
+      "vigor"
+    ],
+    "receita": [
+      "caseiro",
+      "cha",
+      "simpatia",
+      "milagroso",
+      "internet"
+    ],
+    "gaveta": [
+      "escondido",
+      "guardado",
+      "vergonha"
+    ],
+    "jogando": [
+      "jogar",
+      "largar",
+      "parar",
+      "abandonar",
+      "livrar"
+    ],
+    "comparacao": [
+      "comparar",
+      "antes",
+      "depois",
+      "diferenca"
+    ],
+    "jovem": [
+      "jovens",
+      "idade"
+    ],
+    "paciente": [
+      "atendido",
+      "avaliado",
+      "diagnostico"
+    ],
+    "reservada": [
+      "privacidade",
+      "discricao",
+      "sigilo",
+      "particular"
+    ]
+  }
+}

@@ -1,0 +1,627 @@
+{
+  "schema": 3,
+  "pares": {
+    "Doutor|doutor": {
+      "acertos": 16,
+      "erros": 0
+    },
+    "Teleconsulta|teleconsulta": {
+      "acertos": 20,
+      "erros": 0
+    },
+    "Viagra|viagra": {
+      "acertos": 10,
+      "erros": 0
+    },
+    "Vasos sanguíneos|vaso": {
+      "acertos": 3,
+      "erros": 0
+    },
+    "Vasos sanguíneos|sanguineo": {
+      "acertos": 6,
+      "erros": 0
+    },
+    "Milhares de homens|homem": {
+      "acertos": 3,
+      "erros": 0
+    },
+    "Medicamento|medicamento": {
+      "acertos": 1,
+      "erros": 0
+    },
+    "Frustrado|frustrado": {
+      "acertos": 6,
+      "erros": 0
+    },
+    "Doppler|doppler": {
+      "acertos": 4,
+      "erros": 0
+    },
+    "Exames|exame": {
+      "acertos": 2,
+      "erros": 0
+    },
+    "Falhou na cama|cama": {
+      "acertos": 2,
+      "erros": 0
+    },
+    "Corpo do homem|corpo": {
+      "acertos": 6,
+      "erros": 0
+    },
+    "Corpo do homem|homem": {
+      "acertos": 6,
+      "erros": 0
+    },
+    "Cristiano|cristiano": {
+      "acertos": 2,
+      "erros": 0
+    },
+    "Separação|separacao": {
+      "acertos": 2,
+      "erros": 0
+    },
+    "Consulta médica|consulta": {
+      "acertos": 4,
+      "erros": 0
+    },
+    "Viagra|mesma": {
+      "acertos": 1,
+      "erros": 0
+    },
+    "Viagra|vez": {
+      "acertos": 1,
+      "erros": 0
+    }
+  },
+  "arquivos": {
+    "Viagra (23).mp4": {
+      "acertos": 2,
+      "erros": 0
+    },
+    "Viagra (31).mp4": {
+      "acertos": 1,
+      "erros": 0
+    },
+    "Doutor (10).mp4": {
+      "acertos": 3,
+      "erros": 0
+    },
+    "Viagra (3).mp4": {
+      "acertos": 4,
+      "erros": 0
+    },
+    "Cristiano (2).mp4": {
+      "acertos": 3,
+      "erros": 0
+    },
+    "Milhares de homens (2).mp4": {
+      "acertos": 2,
+      "erros": 0
+    },
+    "Teleconsulta (12).mp4": {
+      "acertos": 1,
+      "erros": 0
+    },
+    "Viagra (1).mp4": {
+      "acertos": 1,
+      "erros": 0
+    },
+    "Desanimado (1).mp4": {
+      "acertos": 1,
+      "erros": 0
+    },
+    "Desanimado (4).mp4": {
+      "acertos": 1,
+      "erros": 0
+    },
+    "Frustrado (20).mp4": {
+      "acertos": 1,
+      "erros": 0
+    },
+    "Vasos sanguíneos (4).mp4": {
+      "acertos": 1,
+      "erros": 0
+    },
+    "Milhares de homens (3).mp4": {
+      "acertos": 1,
+      "erros": 0
+    },
+    "Teleconsulta (13).mp4": {
+      "acertos": 4,
+      "erros": 0
+    },
+    "Frustrado (36).mp4": {
+      "acertos": 2,
+      "erros": 0
+    },
+    "Doutor (13).mp4": {
+      "acertos": 3,
+      "erros": 0
+    },
+    "Doutor (15).mp4": {
+      "acertos": 1,
+      "erros": 0
+    },
+    "Teleconsulta (7).mp4": {
+      "acertos": 1,
+      "erros": 0
+    },
+    "Doutor (16).mp4": {
+      "acertos": 1,
+      "erros": 0
+    },
+    "Teleconsulta (14).mp4": {
+      "acertos": 2,
+      "erros": 0
+    },
+    "Medicamento.mp4": {
+      "acertos": 1,
+      "erros": 0
+    },
+    "Frustrado (11).mp4": {
+      "acertos": 3,
+      "erros": 0
+    },
+    "Falhou na cama (20).mp4": {
+      "acertos": 1,
+      "erros": 0
+    },
+    "Doutor (17).mp4": {
+      "acertos": 3,
+      "erros": 0
+    },
+    "Vasos sanguíneos (5).mp4": {
+      "acertos": 2,
+      "erros": 0
+    },
+    "Alívio Emocional (1).mp4": {
+      "acertos": 2,
+      "erros": 0
+    },
+    "Teleconsulta (10).mp4": {
+      "acertos": 2,
+      "erros": 0
+    },
+    "Frustrado (1).mp4": {
+      "acertos": 1,
+      "erros": 0
+    },
+    "Doppler.mp4": {
+      "acertos": 4,
+      "erros": 0
+    },
+    "Vasos sanguíneos (6).mp4": {
+      "acertos": 1,
+      "erros": 0
+    },
+    "Exames.mp4": {
+      "acertos": 2,
+      "erros": 0
+    },
+    "Doutor (37).mp4": {
+      "acertos": 1,
+      "erros": 0
+    },
+    "Falhou na cama (10).mp4": {
+      "acertos": 1,
+      "erros": 0
+    },
+    "Doutor (23).mp4": {
+      "acertos": 2,
+      "erros": 0
+    },
+    "Teleconsulta (15).mp4": {
+      "acertos": 3,
+      "erros": 0
+    },
+    "Falhou na cama (3).mp4": {
+      "acertos": 1,
+      "erros": 0
+    },
+    "Frustrado (13).mp4": {
+      "acertos": 2,
+      "erros": 0
+    },
+    "Frustrado (15).mp4": {
+      "acertos": 2,
+      "erros": 0
+    },
+    "Vasos sanguíneos (1).mp4": {
+      "acertos": 2,
+      "erros": 0
+    },
+    "Viagra (18).mp4": {
+      "acertos": 4,
+      "erros": 0
+    },
+    "Milhares de homens (4).mp4": {
+      "acertos": 1,
+      "erros": 0
+    },
+    "Teleconsulta (22).mp4": {
+      "acertos": 1,
+      "erros": 0
+    },
+    "Desanimado (3).mp4": {
+      "acertos": 1,
+      "erros": 0
+    },
+    "Vasos sanguíneos (7).mp4": {
+      "acertos": 1,
+      "erros": 0
+    },
+    "Viagra (9).mp4": {
+      "acertos": 1,
+      "erros": 0
+    },
+    "Teleconsulta (4).mp4": {
+      "acertos": 1,
+      "erros": 0
+    },
+    "Frustrado (33).mp4": {
+      "acertos": 1,
+      "erros": 0
+    },
+    "Consulta médica (1).mp4": {
+      "acertos": 2,
+      "erros": 0
+    },
+    "Teleconsulta (6).mp4": {
+      "acertos": 1,
+      "erros": 0
+    },
+    "Teleconsulta (20).mp4": {
+      "acertos": 1,
+      "erros": 0
+    },
+    "Frustrado (14).mp4": {
+      "acertos": 1,
+      "erros": 0
+    },
+    "Viagra (30).mp4": {
+      "acertos": 1,
+      "erros": 0
+    },
+    "Viagra (4).mp4": {
+      "acertos": 2,
+      "erros": 0
+    },
+    "Doutor (21).mp4": {
+      "acertos": 2,
+      "erros": 0
+    },
+    "Teleconsulta (25).mp4": {
+      "acertos": 1,
+      "erros": 0
+    },
+    "Viagra (29).mp4": {
+      "acertos": 1,
+      "erros": 0
+    },
+    "Viagra (5).mp4": {
+      "acertos": 1,
+      "erros": 0
+    },
+    "Doutor (24).mp4": {
+      "acertos": 1,
+      "erros": 0
+    },
+    "Doutor (22).mp4": {
+      "acertos": 2,
+      "erros": 0
+    },
+    "Frustrado (3).mp4": {
+      "acertos": 1,
+      "erros": 0
+    },
+    "Corpo do homem (7).mp4": {
+      "acertos": 1,
+      "erros": 0
+    },
+    "Academia.mp4": {
+      "acertos": 1,
+      "erros": 0
+    },
+    "lifestyle (2).mp4": {
+      "acertos": 1,
+      "erros": 0
+    },
+    "Falhou na cama (24).mp4": {
+      "acertos": 1,
+      "erros": 0
+    },
+    "Corpo do homem (6).mp4": {
+      "acertos": 1,
+      "erros": 0
+    },
+    "Teleconsulta (24).mp4": {
+      "acertos": 1,
+      "erros": 0
+    },
+    "Falhou na cama (22).mp4": {
+      "acertos": 1,
+      "erros": 0
+    },
+    "Frustrado (24).mp4": {
+      "acertos": 1,
+      "erros": 0
+    },
+    "Separação (1).mp4": {
+      "acertos": 1,
+      "erros": 0
+    },
+    "Doutor (20).mp4": {
+      "acertos": 3,
+      "erros": 0
+    },
+    "Frustrado (9).mp4": {
+      "acertos": 1,
+      "erros": 0
+    },
+    "Viagra (28).mp4": {
+      "acertos": 1,
+      "erros": 0
+    },
+    "Doutor (12).mp4": {
+      "acertos": 1,
+      "erros": 0
+    },
+    "Teleconsulta (8).mp4": {
+      "acertos": 1,
+      "erros": 0
+    },
+    "Corpo do homem (9).mp4": {
+      "acertos": 1,
+      "erros": 0
+    },
+    "Consulta médica (5).mp4": {
+      "acertos": 1,
+      "erros": 0
+    },
+    "Doutor (35).mp4": {
+      "acertos": 1,
+      "erros": 0
+    },
+    "Viagra (27).mp4": {
+      "acertos": 1,
+      "erros": 0
+    },
+    "Teleconsulta (11).mp4": {
+      "acertos": 1,
+      "erros": 0
+    },
+    "Teleconsulta (5).mp4": {
+      "acertos": 1,
+      "erros": 0
+    },
+    "Casal feliz (5).mp4": {
+      "acertos": 1,
+      "erros": 0
+    },
+    "Falhou na cama (21).mp4": {
+      "acertos": 2,
+      "erros": 0
+    },
+    "Corpo do homem (8).mp4": {
+      "acertos": 1,
+      "erros": 0
+    },
+    "Alívio Emocional (2).mp4": {
+      "acertos": 1,
+      "erros": 0
+    },
+    "Teleconsulta (19).mp4": {
+      "acertos": 1,
+      "erros": 0
+    },
+    "Falhou na cama (17).mp4": {
+      "acertos": 1,
+      "erros": 0
+    },
+    "Separação (4).mp4": {
+      "acertos": 1,
+      "erros": 0
+    },
+    "Frustrado (8).mp4": {
+      "acertos": 1,
+      "erros": 0
+    },
+    "Doutor (6).mp4": {
+      "acertos": 1,
+      "erros": 0
+    },
+    "Doutor (36).mp4": {
+      "acertos": 1,
+      "erros": 0
+    },
+    "Casal feliz (13).mp4": {
+      "acertos": 1,
+      "erros": 0
+    },
+    "Consulta médica (7).mp4": {
+      "acertos": 1,
+      "erros": 0
+    },
+    "Doutor (34).mp4": {
+      "acertos": 1,
+      "erros": 0
+    },
+    "Teleconsulta (16).mp4": {
+      "acertos": 1,
+      "erros": 0
+    },
+    "Corpo do homem (2).mp4": {
+      "acertos": 2,
+      "erros": 0
+    },
+    "Consulta médica (4).mp4": {
+      "acertos": 1,
+      "erros": 0
+    },
+    "Viagra (22).mp4": {
+      "acertos": 1,
+      "erros": 0
+    },
+    "Doutor (28).mp4": {
+      "acertos": 1,
+      "erros": 0
+    },
+    "Doutor (27).mp4": {
+      "acertos": 1,
+      "erros": 0
+    },
+    "Viagra (32).mp4": {
+      "acertos": 1,
+      "erros": 0
+    },
+    "Alívio Emocional (3).mp4": {
+      "acertos": 1,
+      "erros": 0
+    },
+    "Consulta médica (3).mp4": {
+      "acertos": 1,
+      "erros": 0
+    }
+  },
+  "vistos": {
+    "assoc|AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Viagra (23).mp4|0": true,
+    "assoc|AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Viagra (31).mp4|9": true,
+    "AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Doutor (10).mp4|22": true,
+    "assoc|AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Viagra (3).mp4|32": true,
+    "assoc|AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Cristiano (2).mp4|43": true,
+    "assoc|AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Milhares de homens (2).mp4|49": true,
+    "AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Teleconsulta (12).mp4|58": true,
+    "AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Viagra (1).mp4|78": true,
+    "assoc|AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Desanimado (1).mp4|83": true,
+    "assoc|AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Desanimado (4).mp4|88": true,
+    "assoc|AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Frustrado (20).mp4|97": true,
+    "AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Vasos sanguíneos (4).mp4|106": true,
+    "AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Milhares de homens (3).mp4|117": true,
+    "AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Teleconsulta (13).mp4|126": true,
+    "assoc|AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Frustrado (36).mp4|144": true,
+    "AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Doutor (13).mp4|154": true,
+    "AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Doutor (15).mp4|167": true,
+    "assoc|AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Teleconsulta (7).mp4|171": true,
+    "AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Doutor (16).mp4|184": true,
+    "AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Teleconsulta (14).mp4|202": true,
+    "AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Medicamento.mp4|222": true,
+    "assoc|AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Frustrado (11).mp4|234": true,
+    "assoc|AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Falhou na cama (20).mp4|242": true,
+    "AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Doutor (17).mp4|249": true,
+    "AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Vasos sanguíneos (5).mp4|261": true,
+    "assoc|AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Alívio Emocional (1).mp4|275": true,
+    "assoc|AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Teleconsulta (10).mp4|287": true,
+    "AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Frustrado (1).mp4|305": true,
+    "AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Doppler.mp4|308": true,
+    "AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Vasos sanguíneos (6).mp4|312": true,
+    "AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Exames.mp4|321": true,
+    "AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Doutor (37).mp4|328": true,
+    "assoc|AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Falhou na cama (10).mp4|339": true,
+    "AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Doutor (23).mp4|355": true,
+    "AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Teleconsulta (15).mp4|366": true,
+    "AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Falhou na cama (3).mp4|380": true,
+    "AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Frustrado (13).mp4|385": true,
+    "AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Frustrado (15).mp4|399": true,
+    "AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Vasos sanguíneos (1).mp4|407": true,
+    "AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Viagra (18).mp4|408": true,
+    "AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Milhares de homens (4).mp4|423": true,
+    "AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Teleconsulta (22).mp4|430": true,
+    "AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Viagra (3).mp4|445": true,
+    "assoc|AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Desanimado (3).mp4|458": true,
+    "assoc|AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Vasos sanguíneos (7).mp4|475": true,
+    "AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Viagra (9).mp4|478": true,
+    "AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Teleconsulta (4).mp4|495": true,
+    "assoc|AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Frustrado (11).mp4|497": true,
+    "assoc|AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Frustrado (33).mp4|510": true,
+    "assoc|AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Consulta médica (1).mp4|519": true,
+    "AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Doutor (13).mp4|531": true,
+    "AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Teleconsulta (6).mp4|534": true,
+    "AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Doutor (10).mp4|557": true,
+    "AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Teleconsulta (20).mp4|566": true,
+    "assoc|AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Frustrado (14).mp4|585": true,
+    "AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Viagra (30).mp4|587": true,
+    "assoc|AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Viagra (4).mp4|594": true,
+    "AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Viagra (18).mp4|608": true,
+    "AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Doutor (21).mp4|612": true,
+    "AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Milhares de homens (2).mp4|635": true,
+    "AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Teleconsulta (25).mp4|643": true,
+    "assoc|AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Viagra (29).mp4|660": true,
+    "assoc|AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Viagra (5).mp4|674": true,
+    "AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Doutor (24).mp4|688": true,
+    "AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Doutor (22).mp4|702": true,
+    "AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Teleconsulta (14).mp4|724": true,
+    "assoc|AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Frustrado (3).mp4|742": true,
+    "AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Doutor (17).mp4|753": true,
+    "assoc|AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Doutor (21).mp4|771": true,
+    "AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Doutor (23).mp4|783": true,
+    "AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Corpo do homem (7).mp4|788": true,
+    "AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Doutor (22).mp4|793": true,
+    "AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Teleconsulta (15).mp4|801": true,
+    "assoc|AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Academia.mp4|822": true,
+    "assoc|AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|lifestyle (2).mp4|824": true,
+    "assoc|AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Falhou na cama (24).mp4|826": true,
+    "AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Frustrado (11).mp4|839": true,
+    "AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Viagra (3).mp4|842": true,
+    "AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Corpo do homem (6).mp4|847": true,
+    "AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Exames.mp4|861": true,
+    "AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Cristiano (2).mp4|871": true,
+    "AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Teleconsulta (24).mp4|885": true,
+    "assoc|AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Frustrado (13).mp4|900": true,
+    "AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Falhou na cama (22).mp4|907": true,
+    "assoc|AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Frustrado (24).mp4|922": true,
+    "AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Separação (1).mp4|929": true,
+    "AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Teleconsulta (10).mp4|946": true,
+    "AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Doutor (20).mp4|963": true,
+    "assoc|AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Frustrado (9).mp4|974": true,
+    "AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Viagra (23).mp4|977": true,
+    "AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Vasos sanguíneos (1).mp4|996": true,
+    "AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Viagra (28).mp4|998": true,
+    "AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Doutor (12).mp4|1002": true,
+    "AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Teleconsulta (8).mp4|1011": true,
+    "AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Doppler.mp4|1035": true,
+    "AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Corpo do homem (9).mp4|1048": true,
+    "AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Consulta médica (5).mp4|1054": true,
+    "AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Doutor (35).mp4|1060": true,
+    "AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Viagra (27).mp4|1064": true,
+    "AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Vasos sanguíneos (5).mp4|1070": true,
+    "assoc|AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Alívio Emocional (1).mp4|1077": true,
+    "assoc|AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Teleconsulta (11).mp4|1091": true,
+    "AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Teleconsulta (5).mp4|1096": true,
+    "assoc|AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Casal feliz (5).mp4|1119": true,
+    "assoc|AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Falhou na cama (21).mp4|1122": true,
+    "AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Frustrado (15).mp4|1130": true,
+    "AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Doutor (17).mp4|1133": true,
+    "assoc|AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Viagra (18).mp4|1137": true,
+    "AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Doutor (20).mp4|1150": true,
+    "AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Corpo do homem (8).mp4|1154": true,
+    "assoc|AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Alívio Emocional (2).mp4|1159": true,
+    "AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Teleconsulta (19).mp4|1171": true,
+    "assoc|AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Falhou na cama (17).mp4|1193": true,
+    "AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Separação (4).mp4|1199": true,
+    "AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Frustrado (8).mp4|1211": true,
+    "AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Doutor (6).mp4|1214": true,
+    "assoc|AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Doutor (36).mp4|1217": true,
+    "assoc|AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Falhou na cama (21).mp4|1220": true,
+    "assoc|AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Casal feliz (13).mp4|1227": true,
+    "AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Cristiano (2).mp4|1230": true,
+    "AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Teleconsulta (13).mp4|1243": true,
+    "assoc|AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Frustrado (36).mp4|1267": true,
+    "assoc|AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Consulta médica (7).mp4|1270": true,
+    "AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Doutor (34).mp4|1278": true,
+    "AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Doutor (20).mp4|1284": true,
+    "assoc|AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Teleconsulta (16).mp4|1286": true,
+    "AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Corpo do homem (2).mp4|1299": true,
+    "AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Consulta médica (4).mp4|1310": true,
+    "AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Teleconsulta (13).mp4|1312": true,
+    "assoc|AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Viagra (22).mp4|1341": true,
+    "assoc|AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Doutor (28).mp4|1347": true,
+    "AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Doutor (27).mp4|1353": true,
+    "assoc|AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Viagra (4).mp4|1357": true,
+    "assoc|AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Viagra (32).mp4|1366": true,
+    "AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Doppler.mp4|1367": true,
+    "assoc|AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Alívio Emocional (3).mp4|1374": true,
+    "AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Consulta médica (3).mp4|1387": true,
+    "AS 20 SELECIONADAS — TELEPROMPTER - Quadrado|Teleconsulta (15).mp4|1395": true
+  }
+}

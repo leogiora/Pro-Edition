@@ -1,0 +1,90 @@
+PRO EDITION - instalacao em outra maquina
+=========================================
+
+REQUISITO: Premiere Pro 25.0 ou mais novo. Serve Windows e macOS.
+
+
+WINDOWS
+-------
+1. Feche o Premiere Pro.
+2. Copie esta pasta inteira para a outra maquina.
+3. Botao direito em INSTALAR.ps1 > "Executar com o PowerShell".
+   Aceite a permissao de administrador (o plugin vai para Program Files).
+4. Abra o Premiere: Window > Extensions > Pro Edition.
+
+
+macOS
+-----
+1. Feche o Premiere Pro.
+2. Copie esta pasta INTEIRA para o Mac. De preferencia para a pasta pessoal
+   (/Users/seunome/), NAO para a Mesa nem para Downloads: o Terminal do Mac
+   costuma ser barrado nessas tres pastas e o erro que aparece e justamente
+   "Operation not permitted" / falta de privilegio.
+3. Clique duas vezes em INSTALAR-mac.command.
+   - Se o macOS disser que "nao pode ser aberto por ser de um desenvolvedor
+     nao identificado": botao direito no arquivo > Abrir > Abrir.
+   - Se disser "permission denied" ao rodar: abra o Terminal e cole
+     (com um espaco no fim, e arraste a pasta para dentro):
+         chmod +x 
+     depois arraste o INSTALAR-mac.command para o Terminal e de Enter.
+     O bit de execucao se perde ao copiar de um pendrive do Windows.
+4. Abra o Premiere: Window > Extensions > Pro Edition.
+
+O instalador do Mac NAO pede senha. Ele instala na pasta de plugins do seu
+usuario (~/Library/Application Support/Adobe/UXP/Plugins/External), que e onde
+o Premiere procura plugins UXP nao assinados. Se ainda assim aparecer erro de
+privilegio, o problema e o passo 2: mova a pasta para fora da Mesa/Downloads.
+
+INSTALACAO MANUAL NO MAC (se o script nao rolar de jeito nenhum)
+No Finder, menu Ir > Ir para a Pasta, cole:
+    ~/Library/Application Support/Adobe/UXP/Plugins/External
+Crie as pastas que faltarem e arraste a pasta com.leogi.proedition para dentro.
+Depois, para o aprendizado, Ir para a Pasta:
+    ~/Library/Application Support/Adobe/UXP/PluginsStorage/PPRO
+Entre na pasta da versao (25 ou 26) > External > crie com.leogi.proedition >
+crie PluginData > jogue os arquivos da pasta PluginData daqui la dentro.
+
+Nao precisa instalar Node, npm, nem nada, em nenhum dos dois sistemas.
+
+
+SE O PAINEL NAO APARECER NO MENU
+--------------------------------
+E a politica de plugins nao assinados do Premiere daquela maquina.
+No Premiere: Edit > Preferences (no Mac: Premiere Pro > Settings) e ative o
+carregamento de plugins de desenvolvedor / nao assinados. Reinicie o Premiere.
+
+
+O QUE VAI NESTA PASTA
+---------------------
+com.leogi.proedition\  o plugin (~210 KB, tudo embutido)
+PluginData\            o aprendizado do Auto B-roll:
+                         aprendizado.json  pesos de 18 pares, 102 arquivos
+                         ligacoes.json     201 associacoes que voce ensinou
+                         sinonimos.json    dicionario de termos
+                         intensidade.json  medicao dos B-rolls (poupa a 1a analise)
+                         pendentes.json    o que foi inserido e ainda nao foi julgado
+                         config.json       ajustes do painel (o caminho da pasta
+                                           precisa ser digitado de novo)
+INSTALAR.ps1           instalador do Windows
+INSTALAR-mac.command   instalador do macOS
+LEIA-ME.txt            este arquivo
+
+
+DEPOIS DE INSTALAR
+------------------
+- A pasta de B-rolls precisa ser digitada de novo no painel: o caminho salvo
+  aponta para esta maquina aqui. No Mac o caminho tem a cara
+  /Users/nome/Movies/Brolls (arraste a pasta para o campo, ou use
+  Command+Option+C no Finder para copiar o caminho).
+- O aprendizado (associacoes, sinonimos, ligacoes) ja vai carregado.
+- intensidade.json tambem foi junto: se a biblioteca de B-rolls do outro
+  computador tiver os mesmos nomes de arquivo, a primeira analise nao gasta os
+  minutos de medicao.
+- A partir da instalacao, as duas maquinas aprendem SEPARADO. Nao ha sincronia.
+
+
+PARA ATUALIZAR NO FUTURO
+------------------------
+Rode "npm run build" no repositorio Pro-Edition, copie manifest.json + dist +
+icons por cima da pasta com.leogi.proedition daqui, e rode o instalador de novo
+na outra maquina.
