@@ -198,3 +198,10 @@ test("recorte: duracao desconhecida (zero) nunca vira recorte", () => {
   // getEndTime pode falhar e devolver 0 — nesse caso, analisar tudo.
   assert.equal(recorte(10, 60, 0), null);
 });
+
+test("caminhoParaUrl: caminho do macOS nao vira host de URL", () => {
+  // "file://Users/..." leria "Users" como host e a pasta some.
+  assert.equal(caminhoParaUrl("/Users/leogi/Movies/Brolls"), "file:/Users/leogi/Movies/Brolls");
+  const url = caminhoParaUrl("/Users/leogi/Movies/Brolls");
+  assert.equal(caminhoParaUrl(url), url);
+});

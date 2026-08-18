@@ -200,7 +200,10 @@ export function caminhoParaUrl(entrada: string): string {
     bruto = decodificado;
   }
 
-  const normalizado = bruto.replace(/\\/g, "/").replace(/\/+$/, "");
+  // A barra da raiz sai aqui e volta no template. No macOS o caminho ja comeca
+  // com "/", e "file:/" + "/Users/..." daria "file://Users/...", onde "Users"
+  // seria lido como host da URL e a pasta nunca seria encontrada.
+  const normalizado = bruto.replace(/\\/g, "/").replace(/\/+$/, "").replace(/^\/+/, "");
   if (normalizado.length === 0) throw new RangeError("caminho vazio");
   return `file:/${normalizado}`;
 }
