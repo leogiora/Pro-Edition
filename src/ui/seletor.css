@@ -247,6 +247,10 @@ body {
   background-color: #eeab4c;
 }
 
+.card-autocut .card-nome::before {
+  background-color: #4fc3a1;
+}
+
 .card-nome {
   flex: 1 1 auto;
   min-width: 0;

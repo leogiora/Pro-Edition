@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Shell UXP que unifica Auto B-roll e Pro Captions num painel so, com tela de selecao.",
+  "description": "Shell UXP que unifica Auto B-roll, Pro Captions e Podcast AutoCut num painel so, com tela de selecao.",
   "scripts": {
     "build": "node scripts/build.mjs",
     "watch": "node scripts/build.mjs --watch",
