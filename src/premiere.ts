@@ -83,7 +83,7 @@ async function handles(): Promise<Handles> {
  *
  * Encapsulado aqui para que nenhum chamador precise lembrar disso.
  */
-function comTransacao(
+export function comTransacao(
   project: { lockedAccess: (cb: () => void) => void; executeTransaction: (cb: (c: { addAction: (a: unknown) => void }) => void, undo: string) => boolean },
   rotuloUndo: string,
   montarAcoes: (adicionar: (acao: unknown) => void) => void
