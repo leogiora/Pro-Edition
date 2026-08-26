@@ -84,9 +84,15 @@ export const REGRAS_PADRAO: RegrasPlano = {
   intervaloMinimo: 2,
   // Mais exigente que a analise: aqui entra na timeline sem ninguem revisar.
   scoreMinimo: 0.6,
-  janelaSemRepetir: 20,
-  // ponytail: 60s a olho, nao medido — apertar se o mesmo shot incomodar, afrouxar se sobrar frase sem B-roll
-  janelaMesmoArquivo: 60,
+  // Medido no log de 26/08 (66 colocacoes em 17 min): o mesmo conceito voltava
+  // em 21s, 29s, 32s, 36s. E o que a vista le como "de novo isso". 60s corta
+  // essa faixa inteira e ainda deixa o conceito voltar 2x por minuto e meio.
+  janelaSemRepetir: 60,
+  // Mesma medicao, para o take exato: reaparicoes a 76s, 90s, 91s, 110s, 125s.
+  // 180s corta as cinco. Acima disso comeca a cortar volta legitima (274s, 335s)
+  // e some B-roll sem ganhar variedade — conceito de take unico nao tem para
+  // onde alternar, so pode sumir.
+  janelaMesmoArquivo: 180,
   antecipacao: 0.3,
   toleranciaIntensidade: 0.35,
 };

@@ -77,11 +77,11 @@ test("planejar: score baixo nao entra sozinho na timeline", () => {
 });
 
 test("planejar: nao repete o mesmo arquivo", () => {
-  // Duas oportunidades bem separadas, mesmo conceito: pega variacoes diferentes.
+  // Duas oportunidades alem da janela de conceito (60s): pega variacoes diferentes.
   const p = planejar(
     [
       oportunidade(10, 3, [{ c: FRUSTRADO, score: 1 }]),
-      oportunidade(60, 3, [{ c: FRUSTRADO, score: 1 }]),
+      oportunidade(90, 3, [{ c: FRUSTRADO, score: 1 }]),
     ],
     BIBLIOTECA
   );
@@ -90,24 +90,25 @@ test("planejar: nao repete o mesmo arquivo", () => {
 });
 
 test("planejar: repetir perto demais nao entra — o espectador reconhece o shot", () => {
-  // 50s de distancia, janela de mesmo arquivo e 60s: a segunda cai fora.
+  // 90s de distancia: passa da janela de conceito (60s) mas nao da janela do
+  // mesmo arquivo (180s). Viagra tem take unico, entao a segunda cai fora.
   const p = planejar(
     [
       oportunidade(10, 3, [{ c: VIAGRA, score: 1 }]),
-      oportunidade(60, 3, [{ c: VIAGRA, score: 1 }]),
+      oportunidade(100, 3, [{ c: VIAGRA, score: 1 }]),
     ],
     BIBLIOTECA
   );
   assert.equal(p.colocacoes.length, 1);
-  assert.match(p.descartes.join(" "), /apareceram ha menos de 60s/);
+  assert.match(p.descartes.join(" "), /apareceram ha menos de 180s/);
 });
 
 test("planejar: sem take inedito, repete o que ja saiu da tela ha tempo", () => {
-  // Secao 8: "salvo ausencia de alternativa". 80s de distancia passa da janela.
+  // Secao 8: "salvo ausencia de alternativa". 190s passa da janela de 180s.
   const p = planejar(
     [
       oportunidade(10, 3, [{ c: VIAGRA, score: 1 }]),
-      oportunidade(90, 3, [{ c: VIAGRA, score: 1 }]),
+      oportunidade(200, 3, [{ c: VIAGRA, score: 1 }]),
     ],
     BIBLIOTECA
   );
@@ -383,10 +384,10 @@ const AGITACAO = new Map([
 
 test("planejar: fala rapida puxa o take agitado, fala lenta puxa o parado", () => {
   const lenta = oportunidade(10, 4, [{ c: FRUSTRADO, score: 1 }]);
-  const rapida = oportunidade(60, 4, [{ c: FRUSTRADO, score: 1 }]);
+  const rapida = oportunidade(90, 4, [{ c: FRUSTRADO, score: 1 }]);
   const p = planejar([lenta, rapida], BIBLIOTECA, REGRAS_PADRAO, MEMORIA_VAZIA, {
     porArquivo: AGITACAO,
-    // A frase de 10s tem ritmo 2 (percentil 0); a de 60s tem 8 (percentil 1).
+    // A frase de 10s tem ritmo 2 (percentil 0); a de 90s tem 8 (percentil 1).
     ritmoDasFrases: [2, 8],
   });
   assert.equal(p.colocacoes.length, 2);

@@ -119,7 +119,7 @@ Mensagens mais comuns e o que significam:
 | `nenhuma sugestao passou (melhor: 100%, caiu para 50% pelo aprendizado)` | O casamento era bom, mas você já apagou esse par vezes demais e ele não entra mais sozinho. Se foi engano, coloque um B-roll desse conceito na mão — o crédito reabilita. |
 | `já há B-roll aí, deixei como está` | Tem alguma coisa em cima daquele instante em **qualquer** faixa de vídeo acima da V1 (não só a que ele usa). Nunca insere por cima. |
 | `muito perto do B-roll anterior` / `conceito repetido há menos de 8s` | Regra de espaçamento — ative "Densidade máxima" se quiser afrouxar isso. |
-| `todas as variações apareceram há menos de 60s` | Todos os arquivos daquele conceito já estão na timeline, perto demais para repetir. Depois de 60 segundos o mesmo take pode voltar. |
+| `todas as variações apareceram há menos de 180s` | Todos os arquivos daquele conceito já estão na timeline, perto demais para repetir. Depois de 3 minutos o mesmo take pode voltar. Conceito com um único arquivo na pasta bate nisso o tempo todo — a saída é gravar mais variações dele. |
 | `take repetido, não sobrou inédito` | Não é descarte — o B-roll entrou, repetindo um take que já apareceu há mais de 60 segundos, porque o conceito não tinha arquivo novo. |
 | `Trecho incerto (confiança X)` | Aviso da própria transcrição do Premiere, não do plugin — a fala reconhecida ali tem baixa confiança. |
 
