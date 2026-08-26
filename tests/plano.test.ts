@@ -281,7 +281,7 @@ test("planejar: o motivo diz quando o historico mexeu no score", () => {
   ).memoria;
 
   const p = planejar([oportunidade(10, 3, [{ c: VIAGRA, score: 0.8 }])], BIBLIOTECA, REGRAS_PADRAO, memoria);
-  assert.match(p0(p.colocacoes).motivo, /aprendizado \+15%/);
+  assert.match(p0(p.colocacoes).motivo, /aprendizado \+25%/);
 });
 
 // ------------------- palavras espalhadas na frase ---------------------------
@@ -498,7 +498,7 @@ function p0<T>(lista: readonly T[]): T {
 }
 
 test("planejar: o descarte diz quando foi o aprendizado que derrubou o score", () => {
-  // Raw 100%, mas o par apanhou tres vezes: ajuste 0,55 fica abaixo do corte.
+  // Raw 100%, mas o par apanhou tres vezes: ajuste bate no piso 0,5 e fica abaixo do corte.
   let memoria = MEMORIA_VAZIA;
   const pendente = {
     quando: "",
@@ -508,5 +508,5 @@ test("planejar: o descarte diz quando foi o aprendizado que derrubou o score", (
 
   const p = planejar([oportunidade(10, 3, [{ c: VIAGRA, score: 1 }])], BIBLIOTECA, REGRAS_PADRAO, memoria);
   assert.equal(p.colocacoes.length, 0);
-  assert.match(p.descartes.join(" "), /melhor: 100%, caiu para 55% pelo aprendizado/);
+  assert.match(p.descartes.join(" "), /melhor: 100%, caiu para 50% pelo aprendizado/);
 });

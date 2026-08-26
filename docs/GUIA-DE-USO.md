@@ -87,11 +87,19 @@ botão de "nota" nem configuração.
 
 ### Uma exceção importante
 
-Se você desfizer **o lote inteiro de uma vez** (`Ctrl+Z` várias vezes seguidas
-logo depois de inserir), o plugin reconhece que foi um desfazer, não uma
-rejeição de verdade — e não penaliza nada. A penalização só acontece quando
-**parte** do que ele inseriu sobrevive e parte não: aí sim é sinal real de
-curadoria.
+Se você **varrer o lote** — desfazer com `Ctrl+Z` logo depois de inserir, ou
+apagar quase tudo de uma vez — o plugin reconhece que foi limpeza, não uma
+rejeição de verdade, e não penaliza nada. Ele avisa no painel: *"Sobrou 12 de
+101 B-rolls da rodada anterior — parece o lote desfeito, não rejeição item a
+item."*
+
+A penalização só acontece quando **a maior parte** do que ele inseriu sobrevive
+e uma parte não: aí sim é sinal real de curadoria.
+
+> Isso importa mais do que parece. Um lote grande apagado inteiro contava como
+> dezenas de erros de uma vez, e isso não só somava erro: derrubava o acerto
+> acumulado junto. Conceitos que estavam no topo (+50%) viravam negativos
+> (−15%) e o plugin parava de sugerir — parecia que tinha "esquecido" tudo.
 
 ---
 
@@ -108,7 +116,7 @@ Mensagens mais comuns e o que significam:
 | Mensagem | Significado |
 |---|---|
 | `nenhuma sugestao passou (melhor: 50%)` | Achou algo parecido, mas não o bastante (limite é 60%). Não é erro — é o filtro de qualidade funcionando. |
-| `nenhuma sugestao passou (melhor: 100%, caiu para 55% pelo aprendizado)` | O casamento era bom, mas você já apagou esse par vezes demais e ele não entra mais sozinho. Se foi engano, coloque um B-roll desse conceito na mão — o crédito reabilita. |
+| `nenhuma sugestao passou (melhor: 100%, caiu para 50% pelo aprendizado)` | O casamento era bom, mas você já apagou esse par vezes demais e ele não entra mais sozinho. Se foi engano, coloque um B-roll desse conceito na mão — o crédito reabilita. |
 | `já há B-roll aí, deixei como está` | Tem alguma coisa em cima daquele instante em **qualquer** faixa de vídeo acima da V1 (não só a que ele usa). Nunca insere por cima. |
 | `muito perto do B-roll anterior` / `conceito repetido há menos de 8s` | Regra de espaçamento — ative "Densidade máxima" se quiser afrouxar isso. |
 | `todas as variações apareceram há menos de 60s` | Todos os arquivos daquele conceito já estão na timeline, perto demais para repetir. Depois de 60 segundos o mesmo take pode voltar. |

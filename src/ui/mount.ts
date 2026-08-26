@@ -13,7 +13,8 @@ import {
 } from "../domain.ts";
 import { analisar, type Analise } from "../analise.ts";
 import {
-  algumNoLugar,
+  quantosNoLugar,
+  pareceUndoEmLote,
   aprender,
   comPendente,
   creditarManuais,
@@ -324,22 +325,22 @@ async function julgarFaixa(
     } else {
       // 1. Sobrevivencia do que o plugin inseriu.
       if (pendente !== undefined && pendente.itens.length > 0) {
-        // O lote INTEIRO sumiu de uma vez so: mais provavel Ctrl+Z desfazendo
-        // a insercao (o proprio painel sugere "Tres Ctrl+Z desfazem tudo")
-        // do que voce ter apagado um por um todos os itens. Contar isso como
-        // erro puniria o conceito inteiro por um teste, nao por rejeicao real
-        // — mesmo raciocinio do "semEdicao" acima, so que para o outro extremo.
+        // Quase nada do lote sobrou: mais provavel Ctrl+Z ou varrida da faixa
+        // (o proprio painel sugere "Tres Ctrl+Z desfazem tudo") do que voce ter
+        // apagado um por um. Contar isso como erro puniria os conceitos por um
+        // teste, nao por rejeicao real — mesmo raciocinio do "semEdicao" acima,
+        // so que para o outro extremo.
         // "Sobreviver" aqui e POR POSICAO (D-032): nome sozinho colide com
         // B-roll manual e sobra de rodada antiga, e ja furou esta trava.
-        const sobreviveuAlgum = algumNoLugar(
+        const sobreviventes = quantosNoLugar(
           pendente.itens,
           naTimeline.map((c) => ({ arquivo: c.sourceName, inicio: c.startSeconds })),
           presentes
         );
-        if (!sobreviveuAlgum) {
+        if (pareceUndoEmLote(pendente.itens.length, sobreviventes)) {
           julgado = comPendente(pendentes, sequencia, null);
           resumo.push({
-            texto: `Os ${pendente.itens.length} B-rolls da rodada anterior sumiram todos de uma vez — parece Ctrl+Z desfazendo o lote, nao rejeicao. Nao contei como erro.`,
+            texto: `Sobrou ${sobreviventes} de ${pendente.itens.length} B-rolls da rodada anterior — parece o lote desfeito, nao rejeicao item a item. Nao contei como erro.`,
             tipo: "aviso",
           });
         } else {

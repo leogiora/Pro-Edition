@@ -16,7 +16,7 @@ import { estaNaFrase, termos, type Conceito } from "./match.ts";
 import type { Frase } from "./transcript.ts";
 
 /** Quanto cada acerto ou erro move o peso do par. */
-const PASSO = 0.15;
+const PASSO = 0.25;
 /** Limites do fator. Nem o aprendizado apaga um conceito, nem promove lixo. */
 const FATOR_MINIMO = 0.5;
 const FATOR_MAXIMO = 1.5;
@@ -406,18 +406,41 @@ const TOLERANCIA_DO_LUGAR = 2;
  * gravado antes disto existir) cai no criterio por nome, o comportamento
  * anterior.
  */
-export function algumNoLugar(
+export function quantosNoLugar(
   itens: PlanoPendente["itens"],
   clipes: ReadonlyArray<{ arquivo: string; inicio: number }>,
   presentes: ReadonlySet<string>
-): boolean {
-  return itens.some((i) => {
+): number {
+  return itens.filter((i) => {
     const planejado = i.inicio;
     if (planejado === undefined) return presentes.has(i.arquivo);
     return clipes.some(
       (c) => c.arquivo === i.arquivo && Math.abs(c.inicio - planejado) <= TOLERANCIA_DO_LUGAR
     );
-  });
+  }).length;
+}
+
+/** Lote pequeno demais para distinguir undo de rejeicao item a item. */
+const LOTE_GRANDE = 10;
+/** Abaixo desta fracao de sobreviventes o lote parece varrido, nao julgado. */
+const SOBREVIVENCIA_MINIMA = 1 / 3;
+
+/**
+ * Sobrou tao pouco do lote que e mais limpeza do que rejeicao.
+ *
+ * A trava antiga era tudo-ou-nada: so ignorava o lote se NINGUEM sobrevivesse.
+ * No uso real (26/08) um lote de 101 ficou com 12 sobreviventes depois de o
+ * usuario varrer a insercao — 89 erros de uma vez so. Com o TETO de 20, uma
+ * rajada dessas nao soma erro, APAGA acerto: pares que estavam no teto (+50%)
+ * cairam para negativo (-15%) e o plugin parou de sugerir. Rejeicao de verdade
+ * e item a item, e deixa a maior parte do lote de pe.
+ *
+ * ponytail: fracao fixa. Se aparecer caso legitimo de apagar 3 de 4, subir o
+ * LOTE_GRANDE antes de mexer na fracao.
+ */
+export function pareceUndoEmLote(inseridos: number, sobreviventes: number): boolean {
+  if (sobreviventes === 0) return true;
+  return inseridos >= LOTE_GRANDE && sobreviventes < inseridos * SOBREVIVENCIA_MINIMA;
 }
 
 /**

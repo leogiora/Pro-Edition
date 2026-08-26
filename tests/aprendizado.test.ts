@@ -2,7 +2,8 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 
 import {
-  algumNoLugar,
+  quantosNoLugar,
+  pareceUndoEmLote,
   aprender,
   ASSOCIACOES_VAZIAS,
   chave,
@@ -481,7 +482,7 @@ const ITENS_COM_LUGAR = [
   { arquivo: "Doutor (5).mp4", conceito: "Doutor", termosCasados: ["doutor"], inicio: 402 },
 ];
 
-test("algumNoLugar: undo em lote nao deixa ninguem no lugar — nome igual longe nao conta", () => {
+test("quantosNoLugar: undo em lote nao deixa ninguem no lugar — nome igual longe nao conta", () => {
   // O caso real: os itens sumiram, mas os MESMOS arquivos existem em outros
   // pontos (B-roll manual, sobra de rodada antiga). Nome colide; posicao nao.
   const clipes = [
@@ -489,18 +490,29 @@ test("algumNoLugar: undo em lote nao deixa ninguem no lugar — nome igual longe
     { arquivo: "Doutor (5).mp4", inicio: 60 },
   ];
   const presentes = new Set(clipes.map((c) => c.arquivo));
-  assert.equal(algumNoLugar(ITENS_COM_LUGAR, clipes, presentes), false);
+  assert.equal(quantosNoLugar(ITENS_COM_LUGAR, clipes, presentes), 0);
 });
 
-test("algumNoLugar: mantido no lugar (ou so empurrado de leve) conta como sobrevivente", () => {
+test("quantosNoLugar: mantido no lugar (ou so empurrado de leve) conta como sobrevivente", () => {
   const clipes = [{ arquivo: "Viagra (1).mp4", inicio: 381.4 }];
-  assert.equal(algumNoLugar(ITENS_COM_LUGAR, clipes, new Set(["Viagra (1).mp4"])), true);
+  assert.equal(quantosNoLugar(ITENS_COM_LUGAR, clipes, new Set(["Viagra (1).mp4"])), 1);
 });
 
-test("algumNoLugar: pendente antigo sem inicio cai no criterio por nome", () => {
+test("quantosNoLugar: pendente antigo sem inicio cai no criterio por nome", () => {
   const semLugar = [{ arquivo: "Viagra (1).mp4", conceito: "Viagra", termosCasados: ["viagra"] }];
-  assert.equal(algumNoLugar(semLugar, [], new Set(["Viagra (1).mp4"])), true);
-  assert.equal(algumNoLugar(semLugar, [], new Set()), false);
+  assert.equal(quantosNoLugar(semLugar, [], new Set(["Viagra (1).mp4"])), 1);
+  assert.equal(quantosNoLugar(semLugar, [], new Set()), 0);
+});
+
+test("pareceUndoEmLote: lote grande com quase ninguem de pe e varrida, nao rejeicao", () => {
+  // O caso real de 26/08: 101 inseridos, 12 sobreviventes, 89 erros de uma vez.
+  assert.equal(pareceUndoEmLote(101, 12), true);
+  assert.equal(pareceUndoEmLote(10, 0), true);
+  // Rejeicao item a item deixa a maior parte do lote de pe.
+  assert.equal(pareceUndoEmLote(101, 70), false);
+  assert.equal(pareceUndoEmLote(12, 5), false);
+  // Lote pequeno: apagar quase tudo ainda conta como julgamento de verdade.
+  assert.equal(pareceUndoEmLote(4, 1), false);
 });
 
 test("parsePendentes: o inicio de cada item sobrevive a ida e volta do disco", () => {
