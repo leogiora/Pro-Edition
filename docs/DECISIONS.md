@@ -861,10 +861,17 @@ apareceram ha menos de 180s`). Take fresco (ciclo 0) nao tem trava de tempo.
 Conceito de take unico (`Hormonio`, `Academia` — nove na pasta) continua preso a
 isso: e o comportamento certo, nao bug — a saida e gravar mais variacao.
 
-**Provisoria:** sem hot reload, ainda nao rodou no Premiere. 228 testes verdes.
-`planejar` cobre: vizinho repetido, conceito perto, vizinho depois no tempo,
-vizinho longe que nao atrapalha, rodizio completo, rodizio nao trava no melhor
-score, ciclo contado a partir da timeline, piso de 180s no ciclo 2.
+**228 testes verdes.** `planejar` cobre: vizinho repetido, conceito perto,
+vizinho depois no tempo, vizinho longe que nao atrapalha, rodizio completo,
+rodizio nao trava no melhor score, ciclo contado a partir da timeline, piso de
+180s no ciclo 2.
+
+**2026-08-28 — rodado ao vivo no Premiere (Pro-Edition rebuildado, app
+reiniciado). Usuario confirmou "bem melhor do que estava"** apos analisar reel
+por reel com in/out — a repeticao de take na fronteira sumiu. Sem revisao
+detalhada de log dessa rodada, entao ainda **provisoria**: promover a firme
+quando um `ultimo-log.json` de analise segmentada for conferido linha a linha
+(esperar ver "ciclo 2" e nenhum take exato repetido entre trechos).
 
 ---
 

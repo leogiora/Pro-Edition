@@ -23,11 +23,16 @@ estado entre chamadas, e `semSobrepor` so cobre sobreposicao no tempo.
 **Testes.** `npm run verify` verde: 228 testes (+8 em `plano.test.ts`), tipos
 limpos, build ok.
 
-**Bloqueio / proximo passo.** Sem hot reload — precisa rebuildar o **Pro-Edition**
-(`npm run build` la, nao aqui — o Premiere so roda `com.leogi.proedition`, que
-empacota este repo no build dele) e reiniciar o Premiere. Conferir ao vivo:
-dois reels seguidos com in/out, ver "ciclo 2" / "outro take" na fronteira, e que
-a reanalise do MESMO trecho nao virou spam de "conceito repetido".
+**Rodado ao vivo (28/08):** Pro-Edition rebuildado, Premiere reiniciado, usuario
+analisou reel por reel com in/out e confirmou "bem melhor do que estava" — a
+repeticao de take na fronteira sumiu. Falta so conferir um `ultimo-log.json` de
+analise segmentada linha a linha pra promover a D-035 de provisoria a firme
+(ver "ciclo 2" e nenhum take exato repetido entre trechos).
+
+**Lembrete pra proxima mexida na logica do Auto B-roll:** rebuildar o
+**Pro-Edition** (`npm run build` LA), nao so este repo — o Premiere so roda
+`com.leogi.proedition`, que empacota este repo no build dele. Depois reiniciar
+o Premiere (sem hot reload).
 
 ---
 
