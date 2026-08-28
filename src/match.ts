@@ -189,6 +189,17 @@ export interface Conceito {
 }
 
 /**
+ * O conceito a que um arquivo pertence: "Casal feliz (10).mp4" -> "Casal feliz".
+ * Tira a extensao e o sufixo "(n)".
+ */
+export function rotuloDoArquivo(nome: string): string {
+  return nome
+    .replace(/\.[a-z0-9]+$/i, "")
+    .replace(/\s*\(\d+\)\s*$/, "")
+    .trim();
+}
+
+/**
  * Agrupa arquivos por conceito, tirando a extensao e o sufixo "(n)".
  * "Casal feliz (10).mp4" e "Casal feliz (3).mp4" viram um conceito com dois
  * arquivos — que e o material da regra de diversidade da secao 8.
@@ -197,10 +208,7 @@ export function conceitosDeArquivos(nomes: readonly string[]): Conceito[] {
   const porRotulo = new Map<string, string[]>();
 
   for (const nome of nomes) {
-    const rotulo = nome
-      .replace(/\.[a-z0-9]+$/i, "")
-      .replace(/\s*\(\d+\)\s*$/, "")
-      .trim();
+    const rotulo = rotuloDoArquivo(nome);
     if (rotulo.length === 0) continue;
     const lista = porRotulo.get(rotulo);
     if (lista) lista.push(nome);

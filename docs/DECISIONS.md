@@ -813,6 +813,61 @@ para firmar ligacao.
 
 ---
 
+## D-035 — O planejador enxerga o B-roll dos reels vizinhos (2026-08-28) — provisoria
+
+**Contexto.** Relato do uso real: analisando a sequencia reel por reel com
+in/out, "ele nao sabe o que ja foi colocado e esta colocando repetido". Provado
+no `ultimo-log.json`: `Consulta medica (1).mp4` entrou em 07:04 na analise do
+trecho 06:16-07:13 e de novo em 08:02 na analise seguinte (07:23-08:22), 58s
+depois, sem nenhuma marca de "outro take" ou "repetido". `Frustrado` idem, 26s
+de distancia entre um trecho e o vizinho.
+
+**Causa.** `planejar()` e sem estado entre chamadas: `quandoUsou` e `ultimoUso`
+nascem vazios toda vez. As janelas de repeticao (`janelaSemRepetir` 60s,
+`janelaMesmoArquivo` 180s, "take inedito primeiro") so enxergam o que foi
+planejado NAQUELA chamada. `semSobrepor` nao cobre o buraco: ele so bloqueia
+sobreposicao no tempo, e dois reels diferentes ocupam instantes diferentes.
+
+**Decisao.** `julgarFaixa` ja le a faixa inteira acima de V1 — passou a devolver
+cada B-roll com `arquivo` e `conceito` (via `rotuloDoArquivo`), nao so
+`{inicio, fim}`. O `Analisar` filtra os que caem FORA do trecho marcado e passa
+como `jaNaTimeline` para `planejar()`, que semeia `quandoUsou`/`ultimoUso` com
+eles antes de rodar. Efeito: take que ja esta na timeline nao e mais inedito;
+conceito visto ha menos de 60s no reel anterior nao volta. As duas janelas
+passaram a medir a distancia por `abs` — um trecho pode ser analisado antes de
+um vizinho que vem antes dele no tempo.
+
+**So o que esta FORA do trecho e semeado.** Dentro, `semSobrepor` ja resolve, e
+semear ali encheria o log de "conceito repetido" a cada reanalise do mesmo
+pedaco. Sem in/out (sequencia inteira), `jaNaTimeline` vai vazio: o plano ja
+nasce holistico e a reanalise nao deve virar spam de descarte.
+
+**Rodizio de take (2026-08-28, mesma sessao — pedido do usuario: "pode usar
+repetido, porem seguir um proposito").** A escolha antiga era "take que nunca
+entrou primeiro (`ineditos`); esgotados, o de melhor score entre os que sairam
+da tela ha 180s". O buraco: assim que todo take rodava uma vez, `ineditos`
+ficava vazio pra sempre e `melhorArquivo` passava a devolver o MESMO take de
+melhor score toda vez. Agora e rodizio real por contagem: `usosDoArquivo`
+(alimentado por `jaNaTimeline` + o proprio plano) da o numero de usos de cada
+take; `ciclo = min(usos)` do conceito, e so os takes nesse minimo concorrem —
+`melhorArquivo`/intensidade escolhem DENTRO do ciclo. Todo take entra `n` vezes
+antes de qualquer um chegar a `n+1`. O motivo passou a dizer `take repetido,
+ciclo 2/3/...`.
+
+**O piso de 180s ficou (escolha do usuario, multipla escolha em chat).** So
+morde quando `ciclo >= 1`: se o take que o rodizio escolheria apareceu ha menos
+de `janelaMesmoArquivo`, a colocacao e descartada (`todas as variacoes
+apareceram ha menos de 180s`). Take fresco (ciclo 0) nao tem trava de tempo.
+Conceito de take unico (`Hormonio`, `Academia` — nove na pasta) continua preso a
+isso: e o comportamento certo, nao bug — a saida e gravar mais variacao.
+
+**Provisoria:** sem hot reload, ainda nao rodou no Premiere. 228 testes verdes.
+`planejar` cobre: vizinho repetido, conceito perto, vizinho depois no tempo,
+vizinho longe que nao atrapalha, rodizio completo, rodizio nao trava no melhor
+score, ciclo contado a partir da timeline, piso de 180s no ciclo 2.
+
+---
+
 ## D-008 — Ferramental da Fase 1: esbuild e `node --test`, nada alem (2026-08-06) — firme
 
 **Contexto.** A Fase 1 pede TypeScript, lint e testes. O caminho habitual seria

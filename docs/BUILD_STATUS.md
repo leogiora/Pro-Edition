@@ -1,5 +1,36 @@
 # BUILD_STATUS
 
+## 2026-08-28 — o planejador enxerga os reels vizinhos (D-035)
+
+**Feito.** Analisando a sequencia trecho por trecho com in/out, o mesmo take
+reaparecia na virada de um reel para o outro (`Consulta medica (1)` em 07:04 e
+de novo em 08:02, provado no `ultimo-log.json`). Causa: `planejar()` e sem
+estado entre chamadas, e `semSobrepor` so cobre sobreposicao no tempo.
+
+- `julgarFaixa` devolve cada B-roll da timeline com `arquivo` e `conceito`
+  (`rotuloDoArquivo` novo em `match.ts`), nao so `{inicio, fim}`.
+- `Analisar` passa os que caem FORA do trecho como `jaNaTimeline` para
+  `planejar()`, que semeia `quandoUsou`/`ultimoUso` com eles. Sem in/out, vai
+  vazio (plano ja e holistico).
+- `janelaSemRepetir` e `janelaMesmoArquivo` medem por `abs`: um trecho pode ser
+  analisado antes de um vizinho anterior no tempo.
+- **Rodizio de take** (mesmo dia): a escolha "inedito primeiro, depois melhor
+  score entre os >180s" travava no take de melhor score assim que todos rodavam
+  uma vez. Virou rodizio por contagem (`usosDoArquivo`): `ciclo = min(usos)`, so
+  os takes nesse minimo concorrem. Motivo diz "ciclo 2/3/...". Piso de 180s
+  mantido, so quando `ciclo >= 1`.
+
+**Testes.** `npm run verify` verde: 228 testes (+8 em `plano.test.ts`), tipos
+limpos, build ok.
+
+**Bloqueio / proximo passo.** Sem hot reload — precisa rebuildar o **Pro-Edition**
+(`npm run build` la, nao aqui — o Premiere so roda `com.leogi.proedition`, que
+empacota este repo no build dele) e reiniciar o Premiere. Conferir ao vivo:
+dois reels seguidos com in/out, ver "ciclo 2" / "outro take" na fronteira, e que
+a reanalise do MESMO trecho nao virou spam de "conceito repetido".
+
+---
+
 ## 2026-08-17 — redesign de UI da familia (Auto B-roll, Pro Captions, Pro Edition)
 
 **Feito.** So camada de apresentacao: nenhuma regra de dominio, nenhuma

@@ -232,7 +232,8 @@ export function planejar(
   biblioteca: Biblioteca,
   regras: RegrasPlano = REGRAS_PADRAO,
   memoria: Memoria = MEMORIA_VAZIA,
-  intensidade?: IntensidadeDoPlano
+  intensidade?: IntensidadeDoPlano,
+  jaNaTimeline: readonly Ocupado[] = []
 ): Plano {
   const colocacoes: Colocacao[] = [];
   const descartes: string[] = [];
@@ -295,11 +296,28 @@ export function planejar(
   // Ordem cronologica; empate no mesmo instante resolve pelo melhor score.
   candidatos.sort((a, b) => (a.ancoraEm !== b.ancoraEm ? a.ancoraEm - b.ancoraEm : b.score - a.score));
 
-  /** Arquivo -> quando apareceu pela ultima vez. Inedito tem prioridade. */
+  /** Arquivo -> quando apareceu pela ultima vez. */
   const quandoUsou = new Map<string, number>();
+  /** Arquivo -> quantas vezes ja entrou. E o rodizio: menos usado primeiro. */
+  const usosDoArquivo = new Map<string, number>();
   /** Conceito -> quando apareceu pela ultima vez. */
   const ultimoUso = new Map<string, number>();
   let fimDoAnterior = Number.NEGATIVE_INFINITY;
+
+  // O que ja esta na timeline conta como uso anterior: alimenta o rodizio de
+  // take e a janela de repeticao do conceito. `fimDoAnterior` fica de fora de
+  // proposito — quem impede sobreposicao com o que ja existe e `semSobrepor`,
+  // sem depender de ordem. Guarda a aparicao mais tardia; um trecho pode ser
+  // analisado antes de um vizinho anterior, entao as janelas medem por `abs`.
+  for (const j of jaNaTimeline) {
+    if (j.arquivo !== undefined) {
+      quandoUsou.set(j.arquivo, Math.max(j.inicio, quandoUsou.get(j.arquivo) ?? j.inicio));
+      usosDoArquivo.set(j.arquivo, (usosDoArquivo.get(j.arquivo) ?? 0) + 1);
+    }
+    if (j.conceito !== undefined) {
+      ultimoUso.set(j.conceito, Math.max(j.inicio, ultimoUso.get(j.conceito) ?? j.inicio));
+    }
+  }
 
   for (const c of candidatos) {
     const onde = `${relogio(c.ancoraEm)} ${c.conceito}`;
@@ -310,23 +328,26 @@ export function planejar(
     }
 
     const anterior = ultimoUso.get(c.conceito);
-    if (anterior !== undefined && c.ancoraEm - anterior < regras.janelaSemRepetir) {
+    if (anterior !== undefined && Math.abs(c.ancoraEm - anterior) < regras.janelaSemRepetir) {
       descartes.push(`${onde}: conceito repetido ha menos de ${regras.janelaSemRepetir}s`);
       continue;
     }
 
-    // Secao 8: nao repetir o mesmo shot, SALVO ausencia de alternativa. Take
-    // inedito primeiro; esgotados, aceita repetir um que ja saiu da tela ha
-    // tempo suficiente. Proibir de vez deixava frase boa sem B-roll sempre que
-    // o conceito tinha menos takes que mencoes.
-    const ineditos = c.arquivos.filter((a) => !quandoUsou.has(a));
-    const repetiu = ineditos.length === 0;
-    const disponiveis = repetiu
-      ? c.arquivos.filter((a) => c.ancoraEm - (quandoUsou.get(a) ?? 0) >= regras.janelaMesmoArquivo)
-      : ineditos;
+    // Secao 8: nao repetir o mesmo shot, SALVO ausencia de alternativa. Rodizio
+    // por take — todo take do conceito entra uma vez antes de qualquer um
+    // repetir; esgotados, recomeca o ciclo pelo menos usado. Quando o ciclo ja
+    // manda repetir (ciclo >= 1), o take exato ainda tem de ter saido da tela ha
+    // `janelaMesmoArquivo` — perto demais o espectador reconhece o shot.
+    const usos = (a: string): number => usosDoArquivo.get(a) ?? 0;
+    const ciclo = Math.min(...c.arquivos.map(usos));
+    const noCiclo = c.arquivos.filter((a) => usos(a) === ciclo);
+    const disponiveis =
+      ciclo === 0
+        ? noCiclo
+        : noCiclo.filter((a) => Math.abs(c.ancoraEm - (quandoUsou.get(a) ?? 0)) >= regras.janelaMesmoArquivo);
 
-    // A intensidade FILTRA, o historico ESCOLHE. Sem isso o historico trava no
-    // primeiro take creditado e os outros 42 nunca aparecem.
+    // A intensidade FILTRA, o historico ESCOLHE — dentro do ciclo. Sem isso o
+    // historico travaria no take de melhor score e os outros 42 nunca apareciam.
     const cabem = filtrarPorIntensidade(disponiveis, c.frase, intensidade, regras, ritmoOrdenado);
     const arquivo = melhorArquivo(memoria, cabem.arquivos);
     if (arquivo === undefined) {
@@ -355,7 +376,7 @@ export function planejar(
       caminho,
       conceito: c.conceito,
       score: c.score,
-      motivo: montarMotivo(c.motivo, trocouTake, cabem.rotulo, repetiu),
+      motivo: montarMotivo(c.motivo, trocouTake, cabem.rotulo, ciclo),
       termosCasados: c.termosCasados,
       textoDaFrase: c.frase.texto,
       ancoradoEm: c.palavraEm,
@@ -363,6 +384,7 @@ export function planejar(
       duracao,
     });
     quandoUsou.set(arquivo, c.ancoraEm);
+    usosDoArquivo.set(arquivo, usos(arquivo) + 1);
     ultimoUso.set(c.conceito, c.ancoraEm);
     fimDoAnterior = c.ancoraEm + duracao;
   }
@@ -412,11 +434,11 @@ function maisProximo(ordenados: readonly number[], alvo: number): number {
 }
 
 /** O motivo carrega tudo o que mexeu na escolha, na ordem em que mexeu. */
-function montarMotivo(base: string, trocouTake: boolean, intensidade: string | null, repetiu = false): string {
+function montarMotivo(base: string, trocouTake: boolean, intensidade: string | null, ciclo = 0): string {
   let texto = base;
   if (intensidade !== null) texto += ` · ${intensidade}`;
   if (trocouTake) texto += " · outro take, o anterior foi apagado";
-  if (repetiu) texto += " · take repetido, nao sobrou inedito";
+  if (ciclo >= 1) texto += ` · take repetido, ciclo ${ciclo + 1}`;
   return texto;
 }
 
@@ -424,6 +446,16 @@ function montarMotivo(base: string, trocouTake: boolean, intensidade: string | n
 export interface Ocupado {
   readonly inicio: number;
   readonly fim: number;
+  /**
+   * Arquivo e conceito do B-roll que ja esta ai, quando conhecidos.
+   *
+   * `semSobrepor` ignora — so olha tempo. `planejar` usa para nao repetir um
+   * take ou conceito que ja entrou numa analise anterior: sem isto, analisar a
+   * sequencia trecho por trecho (in/out) replaneja cada pedaco cego ao que os
+   * outros ja colocaram, e o mesmo take reaparece na fronteira.
+   */
+  readonly arquivo?: string;
+  readonly conceito?: string;
 }
 
 /**

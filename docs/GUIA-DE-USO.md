@@ -18,9 +18,11 @@ Você edita a sequência normalmente na V1. Um clique em **Analisar e inserir**:
    sobrevive, e é só isso que importa.
 3. Compara o que foi dito com os nomes dos arquivos de B-roll da sua pasta
    (`Viagra.mp4`, `Falhou na cama.mp4`, etc.) e com um dicionário de sinônimos.
-4. Escolhe onde encaixar cada B-roll, prefere take inédito (só repete um já
-   usado depois de 60 segundos, e só quando não sobrou nenhum novo), evita
-   sobrepor o que já está na timeline.
+4. Escolhe onde encaixar cada B-roll. **Rodízio de take:** se um conceito tem
+   15 arquivos, usa os 15 uma vez antes de repetir qualquer um; aí recomeça o
+   ciclo pelo menos usado (o motivo passa a dizer "ciclo 2", "ciclo 3"). Conta
+   também o que já está na timeline de reels vizinhos. Um take só volta depois
+   de 180s. Nunca sobrepõe o que já está lá.
 5. Insere em V2, corta no tamanho certo, escala pra preencher a tela e tira o
    áudio — tudo isso sem você revisar antes.
 
@@ -65,6 +67,12 @@ tem vários. O log avisa: *"In/out marcados: inserindo só de X a Y"*. Sem
 in/out (ou com o in/out cobrindo a sequência toda), ele analisa tudo, como
 sempre. O **Aprender ignora o in/out de propósito**: edição sua ensina em
 qualquer ponto da timeline.
+
+Ao analisar trecho por trecho, ele **enxerga o que já entrou nos reels
+vizinhos**: um take que já está na timeline fora do trecho não é repetido, e um
+conceito que apareceu há menos de 60s no reel anterior não volta. Antes, cada
+trecho era planejado no escuro e o mesmo take reaparecia na virada de um reel
+para o outro.
 
 ---
 
@@ -119,8 +127,8 @@ Mensagens mais comuns e o que significam:
 | `nenhuma sugestao passou (melhor: 100%, caiu para 50% pelo aprendizado)` | O casamento era bom, mas você já apagou esse par vezes demais e ele não entra mais sozinho. Se foi engano, coloque um B-roll desse conceito na mão — o crédito reabilita. |
 | `já há B-roll aí, deixei como está` | Tem alguma coisa em cima daquele instante em **qualquer** faixa de vídeo acima da V1 (não só a que ele usa). Nunca insere por cima. |
 | `muito perto do B-roll anterior` / `conceito repetido há menos de 8s` | Regra de espaçamento — ative "Densidade máxima" se quiser afrouxar isso. |
-| `todas as variações apareceram há menos de 180s` | Todos os arquivos daquele conceito já estão na timeline, perto demais para repetir. Depois de 3 minutos o mesmo take pode voltar. Conceito com um único arquivo na pasta bate nisso o tempo todo — a saída é gravar mais variações dele. |
-| `take repetido, não sobrou inédito` | Não é descarte — o B-roll entrou, repetindo um take que já apareceu há mais de 60 segundos, porque o conceito não tinha arquivo novo. |
+| `todas as variações apareceram há menos de 180s` | O ciclo mandaria repetir um take, mas todos os do conceito apareceram há menos de 3 minutos. Conceito com um único arquivo na pasta bate nisso o tempo todo — a saída é gravar mais variações dele. |
+| `take repetido, ciclo 2` (ou 3, 4...) | Não é descarte — o B-roll entrou. Todos os takes daquele conceito já rodaram uma vez (ciclo 1), então começou de novo. O número diz em qual volta está. |
 | `Trecho incerto (confiança X)` | Aviso da própria transcrição do Premiere, não do plugin — a fala reconhecida ali tem baixa confiança. |
 
 ---

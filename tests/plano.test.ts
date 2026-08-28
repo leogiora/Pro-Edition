@@ -44,12 +44,16 @@ function oportunidade(
 
 const FRUSTRADO = conceito("Frustrado", ["Frustrado (1).mp4", "Frustrado (2).mp4"]);
 const VIAGRA = conceito("Viagra", ["Viagra (1).mp4"]);
+const TRIO = conceito("Trio", ["Trio (1).mp4", "Trio (2).mp4", "Trio (3).mp4"]);
 
 const BIBLIOTECA: Biblioteca = {
   caminhos: new Map([
     ["Frustrado (1).mp4", "C:\\b\\Frustrado (1).mp4"],
     ["Frustrado (2).mp4", "C:\\b\\Frustrado (2).mp4"],
     ["Viagra (1).mp4", "C:\\b\\Viagra (1).mp4"],
+    ["Trio (1).mp4", "C:\\b\\Trio (1).mp4"],
+    ["Trio (2).mp4", "C:\\b\\Trio (2).mp4"],
+    ["Trio (3).mp4", "C:\\b\\Trio (3).mp4"],
   ]),
 };
 
@@ -140,6 +144,134 @@ test("planejar: nao repete o mesmo conceito dentro da janela", () => {
     BIBLIOTECA
   );
   assert.equal(p.colocacoes.length, 1);
+});
+
+test("planejar: nao repete take que ja esta na timeline de outra analise", () => {
+  // Frustrado (1) entrou em 20s no reel anterior. Este trecho ve a oportunidade
+  // 300s depois — alem das duas janelas de repeticao, mas ainda o mesmo take.
+  const p = planejar(
+    [oportunidade(320, 3, [{ c: FRUSTRADO, score: 1 }])],
+    BIBLIOTECA,
+    REGRAS_PADRAO,
+    MEMORIA_VAZIA,
+    undefined,
+    [{ inicio: 20, fim: 23, arquivo: "Frustrado (1).mp4", conceito: "Frustrado" }]
+  );
+  assert.equal(p.colocacoes.length, 1);
+  assert.equal(p.colocacoes[0]?.arquivo, "Frustrado (2).mp4");
+});
+
+test("planejar: conceito ja na timeline barra a repeticao no reel vizinho", () => {
+  // Frustrado inserido em 417s no reel anterior; este reel acha Frustrado 26s
+  // depois. Perto demais — nao entra, igual a repeticao dentro de uma so rodada.
+  const p = planejar(
+    [oportunidade(443, 4, [{ c: FRUSTRADO, score: 1 }])],
+    BIBLIOTECA,
+    REGRAS_PADRAO,
+    MEMORIA_VAZIA,
+    undefined,
+    [{ inicio: 417, fim: 420, arquivo: "Frustrado (1).mp4", conceito: "Frustrado" }]
+  );
+  assert.equal(p.colocacoes.length, 0);
+  assert.match(p.descartes.join(" "), /conceito repetido/);
+});
+
+test("planejar: conceito na timeline conta mesmo estando depois do trecho", () => {
+  // Reel posterior analisado primeiro (Viagra em 300s); agora o reel anterior
+  // acha Viagra 40s antes. A janela mede por distancia, nao por ordem.
+  const p = planejar(
+    [oportunidade(260, 4, [{ c: VIAGRA, score: 1 }])],
+    BIBLIOTECA,
+    REGRAS_PADRAO,
+    MEMORIA_VAZIA,
+    undefined,
+    [{ inicio: 300, fim: 303, arquivo: "Viagra (1).mp4", conceito: "Viagra" }]
+  );
+  assert.equal(p.colocacoes.length, 0);
+});
+
+test("planejar: B-roll na timeline longe do trecho nao atrapalha", () => {
+  const p = planejar(
+    [oportunidade(500, 4, [{ c: VIAGRA, score: 1 }])],
+    BIBLIOTECA,
+    REGRAS_PADRAO,
+    MEMORIA_VAZIA,
+    undefined,
+    [{ inicio: 20, fim: 23, arquivo: "Viagra (1).mp4", conceito: "Viagra" }]
+  );
+  assert.equal(p.colocacoes.length, 1);
+  assert.match(p.colocacoes[0]?.motivo ?? "", /take repetido/);
+});
+
+test("planejar: rodizio por take — todos rodam antes de qualquer um repetir", () => {
+  // 4 oportunidades bem separadas (alem da janela de conceito de 60s; a ultima
+  // 250s depois da primeira, alem do piso de 180s do take).
+  const p = planejar(
+    [
+      oportunidade(10, 3, [{ c: TRIO, score: 1 }]),
+      oportunidade(90, 3, [{ c: TRIO, score: 1 }]),
+      oportunidade(170, 3, [{ c: TRIO, score: 1 }]),
+      oportunidade(260, 3, [{ c: TRIO, score: 1 }]),
+    ],
+    BIBLIOTECA
+  );
+  assert.deepEqual(
+    p.colocacoes.map((c) => c.arquivo),
+    ["Trio (1).mp4", "Trio (2).mp4", "Trio (3).mp4", "Trio (1).mp4"]
+  );
+  assert.match(p.colocacoes[3]?.motivo ?? "", /ciclo 2/);
+});
+
+test("planejar: passado o primeiro ciclo, o rodizio nao trava no take de melhor score", () => {
+  // Trio (2) tem o melhor saldo no aprendizado. Sem rodizio, assim que os tres
+  // takes rodam uma vez o (2) passaria a ser escolhido sempre.
+  let memoria = MEMORIA_VAZIA;
+  for (let i = 0; i < 3; i++) {
+    memoria = aprender(
+      memoria,
+      { quando: "", itens: [{ arquivo: "Trio (2).mp4", conceito: "Trio", termosCasados: TRIO.termos }] },
+      new Set(["Trio (2).mp4"])
+    ).memoria;
+  }
+  const opps = [10, 200, 400, 600, 800, 1000].map((t) => oportunidade(t, 3, [{ c: TRIO, score: 1 }]));
+  const p = planejar(opps, BIBLIOTECA, REGRAS_PADRAO, memoria);
+  const contagem = new Map<string, number>();
+  for (const c of p.colocacoes) contagem.set(c.arquivo, (contagem.get(c.arquivo) ?? 0) + 1);
+  assert.equal(p.colocacoes.length, 6);
+  assert.deepEqual([...contagem.values()].sort(), [2, 2, 2], "cada take entrou exatamente 2x");
+});
+
+test("planejar: o ciclo conta o que ja esta na timeline", () => {
+  // Trio (1) usado 2x e Trio (2) 1x em analises anteriores; Trio (3) nunca —
+  // a proxima colocacao tem de ser o (3).
+  const p = planejar(
+    [oportunidade(300, 3, [{ c: TRIO, score: 1 }])],
+    BIBLIOTECA,
+    REGRAS_PADRAO,
+    MEMORIA_VAZIA,
+    undefined,
+    [
+      { inicio: 10, fim: 13, arquivo: "Trio (1).mp4", conceito: "Trio" },
+      { inicio: 50, fim: 53, arquivo: "Trio (1).mp4", conceito: "Trio" },
+      { inicio: 30, fim: 33, arquivo: "Trio (2).mp4", conceito: "Trio" },
+    ]
+  );
+  assert.equal(p.colocacoes[0]?.arquivo, "Trio (3).mp4");
+});
+
+test("planejar: no ciclo 2, o piso de 180s ainda segura o mesmo take", () => {
+  // Viagra tem take unico, ja na timeline ha 80s. O ciclo mandaria repetir,
+  // mas 80s < 180s — nao entra.
+  const p = planejar(
+    [oportunidade(280, 4, [{ c: VIAGRA, score: 1 }])],
+    BIBLIOTECA,
+    REGRAS_PADRAO,
+    MEMORIA_VAZIA,
+    undefined,
+    [{ inicio: 200, fim: 203, arquivo: "Viagra (1).mp4", conceito: "Viagra" }]
+  );
+  assert.equal(p.colocacoes.length, 0);
+  assert.match(p.descartes.join(" "), /apareceram ha menos de 180s/);
 });
 
 test("planejar: respeita o intervalo minimo entre B-rolls", () => {

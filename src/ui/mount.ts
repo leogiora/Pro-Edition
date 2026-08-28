@@ -30,6 +30,7 @@ import {
 import { CACHE_VAZIO, parseCacheIntensidade, ritmo } from "../intensidade.ts";
 import {
   parseSinonimos,
+  rotuloDoArquivo,
   sinonimosParaJson,
   SINONIMOS_PADRAO,
   usarSinonimos,
@@ -418,7 +419,12 @@ async function julgarFaixa(
       memoria: atual,
       pendentes: julgado,
       resumo,
-      ocupado: naTimeline.map((c) => ({ inicio: c.startSeconds, fim: c.endSeconds })),
+      ocupado: naTimeline.map((c) => ({
+        inicio: c.startSeconds,
+        fim: c.endSeconds,
+        arquivo: c.sourceName,
+        conceito: rotuloDoArquivo(c.sourceName),
+      })),
     };
   } catch (e) {
     // Sem saber o que ha na timeline, o seguro e nao inserir nada por cima:
@@ -627,12 +633,23 @@ async function analisarSequencia(aindaValido: () => boolean): Promise<void> {
       if (valor !== null) porArquivo.set(nome, valor);
     }
 
+    // Os B-rolls que ja estao na timeline FORA do trecho marcado (de reels
+    // vizinhos ja analisados, ou colocados por voce) contam como uso anterior:
+    // sem isto cada trecho replaneja cego ao vizinho e repete os mesmos takes.
+    // So o que esta fora — dentro do trecho, `semSobrepor` ja resolve, e semear
+    // ali encheria o log de "conceito repetido" a cada reanalise.
+    const jaNaTimeline =
+      selecao === null
+        ? []
+        : ocupado.filter((o) => o.fim <= selecao.inicio || o.inicio >= selecao.fim);
+
     const plano = planejar(
       oportunidades,
       { caminhos: new Map(arquivos.map((a) => [a.name, a.nativePath])) },
       config.densidadeMaxima ? REGRAS_DENSAS : REGRAS_PADRAO,
       memoria,
-      { porArquivo, ritmoDasFrases: resultado.frases.map((f) => ritmo(f.palavras, f.duracao)) }
+      { porArquivo, ritmoDasFrases: resultado.frases.map((f) => ritmo(f.palavras, f.duracao)) },
+      jaNaTimeline
     );
 
     // Toda frase reconstruida, com o tempo que o plugin acha que ela ocupa.
