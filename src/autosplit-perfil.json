@@ -1,5 +1,1904 @@
 {
   "versao": 1,
-  "padraoPorConceito": {},
-  "porArquivo": {}
+  "padraoPorConceito": {
+    "14.000 mil homens": {
+      "assunto": "aberto",
+      "ancoraY": 0.45,
+      "cropTopoExtra": 0
+    },
+    "Academia": {
+      "assunto": "pessoa",
+      "ancoraY": 0.4,
+      "cropTopoExtra": 0
+    },
+    "Alívio Emocional": {
+      "assunto": "pessoa",
+      "ancoraY": 0.26,
+      "cropTopoExtra": 0
+    },
+    "Casal feliz": {
+      "assunto": "dupla",
+      "ancoraY": 0.33,
+      "cropTopoExtra": 0
+    },
+    "Consulta médica": {
+      "assunto": "dupla",
+      "ancoraY": 0.24,
+      "cropTopoExtra": 0
+    },
+    "Corpo do homem": {
+      "assunto": "aberto",
+      "ancoraY": 0.5,
+      "cropTopoExtra": 0
+    },
+    "Cristiano": {
+      "assunto": "pessoa",
+      "ancoraY": 0.27,
+      "cropTopoExtra": 0
+    },
+    "Desanimado": {
+      "assunto": "pessoa",
+      "ancoraY": 0.28,
+      "cropTopoExtra": 0
+    },
+    "Diabetes": {
+      "assunto": "pessoa",
+      "ancoraY": 0.22,
+      "cropTopoExtra": 0
+    },
+    "Disposição": {
+      "assunto": "pessoa",
+      "ancoraY": 0.25,
+      "cropTopoExtra": 0
+    },
+    "Doppler": {
+      "assunto": "aberto",
+      "ancoraY": 0.38,
+      "cropTopoExtra": 0
+    },
+    "Doutor": {
+      "assunto": "pessoa",
+      "ancoraY": 0.22,
+      "cropTopoExtra": 0
+    },
+    "Exames": {
+      "assunto": "aberto",
+      "ancoraY": 0.48,
+      "cropTopoExtra": 0
+    },
+    "Falhou na cama": {
+      "assunto": "pessoa",
+      "ancoraY": 0.3,
+      "cropTopoExtra": 0
+    },
+    "Frustrado": {
+      "assunto": "pessoa",
+      "ancoraY": 0.3,
+      "cropTopoExtra": 0
+    },
+    "Hormônio": {
+      "assunto": "aberto",
+      "ancoraY": 0.45,
+      "cropTopoExtra": 0
+    },
+    "Injetáveis": {
+      "assunto": "aberto",
+      "ancoraY": 0.45,
+      "cropTopoExtra": 0
+    },
+    "Jogando fora o viagra": {
+      "assunto": "aberto",
+      "ancoraY": 0.42,
+      "cropTopoExtra": 0.04
+    },
+    "Medicamento": {
+      "assunto": "aberto",
+      "ancoraY": 0.5,
+      "cropTopoExtra": 0
+    },
+    "Medida paliativa": {
+      "assunto": "aberto",
+      "ancoraY": 0.5,
+      "cropTopoExtra": 0
+    },
+    "Milhares de homens": {
+      "assunto": "aberto",
+      "ancoraY": 0.48,
+      "cropTopoExtra": 0
+    },
+    "Risco de infarto": {
+      "assunto": "pessoa",
+      "ancoraY": 0.3,
+      "cropTopoExtra": 0
+    },
+    "Sala reservada": {
+      "assunto": "dupla",
+      "ancoraY": 0.32,
+      "cropTopoExtra": 0
+    },
+    "Separação": {
+      "assunto": "pessoa",
+      "ancoraY": 0.3,
+      "cropTopoExtra": 0
+    },
+    "Teleconsulta": {
+      "assunto": "pessoa",
+      "ancoraY": 0.25,
+      "cropTopoExtra": 0
+    },
+    "Vasos sanguíneos": {
+      "assunto": "aberto",
+      "ancoraY": 0.5,
+      "cropTopoExtra": 0
+    },
+    "Viagra": {
+      "assunto": "pessoa",
+      "ancoraY": 0.26,
+      "cropTopoExtra": 0
+    },
+    "lifestyle": {
+      "assunto": "pessoa",
+      "ancoraY": 0.32,
+      "cropTopoExtra": 0
+    }
+  },
+  "porArquivo": {
+    "14.000 mil homens (1).mp4": {
+      "assunto": "aberto",
+      "ancoraY": 0.45,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "14.000 mil homens (2).mp4": {
+      "assunto": "aberto",
+      "ancoraY": 0.45,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "14.000 mil homens (3).mp4": {
+      "assunto": "aberto",
+      "ancoraY": 0.45,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "14.000 mil homens (4).mp4": {
+      "assunto": "aberto",
+      "ancoraY": 0.45,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "14.000 mil homens (5).mp4": {
+      "assunto": "aberto",
+      "ancoraY": 0.45,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "14.000 mil homens (6).mp4": {
+      "assunto": "aberto",
+      "ancoraY": 0.45,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "14.000 mil homens (7).mp4": {
+      "assunto": "aberto",
+      "ancoraY": 0.45,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Academia.mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.4,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Alívio Emocional (1).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.26,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Alívio Emocional (2).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.26,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Alívio Emocional (3).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.26,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Alívio Emocional (4).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.26,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Casal feliz (1).mp4": {
+      "assunto": "dupla",
+      "ancoraY": 0.33,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Casal feliz (10).mp4": {
+      "assunto": "dupla",
+      "ancoraY": 0.33,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Casal feliz (11).mp4": {
+      "assunto": "dupla",
+      "ancoraY": 0.33,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Casal feliz (12).mp4": {
+      "assunto": "dupla",
+      "ancoraY": 0.33,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Casal feliz (13).mp4": {
+      "assunto": "dupla",
+      "ancoraY": 0.33,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Casal feliz (14).mp4": {
+      "assunto": "dupla",
+      "ancoraY": 0.33,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Casal feliz (2).mp4": {
+      "assunto": "dupla",
+      "ancoraY": 0.33,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Casal feliz (3).mp4": {
+      "assunto": "dupla",
+      "ancoraY": 0.33,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Casal feliz (4).mp4": {
+      "assunto": "dupla",
+      "ancoraY": 0.33,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Casal feliz (5).mp4": {
+      "assunto": "dupla",
+      "ancoraY": 0.33,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Casal feliz (6).mp4": {
+      "assunto": "dupla",
+      "ancoraY": 0.33,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Casal feliz (7).mp4": {
+      "assunto": "dupla",
+      "ancoraY": 0.33,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Casal feliz (8).mp4": {
+      "assunto": "dupla",
+      "ancoraY": 0.33,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Casal feliz (9).mp4": {
+      "assunto": "dupla",
+      "ancoraY": 0.33,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Consulta médica (1).mp4": {
+      "assunto": "dupla",
+      "ancoraY": 0.24,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Consulta médica (2).mp4": {
+      "assunto": "dupla",
+      "ancoraY": 0.24,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Consulta médica (3).mp4": {
+      "assunto": "dupla",
+      "ancoraY": 0.24,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Consulta médica (4).mp4": {
+      "assunto": "dupla",
+      "ancoraY": 0.24,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Consulta médica (5).mp4": {
+      "assunto": "dupla",
+      "ancoraY": 0.24,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Consulta médica (6).mp4": {
+      "assunto": "dupla",
+      "ancoraY": 0.24,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Consulta médica (7).mp4": {
+      "assunto": "dupla",
+      "ancoraY": 0.24,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Corpo do homem (1).mp4": {
+      "assunto": "aberto",
+      "ancoraY": 0.5,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Corpo do homem (2).mp4": {
+      "assunto": "aberto",
+      "ancoraY": 0.5,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Corpo do homem (3).mp4": {
+      "assunto": "aberto",
+      "ancoraY": 0.5,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Corpo do homem (4).mp4": {
+      "assunto": "aberto",
+      "ancoraY": 0.5,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Corpo do homem (5).mp4": {
+      "assunto": "aberto",
+      "ancoraY": 0.5,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Corpo do homem (6).mp4": {
+      "assunto": "aberto",
+      "ancoraY": 0.5,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Corpo do homem (7).mp4": {
+      "assunto": "aberto",
+      "ancoraY": 0.5,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Corpo do homem (8).mp4": {
+      "assunto": "aberto",
+      "ancoraY": 0.5,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Corpo do homem (9).mp4": {
+      "assunto": "aberto",
+      "ancoraY": 0.5,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Cristiano (1).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.27,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Cristiano (2).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.27,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Cristiano (3).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.27,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Desanimado (1).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.28,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Desanimado (2).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.28,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Desanimado (3).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.28,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Desanimado (4).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.28,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Desanimado (5).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.28,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Desanimado (6).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.28,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Desanimado (7).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.28,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Desanimado (8).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.28,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Diabetes.mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.22,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Disposição.mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.25,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Doppler.mp4": {
+      "assunto": "aberto",
+      "ancoraY": 0.38,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Doutor (10).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.22,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Doutor (12).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.22,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Doutor (13).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.22,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Doutor (14).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.22,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Doutor (15).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.22,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Doutor (16).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.22,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Doutor (17).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.22,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Doutor (19).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.22,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Doutor (20).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.22,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Doutor (21).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.22,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Doutor (22).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.22,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Doutor (23).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.22,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Doutor (24).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.22,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Doutor (25).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.22,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Doutor (26).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.22,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Doutor (27).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.22,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Doutor (28).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.22,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Doutor (29).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.22,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Doutor (30).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.22,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Doutor (31).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.22,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Doutor (32).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.22,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Doutor (33).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.22,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Doutor (34).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.22,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Doutor (35).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.22,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Doutor (36).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.22,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Doutor (37).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.22,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Doutor (38).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.22,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Doutor (4).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.22,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Doutor (5).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.22,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Doutor (6).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.22,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Doutor (7).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.22,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Exames.mp4": {
+      "assunto": "aberto",
+      "ancoraY": 0.48,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Falhou na cama (1).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.3,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Falhou na cama (10).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.3,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Falhou na cama (11).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.3,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Falhou na cama (12).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.3,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Falhou na cama (13).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.3,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Falhou na cama (14).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.3,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Falhou na cama (15).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.3,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Falhou na cama (16).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.3,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Falhou na cama (17).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.3,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Falhou na cama (18).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.3,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Falhou na cama (19).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.3,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Falhou na cama (2).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.3,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Falhou na cama (20).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.3,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Falhou na cama (21).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.3,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Falhou na cama (22).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.3,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Falhou na cama (23).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.3,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Falhou na cama (24).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.3,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Falhou na cama (3).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.3,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Falhou na cama (4).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.3,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Falhou na cama (5).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.3,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Falhou na cama (6).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.3,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Falhou na cama (7).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.3,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Falhou na cama (8).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.3,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Falhou na cama (9).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.3,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Frustrado (1).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.3,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Frustrado (10).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.3,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Frustrado (11).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.3,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Frustrado (12).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.3,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Frustrado (13).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.3,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Frustrado (14).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.3,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Frustrado (15).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.3,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Frustrado (16).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.3,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Frustrado (17).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.3,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Frustrado (18).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.3,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Frustrado (19).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.3,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Frustrado (2).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.3,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Frustrado (20).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.3,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Frustrado (21).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.3,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Frustrado (22).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.3,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Frustrado (23).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.3,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Frustrado (24).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.3,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Frustrado (25).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.3,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Frustrado (26).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.3,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Frustrado (27).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.3,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Frustrado (28).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.3,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Frustrado (29).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.3,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Frustrado (3).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.3,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Frustrado (30).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.3,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Frustrado (31).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.3,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Frustrado (32).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.3,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Frustrado (33).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.3,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Frustrado (34).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.3,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Frustrado (35).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.3,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Frustrado (36).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.3,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Frustrado (37).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.3,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Frustrado (4).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.3,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Frustrado (5).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.3,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Frustrado (6).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.3,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Frustrado (7).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.3,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Frustrado (8).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.3,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Frustrado (9).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.3,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Hormônio.mp4": {
+      "assunto": "aberto",
+      "ancoraY": 0.45,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Injetáveis (1).mp4": {
+      "assunto": "aberto",
+      "ancoraY": 0.45,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Injetáveis (2).mp4": {
+      "assunto": "aberto",
+      "ancoraY": 0.45,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Jogando fora o viagra (1).mp4": {
+      "assunto": "aberto",
+      "ancoraY": 0.42,
+      "cropTopoExtra": 0.04,
+      "w": 720,
+      "h": 1280
+    },
+    "Jogando fora o viagra (2).mp4": {
+      "assunto": "aberto",
+      "ancoraY": 0.42,
+      "cropTopoExtra": 0.04,
+      "w": 720,
+      "h": 1280
+    },
+    "Jogando fora o viagra (3).mp4": {
+      "assunto": "aberto",
+      "ancoraY": 0.42,
+      "cropTopoExtra": 0.04,
+      "w": 464,
+      "h": 832
+    },
+    "Medicamento.mp4": {
+      "assunto": "aberto",
+      "ancoraY": 0.5,
+      "cropTopoExtra": 0,
+      "w": 1080,
+      "h": 1920
+    },
+    "Medida paliativa (1).mp4": {
+      "assunto": "aberto",
+      "ancoraY": 0.5,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Medida paliativa (2).mp4": {
+      "assunto": "aberto",
+      "ancoraY": 0.5,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Medida paliativa (3).mp4": {
+      "assunto": "aberto",
+      "ancoraY": 0.5,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Medida paliativa (4).mp4": {
+      "assunto": "aberto",
+      "ancoraY": 0.5,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Medida paliativa (5).mp4": {
+      "assunto": "aberto",
+      "ancoraY": 0.5,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Medida paliativa (6).mp4": {
+      "assunto": "aberto",
+      "ancoraY": 0.5,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Medida paliativa (7).mp4": {
+      "assunto": "aberto",
+      "ancoraY": 0.5,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Medida paliativa (8).mp4": {
+      "assunto": "aberto",
+      "ancoraY": 0.5,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Milhares de homens (1).mp4": {
+      "assunto": "aberto",
+      "ancoraY": 0.48,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Risco de infarto (1).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.3,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Risco de infarto (2).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.3,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Risco de infarto (3).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.3,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Sala reservada.mp4": {
+      "assunto": "dupla",
+      "ancoraY": 0.32,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Separação (1).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.3,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Separação (2).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.3,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Separação (3).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.3,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Separação (4).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.3,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Teleconsulta (1).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.25,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Teleconsulta (10).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.25,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Teleconsulta (11).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.25,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Teleconsulta (12).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.25,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Teleconsulta (13).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.25,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Teleconsulta (14).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.25,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Teleconsulta (15).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.25,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Teleconsulta (16).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.25,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Teleconsulta (17).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.25,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Teleconsulta (18).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.25,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Teleconsulta (19).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.25,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Teleconsulta (2).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.25,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Teleconsulta (20).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.25,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Teleconsulta (21).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.25,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Teleconsulta (22).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.25,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Teleconsulta (23).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.25,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Teleconsulta (24).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.25,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Teleconsulta (25).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.25,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Teleconsulta (3).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.25,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Teleconsulta (4).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.25,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Teleconsulta (5).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.25,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Teleconsulta (6).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.25,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Teleconsulta (7).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.25,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Teleconsulta (8).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.25,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Teleconsulta (9).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.25,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Vasos sanguíneos (1).mp4": {
+      "assunto": "aberto",
+      "ancoraY": 0.5,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Vasos sanguíneos (2).mp4": {
+      "assunto": "aberto",
+      "ancoraY": 0.5,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Vasos sanguíneos (3).mp4": {
+      "assunto": "aberto",
+      "ancoraY": 0.5,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Vasos sanguíneos (4).mp4": {
+      "assunto": "aberto",
+      "ancoraY": 0.5,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Vasos sanguíneos (5).mp4": {
+      "assunto": "aberto",
+      "ancoraY": 0.5,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Vasos sanguíneos (6).mp4": {
+      "assunto": "aberto",
+      "ancoraY": 0.5,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Vasos sanguíneos (7).mp4": {
+      "assunto": "aberto",
+      "ancoraY": 0.5,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Viagra (1).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.26,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Viagra (10).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.26,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Viagra (11).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.26,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Viagra (12).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.26,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Viagra (13).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.26,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Viagra (14).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.26,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Viagra (15).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.26,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Viagra (16).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.26,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Viagra (17).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.26,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Viagra (18).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.26,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Viagra (19).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.26,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Viagra (2).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.26,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Viagra (20).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.26,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Viagra (21).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.26,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Viagra (22).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.26,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Viagra (23).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.26,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Viagra (24).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.26,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Viagra (25).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.26,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Viagra (26).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.26,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Viagra (27).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.26,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Viagra (28).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.26,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Viagra (29).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.26,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Viagra (3).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.26,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Viagra (30).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.26,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Viagra (31).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.26,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Viagra (32).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.26,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Viagra (33).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.26,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Viagra (34).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.26,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Viagra (35).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.26,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Viagra (36).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.26,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Viagra (37).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.26,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Viagra (38).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.26,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Viagra (39).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.26,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Viagra (4).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.26,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Viagra (40).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.26,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Viagra (41).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.26,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Viagra (42).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.26,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Viagra (43).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.26,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Viagra (5).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.26,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Viagra (6).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.26,
+      "cropTopoExtra": 0,
+      "w": 720,
+      "h": 1280
+    },
+    "Viagra (7).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.26,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Viagra (8).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.26,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "Viagra (9).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.26,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "lifestyle (1).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.32,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "lifestyle (2).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.32,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    },
+    "lifestyle (3).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.32,
+      "cropTopoExtra": 0,
+      "w": 464,
+      "h": 832
+    }
+  }
 }
