@@ -7,7 +7,22 @@
  * telas no mesmo documento. Se isso mudar, este arquivo muda junto.
  */
 
+import { diagnostico } from "../autosplit-premiere.ts";
+
 export function mount(root: HTMLElement): void {
   const log = root.querySelector<HTMLPreElement>("#asLog")!;
-  log.textContent = "Auto Split — tela no ar. Adapter ainda nao ligado.";
+  const diag = root.querySelector<HTMLButtonElement>("#asDiag")!;
+  log.textContent = "Auto Split — deixe um B-roll na V2 e rode o Diagnóstico.";
+
+  diag.addEventListener("click", () => {
+    void (async () => {
+      try {
+        log.textContent = "Rodando diagnóstico...";
+        const linhas = await diagnostico();
+        log.textContent = linhas.join("\n");
+      } catch (e) {
+        log.textContent = `Erro: ${(e as Error)?.message ?? String(e)}`;
+      }
+    })();
+  });
 }

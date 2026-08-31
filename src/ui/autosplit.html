@@ -60,10 +60,27 @@
     color: #cdd2da;
     white-space: pre-wrap;
   }
+
+  .as-botao {
+    align-self: flex-start;
+    margin-top: 8px;
+    padding: 7px 14px;
+    border-radius: 7px;
+    border: 1px solid #333b47;
+    background-color: #1a1e26;
+    color: #eceef2;
+    font-size: 12px;
+    cursor: pointer;
+  }
+
+  .as-botao:hover {
+    background-color: #21262f;
+  }
 </style>
 
 <main class="as-conteudo">
   <h1 class="as-titulo">Auto Split</h1>
   <p class="as-sub">Layout meio a meio: doutor em cima, B-roll na metade de baixo.</p>
+  <button id="asDiag" class="as-botao" type="button">Diagnóstico</button>
   <pre id="asLog" class="as-log">carregando</pre>
 </main>
