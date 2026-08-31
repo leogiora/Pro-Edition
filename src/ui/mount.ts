@@ -27,6 +27,7 @@ import {
   type Memoria,
   type Pendentes,
 } from "../aprendizado.ts";
+import { aplicarMerge, parseCanonico } from "../mesclar-canonico.ts";
 import { CACHE_VAZIO, parseCacheIntensidade, ritmo } from "../intensidade.ts";
 import {
   parseSinonimos,
@@ -60,6 +61,8 @@ const PENDENTES_FILE = "pendentes.json";
 const INTENSIDADE_FILE = "intensidade.json";
 const ASSOCIACOES_FILE = "ligacoes.json";
 const SINONIMOS_FILE = "sinonimos.json";
+const CANONICO_FILE = "aprendizado-canonico.json";
+const CANONICO_BASE_FILE = "aprendizado-canonico.base.json";
 const LOG_ANALISE = "ultimo-log.json";
 const LOG_APRENDER = "ultimo-aprendizado.json";
 
@@ -769,6 +772,74 @@ async function analisarSequencia(aindaValido: () => boolean): Promise<void> {
 }
 
 /**
+ * Funde o aprendizado canonico do dono (entregue no PluginData pelo script
+ * Atualizar) com o aprendizado local. Roda uma vez por versao de snapshot —
+ * o gate e o `version` gravado em aprendizado-canonico.base.json.
+ *
+ * Nunca lanca e nunca toca `vistos`: se algo der errado, o aprendizado da
+ * editora fica exatamente como estava.
+ */
+async function mesclarCanonicoNoDisco(aindaValido: () => boolean): Promise<void> {
+  try {
+    const bruto = await comLimite("ler canonico", readJson(CANONICO_FILE), 5000);
+    if (!aindaValido()) return;
+    if (bruto === null) return; // nenhum snapshot para fundir
+
+    const canonico = parseCanonico(bruto);
+    if (canonico === null) {
+      registrar(`${CANONICO_FILE} ilegivel: merge ignorado, aprendizado local intacto.`, "aviso");
+      return;
+    }
+
+    const base = parseCanonico(
+      await comLimite("ler base do canonico", readJson(CANONICO_BASE_FILE), 5000)
+    );
+    if (!aindaValido()) return;
+    if (base !== null && base.version === canonico.version) return; // ja fundido
+
+    const memoria = parseMemoria(
+      await comLimite("ler aprendizado", readJson(MEMORIA_FILE), 5000)
+    );
+    const associacoes = parseAssociacoes(
+      await comLimite("ler ligacoes", readJson(ASSOCIACOES_FILE), 5000)
+    );
+    const sinDisco = parseSinonimos(
+      await comLimite("ler sinonimos", readJson(SINONIMOS_FILE), 5000)
+    );
+    if (!aindaValido()) return;
+
+    const fundido = aplicarMerge(
+      { memoria, associacoes, sinonimos: sinDisco ?? SINONIMOS_PADRAO },
+      canonico,
+      base
+    );
+
+    const carimbo = new Date().toISOString().slice(0, 10);
+    await writeJson(`${MEMORIA_FILE}.bak-antes-merge-${carimbo}`, memoria);
+    await writeJson(`${ASSOCIACOES_FILE}.bak-antes-merge-${carimbo}`, associacoes);
+    await writeJson(MEMORIA_FILE, fundido.memoria);
+    await writeJson(ASSOCIACOES_FILE, fundido.associacoes);
+    await writeJson(SINONIMOS_FILE, sinonimosParaJson(fundido.sinonimos));
+    // Grava o snapshot BRUTO, nao o `canonico` parseado: `CanonicoSnapshot.sinonimos`
+    // e um Map, e `JSON.stringify(Map)` vira `{}` — a baseline perderia os
+    // sinonimos em silencio. `parseCanonico(bruto)` no proximo boot reconstroi
+    // a mesma base, e o gate por `version` continua valendo.
+    await writeJson(CANONICO_BASE_FILE, bruto);
+
+    const nP = Object.keys(fundido.memoria.pares).length;
+    const nA = Object.keys(fundido.memoria.arquivos).length;
+    const nL = Object.keys(fundido.associacoes.pares).length;
+    registrar(
+      `Merge do aprendizado canonico v${canonico.version}: ${nP} pares, ${nA} arquivos, ${nL} ligacoes.`,
+      "ok"
+    );
+  } catch (e) {
+    if (!aindaValido()) return;
+    registrar(`Merge do canonico falhou (aprendizado local intacto). ${mensagemDeErro(e)}`, "aviso");
+  }
+}
+
+/**
  * Carrega o dicionario editavel, criando-o na primeira vez.
  *
  * Ate agora, ligar "disfuncao" a "Desanimado" ou desligar "consultorio" de
@@ -891,6 +962,8 @@ export function mount(root: HTMLElement): void {
       if (!aindaValido()) return;
       registrar(`Configuracao nao carregou, usando padrao. ${mensagemDeErro(e)}`, "aviso");
     }
+    if (!aindaValido()) return;
+    await mesclarCanonicoNoDisco(aindaValido);
     if (!aindaValido()) return;
     await carregarSinonimos(aindaValido);
     if (!aindaValido()) return;
