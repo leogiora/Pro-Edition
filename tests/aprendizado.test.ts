@@ -21,6 +21,7 @@ import {
   PENDENTES_VAZIO,
   type Memoria,
   type PlanoPendente,
+  aplicarTeto,
 } from "../src/aprendizado.ts";
 import { conceitosDeArquivos, type Conceito } from "../src/match.ts";
 import type { Frase } from "../src/transcript.ts";
@@ -616,4 +617,24 @@ test("creditarManuais: encostado na frase sem cobrir nada ainda acha ela pela fo
     CONCEITOS
   );
   assert.equal(r.creditados, 1);
+});
+
+// ---------------------------------------------------------- aplicarTeto
+
+test("aplicarTeto: abaixo do teto nao mexe", () => {
+  assert.deepEqual(aplicarTeto({ acertos: 10, erros: 5 }), { acertos: 10, erros: 5 });
+});
+
+test("aplicarTeto: no teto exato nao mexe", () => {
+  assert.deepEqual(aplicarTeto({ acertos: 18, erros: 2 }), { acertos: 18, erros: 2 });
+});
+
+test("aplicarTeto: acima do teto divide os dois lados ate caber", () => {
+  // 30+4 = 34 > 20 -> 15+2 = 17 <= 20
+  assert.deepEqual(aplicarTeto({ acertos: 30, erros: 4 }), { acertos: 15, erros: 2 });
+});
+
+test("aplicarTeto: divide mais de uma vez se precisar", () => {
+  // 100+0 -> 50 -> 25 -> 13 (Math.round(25/2)=13); 13 <= 20
+  assert.deepEqual(aplicarTeto({ acertos: 100, erros: 0 }), { acertos: 13, erros: 0 });
 });

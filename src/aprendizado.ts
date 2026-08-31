@@ -163,17 +163,24 @@ export function aprender(
  */
 const TETO = 20;
 
-/** Soma um acerto ou um erro numa das contagens, com decaimento. */
-function somar(mapa: Record<string, Saldo>, k: string, sobreviveu: boolean): void {
-  const atual = mapa[k] ?? { acertos: 0, erros: 0 };
-  let acertos = atual.acertos + (sobreviveu ? 1 : 0);
-  let erros = atual.erros + (sobreviveu ? 0 : 1);
-
+/** Aplica o decaimento do teto a um saldo ja somado. */
+export function aplicarTeto(s: Saldo): Saldo {
+  let acertos = s.acertos;
+  let erros = s.erros;
   while (acertos + erros > TETO) {
     acertos = Math.round(acertos / 2);
     erros = Math.round(erros / 2);
   }
-  mapa[k] = { acertos, erros };
+  return { acertos, erros };
+}
+
+/** Soma um acerto ou um erro numa das contagens, com decaimento. */
+function somar(mapa: Record<string, Saldo>, k: string, sobreviveu: boolean): void {
+  const atual = mapa[k] ?? { acertos: 0, erros: 0 };
+  mapa[k] = aplicarTeto({
+    acertos: atual.acertos + (sobreviveu ? 1 : 0),
+    erros: atual.erros + (sobreviveu ? 0 : 1),
+  });
 }
 
 /** Um B-roll que estava na faixa sem ter sido posto pelo plugin. */
