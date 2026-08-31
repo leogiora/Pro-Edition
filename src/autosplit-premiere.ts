@@ -60,9 +60,9 @@ interface ComponentLike {
 }
 interface ParamLike {
   displayName: string;
-  createKeyframe: (v: number | number[]) => unknown;
+  createKeyframe: (v: unknown) => unknown;
   createSetValueAction: (k: unknown, s: boolean) => unknown;
-  getValue?: () => Promise<unknown>;
+  getStartValue?: () => Promise<{ value?: { value?: unknown } } | unknown>;
 }
 interface SeqFaixas {
   getVideoTrack: (i: number) => Promise<{ getTrackItems: (t: number, e: boolean) => Promise<TrackItemLike[]> }>;
@@ -241,27 +241,44 @@ export async function diagnostico(): Promise<string[]> {
     : "Motion nao encontrado";
 
   const escala = motion ? await acharParam(motion, "Scale") : null;
-  try {
-    if (escala?.getValue) saida.leituraScale = await escala.getValue();
-    else saida.leituraScale = "param.getValue ausente — ver outro caminho";
-  } catch (e) {
-    saida.leituraScale = `erro: ${(e as Error).message}`;
+  const pos = motion ? await acharParam(motion, "Position") : null;
+
+  // --- leitura de valor: getStartValue() e o caminho tipado
+  for (const [rot, par] of [["Scale", escala], ["Position", pos]] as const) {
+    try {
+      if (!par?.getStartValue) { saida[`ler${rot}`] = "getStartValue ausente"; continue; }
+      const kf = await par.getStartValue();
+      saida[`ler${rot}`] = { tipo: typeof kf, json: JSON.stringify(kf), chaves: kf ? Object.keys(kf as object) : null };
+    } catch (e) {
+      saida[`ler${rot}`] = `erro: ${(e as Error).message}`;
+    }
   }
 
-  const pos = motion ? await acharParam(motion, "Position") : null;
-  try {
-    if (pos) {
-      comTransacao(project as never, "diag: Position 2D", (add) => {
-        add(pos.createSetValueAction(pos.createKeyframe([alvo.enquadramento.posX, alvo.enquadramento.posY]), true));
-      });
-      saida.position2d = "ok: createKeyframe([x,y]) aceito";
-      linhas.push("Position 2D: ok");
-    } else {
-      saida.position2d = "param Position nao encontrado no Motion";
+  // --- setar Position: array falha; testar PointF (new e chamada direta)
+  const P = (ppro as { PointF?: (new (x: number, y: number) => unknown) & ((x: number, y: number) => unknown) }).PointF;
+  const px = alvo.enquadramento.posX;
+  const py = alvo.enquadramento.posY;
+  const tentativasPos: Array<[string, () => unknown]> = [
+    ["array", () => [px, py]],
+    ["new PointF", () => (P ? new P(px, py) : null)],
+    ["PointF()", () => (P ? P(px, py) : null)],
+  ];
+  if (pos) {
+    for (const [rot, fazValor] of tentativasPos) {
+      try {
+        const valor = fazValor();
+        if (valor === null) { saida[`pos_${rot}`] = "ppro.PointF ausente"; continue; }
+        comTransacao(project as never, `diag: Position ${rot}`, (add) => {
+          add(pos.createSetValueAction(pos.createKeyframe(valor), true));
+        });
+        saida[`pos_${rot}`] = "ok";
+        linhas.push(`Position via ${rot}: ok`);
+      } catch (e) {
+        saida[`pos_${rot}`] = `erro: ${(e as Error).message}`;
+      }
     }
-  } catch (e) {
-    saida.position2d = `erro: ${(e as Error).message}`;
-    linhas.push(`Position 2D: FALHOU — ${(e as Error).message}`);
+  } else {
+    saida.pos_geral = "param Position nao encontrado no Motion";
   }
 
   if (candidato) {
