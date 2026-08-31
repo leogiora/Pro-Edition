@@ -1,6 +1,13 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { conceito, resolverPerfil, type Perfil } from "../src/autosplit.ts";
+import {
+  calcularEnquadramento,
+  conceito,
+  fracaoDivisao,
+  resolverPerfil,
+  type EntradaGeom,
+  type Perfil,
+} from "../src/autosplit.ts";
 
 test("conceito tira o sufixo (n) e a extensao", () => {
   assert.equal(conceito("Consulta médica (1).mp4"), "Consulta médica");
@@ -52,4 +59,57 @@ test("resolverPerfil: default por orientacao quando nao ha nada", () => {
 
   const paisagem = resolverPerfil(PERFIL, {}, "Coisa nova (2).mp4", "paisagem");
   assert.equal(paisagem.ancoraY, 0.45);
+});
+
+// ----------------------------------------------------------- geometria
+
+const BASE: EntradaGeom = {
+  W: 1080, H: 1920, brollTopoFrac: 0.5,
+  w: 720, h: 1280, ancoraY: 0.30, assunto: "pessoa", cropTopoExtra: 0,
+};
+
+test("fracaoDivisao parseia e clampa", () => {
+  assert.equal(fracaoDivisao(50), 0.5);
+  assert.equal(fracaoDivisao(30), 0.4);
+  assert.equal(fracaoDivisao(70), 0.6);
+});
+
+test("geometria: retrato, ancora media — cobre a caixa e nao passa dela", () => {
+  const r = calcularEnquadramento(BASE);
+  // corte de topo = ancoraY - folga(pessoa .12) + 0 = 0.18
+  assert.ok(Math.abs(r.cropTopoPct - 18) < 0.01);
+  // escala cobre a caixa: max(1080/720, 960/(1280*0.82)) * 1.03, em %
+  const esperado = Math.max(1080 / 720, 960 / (1280 * 0.82)) * 1.03 * 100;
+  assert.ok(Math.abs(r.escalaPct - esperado) < 0.5);
+  assert.equal(r.posX, 540);
+  // o topo da parte visivel nao pode ficar abaixo de yBox (960): sem tarja
+  const s = r.escalaPct / 100;
+  const topoVis = r.posY + (r.cropTopoPct / 100 - 0.5) * 1280 * s;
+  assert.ok(topoVis <= 960 + 0.5);
+  // o fundo tem de chegar em H
+  const fundo = r.posY + 0.5 * 1280 * s;
+  assert.ok(fundo >= 1920 - 0.5);
+});
+
+test("geometria: ancora baixa nao corta nada do topo", () => {
+  const r = calcularEnquadramento({ ...BASE, ancoraY: 0.08 });
+  assert.equal(r.cropTopoPct, 0);
+});
+
+test("geometria: cropTopoExtra soma no Top", () => {
+  const r = calcularEnquadramento({ ...BASE, cropTopoExtra: 0.05 });
+  assert.ok(Math.abs(r.cropTopoPct - 23) < 0.01);
+});
+
+test("geometria: crop de topo nunca passa de CROP_TOPO_MAX", () => {
+  const r = calcularEnquadramento({ ...BASE, ancoraY: 0.9, assunto: "aberto", cropTopoExtra: 0.3 });
+  assert.ok(r.cropTopoPct <= 60.0001);
+});
+
+test("geometria: paisagem (16:9) tambem cobre a caixa", () => {
+  const r = calcularEnquadramento({ ...BASE, w: 1920, h: 1080, ancoraY: 0.45, assunto: "aberto" });
+  const s = r.escalaPct / 100;
+  assert.ok(1920 * s >= 1080 - 0.5);              // largura da fonte escalada cobre W
+  const ct = r.cropTopoPct / 100;
+  assert.ok(1080 * (1 - ct) * s >= 960 - 0.5);    // altura visivel escalada cobre a caixa
 });

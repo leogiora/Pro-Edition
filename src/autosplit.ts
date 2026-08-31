@@ -58,3 +58,79 @@ export function resolverPerfil(
   }
   return { assunto: base.assunto, ancoraY: base.ancoraY, cropTopoExtra: base.cropTopoExtra, origem };
 }
+
+// ----------------------------------------------------------- geometria
+
+/*
+ * Constantes de calibracao. O modelo minimo nao ve o que so o olho ve (quanta
+ * folga de cabeca um close pede, quanto de overscan o feather come), entao
+ * estes numeros sao botoes de ajuste — mexer aqui, nao espalhar magic numbers
+ * pela conta.
+ * ponytail: ajuste fino do mundo real; medir num video de verdade e afinar.
+ */
+export const FOLGA: Readonly<Record<Assunto, number>> = {
+  rosto: 0.18, pessoa: 0.12, dupla: 0.10, aberto: 0.05,
+};
+export const CROP_TOPO_MAX = 0.60;
+export const OVERSCAN = 1.03;
+export const SUBJ_IN_BOX = 0.40;
+export const FEATHER_PCT = 5;
+export const ROUNDNESS_PCT = 0;
+
+const clamp = (v: number, lo: number, hi: number): number => Math.min(Math.max(v, lo), hi);
+
+export interface EntradaGeom {
+  readonly W: number;
+  readonly H: number;
+  readonly brollTopoFrac: number;
+  readonly w: number;
+  readonly h: number;
+  readonly ancoraY: number;
+  readonly assunto: Assunto;
+  readonly cropTopoExtra: number;
+}
+
+export interface Enquadramento {
+  readonly escalaPct: number;
+  readonly posX: number;
+  readonly posY: number;
+  readonly cropTopoPct: number;
+}
+
+/** "50" no campo -> 0.5; fora de 40..60 e clampado (o usuario tenta 50/50). */
+export function fracaoDivisao(valorCampo: number): number {
+  const f = Number.isFinite(valorCampo) ? valorCampo / 100 : 0.5;
+  return clamp(f, 0.40, 0.60);
+}
+
+/**
+ * Onde e quanto cada B-roll fica na caixa de baixo.
+ *
+ * O efeito de corte renderiza ANTES do Motion: `Top` deixa a faixa de cima
+ * transparente sem mudar o raster w x h. Por isso a escala e a posicao contam
+ * com o raster inteiro, e a parte visivel e h*(1-cropTopo).
+ */
+export function calcularEnquadramento(e: EntradaGeom): Enquadramento {
+  const yBox = e.H * e.brollTopoFrac;
+  const Wbox = e.W;
+  const Hbox = e.H - yBox;
+
+  const cropTopo = clamp(e.ancoraY - FOLGA[e.assunto] + e.cropTopoExtra, 0, CROP_TOPO_MAX);
+  const hVis = e.h * (1 - cropTopo);
+  const aVis = cropTopo < 1 ? (e.ancoraY - cropTopo) / (1 - cropTopo) : 0;
+
+  const escala = Math.max(Wbox / e.w, Hbox / hVis) * OVERSCAN;
+  const s = escala;
+
+  const posX = e.W / 2;
+  let posY =
+    yBox + SUBJ_IN_BOX * Hbox
+    - (cropTopo - 0.5) * e.h * s
+    - aVis * hVis * s;
+
+  const posYMin = e.H - 0.5 * e.h * s;                 // fundo coberto
+  const posYMax = yBox - (cropTopo - 0.5) * e.h * s;   // topo visivel nao passa de yBox
+  posY = posYMin <= posYMax ? clamp(posY, posYMin, posYMax) : posYMin;
+
+  return { escalaPct: escala * 100, posX, posY, cropTopoPct: cropTopo * 100 };
+}
