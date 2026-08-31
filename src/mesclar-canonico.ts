@@ -72,10 +72,18 @@ export function mesclarSaldos(
     const c = canonico[k] ?? ZERO;
     const l = local[k] ?? ZERO;
     const b = base[k] ?? ZERO;
-    saida[k] = aplicarTeto({
+    // delta travado em 0: a editora so soma sinal, nunca subtrai o do dono.
+    const somado = aplicarTeto({
       acertos: c.acertos + Math.max(0, l.acertos - b.acertos),
       erros: c.erros + Math.max(0, l.erros - b.erros),
     });
+    // chao no canonico: o merge e mao unica e "melhora" — nunca entrega um par
+    // mais fraco do que o dono curou (aplicarTeto pode empurrar a soma para
+    // baixo do canonico quando ela passa de 20).
+    saida[k] = {
+      acertos: Math.max(c.acertos, somado.acertos),
+      erros: Math.max(c.erros, somado.erros),
+    };
   }
   return saida;
 }

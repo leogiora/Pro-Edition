@@ -10,7 +10,6 @@ import {
   type CanonicoSnapshot,
   type EstadoAprendido,
 } from "../src/mesclar-canonico.ts";
-import { MEMORIA_VAZIA, ASSOCIACOES_VAZIAS } from "../src/aprendizado.ts";
 
 // ---------------------------------------------------------- mesclarSaldos
 
@@ -19,15 +18,24 @@ test("mesclarSaldos: baseline ausente soma local inteiro sobre o canonico", () =
   assert.deepEqual(r["a|a"], { acertos: 16, erros: 2 });
 });
 
-test("mesclarSaldos: com baseline soma so o que a editora evoluiu", () => {
+test("mesclarSaldos: com baseline soma so o que a editora evoluiu, com chao no canonico", () => {
   const r = mesclarSaldos(
-    { "a|a": { acertos: 15, erros: 2 } }, // canonico atual
-    { "a|a": { acertos: 16, erros: 3 } }, // local
-    { "a|a": { acertos: 12, erros: 2 } }  // baseline
+    { "a|a": { acertos: 15, erros: 2 } },
+    { "a|a": { acertos: 16, erros: 3 } },
+    { "a|a": { acertos: 12, erros: 2 } }
   );
-  // delta travado em 0: 15 + (16-12), 2 + (3-2) = 19, 3 -> soma 22 passa do
-  // TETO 20, entao aplicarTeto divide os dois lados: round(19/2), round(3/2) = 10, 2
-  assert.deepEqual(r["a|a"], { acertos: 10, erros: 2 });
+  // soma 19,3 -> teto (22>20) -> 10,2 -> chao max({15,2},{10,2}) = {15,2}
+  assert.deepEqual(r["a|a"], { acertos: 15, erros: 2 });
+});
+
+test("mesclarSaldos: chao no canonico so segura o que decaiu abaixo dele", () => {
+  const r = mesclarSaldos(
+    { "a|a": { acertos: 3, erros: 1 } },
+    { "a|a": { acertos: 6, erros: 1 } },
+    {}
+  );
+  // soma 9,2 ; teto ok ; chao max({3,1},{9,2}) = {9,2}
+  assert.deepEqual(r["a|a"], { acertos: 9, erros: 2 });
 });
 
 test("mesclarSaldos: chave so no canonico entra como esta", () => {
