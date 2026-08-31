@@ -17,6 +17,9 @@ import { mount as mountCaptions } from "../../../Pro-Captions/src/ui/mount.ts";
 import htmlAutocut from "./autocut.html";
 import { mount as mountAutocut } from "./autocut-mount.ts";
 
+import htmlAutosplit from "./autosplit.html";
+import { mount as mountAutosplit } from "./autosplit-mount.ts";
+
 import htmlSeletor from "./seletor.html";
 import cssSeletor from "./seletor.css";
 
@@ -26,6 +29,7 @@ const NOME: Readonly<Record<Ferramenta, string>> = {
   broll: "Auto B-roll",
   captions: "Pro Captions",
   autocut: "Podcast AutoCut",
+  autosplit: "Auto Split",
 };
 
 /*
@@ -133,6 +137,7 @@ function montarSeletor(root: HTMLElement): void {
   ligarAcao(root.querySelector<HTMLElement>("#cardBroll")!, () => mostrar("broll"));
   ligarAcao(root.querySelector<HTMLElement>("#cardCaptions")!, () => mostrar("captions"));
   ligarAcao(root.querySelector<HTMLElement>("#cardAutocut")!, () => mostrar("autocut"));
+  ligarAcao(root.querySelector<HTMLElement>("#cardAutosplit")!, () => mostrar("autosplit"));
 }
 
 const REGISTRO: Readonly<Record<Ferramenta, Tela>> = {
@@ -141,6 +146,8 @@ const REGISTRO: Readonly<Record<Ferramenta, Tela>> = {
   captions: { html: extrairCorpo(htmlCaptionsBruto), css: cssCaptions, montar: mountCaptions },
   // Tela nossa, nao painel standalone: o <style> ja vem dentro do proprio HTML.
   autocut: { html: htmlAutocut, css: "", montar: mountAutocut },
+  // Tela nossa, nao painel standalone: o <style> ja vem dentro do proprio HTML.
+  autosplit: { html: htmlAutosplit, css: "", montar: mountAutosplit },
 };
 
 function mostrar(ferramenta: Ferramenta): void {

@@ -1,0 +1,69 @@
+<!-- Fragmento: o shell injeta isto direto em document.body. O <style> vem
+     junto porque esta tela so existe dentro do Pro Edition — nao e um painel
+     standalone como o Auto B-roll e o Pro Captions. -->
+<style>
+  /* Mesmo esqueleto das outras telas da familia: painel de altura fixa, a
+     barra de navegacao nao rola, so o conteudo rola por dentro. Sem
+     `min-height: 0` o filho de um flex column se recusa a encolher. */
+  html,
+  body {
+    height: 100%;
+  }
+
+  body {
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    background-color: #0f1216;
+  }
+
+  .as-conteudo {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 16px 12px 24px;
+    font-family: Inter, adobe-clean, "Source Sans 3", "Segoe UI", sans-serif;
+    color: #eceef2;
+    background-color: #0f1216;
+  }
+
+  .as-conteudo > * {
+    flex: none;
+  }
+
+  .as-titulo {
+    margin: 0 0 2px;
+    font-size: 15px;
+    font-weight: 600;
+  }
+
+  .as-sub {
+    margin: 0 0 16px;
+    font-size: 11px;
+    color: #5f6774;
+  }
+
+  .as-log {
+    margin-top: 12px;
+    padding: 10px;
+    border-radius: 8px;
+    background-color: #14171d;
+    border: 1px solid #232830;
+    font-family: "Source Code Pro", ui-monospace, Menlo, Consolas, monospace;
+    font-size: 11px;
+    line-height: 1.5;
+    color: #cdd2da;
+    white-space: pre-wrap;
+  }
+</style>
+
+<main class="as-conteudo">
+  <h1 class="as-titulo">Auto Split</h1>
+  <p class="as-sub">Layout meio a meio: doutor em cima, B-roll na metade de baixo.</p>
+  <pre id="asLog" class="as-log">carregando</pre>
+</main>

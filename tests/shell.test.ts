@@ -9,12 +9,14 @@ test("escolherTela devolve a tela certa do registro", () => {
     broll: { html: "<b>broll</b>", css: "b", montar: semAcao } satisfies Tela,
     captions: { html: "<c>captions</c>", css: "c", montar: semAcao } satisfies Tela,
     autocut: { html: "<d>autocut</d>", css: "d", montar: semAcao } satisfies Tela,
+    autosplit: { html: "<e>autosplit</e>", css: "e", montar: semAcao } satisfies Tela,
   };
 
   assert.equal(escolherTela(registro, "seletor").html, "<a>seletor</a>");
   assert.equal(escolherTela(registro, "broll").html, "<b>broll</b>");
   assert.equal(escolherTela(registro, "captions").html, "<c>captions</c>");
   assert.equal(escolherTela(registro, "autocut").html, "<d>autocut</d>");
+  assert.equal(escolherTela(registro, "autosplit").html, "<e>autosplit</e>");
 });
 
 test("extrairCorpo pega so o miolo entre <body> e a marca de script", () => {

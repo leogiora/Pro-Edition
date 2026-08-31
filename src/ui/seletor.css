@@ -251,6 +251,10 @@ body {
   background-color: #4fc3a1;
 }
 
+.card-autosplit .card-nome::before {
+  background-color: #e07ba8;
+}
+
 .card-nome {
   flex: 1 1 auto;
   min-width: 0;
