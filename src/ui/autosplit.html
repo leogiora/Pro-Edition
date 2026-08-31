@@ -1,10 +1,10 @@
 <!-- Fragmento: o shell injeta isto direto em document.body. O <style> vem
      junto porque esta tela so existe dentro do Pro Edition — nao e um painel
-     standalone como o Auto B-roll e o Pro Captions. -->
+     standalone como o Auto B-roll e o Pro Captions.
+
+     Sem CSS Grid, sem gap, sem var(): nada disso e confiavel no UXP (ver
+     auto-broll-premiere/docs/UXP_ARMADILHAS.md). Espacamento sai de margin. -->
 <style>
-  /* Mesmo esqueleto das outras telas da familia: painel de altura fixa, a
-     barra de navegacao nao rola, so o conteudo rola por dentro. Sem
-     `min-height: 0` o filho de um flex column se recusa a encolher. */
   html,
   body {
     height: 100%;
@@ -22,6 +22,7 @@
   .as-conteudo {
     display: flex;
     flex-direction: column;
+    align-items: stretch;
     flex: 1 1 auto;
     min-height: 0;
     overflow-y: auto;
@@ -32,6 +33,7 @@
     background-color: #0f1216;
   }
 
+  /* Filho de flex column no UXP encolhe sozinho se deixarem. */
   .as-conteudo > * {
     flex: none;
   }
@@ -48,8 +50,79 @@
     color: #5f6774;
   }
 
+  .as-rotulo {
+    margin: 0 0 4px;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #9098a6;
+  }
+
+  .as-campo {
+    margin: 0 0 4px;
+    padding: 6px 9px;
+    background-color: #14171d;
+    border: 1px solid #232830;
+    border-radius: 7px;
+    color: #eceef2;
+    font-family: inherit;
+    font-size: 12px;
+  }
+
+  .as-campo:focus {
+    border-color: #3b82f6;
+    outline: none;
+  }
+
+  .as-dica {
+    margin: 0 0 14px;
+    font-size: 10px;
+    color: #5f6774;
+  }
+
+  .as-check {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    margin: 0 0 14px;
+    font-size: 12px;
+    color: #9098a6;
+    cursor: pointer;
+  }
+
+  .as-check input {
+    margin: 0 8px 0 0;
+  }
+
+  .as-botao {
+    align-self: stretch;
+    margin: 0 0 8px;
+    padding: 9px 14px;
+    border-radius: 7px;
+    border: 1px solid #333b47;
+    background-color: #1a1e26;
+    color: #eceef2;
+    font-family: inherit;
+    font-size: 12px;
+    cursor: pointer;
+  }
+
+  .as-botao:hover {
+    background-color: #21262f;
+  }
+
+  .as-cta {
+    background-color: #3b82f6;
+    border-color: #3b82f6;
+    font-weight: 600;
+  }
+
+  .as-cta:hover {
+    background-color: #2f6fd8;
+  }
+
   .as-log {
-    margin-top: 12px;
+    margin-top: 10px;
     padding: 10px;
     border-radius: 8px;
     background-color: #14171d;
@@ -60,27 +133,24 @@
     color: #cdd2da;
     white-space: pre-wrap;
   }
-
-  .as-botao {
-    align-self: flex-start;
-    margin-top: 8px;
-    padding: 7px 14px;
-    border-radius: 7px;
-    border: 1px solid #333b47;
-    background-color: #1a1e26;
-    color: #eceef2;
-    font-size: 12px;
-    cursor: pointer;
-  }
-
-  .as-botao:hover {
-    background-color: #21262f;
-  }
 </style>
 
 <main class="as-conteudo">
   <h1 class="as-titulo">Auto Split</h1>
   <p class="as-sub">Layout meio a meio: doutor em cima, B-roll na metade de baixo.</p>
-  <button id="asDiag" class="as-botao" type="button">Diagnóstico</button>
+
+  <p class="as-rotulo">Faixa de B-roll</p>
+  <input id="asFaixa" class="as-campo" type="text" placeholder="vazio = todas acima da V1" />
+  <p class="as-dica">O numero como voce ve no Premiere: V2 = 2.</p>
+
+  <p class="as-rotulo">Divisao (% da altura ate o B-roll)</p>
+  <input id="asDivisao" class="as-campo" type="number" value="50" min="40" max="60" />
+  <p class="as-dica">50 = meio a meio. Aceita de 40 a 60.</p>
+
+  <label class="as-check"><input id="asRefazer" type="checkbox" /> Refazer do zero (troca o efeito ja aplicado)</label>
+
+  <button id="asAplicar" class="as-botao as-cta" type="button">Aplicar Auto Split</button>
+  <button id="asDiag" class="as-botao" type="button">Diagnostico</button>
+
   <pre id="asLog" class="as-log">carregando</pre>
 </main>

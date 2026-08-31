@@ -18,6 +18,8 @@ import {
   calcularEnquadramento,
   fracaoDivisao,
   resolverPerfil,
+  FEATHER_PCT,
+  ROUNDNESS_PCT,
   type Enquadramento,
   type EntradaGeom,
   type OverridePerfil,
@@ -32,6 +34,23 @@ const ppro = require("premierepro") as any;
 
 const CLIP = 1; // ppro.Constants.TrackItemType.CLIP
 const MATCH_MOTION = "AE.ADBE Motion";
+
+/*
+ * Tudo abaixo saiu do diag-autosplit.json rodado no Premiere 26, nao de
+ * leitura de documentacao:
+ *
+ *  - o efeito que o usuario chama de "Cantos arredondados" e o "Rounded Crop",
+ *    matchName AE.Impact_Crop_FX. createComponent + createAppendComponentAction
+ *    + setar Top/Feather/Roundness: todos OK ao vivo.
+ *  - Position do Motion NAO aceita array: createKeyframe([x,y]) devolve
+ *    "Illegal Parameter type". Aceita PointF.
+ *  - os params de um componente so existem depois de ele estar na chain, por
+ *    isso aplicar sao DUAS transacoes: anexar, depois setar.
+ */
+const MATCH_EFEITO = "AE.Impact_Crop_FX";
+const PARAM_TOPO = "Top";
+const PARAM_FEATHER = "Feather";
+const PARAM_ROUNDNESS = "Roundness";
 
 const perfil = perfilBruto as unknown as Perfil;
 
@@ -63,6 +82,7 @@ interface ParamLike {
   createKeyframe: (v: unknown) => unknown;
   createSetValueAction: (k: unknown, s: boolean) => unknown;
   getStartValue?: () => Promise<{ value?: { value?: unknown } } | unknown>;
+  getValueAtTime?: (t: unknown) => Promise<unknown>;
 }
 interface SeqFaixas {
   getVideoTrack: (i: number) => Promise<{ getTrackItems: (t: number, e: boolean) => Promise<TrackItemLike[]> }>;
@@ -166,6 +186,215 @@ export async function montarPlano(opcoes: OpcoesSplit): Promise<PlanoSplit> {
   if (itens.length === 0) linhas.push("Nada a fazer.");
 
   return { W: info.width, H: info.height, itens, linhas };
+}
+
+// ------------------------------------------------------- achar coisas na timeline
+
+async function itensDaFaixa(sequence: unknown, videoTrackIndex: number): Promise<TrackItemLike[]> {
+  const faixa = await (sequence as SeqFaixas).getVideoTrack(videoTrackIndex);
+  if (!faixa) throw new Error(`V${videoTrackIndex + 1} nao existe nesta sequencia.`);
+  return faixa.getTrackItems(CLIP, false);
+}
+
+async function nomeDe(it: TrackItemLike): Promise<string | undefined> {
+  return it.name ?? (await it.getProjectItem?.())?.name;
+}
+
+/** O clipe certo: mesmo nome de origem E comecando no tempo planejado. */
+async function acharItem(
+  itens: readonly TrackItemLike[],
+  sourceName: string,
+  startSeconds: number,
+): Promise<TrackItemLike | null> {
+  for (const it of itens) {
+    if ((await nomeDe(it)) !== sourceName) continue;
+    if (Math.abs((await it.getStartTime()).seconds - startSeconds) < 0.5) return it;
+  }
+  return null;
+}
+
+async function acharComponente(chain: ChainLike, match: string): Promise<ComponentLike | null> {
+  for (let i = 0; i < chain.getComponentCount(); i++) {
+    const c = chain.getComponentAtIndex(i);
+    if ((await c.getMatchName()) === match) return c;
+  }
+  return null;
+}
+
+async function acharParam(comp: ComponentLike, nome: string): Promise<ParamLike | null> {
+  for (let p = 0; p < comp.getParamCount(); p++) {
+    const par = comp.getParam(p);
+    if (par.displayName === nome) return par;
+  }
+  return null;
+}
+
+/** Position do Motion so aceita PointF — array devolve "Illegal Parameter type". */
+function pontoF(x: number, y: number): unknown {
+  const P = (ppro as { PointF: new (x: number, y: number) => unknown }).PointF;
+  return new P(x, y);
+}
+
+/**
+ * Valor atual de um param.
+ *
+ * O objeto que `getStartValue()` devolve e nativo do UXP: `Object.keys` vem
+ * VAZIO e `JSON.stringify` da "{}" (conferido no diagnostico). As propriedades
+ * vivem no prototipo, entao o acesso tem de ser direto pelo caminho tipado
+ * (`Keyframe.value.value`), nunca por enumeracao. `getValueAtTime` e a rede.
+ */
+async function lerParam(par: ParamLike): Promise<unknown> {
+  try {
+    const kf = (await par.getStartValue?.()) as { value?: { value?: unknown } } | undefined;
+    const v = kf?.value;
+    if (v && typeof v === "object" && "value" in v) return (v as { value: unknown }).value;
+    if (v !== undefined) return v;
+  } catch {
+    // cai pro getValueAtTime
+  }
+  try {
+    return await par.getValueAtTime?.(await ppro.TickTime.createWithSeconds(0));
+  } catch {
+    return undefined;
+  }
+}
+
+function numeroDe(v: unknown): number {
+  const n = Number(typeof v === "object" && v !== null ? (v as { value?: unknown }).value : v);
+  return Number.isFinite(n) ? n : NaN;
+}
+
+/** y de um Position, que volta como PointF (x/y no prototipo). */
+function yDe(v: unknown): number {
+  if (Array.isArray(v)) return Number(v[1]);
+  const n = Number((v as { y?: unknown } | null)?.y);
+  return Number.isFinite(n) ? n : NaN;
+}
+
+// ------------------------------------------------------- aplicar
+
+export interface ResultadoSplit {
+  readonly ok: boolean;
+  readonly linhas: readonly string[];
+}
+
+/**
+ * Poe cada B-roll na caixa de baixo (escala + posicao do Motion) e aplica o
+ * Rounded Crop com o Top calculado pelo perfil.
+ *
+ * Duas transacoes de proposito: os params de um componente so existem depois de
+ * ele estar na chain. Um Ctrl+Z desfaz cada uma.
+ */
+export async function aplicarSplit(opcoes: OpcoesSplit): Promise<ResultadoSplit> {
+  const plano = await montarPlano(opcoes);
+  const linhas = [...plano.linhas];
+  if (plano.itens.length === 0) {
+    await writeJson("ultimo-log-autosplit.json", { quando: Date.now(), linhas });
+    return { ok: true, linhas };
+  }
+
+  const { project, sequence } = await ativa();
+  const aplicado: Record<string, unknown> = {};
+  let ok = true;
+
+  // --- transacao 1: Motion (escala + posicao) e anexar o efeito
+  const acoes1: Array<() => unknown> = [];
+  const paraSetar: Array<{ sourceName: string; videoTrackIndex: number; startSeconds: number; topoPct: number }> = [];
+  let jaTinham = 0;
+
+  for (const it of plano.itens) {
+    const item = await acharItem(await itensDaFaixa(sequence, it.videoTrackIndex), it.sourceName, it.startSeconds);
+    if (!item) {
+      linhas.push(`${it.sourceName}: nao achei na timeline, pulado`);
+      ok = false;
+      continue;
+    }
+    const chain = await item.getComponentChain();
+    const motion = await acharComponente(chain, MATCH_MOTION);
+    const escala = motion ? await acharParam(motion, "Scale") : null;
+    const pos = motion ? await acharParam(motion, "Position") : null;
+    if (!escala || !pos) {
+      linhas.push(`${it.sourceName}: sem Scale/Position no Motion, pulado`);
+      ok = false;
+      continue;
+    }
+
+    const e = it.enquadramento;
+    acoes1.push(() => escala.createSetValueAction(escala.createKeyframe(e.escalaPct), true));
+    acoes1.push(() => pos.createSetValueAction(pos.createKeyframe(pontoF(e.posX, e.posY)), true));
+
+    const existente = await acharComponente(chain, MATCH_EFEITO);
+    if (existente && !opcoes.refazer) {
+      jaTinham++;
+    } else {
+      if (existente) acoes1.push(() => chain.createRemoveComponentAction(existente));
+      const comp = await ppro.VideoFilterFactory.createComponent(MATCH_EFEITO);
+      acoes1.push(() => chain.createAppendComponentAction(comp));
+      paraSetar.push({
+        sourceName: it.sourceName,
+        videoTrackIndex: it.videoTrackIndex,
+        startSeconds: it.startSeconds,
+        topoPct: e.cropTopoPct,
+      });
+    }
+
+    aplicado[it.sourceName] = {
+      startSeconds: it.startSeconds,
+      videoTrackIndex: it.videoTrackIndex,
+      geom: it.geom,
+      usado: e,
+    };
+  }
+
+  if (acoes1.length === 0) {
+    linhas.push("Nada aplicavel.");
+    await writeJson("ultimo-log-autosplit.json", { quando: Date.now(), linhas });
+    return { ok: false, linhas };
+  }
+
+  comTransacao(project as never, `Auto Split: ${Object.keys(aplicado).length} B-rolls`, (add) => {
+    for (const a of acoes1) add(a());
+  });
+  linhas.push(`${Object.keys(aplicado).length} B-rolls posicionados na caixa de baixo.`);
+  if (jaTinham > 0) linhas.push(`${jaTinham} ja tinham o Rounded Crop (pulados; marque "Refazer do zero" pra refazer).`);
+
+  // --- transacao 2: setar Top/Feather/Roundness dos efeitos recem-anexados
+  if (paraSetar.length > 0) {
+    const h2 = await ativa();
+    const acoes2: Array<() => unknown> = [];
+    for (const alvo of paraSetar) {
+      const item = await acharItem(
+        await itensDaFaixa(h2.sequence, alvo.videoTrackIndex),
+        alvo.sourceName,
+        alvo.startSeconds,
+      );
+      const comp = item ? await acharComponente(await item.getComponentChain(), MATCH_EFEITO) : null;
+      if (!comp) {
+        linhas.push(`${alvo.sourceName}: efeito sumiu antes de setar`);
+        ok = false;
+        continue;
+      }
+      for (const [nome, valor] of [
+        [PARAM_TOPO, alvo.topoPct],
+        [PARAM_FEATHER, FEATHER_PCT],
+        [PARAM_ROUNDNESS, ROUNDNESS_PCT],
+      ] as const) {
+        const par = await acharParam(comp, nome);
+        if (par) acoes2.push(() => par.createSetValueAction(par.createKeyframe(valor), true));
+        else linhas.push(`${alvo.sourceName}: param "${nome}" nao encontrado no efeito`);
+      }
+    }
+    if (acoes2.length > 0) {
+      comTransacao(h2.project as never, "Auto Split: corte de topo e feather", (add) => {
+        for (const a of acoes2) add(a());
+      });
+      linhas.push(`${paraSetar.length} Rounded Crop aplicados (Top por clipe, feather ${FEATHER_PCT}%).`);
+    }
+  }
+
+  await writeJson("autosplit-aplicado.json", { quando: Date.now(), divisao: opcoes.divisao, itens: aplicado });
+  await writeJson("ultimo-log-autosplit.json", { quando: Date.now(), linhas });
+  return { ok, linhas };
 }
 
 // ------------------------------------------------------- diagnostico do efeito
