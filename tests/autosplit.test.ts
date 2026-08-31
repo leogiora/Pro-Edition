@@ -1,9 +1,11 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
+  aprenderEnquadramento,
   calcularEnquadramento,
   conceito,
   fracaoDivisao,
+  nudgeDoutorPosY,
   resolverPerfil,
   type EntradaGeom,
   type Perfil,
@@ -112,4 +114,69 @@ test("geometria: paisagem (16:9) tambem cobre a caixa", () => {
   assert.ok(1920 * s >= 1080 - 0.5);              // largura da fonte escalada cobre W
   const ct = r.cropTopoPct / 100;
   assert.ok(1080 * (1 - ct) * s >= 960 - 0.5);    // altura visivel escalada cobre a caixa
+});
+
+// -------------------------------------------- doutor e back-solve do aprender
+
+test("nudgeDoutorPosY sobe o clipe mas mantem o topo coberto", () => {
+  // doutor vertical preenchendo a tela: hDoc*sDoc = 1920, meia altura 960
+  const y = nudgeDoutorPosY({ H: 1920, hDoc: 1280, escalaDocPct: 150 });
+  assert.ok(y < 960);            // subiu
+  assert.ok(y <= 960 + 0.001);   // nao passou de meia-altura-da-midia (sem tarja no topo)
+});
+
+test("nudgeDoutorPosY: origem pequena limita a subida", () => {
+  // hDoc*sDoc = 1000, meia altura 500 -> nao pode subir alem de 500
+  const y = nudgeDoutorPosY({ H: 1920, hDoc: 1000, escalaDocPct: 100 });
+  assert.ok(y <= 500 + 0.001);
+});
+
+test("aprender: usuario nao mexeu -> mudou:false", () => {
+  const usado = calcularEnquadramento(BASE);
+  const r = aprenderEnquadramento({
+    guardado: { assunto: "pessoa", ancoraY: 0.30, cropTopoExtra: 0 },
+    geomUsada: BASE, usado,
+    finalPosY: usado.posY, finalEscalaPct: usado.escalaPct, finalCropTopoPct: usado.cropTopoPct,
+  });
+  assert.equal(r.mudou, false);
+  assert.equal(r.ancoraY, 0.30);
+});
+
+test("aprender: usuario aumentou o Top -> cropTopoExtra sobe (limitado ao passo)", () => {
+  const usado = calcularEnquadramento(BASE);
+  const r = aprenderEnquadramento({
+    guardado: { assunto: "pessoa", ancoraY: 0.30, cropTopoExtra: 0 },
+    geomUsada: BASE, usado,
+    finalPosY: usado.posY, finalEscalaPct: usado.escalaPct,
+    finalCropTopoPct: usado.cropTopoPct + 40, // empurrao grande
+  });
+  assert.equal(r.mudou, true);
+  assert.ok(r.cropTopoExtra > 0);
+  assert.ok(r.cropTopoExtra <= 0.30 + 1e-9); // nunca mais que um passo
+});
+
+test("aprender: usuario arrastou o clipe pra baixo -> ancora do arquivo estava mais alta", () => {
+  // posY maior = clipe mais baixo. Se o usuario precisou baixar, o assunto real
+  // estava mais ALTO no quadro de origem do que o perfil supunha (ancoraY menor).
+  const usado = calcularEnquadramento(BASE);
+  const r = aprenderEnquadramento({
+    guardado: { assunto: "pessoa", ancoraY: 0.30, cropTopoExtra: 0 },
+    geomUsada: BASE, usado,
+    finalPosY: usado.posY + 200,
+    finalEscalaPct: usado.escalaPct, finalCropTopoPct: usado.cropTopoPct,
+  });
+  assert.equal(r.mudou, true);
+  assert.ok(r.ancoraY < 0.30);
+});
+
+test("aprender: usuario arrastou o clipe pra cima -> ancora do arquivo estava mais baixa", () => {
+  const usado = calcularEnquadramento(BASE);
+  const r = aprenderEnquadramento({
+    guardado: { assunto: "pessoa", ancoraY: 0.30, cropTopoExtra: 0 },
+    geomUsada: BASE, usado,
+    finalPosY: usado.posY - 200,
+    finalEscalaPct: usado.escalaPct, finalCropTopoPct: usado.cropTopoPct,
+  });
+  assert.equal(r.mudou, true);
+  assert.ok(r.ancoraY > 0.30);
 });
