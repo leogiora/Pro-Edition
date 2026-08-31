@@ -803,9 +803,8 @@ async function mesclarCanonicoNoDisco(aindaValido: () => boolean): Promise<void>
     const associacoes = parseAssociacoes(
       await comLimite("ler ligacoes", readJson(ASSOCIACOES_FILE), 5000)
     );
-    const sinDisco = parseSinonimos(
-      await comLimite("ler sinonimos", readJson(SINONIMOS_FILE), 5000)
-    );
+    const sinBruto = await comLimite("ler sinonimos", readJson(SINONIMOS_FILE), 5000);
+    const sinDisco = parseSinonimos(sinBruto);
     if (!aindaValido()) return;
 
     const fundido = aplicarMerge(
@@ -817,14 +816,23 @@ async function mesclarCanonicoNoDisco(aindaValido: () => boolean): Promise<void>
     const carimbo = new Date().toISOString().slice(0, 10);
     await writeJson(`${MEMORIA_FILE}.bak-antes-merge-${carimbo}`, memoria);
     await writeJson(`${ASSOCIACOES_FILE}.bak-antes-merge-${carimbo}`, associacoes);
+    if (sinBruto !== null) {
+      await writeJson(`${SINONIMOS_FILE}.bak-antes-merge-${carimbo}`, sinBruto);
+    }
+
+    // Baseline PRIMEIRO, antes das tres lojas mescladas: o gate por `version`
+    // avanca aqui. Se um write de loja falhar depois (ou o host derrubar o
+    // painel no meio), o proximo boot pula o merge em vez de re-mesclar sobre
+    // dado ja mesclado — `mesclarContagens` (ligacoes) nao tem teto e infla sem
+    // limite a cada re-run. A loja nao gravada so perde ESTA versao do canonico
+    // e pega a curadoria no proximo bump de `version` (o snapshot e versionado
+    // e re-entregue). Grava o snapshot BRUTO, nao o `canonico` parseado:
+    // `CanonicoSnapshot.sinonimos` e um Map e `JSON.stringify(Map)` vira `{}`;
+    // `parseCanonico(bruto)` no proximo boot reconstroi a mesma base.
+    await writeJson(CANONICO_BASE_FILE, bruto);
     await writeJson(MEMORIA_FILE, fundido.memoria);
     await writeJson(ASSOCIACOES_FILE, fundido.associacoes);
     await writeJson(SINONIMOS_FILE, sinonimosParaJson(fundido.sinonimos));
-    // Grava o snapshot BRUTO, nao o `canonico` parseado: `CanonicoSnapshot.sinonimos`
-    // e um Map, e `JSON.stringify(Map)` vira `{}` — a baseline perderia os
-    // sinonimos em silencio. `parseCanonico(bruto)` no proximo boot reconstroi
-    // a mesma base, e o gate por `version` continua valendo.
-    await writeJson(CANONICO_BASE_FILE, bruto);
 
     const nP = Object.keys(fundido.memoria.pares).length;
     const nA = Object.keys(fundido.memoria.arquivos).length;
@@ -835,7 +843,7 @@ async function mesclarCanonicoNoDisco(aindaValido: () => boolean): Promise<void>
     );
   } catch (e) {
     if (!aindaValido()) return;
-    registrar(`Merge do canonico falhou (aprendizado local intacto). ${mensagemDeErro(e)}`, "aviso");
+    registrar(`Merge do canonico falhou. ${mensagemDeErro(e)}`, "aviso");
   }
 }
 
