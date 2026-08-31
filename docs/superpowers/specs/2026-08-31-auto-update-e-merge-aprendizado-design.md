@@ -185,14 +185,20 @@ function mesclarMapa(canonico: Mapa, local: Mapa, base: Mapa): Mapa
 
 Para cada chave presente em `canonico` **ou** `local`:
 
-- `delta.acertos = (local[k]?.acertos ?? 0) − (base[k]?.acertos ?? 0)`
+- `delta.acertos = max(0, (local[k]?.acertos ?? 0) − (base[k]?.acertos ?? 0))`
   (idem `erros`). Chave sem `base` → `delta = local[k]` inteiro: é o que a
-  editora aprendeu sozinha desde o último snapshot.
-- `novo = canonico[k] + delta`, com **chão em 0** nos dois lados.
+  editora aprendeu sozinha desde o último snapshot. O `max(0, …)` é de
+  propósito — a editora só SOMA sinal, nunca subtrai o do dono, e o
+  decaimento do teto pode deixar `local` numericamente abaixo do `base`.
+- `soma = canonico[k] + delta` (canônico ausente conta como `{0,0}`).
 - Aplica a **mesma regra de `TETO = 20`** que `somar()` já usa em
-  `aprendizado.ts`: enquanto `acertos + erros > 20`, divide os dois por 2
-  (arredondando). Extrair essa regra para uma função reutilizável em
-  `aprendizado.ts` e usar nos dois lugares.
+  `aprendizado.ts` (extraída para `aplicarTeto`): enquanto
+  `acertos + erros > 20`, divide os dois por 2 (arredondando).
+- **Chão no canônico:** `novo.acertos = max(canonico[k].acertos,
+  aplicarTeto(soma).acertos)` (idem `erros`). O merge é mão única e "melhora"
+  — nunca pode entregar à editora um par mais fraco do que o que o dono
+  curou. Sem esse chão, `{15,2}` do dono + delta `{4,1}` da editora daria
+  soma `{19,3}` → `aplicarTeto` → `{10,2}`, **abaixo** do que o dono enviou.
 
 Aplicado a:
 
@@ -241,15 +247,19 @@ privado.
 
 | Momento | Canônico (dono) | Baseline na máquina da editora | Local (editora) | Resultado do merge |
 |---|---|---|---|---|
-| 1º Atualizar | `{12,2}` | *(ausente)* | `{4,0}` | `12+4, 2+0` = `{16,2}` |
+| 1º Atualizar | `{12,2}` | *(ausente)* | `{4,0}` | soma `12+4, 2+0` = `{16,2}`; teto ok (18≤20); chão: `max({12,2},{16,2})` = **`{16,2}`** |
 | grava base | — | vira `{12,2}` | — | — |
 | editora trabalha | — | `{12,2}` | `{16,3}` | — |
-| 2º Atualizar | `{15,2}` | `{12,2}` | `{16,3}` | `15+(16−12), 2+(3−2)` = `{19,3}` |
+| 2º Atualizar | `{15,2}` | `{12,2}` | `{16,3}` | soma `15+4, 2+1` = `{19,3}`; teto (22>20) → `{10,2}`; chão: `max({15,2},{10,2})` = **`{15,2}`** |
 | grava base | — | vira `{15,2}` | — | — |
 
 O `{12,2}` que veio no 1º snapshot **não é contado de novo** no 2º — só o que
 a editora somou por cima dele (`+4 acertos`, `+1 erro`). Sem baseline, o 2º
-merge daria `15+16 = 31` acertos (o `12` original entrando duas vezes).
+merge daria `15+16 = 31` acertos (o `12` original entrando duas vezes). No 2º
+Atualizar o par já estava no teto de confiança dos dois lados, então o chão no
+canônico segura em `{15,2}` — o delta da editora é absorvido, não some para
+negativo. `fator()` já devolvia 1.5 (o máximo) para qualquer um desses saldos,
+então a sugestão não muda.
 
 ## Erros e casos de borda
 
