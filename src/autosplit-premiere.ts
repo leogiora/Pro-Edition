@@ -425,6 +425,45 @@ export async function aplicarSplit(opcoes: OpcoesSplit): Promise<ResultadoSplit>
       });
       linhas.push(`${paraSetar.length} Rounded Crop aplicados (Top por clipe, feather ${FEATHER_PCT}%).`);
     }
+
+    // Conferir o que REALMENTE ficou na timeline, nao o que eu mandei fazer.
+    // O PointF ensinou caro: "nao lancou excecao" nao e prova de nada. Uma
+    // amostra basta pra ver escala de valor errada (23 vs 0.23) ou set que nao
+    // pegou.
+    const amostra = paraSetar[0];
+    if (amostra) {
+      const h3 = await ativa();
+      const item = await acharItem(
+        await itensDaFaixa(h3.sequence, amostra.videoTrackIndex),
+        amostra.sourceName,
+        amostra.startSeconds,
+      );
+      if (item) {
+        const chain = await item.getComponentChain();
+        const motion = await acharComponente(chain, MATCH_MOTION);
+        const efeito = await acharComponente(chain, MATCH_EFEITO);
+        const conf: string[] = [];
+        if (motion) {
+          const sc = await acharParam(motion, "Scale");
+          const po = await acharParam(motion, "Position");
+          if (sc) conf.push(`Scale=${JSON.stringify(await lerParam(sc))}`);
+          if (po) {
+            const v = await lerParam(po);
+            conf.push(`Position=${JSON.stringify(v)} y=${yDe(v)}`);
+          }
+        }
+        if (efeito) {
+          for (const nome of [PARAM_TOPO, PARAM_FEATHER, PARAM_ROUNDNESS]) {
+            const par = await acharParam(efeito, nome);
+            conf.push(`${nome}=${par ? JSON.stringify(await lerParam(par)) : "(param sumiu)"}`);
+          }
+        } else {
+          conf.push("Rounded Crop NAO esta na chain");
+        }
+        linhas.push(`conferindo ${amostra.sourceName} (pedi Top=${amostra.topoPct.toFixed(1)}):`);
+        for (const c of conf) linhas.push(`   ${c}`);
+      }
+    }
   }
 
   await writeJson("autosplit-aplicado.json", { quando: Date.now(), divisao: opcoes.divisao, itens: aplicado });
