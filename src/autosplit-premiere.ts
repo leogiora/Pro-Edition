@@ -129,10 +129,16 @@ async function lerOverride(): Promise<OverridePerfil> {
 }
 
 /**
- * Le os B-rolls acima da V1, resolve o perfil de cada um e calcula o
- * enquadramento. Nao toca a timeline. `w`/`h` vem do perfil; sem perfil,
- * assume retrato e loga (a biblioteca inteira tem perfil; isso e so o B-roll
- * de fora dela).
+ * Le tudo que esta acima da V1, fica so com o que a biblioteca conhece, e
+ * calcula o enquadramento de cada um. Nao toca a timeline.
+ *
+ * **Clipe sem perfil e PULADO, nao chutado.** `lerBrollsAcimaDeV1()` devolve
+ * tudo que mora acima da V1 — e ali nao ha so B-roll: light leak, overlay e
+ * material proprio do usuario tambem ficam la. Na primeira rodada real, 19 dos
+ * 28 clipes eram um `Generated Light Leak` e um video do proprio usuario, e
+ * estilizar os dois com dimensao chutada (1080x1920) foi o que estragou a
+ * timeline. Sem `w`/`h` de verdade nao ha enquadramento possivel: o certo e
+ * dizer o nome e nao encostar.
  */
 export async function montarPlano(opcoes: OpcoesSplit): Promise<PlanoSplit> {
   const info = await getSequenceInfo();
@@ -147,23 +153,23 @@ export async function montarPlano(opcoes: OpcoesSplit): Promise<PlanoSplit> {
 
   const linhas: string[] = [];
   const itens: ItemPlano[] = [];
-  let semPerfil = 0;
+  const ignorados = new Map<string, number>();
 
   for (const b of alvo) {
     const doArquivo = perfil.porArquivo[b.sourceName];
-    const w = doArquivo?.w;
-    const h = doArquivo?.h;
-    const orientacao: "retrato" | "paisagem" = w && h ? (h >= w ? "retrato" : "paisagem") : "retrato";
-
+    if (!doArquivo?.w || !doArquivo?.h) {
+      ignorados.set(b.sourceName, (ignorados.get(b.sourceName) ?? 0) + 1);
+      continue;
+    }
+    const orientacao: "retrato" | "paisagem" = doArquivo.h >= doArquivo.w ? "retrato" : "paisagem";
     const resolvido = resolverPerfil(perfil, override, b.sourceName, orientacao);
-    if (resolvido.origem === "default") semPerfil++;
 
     const geom: EntradaGeom = {
       W: info.width,
       H: info.height,
       brollTopoFrac,
-      w: w ?? 1080,
-      h: h ?? 1920,
+      w: doArquivo.w,
+      h: doArquivo.h,
       ancoraY: resolvido.ancoraY,
       assunto: resolvido.assunto,
       cropTopoExtra: resolvido.cropTopoExtra,
@@ -181,8 +187,12 @@ export async function montarPlano(opcoes: OpcoesSplit): Promise<PlanoSplit> {
   }
 
   linhas.push(`${info.name} — ${info.width}x${info.height}`);
-  linhas.push(`${itens.length} B-rolls ${opcoes.faixa === null ? "acima da V1" : `na V${opcoes.faixa + 1}`}`);
-  if (semPerfil > 0) linhas.push(`${semPerfil} sem perfil (padrao por orientacao)`);
+  linhas.push(`${alvo.length} clipes acima da V1${opcoes.faixa === null ? "" : ` (so a V${opcoes.faixa + 1})`}`);
+  linhas.push(`${itens.length} sao B-roll da biblioteca — so nesses eu mexo.`);
+  if (ignorados.size > 0) {
+    linhas.push(`${[...ignorados.values()].reduce((a, b) => a + b, 0)} intocados (fora da biblioteca):`);
+    for (const [nome, n] of ignorados) linhas.push(`   ${nome}${n > 1 ? ` x${n}` : ""}`);
+  }
   if (itens.length === 0) linhas.push("Nada a fazer.");
 
   return { W: info.width, H: info.height, itens, linhas };
@@ -229,10 +239,21 @@ async function acharParam(comp: ComponentLike, nome: string): Promise<ParamLike 
   return null;
 }
 
-/** Position do Motion so aceita PointF — array devolve "Illegal Parameter type". */
-function pontoF(x: number, y: number): unknown {
-  const P = (ppro as { PointF: new (x: number, y: number) => unknown }).PointF;
-  return new P(x, y);
+/**
+ * Position do Motion so aceita PointF — array devolve "Illegal Parameter type".
+ *
+ * Os argumentos do construtor NAO chegam: na primeira rodada real o Premiere
+ * gravou Position 32767,32767 (0x7FFF, sentinela de nao-inicializado) mesmo com
+ * `new PointF(x, y)` sem lancar erro. O diagnostico dizia "ok" porque so
+ * checava ausencia de excecao, nao o valor que caiu na timeline. `x`/`y` sao
+ * get/set na tipagem, entao a atribuicao depois de construir e o caminho.
+ */
+function pontoF(x: number, y: number): { ponto: unknown; leu: string } {
+  const P = (ppro as { PointF: new (x?: number, y?: number) => { x: number; y: number } }).PointF;
+  const p = new P(x, y);
+  p.x = x;
+  p.y = y;
+  return { ponto: p, leu: `${p.x},${p.y}` };
 }
 
 /**
@@ -300,7 +321,9 @@ export async function aplicarSplit(opcoes: OpcoesSplit): Promise<ResultadoSplit>
   // --- transacao 1: Motion (escala + posicao) e anexar o efeito
   const acoes1: Array<() => unknown> = [];
   const paraSetar: Array<{ sourceName: string; videoTrackIndex: number; startSeconds: number; topoPct: number }> = [];
+  const conferidos: string[] = [];
   let jaTinham = 0;
+  let posicionados = 0;
 
   for (const it of plano.itens) {
     const item = await acharItem(await itensDaFaixa(sequence, it.videoTrackIndex), it.sourceName, it.startSeconds);
@@ -321,7 +344,13 @@ export async function aplicarSplit(opcoes: OpcoesSplit): Promise<ResultadoSplit>
 
     const e = it.enquadramento;
     acoes1.push(() => escala.createSetValueAction(escala.createKeyframe(e.escalaPct), true));
-    acoes1.push(() => pos.createSetValueAction(pos.createKeyframe(pontoF(e.posX, e.posY)), true));
+    acoes1.push(() => {
+      const { ponto, leu } = pontoF(e.posX, e.posY);
+      // Uma amostra no log: se o PointF voltar a nao carregar os valores, isto
+      // aparece como 32767,32767 em vez do que a geometria pediu.
+      if (conferidos.length < 2) conferidos.push(`${it.sourceName}: pedi ${e.posX},${Math.round(e.posY)} — PointF leu ${leu}`);
+      return pos.createSetValueAction(pos.createKeyframe(ponto), true);
+    });
 
     const existente = await acharComponente(chain, MATCH_EFEITO);
     if (existente && !opcoes.refazer) {
@@ -338,12 +367,17 @@ export async function aplicarSplit(opcoes: OpcoesSplit): Promise<ResultadoSplit>
       });
     }
 
-    aplicado[it.sourceName] = {
+    // Chave com o tempo: o mesmo arquivo aparece varias vezes na timeline, e
+    // so o nome faria as ocorrencias se sobrescreverem (na primeira rodada, 28
+    // clipes viraram 11 registros). O "Aprender" le isto clipe a clipe.
+    aplicado[`${it.sourceName}@${it.startSeconds.toFixed(3)}`] = {
+      sourceName: it.sourceName,
       startSeconds: it.startSeconds,
       videoTrackIndex: it.videoTrackIndex,
       geom: it.geom,
       usado: e,
     };
+    posicionados++;
   }
 
   if (acoes1.length === 0) {
@@ -352,10 +386,11 @@ export async function aplicarSplit(opcoes: OpcoesSplit): Promise<ResultadoSplit>
     return { ok: false, linhas };
   }
 
-  comTransacao(project as never, `Auto Split: ${Object.keys(aplicado).length} B-rolls`, (add) => {
+  comTransacao(project as never, `Auto Split: ${posicionados} B-rolls`, (add) => {
     for (const a of acoes1) add(a());
   });
-  linhas.push(`${Object.keys(aplicado).length} B-rolls posicionados na caixa de baixo.`);
+  linhas.push(`${posicionados} B-rolls posicionados na caixa de baixo.`);
+  for (const c of conferidos) linhas.push(`   ${c}`);
   if (jaTinham > 0) linhas.push(`${jaTinham} ja tinham o Rounded Crop (pulados; marque "Refazer do zero" pra refazer).`);
 
   // --- transacao 2: setar Top/Feather/Roundness dos efeitos recem-anexados
