@@ -240,20 +240,29 @@ async function acharParam(comp: ComponentLike, nome: string): Promise<ParamLike 
 }
 
 /**
- * Position do Motion so aceita PointF — array devolve "Illegal Parameter type".
+ * Position do Motion, em PointF NORMALIZADO (0..1), nao em pixels.
  *
- * Os argumentos do construtor NAO chegam: na primeira rodada real o Premiere
- * gravou Position 32767,32767 (0x7FFF, sentinela de nao-inicializado) mesmo com
- * `new PointF(x, y)` sem lancar erro. O diagnostico dizia "ok" porque so
- * checava ausencia de excecao, nao o valor que caiu na timeline. `x`/`y` sao
- * get/set na tipagem, entao a atribuicao depois de construir e o caminho.
+ * Duas armadilhas, as duas pagas com uma rodada errada cada:
+ *
+ * 1. Array nao serve: `createKeyframe([x,y])` devolve "Illegal Parameter type".
+ *    Tem de ser PointF.
+ * 2. **O valor e fracao do quadro, nao pixel.** Mandando 540 e 1494 o Premiere
+ *    gravou `32767,32767` — 0x7FFF, teto de inteiro de 16 bits com sinal. As
+ *    DUAS coordenadas grampearam no mesmo maximo, que e a assinatura de valor
+ *    fora de faixa, nao de objeto mal construido. O painel mostra pixel, a API
+ *    quer fracao. `Scale` nao sofre disso: e porcentagem 1:1.
+ *
+ * A geometria em `autosplit.ts` continua em pixels (que e o que da pra testar e
+ * o que o usuario ve na tela); a conversao mora aqui, junto da armadilha.
  */
-function pontoF(x: number, y: number): { ponto: unknown; leu: string } {
+function posicaoNormalizada(posX: number, posY: number, W: number, H: number): { ponto: unknown; leu: string } {
   const P = (ppro as { PointF: new (x?: number, y?: number) => { x: number; y: number } }).PointF;
+  const x = posX / W;
+  const y = posY / H;
   const p = new P(x, y);
   p.x = x;
   p.y = y;
-  return { ponto: p, leu: `${p.x},${p.y}` };
+  return { ponto: p, leu: `${p.x.toFixed(4)},${p.y.toFixed(4)}` };
 }
 
 /**
@@ -345,10 +354,10 @@ export async function aplicarSplit(opcoes: OpcoesSplit): Promise<ResultadoSplit>
     const e = it.enquadramento;
     acoes1.push(() => escala.createSetValueAction(escala.createKeyframe(e.escalaPct), true));
     acoes1.push(() => {
-      const { ponto, leu } = pontoF(e.posX, e.posY);
-      // Uma amostra no log: se o PointF voltar a nao carregar os valores, isto
-      // aparece como 32767,32767 em vez do que a geometria pediu.
-      if (conferidos.length < 2) conferidos.push(`${it.sourceName}: pedi ${e.posX},${Math.round(e.posY)} — PointF leu ${leu}`);
+      const { ponto, leu } = posicaoNormalizada(e.posX, e.posY, plano.W, plano.H);
+      if (conferidos.length < 2) {
+        conferidos.push(`${it.sourceName}: pedi ${e.posX},${Math.round(e.posY)} px = ${leu} normalizado`);
+      }
       return pos.createSetValueAction(pos.createKeyframe(ponto), true);
     });
 
@@ -449,7 +458,9 @@ export async function aplicarSplit(opcoes: OpcoesSplit): Promise<ResultadoSplit>
           if (sc) conf.push(`Scale=${JSON.stringify(await lerParam(sc))}`);
           if (po) {
             const v = await lerParam(po);
-            conf.push(`Position=${JSON.stringify(v)} y=${yDe(v)}`);
+            const yn = yDe(v);
+            // Normalizado na API; em pixel e o que o painel do Premiere mostra.
+            conf.push(`Position y=${yn} normalizado = ${Math.round(yn * plano.H)} px`);
           }
         }
         if (efeito) {
