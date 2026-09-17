@@ -1,0 +1,103 @@
+/*
+ * Intensidade: quanto um clipe se mexe, e quanto um momento da fala corre.
+ *
+ * Nada aqui trabalha em escala absoluta. "0,0031 bytes por quadro por pixel" nao
+ * significa nada sozinho; significa tudo comparado com os outros 42 takes do
+ * mesmo conceito. Por isso a moeda deste modulo e o PERCENTIL, que dispensa
+ * calibracao e cancela vies de codificador e de resolucao.
+ *
+ * Puro: nao conhece o Premiere, nao faz I/O, nao le arquivo.
+ */
+
+/**
+ * Posicao relativa de cada valor dentro da propria lista, de 0 a 1.
+ *
+ * Empates recebem o mesmo percentil. `null` (nao foi possivel medir) atravessa
+ * intacto: nao medir nao pode virar castigo.
+ *
+ * Lista de um item so devolve 0,5 — item unico nao e nem agitado nem parado em
+ * relacao a ninguem, e o meio o mantem elegivel em qualquer momento. Sao 12 dos
+ * 32 conceitos desta biblioteca.
+ */
+export function percentis(valores: readonly (number | null)[]): (number | null)[] {
+  const medidos = valores.filter((v): v is number => v !== null);
+  if (medidos.length === 0) return valores.map(() => null);
+  if (medidos.length === 1) return valores.map((v) => (v === null ? null : 0.5));
+
+  const ordenados = [...medidos].sort((a, b) => a - b);
+  const ultimo = ordenados.length - 1;
+
+  return valores.map((v) => (v === null ? null : ordenados.indexOf(v) / ultimo));
+}
+
+/**
+ * Indices dos takes cuja intensidade cabe no momento.
+ *
+ * Take sem medida entra sempre: a ausencia de informacao nao e informacao
+ * negativa. Lista vazia significa "nenhum encaixa" — quem chama decide o que
+ * fazer, e no planejador isso vira cair de volta para todos.
+ */
+export function encaixam(
+  percentisDosTakes: readonly (number | null)[],
+  alvo: number,
+  tolerancia: number
+): number[] {
+  const dentro: number[] = [];
+  percentisDosTakes.forEach((p, i) => {
+    if (p === null || Math.abs(p - alvo) <= tolerancia) dentro.push(i);
+  });
+  return dentro;
+}
+
+/** Palavras por segundo: o quanto a fala corre naquele trecho. */
+export function ritmo(palavras: number, duracao: number): number {
+  return duracao > 0 ? palavras / duracao : 0;
+}
+
+// ------------------------------------------------------------------ cache
+
+/**
+ * Medicoes ja feitas, por nome de arquivo.
+ *
+ * `null` guardado quer dizer "tentei e nao deu" — vale tanto quanto um numero,
+ * porque impede reler 2,3 MB a cada analise para falhar do mesmo jeito.
+ *
+ * A chave e so o nome. Comparar tambem o tamanho exigiria `getMetadata()` em 260
+ * entradas, e chamada UXP em volume e o que pendura o painel (UXP_ARMADILHAS
+ * secao 3). Trocar um arquivo mantendo o nome pede apagar este arquivo a mao.
+ */
+export interface CacheIntensidade {
+  readonly schema: 1;
+  readonly arquivos: Readonly<Record<string, number | null>>;
+}
+
+export const CACHE_VAZIO: CacheIntensidade = { schema: 1, arquivos: {} };
+
+/** Quem ainda nao foi medido. Medido e nao deu certo tambem conta como medido. */
+export function aMedir(cache: CacheIntensidade, nomes: readonly string[]): string[] {
+  return nomes.filter((n) => !(n in cache.arquivos));
+}
+
+export function comMedida(
+  cache: CacheIntensidade,
+  nome: string,
+  agitacao: number | null
+): CacheIntensidade {
+  return { schema: 1, arquivos: { ...cache.arquivos, [nome]: agitacao } };
+}
+
+/** Cache corrompido volta vazio: remedir custa tempo, lancar custa a analise. */
+export function parseCacheIntensidade(raw: unknown): CacheIntensidade {
+  if (typeof raw !== "object" || raw === null) return CACHE_VAZIO;
+  const bruto = (raw as Record<string, unknown>).arquivos;
+  if (typeof bruto !== "object" || bruto === null) return CACHE_VAZIO;
+
+  const arquivos: Record<string, number | null> = {};
+  for (const [nome, valor] of Object.entries(bruto)) {
+    if (valor === null) arquivos[nome] = null;
+    else if (typeof valor === "number" && Number.isFinite(valor) && valor >= 0) {
+      arquivos[nome] = valor;
+    }
+  }
+  return { schema: 1, arquivos };
+}

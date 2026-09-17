@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title>Auto B-roll</title>
+    <!-- O build substitui esta marca pelo conteudo de styles.css.
+         <link rel="stylesheet"> nao carrega no UXP. -->
+    <!--ESTILOS-->
+  </head>
+  <body>
+    <header class="topo">
+      <div class="marca">
+        <span class="marca-nome">Auto B-roll</span>
+      </div>
+      <div id="estado" class="badge">carregando</div>
+    </header>
+
+    <main class="conteudo">
+      <section class="secao">
+        <div class="secao-cabeca">
+          <span class="cod">SEQ</span>
+          <span class="secao-rotulo">Sequência ativa</span>
+        </div>
+        <div class="secao-corpo">
+          <div id="seqNome" class="seq-nome" data-vazio="sim">Nenhuma sequência selecionada</div>
+          <div id="seqDica" class="dica">
+            Abra ou selecione uma sequência no Premiere. O painel lê sozinho a que estiver ativa.
+          </div>
+          <div class="fatos">
+            <div class="fato">
+              <span class="fato-rotulo">Formato</span>
+              <span id="seqFormato" class="fato-valor">—</span>
+            </div>
+            <div class="fato">
+              <span class="fato-rotulo">Frame rate</span>
+              <span id="seqFps" class="fato-valor">—</span>
+            </div>
+            <div class="fato">
+              <span class="fato-rotulo">Duração</span>
+              <span id="seqDuracao" class="fato-valor">—</span>
+            </div>
+            <div class="fato">
+              <span class="fato-rotulo">Faixas</span>
+              <span id="seqFaixas" class="fato-valor">—</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div class="par">
+        <section class="secao">
+          <div class="secao-cabeca">
+            <span class="cod cod-video">V2</span>
+            <span class="secao-rotulo">Vídeo do B-roll</span>
+          </div>
+          <div class="secao-corpo">
+            <sp-checkbox id="fillScreen">Preencher a tela</sp-checkbox>
+            <sp-checkbox id="densidadeMaxima">Densidade máxima</sp-checkbox>
+          </div>
+        </section>
+
+        <section class="secao">
+          <div class="secao-cabeca">
+            <span class="cod cod-audio">A3</span>
+            <span class="secao-rotulo">Áudio do B-roll</span>
+          </div>
+          <div class="secao-corpo">
+            <sp-checkbox id="removeAudio">Remover o áudio</sp-checkbox>
+          </div>
+        </section>
+      </div>
+
+      <section class="secao">
+        <div class="secao-cabeca">
+          <span class="cod">SRC</span>
+          <span class="secao-rotulo">Pasta de B-rolls</span>
+        </div>
+        <div class="secao-corpo">
+          <label class="campo">
+            <span class="campo-rotulo">Caminho da pasta no disco</span>
+            <sp-textfield id="libraryPath" placeholder="caminho da pasta de B-rolls"></sp-textfield>
+            <span class="campo-nota">Cole o caminho da pasta. Ele fica salvo depois da primeira análise que der certo.</span>
+          </label>
+        </div>
+      </section>
+
+      <div class="acao">
+        <sp-button id="analisar" variant="cta">Analisar e inserir</sp-button>
+        <sp-button id="aprender" variant="secondary" quiet>Aprender</sp-button>
+      </div>
+
+      <section id="secaoLog" class="secao secao-log" data-aberto="sim">
+        <div class="secao-cabeca">
+          <span class="cod">LOG</span>
+          <span class="secao-rotulo">Registro</span>
+          <div
+            id="logToggle"
+            class="secao-acao"
+            role="button"
+            tabindex="0"
+            aria-expanded="true"
+            aria-controls="log"
+            aria-label="Recolher o registro"
+          >
+            Recolher
+          </div>
+        </div>
+        <div class="secao-corpo">
+          <div id="log" class="log"></div>
+        </div>
+      </section>
+    </main>
+
+    <!-- O build substitui esta marca pelo bundle inteiro.
+         Caminho relativo nao resolve: o UXP procura a partir da raiz do
+         plugin, nao da pasta do HTML. -->
+    <!--SCRIPT-->
+  </body>
+</html>

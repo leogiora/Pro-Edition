@@ -1,0 +1,162 @@
+# Guia de uso — Auto B-roll
+
+Documento para apresentação e treinamento. Fala do ponto de vista de quem usa
+o painel dentro do Premiere, não de quem programa. Para detalhes técnicos, ver
+os documentos em `docs/` (`API_PROOFS.md`, `DECISIONS.md`, `UXP_ARMADILHAS.md`).
+
+> **Mantido em dia automaticamente**: toda vez que o comportamento do plugin
+> muda, este guia é atualizado na mesma sessão (regra em `CLAUDE.md`, seção 5).
+
+---
+
+## O que o plugin faz
+
+Você edita a sequência normalmente na V1. Um clique em **Analisar e inserir**:
+
+1. Lê a transcrição de cada mídia usada na V1 (a que o Premiere já gera).
+2. Descobre o que sobrou depois do corte — a maior parte da fala gravada não
+   sobrevive, e é só isso que importa.
+3. Compara o que foi dito com os nomes dos arquivos de B-roll da sua pasta
+   (`Viagra.mp4`, `Falhou na cama.mp4`, etc.) e com um dicionário de sinônimos.
+4. Escolhe onde encaixar cada B-roll. **Rodízio de take:** se um conceito tem
+   15 arquivos, usa os 15 uma vez antes de repetir qualquer um; aí recomeça o
+   ciclo pelo menos usado (o motivo passa a dizer "ciclo 2", "ciclo 3"). Conta
+   também o que já está na timeline de reels vizinhos. Um take só volta depois
+   de 180s. Nunca sobrepõe o que já está lá.
+5. Insere em V2, corta no tamanho certo, escala pra preencher a tela e tira o
+   áudio — tudo isso sem você revisar antes.
+
+Três `Ctrl+Z` desfazem a inserção inteira.
+
+**100% local.** Não manda vídeo nem transcrição pra nenhum servidor. Não há
+IA generativa nem visão computacional — o casamento é o nome do arquivo (e um
+dicionário de sinônimos) contra o texto da fala.
+
+---
+
+## Os controles do painel
+
+| Controle | O que faz |
+|---|---|
+| **Pasta de B-rolls** | Onde ficam os arquivos `.mp4` que ele pode inserir. Fica salvo depois da primeira vez. |
+| **Preencher a tela** | Escala o B-roll pra cobrir o quadro inteiro, mesmo que a proporção não bata exatamente. |
+| **Densidade máxima** | Afrouxa as regras de *espaçamento* entre B-rolls (não a qualidade do match) pra caber mais na timeline. Ligue quando achar que ficou "espaçado demais". |
+| **Remover o áudio** | Tira o som original do clipe de B-roll ao inserir (a trilha/voz principal nunca é tocada, isso é só o áudio que vem junto do arquivo de vídeo). |
+| **Analisar e inserir** | O botão principal: faz tudo — lê, casa, planeja e insere. |
+| **Aprender** | Só ensina, não insere nada. Use depois de editar a timeline na mão (apagar o que não serviu, adicionar B-roll seu) sem rodar uma análise nova. |
+
+**O botão diz em que pé está.** "Analisar e inserir" vira "Analisando..."
+enquanto trabalha e, quando termina, confirma por alguns segundos com
+"✓ N B-rolls inseridos" antes de voltar ao normal. O distintivo no canto
+superior direito conta a mesma história em uma palavra, com um símbolo antes
+do texto (✓ pronto, ◌ analisando, ! atenção, × falhou) — dá pra ler sem
+depender de enxergar a cor.
+
+**O registro (log) pode ser recolhido.** No cabeçalho dele, à direita, tem
+"Recolher" / "Mostrar". Ele nasce sempre aberto de propósito: é o único canal
+em que o plugin conta o que fez.
+
+**Quando não há sequência aberta**, o painel diz o que fazer em vez de só
+dizer que está vazio. A instrução some sozinha assim que você abre uma
+sequência.
+
+**Trabalhando num trecho só (in/out):** marque o in e o out na timeline (teclas
+`I` e `O` do Premiere) e clique em Analisar — os B-rolls entram **só dentro do
+trecho marcado**. É o jeito de tratar um reel de cada vez numa sequência que
+tem vários. O log avisa: *"In/out marcados: inserindo só de X a Y"*. Sem
+in/out (ou com o in/out cobrindo a sequência toda), ele analisa tudo, como
+sempre. O **Aprender ignora o in/out de propósito**: edição sua ensina em
+qualquer ponto da timeline.
+
+Ao analisar trecho por trecho, ele **enxerga o que já entrou nos reels
+vizinhos**: um take que já está na timeline fora do trecho não é repetido, e um
+conceito que apareceu há menos de 60s no reel anterior não volta. Antes, cada
+trecho era planejado no escuro e o mesmo take reaparecia na virada de um reel
+para o outro.
+
+---
+
+## O sistema de aprendizado
+
+O plugin **não tem modelo, não tem IA** — ele só conta o que sobreviveu.
+
+- B-roll que ele inseriu e você **manteve** → acerto, aquele conceito/arquivo
+  ganha prioridade da próxima vez.
+- B-roll que ele inseriu e você **apagou** → erro, ele evita repetir a mesma
+  escolha.
+- B-roll que **você mesmo colocou**, sem ser sugestão dele → ele credita como
+  ensinamento seu, e pode até aprender um sinônimo novo se isso acontecer
+  algumas vezes seguidas. Vale mesmo quando a fala não tem nada a ver com o
+  nome do arquivo: se você colocou, fez sentido — o take ganha crédito e o
+  painel diz "o take ganhou crédito e contei as palavras cobertas".
+
+Ou seja: **editar a timeline normalmente já ensina o plugin.** Não precisa de
+botão de "nota" nem configuração.
+
+### Uma exceção importante
+
+Se você **varrer o lote** — desfazer com `Ctrl+Z` logo depois de inserir, ou
+apagar quase tudo de uma vez — o plugin reconhece que foi limpeza, não uma
+rejeição de verdade, e não penaliza nada. Ele avisa no painel: *"Sobrou 12 de
+101 B-rolls da rodada anterior — parece o lote desfeito, não rejeição item a
+item."*
+
+A penalização só acontece quando **a maior parte** do que ele inseriu sobrevive
+e uma parte não: aí sim é sinal real de curadoria.
+
+> Isso importa mais do que parece. Um lote grande apagado inteiro contava como
+> dezenas de erros de uma vez, e isso não só somava erro: derrubava o acerto
+> acumulado junto. Conceitos que estavam no topo (+50%) viravam negativos
+> (−15%) e o plugin parava de sugerir — parecia que tinha "esquecido" tudo.
+
+---
+
+## Como ler o log
+
+Cada análise grava um log completo em (mais confiável que print de tela):
+
+```
+%APPDATA%\Adobe\UXP\PluginsStorage\PPRO\<versão>\External\com.leogi.autobroll\PluginData\ultimo-log.json
+```
+
+Mensagens mais comuns e o que significam:
+
+| Mensagem | Significado |
+|---|---|
+| `nenhuma sugestao passou (melhor: 50%)` | Achou algo parecido, mas não o bastante (limite é 60%). Não é erro — é o filtro de qualidade funcionando. |
+| `nenhuma sugestao passou (melhor: 100%, caiu para 50% pelo aprendizado)` | O casamento era bom, mas você já apagou esse par vezes demais e ele não entra mais sozinho. Se foi engano, coloque um B-roll desse conceito na mão — o crédito reabilita. |
+| `já há B-roll aí, deixei como está` | Tem alguma coisa em cima daquele instante em **qualquer** faixa de vídeo acima da V1 (não só a que ele usa). Nunca insere por cima. |
+| `muito perto do B-roll anterior` / `conceito repetido há menos de 8s` | Regra de espaçamento — ative "Densidade máxima" se quiser afrouxar isso. |
+| `todas as variações apareceram há menos de 180s` | O ciclo mandaria repetir um take, mas todos os do conceito apareceram há menos de 3 minutos. Conceito com um único arquivo na pasta bate nisso o tempo todo — a saída é gravar mais variações dele. |
+| `take repetido, ciclo 2` (ou 3, 4...) | Não é descarte — o B-roll entrou. Todos os takes daquele conceito já rodaram uma vez (ciclo 1), então começou de novo. O número diz em qual volta está. |
+| `Trecho incerto (confiança X)` | Aviso da própria transcrição do Premiere, não do plugin — a fala reconhecida ali tem baixa confiança. |
+
+---
+
+## Limitações que valem saber antes de apresentar
+
+- **O casamento é texto contra texto**, não entendimento do vídeo. Um B-roll
+  cujo conteúdo visual bate perfeitamente com a fala pode não ser escolhido se
+  o nome do arquivo (e os sinônimos cadastrados) não tiverem nada a ver com as
+  palavras ditas.
+- **Precisão da transcrição depende do motor de fala do próprio Premiere** —
+  varia entre versões do Premiere, não é algo que o plugin controla.
+- **A legenda que você vê queimada na timeline pode divergir da transcrição
+  que o plugin lê.** São duas passadas de reconhecimento de fala diferentes
+  sobre o mesmo áudio — o plugin só tem acesso à do CLIPE de origem (a da
+  sequência não expõe texto por API, provado na Fase 0), e ela às vezes erra
+  uma palavra que a legenda da timeline acerta (ou vice-versa). Quando isso
+  faz um B-roll bom não casar sozinho com o dicionário, colocá-lo na mão
+  ainda credita o take (D-030) — só não gera a ligação automática de sinônimo.
+- Roda em **Premiere 25 e 26** (manifest sem versão máxima), mas algumas APIs
+  mudam de nome entre versões — o plugin já trata isso com fallback, mas se
+  aparecer um erro de "não é uma função" no log, é sinal de mais uma dessas
+  diferenças.
+
+---
+
+## Onde estão os arquivos, se for demonstrar em outra máquina
+
+- Repositório: `auto-broll-premiere` (GitHub, `leogiora/auto-broll-premiere`).
+- Requer instalar como plugin UXP (não é só copiar arquivo) — ver `README.md`
+  na raiz do repositório, seção "Instalação".
