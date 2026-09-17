@@ -6,7 +6,7 @@
  * telas no mesmo documento. Se isso mudar, este arquivo muda junto.
  */
 
-import { lerGravacao } from "../pausas-premiere.ts";
+import { diagnostico, lerGravacao } from "../pausas-premiere.ts";
 import { MARGEM_PADRAO_S, planejarCortes } from "../pausas.ts";
 
 /** O campo aceita virgula (teclado pt-BR) e ponto. Valor invalido volta ao padrao. */
@@ -73,5 +73,19 @@ export function mount(root: HTMLElement): void {
 
   pega("apCortar").addEventListener("click", () => {
     escrever("Ainda não corta: o teste da mecânica no Premiere vem antes (Task 5).");
+  });
+
+  // Temporario: sai quando a mecanica de corte estiver provada (Task 7).
+  pega("apDiag").addEventListener("click", () => {
+    void (async () => {
+      try {
+        estado("diagnóstico", "ativo");
+        escrever("Rodando diagnóstico...");
+        escrever(...(await diagnostico()));
+        estado("diagnóstico pronto", "ok");
+      } catch (e) {
+        mostrarErro(e);
+      }
+    })();
   });
 }
