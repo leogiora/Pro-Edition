@@ -125,16 +125,6 @@ body {
   white-space: nowrap;
 }
 
-.marca-fase {
-  margin-left: 8px;
-  font-family: "Roboto Mono", Consolas, monospace;
-  font-size: 10px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: #5f6774;
-  white-space: nowrap;
-}
-
 /* ========================================================= STATUS BADGE === */
 
 /* Discreto por definicao: chip de contorno, nunca preenchido. O glifo antes do

@@ -228,13 +228,13 @@ async function relerSequencia(aindaValido: () => boolean): Promise<void> {
   } catch (e) {
     if (!aindaValido()) return;
     const nome = el("seqNome");
-    nome.textContent = "Nenhuma sequencia selecionada";
+    nome.textContent = "Nenhuma sequência selecionada";
     nome.setAttribute("data-vazio", "sim");
     el("seqDica").style.display = "";
     for (const id of ["seqFormato", "seqFps", "seqDuracao", "seqFaixas"]) {
       el(id).textContent = "—";
     }
-    estado("sem sequencia", "aviso");
+    estado("sem sequência", "aviso");
     registrar(mensagemDeErro(e), "erro");
   }
 }
