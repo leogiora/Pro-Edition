@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { conferirPalavras, MARGEM_PADRAO_S, planejarCortes, type Palavra } from "../src/pausas.ts";
+import { conferirPalavras, MARGEM_PADRAO_S, montarPalavras, planejarCortes, type Palavra } from "../src/pausas.ts";
 
 const opcoes = { fps: 30, duracaoQ: 300, margemS: MARGEM_PADRAO_S };
 
@@ -133,4 +133,16 @@ test("conferirPalavras aceita diferenca de um quadro", () => {
   const antes: Palavra[] = [{ texto: "saude", inicio: 1, fim: 1.5 }];
   const depois: Palavra[] = [{ texto: "saude", inicio: 0.08, fim: 0.58 - umQuadro }];
   assert.equal(conferirPalavras(antes, depois, umQuadro).ok, true);
+});
+
+test("montarPalavras converte a transcricao do Auto B-roll e descarta palavra sem duracao", () => {
+  const entrada = [
+    { text: "ola", inicio: 1, fim: 1.5 },
+    { text: "vazia", inicio: 2, fim: 2 },
+    { text: "mundo", inicio: 3, fim: 3.5 },
+  ];
+  assert.deepEqual(montarPalavras(entrada), [
+    { texto: "ola", inicio: 1, fim: 1.5 },
+    { texto: "mundo", inicio: 3, fim: 3.5 },
+  ]);
 });

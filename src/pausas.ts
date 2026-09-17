@@ -48,6 +48,19 @@ export interface OpcoesPlano {
 }
 
 /**
+ * Traduz `PalavraEditada` (a transcricao remontada pelo Auto B-roll) para a
+ * `Palavra` daqui. Palavra de duracao zero entraria como pausa de graca e
+ * sairia no corte: descartar e mais honesto do que cortar em cima dela.
+ */
+export function montarPalavras(
+  palavrasEditadas: ReadonlyArray<{ text: string; inicio: number; fim: number }>
+): Palavra[] {
+  return palavrasEditadas
+    .filter((p) => p.fim > p.inicio)
+    .map((p) => ({ texto: p.text, inicio: p.inicio, fim: p.fim }));
+}
+
+/**
  * Prova de que o corte nao comeu fala: mesma sequencia de palavras, cada uma
  * com a mesma duracao. Compara DURACAO e nao posicao — depois do corte a
  * palavra muda de lugar de proposito.
