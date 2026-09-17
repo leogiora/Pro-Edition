@@ -23,22 +23,13 @@ import { mount as mountAutosplit } from "./autosplit-mount.ts";
 import htmlSeletor from "./seletor.html";
 import cssSeletor from "./seletor.css";
 
-/** Como cada tela se chama na navegacao. */
-const NOME: Readonly<Record<Ferramenta, string>> = {
-  seletor: "Pro Edition",
-  broll: "Auto B-roll",
-  captions: "Pro Captions",
-  autocut: "Podcast AutoCut",
-  autosplit: "Auto Split",
-};
-
 /*
- * Barra de navegacao do shell — mesmos tokens das tres folhas da familia
- * (ver auto-broll-premiere/src/ui/styles.css para a tabela completa).
+ * Barra de voltar do shell — mesmos tokens das folhas da familia (ver
+ * auto-broll-premiere/src/ui/styles.css para a tabela completa).
  *
- * E um caminho, nao um link solto: "Pro Edition / Auto B-roll" diz, sem
- * precisar de sidebar, que a ferramenta aberta faz parte da suite. A barra
- * inteira volta ao hall.
+ * So "<- Pro Edition", sem o nome da ferramenta: toda tela ja abre com o
+ * proprio cabecalho (nome + status) logo abaixo, e repetir o nome aqui dava
+ * dois titulos empilhados.
  */
 const CSS_NAV = `
 .pe-nav {
@@ -95,24 +86,6 @@ const CSS_NAV = `
 .pe-nav:hover .pe-nav-raiz {
   color: #eceef2;
 }
-
-.pe-nav-sep {
-  flex: none;
-  margin-left: 6px;
-  margin-right: 6px;
-  color: #333b47;
-}
-
-/* Onde voce esta e o mais claro do caminho; o resto e o caminho de volta. */
-.pe-nav-atual {
-  flex: 1 1 auto;
-  min-width: 0;
-  font-weight: 600;
-  color: #eceef2;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
 `;
 
 /**
@@ -150,10 +123,10 @@ const REGISTRO: Readonly<Record<Ferramenta, Tela>> = {
   seletor: { html: htmlSeletor, css: cssSeletor, montar: montarSeletor },
   broll: { html: extrairCorpo(htmlBrollBruto), css: cssBroll, montar: mountBroll },
   captions: { html: extrairCorpo(htmlCaptionsBruto), css: cssCaptions, montar: mountCaptions },
-  // Tela nossa, nao painel standalone: o <style> ja vem dentro do proprio HTML.
-  autocut: { html: htmlAutocut, css: "", montar: mountAutocut },
-  // Tela nossa, nao painel standalone: o <style> ja vem dentro do proprio HTML.
-  autosplit: { html: htmlAutosplit, css: "", montar: mountAutosplit },
+  // Telas nossas usam a folha da familia do Auto B-roll (topo, secao, badge,
+  // log) e so trazem no proprio <style> o acento e o que for so delas.
+  autocut: { html: htmlAutocut, css: cssBroll, montar: mountAutocut },
+  autosplit: { html: htmlAutosplit, css: cssBroll, montar: mountAutosplit },
 };
 
 function mostrar(ferramenta: Ferramenta): void {
@@ -161,11 +134,9 @@ function mostrar(ferramenta: Ferramenta): void {
   const nav =
     ferramenta === "seletor"
       ? ""
-      : `<div id="peVoltar" class="pe-nav" role="button" tabindex="0" aria-label="Voltar para o ${NOME.seletor}">` +
+      : `<div id="peVoltar" class="pe-nav" role="button" tabindex="0" aria-label="Voltar para o Pro Edition">` +
         `<span class="pe-nav-seta">&larr;</span>` +
-        `<span class="pe-nav-raiz">${NOME.seletor}</span>` +
-        `<span class="pe-nav-sep">/</span>` +
-        `<span class="pe-nav-atual">${NOME[ferramenta]}</span>` +
+        `<span class="pe-nav-raiz">Pro Edition</span>` +
         `</div>`;
 
   // Substitui o document.body inteiro: elimina o <style> anterior junto com

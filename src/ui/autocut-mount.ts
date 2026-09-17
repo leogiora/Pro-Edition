@@ -71,16 +71,6 @@ function relogio(segundos: number): string {
   return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 
-function ligarAcao(node: HTMLElement, acao: () => void): void {
-  node.addEventListener("click", acao);
-  node.addEventListener("keydown", (evento) => {
-    const tecla = (evento as KeyboardEvent).key;
-    if (tecla !== "Enter" && tecla !== " ") return;
-    evento.preventDefault();
-    acao();
-  });
-}
-
 export function mount(root: HTMLElement): void {
   const pega = <T extends HTMLElement>(id: string) => root.querySelector<T>(`#${id}`)!;
   const log = pega<HTMLPreElement>("acLog");
@@ -96,10 +86,20 @@ export function mount(root: HTMLElement): void {
     audioB: pega<HTMLSelectElement>("acAudioB"),
   };
 
+  // O que importa (pronto / corrija) e a ULTIMA linha: o log desce ate ela.
   const escrever = (...linhas: readonly string[]) => {
     log.textContent = linhas.join("\n");
+    log.scrollTop = log.scrollHeight;
   };
-  const liberar = (pode: boolean) => aplicarBotao.setAttribute("aria-disabled", pode ? "false" : "true");
+  const estado = (texto: string, tom: "ativo" | "ok" | "aviso" | "erro") => {
+    const badge = pega("acEstado");
+    badge.textContent = texto;
+    badge.setAttribute("data-tom", tom);
+  };
+  const liberar = (pode: boolean) => {
+    if (pode) aplicarBotao.removeAttribute("disabled");
+    else aplicarBotao.setAttribute("disabled", "");
+  };
   const mapa = (): Mapa => ({
     videoA: Number(selects.videoA.value),
     audioA: Number(selects.audioA.value),
@@ -110,6 +110,7 @@ export function mount(root: HTMLElement): void {
   // Falha aqui nao pode deixar a tela em branco: o usuario precisa ver o motivo.
   const mostrarErro = (e: unknown) => {
     liberar(false);
+    estado("falhou", "erro");
     escrever(`Erro: ${(e as Error)?.message ?? String(e)}`);
   };
 
@@ -122,6 +123,9 @@ export function mount(root: HTMLElement): void {
    */
   const sincronizar = async (): Promise<string[]> => {
     const info = await getSequenceInfo();
+    const nome = pega("acSeqNome");
+    nome.textContent = info.name;
+    nome.setAttribute("data-vazio", "nao");
     const f = await lerFps();
     preencherFps(selects.fps, f.valor);
     // 8 canais cobre qualquer gravador de podcast; canal inexistente vira erro
@@ -143,15 +147,18 @@ export function mount(root: HTMLElement): void {
   void (async () => {
     try {
       escrever(...(await sincronizar()));
+      estado("pronto", "ok");
     } catch (e) {
       mostrarErro(e);
     }
   })();
 
-  ligarAcao(pega("acAnalisar"), () => {
+  // sp-button: o clique ja cobre Enter/Espaco, o componente faz isso sozinho.
+  pega("acAnalisar").addEventListener("click", () => {
     void (async () => {
       try {
         liberar(false);
+        estado("analisando", "ativo");
         escrever("Analisando...");
         const cabecalho = await sincronizar();
         const fps = Number(selects.fps.value);
@@ -170,6 +177,7 @@ export function mount(root: HTMLElement): void {
         segmentos = segmentar(fala.trechos, fps);
         const d: Diagnostico = await validar(mapa(), segmentos, fps);
         liberar(d.ok);
+        estado(d.ok ? "pronto para aplicar" : "revise o registro", d.ok ? "ok" : "aviso");
         // Preview inteiro num podcast de 1h seriam centenas de linhas: as
         // primeiras bastam para ver se a deteccao acertou.
         const previa = segmentos.slice(0, 40).map((s) => `${relogio(s.inicioF / fps)}  ${s.speaker}`);
@@ -192,14 +200,16 @@ export function mount(root: HTMLElement): void {
     })();
   });
 
-  ligarAcao(aplicarBotao, () => {
-    if (aplicarBotao.getAttribute("aria-disabled") === "true") return;
+  aplicarBotao.addEventListener("click", () => {
+    if (aplicarBotao.hasAttribute("disabled")) return;
     void (async () => {
       try {
         liberar(false);
+        estado("aplicando", "ativo");
         escrever("Aplicando...");
         const d = await aplicar(mapa(), segmentos, Number(selects.fps.value));
-        escrever(...d.linhas, "", d.ok ? "AutoCut aplicado." : "Aplicado COM PROBLEMA — desfaca e me mostre o log.");
+        estado(d.ok ? "cortes aplicados" : "aplicado com problema", d.ok ? "ok" : "erro");
+        escrever(...d.linhas, "", d.ok ? "Cortes aplicados." : "Aplicado com problema: desfaça (Ctrl+Z) e mande este registro.");
       } catch (e) {
         mostrarErro(e);
       }

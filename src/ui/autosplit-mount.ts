@@ -16,10 +16,20 @@ export function mount(root: HTMLElement): void {
   const divisao = pega<HTMLInputElement>("asDivisao");
   const refazer = pega<HTMLInputElement>("asRefazer");
 
+  // O que importa (pronto / com problema) e a ULTIMA linha: o log desce ate ela.
   const escrever = (...linhas: readonly string[]) => {
     log.textContent = linhas.join("\n");
+    log.scrollTop = log.scrollHeight;
   };
-  const mostrarErro = (e: unknown) => escrever(`Erro: ${(e as Error)?.message ?? String(e)}`);
+  const estado = (texto: string, tom: "ativo" | "ok" | "aviso" | "erro") => {
+    const badge = pega("asEstado");
+    badge.textContent = texto;
+    badge.setAttribute("data-tom", tom);
+  };
+  const mostrarErro = (e: unknown) => {
+    estado("falhou", "erro");
+    escrever(`Erro: ${(e as Error)?.message ?? String(e)}`);
+  };
 
   /** O campo recebe o numero humano (V2 = 2); o adapter quer indice base 0. */
   const lerOpcoes = (): OpcoesSplit => {
@@ -36,25 +46,27 @@ export function mount(root: HTMLElement): void {
   void (async () => {
     try {
       const info = await getSequenceInfo();
-      escrever(
-        `${info.name} — ${info.width}x${info.height}`,
-        "",
-        "Revise os B-rolls antes de aplicar. Um Ctrl+Z desfaz cada etapa.",
-      );
+      const nome = pega("asSeqNome");
+      nome.textContent = info.name;
+      nome.setAttribute("data-vazio", "nao");
+      escrever(`${info.name} — ${info.width}x${info.height}`);
+      estado("pronto", "ok");
     } catch (e) {
       mostrarErro(e);
     }
   })();
 
-  pega<HTMLButtonElement>("asAplicar").addEventListener("click", () => {
+  pega("asAplicar").addEventListener("click", () => {
     void (async () => {
       try {
+        estado("aplicando", "ativo");
         escrever("Aplicando...");
         const r = await aplicarSplit(lerOpcoes());
+        estado(r.ok ? "aplicado" : "aplicado com problema", r.ok ? "ok" : "erro");
         escrever(
           ...r.linhas,
           "",
-          r.ok ? "Pronto. Ajuste o que precisar no Premiere." : "Aplicado COM PROBLEMA — veja as linhas acima.",
+          r.ok ? "Pronto. Ajuste o que precisar no Premiere." : "Aplicado com problema: veja as linhas acima.",
         );
       } catch (e) {
         mostrarErro(e);
@@ -62,11 +74,13 @@ export function mount(root: HTMLElement): void {
     })();
   });
 
-  pega<HTMLButtonElement>("asDiag").addEventListener("click", () => {
+  pega("asDiag").addEventListener("click", () => {
     void (async () => {
       try {
-        escrever("Rodando diagnostico...");
+        estado("diagnóstico", "ativo");
+        escrever("Rodando diagnóstico...");
         escrever(...(await diagnostico()));
+        estado("pronto", "ok");
       } catch (e) {
         mostrarErro(e);
       }

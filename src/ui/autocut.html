@@ -1,172 +1,130 @@
-<!-- Fragmento: o shell injeta isto direto em document.body. O <style> vem
-     junto porque esta tela so existe dentro do Pro Edition — nao e um painel
-     standalone como o Auto B-roll e o Pro Captions. -->
+<!-- Fragmento: o shell injeta isto direto em document.body, depois da folha da
+     familia (auto-broll-premiere/src/ui/styles.css). Aqui fica so o acento
+     desta ferramenta e o que nao existe na folha: a linha rotulo + select.
+
+     Sem CSS Grid, sem gap, sem var(): nada disso e confiavel no UXP (ver
+     auto-broll-premiere/docs/UXP_ARMADILHAS.md). -->
 <style>
-  /* Mesmo esqueleto das outras duas telas da familia: o painel tem altura
-     fixa, a barra de navegacao nao rola, e so o conteudo rola por dentro. Sem
-     `min-height: 0` o filho de um flex column se recusa a encolher e a barra
-     de rolagem nunca aparece. */
-  html,
-  body {
-    height: 100%;
+  .marca-nome::before {
+    background-color: #4fc3a1;
   }
 
-  body {
-    display: flex;
-    flex-direction: column;
-    margin: 0;
-    padding: 0;
-    overflow: hidden;
-    background-color: #0f1216;
+  .cod-pessoa {
+    color: #4fc3a1;
   }
 
-  .ac-conteudo {
-    display: flex;
-    flex-direction: column;
-    flex: 1 1 auto;
-    min-height: 0;
-    overflow-y: auto;
-    overflow-x: hidden;
-    padding: 16px 12px 24px;
-    font-family: Inter, adobe-clean, "Source Sans 3", "Segoe UI", sans-serif;
-    color: #eceef2;
-    background-color: #0f1216;
-  }
-
-  /* Filho de flex column no UXP encolhe sozinho se deixarem: fixar todo mundo
-     e o que faz o conteudo empurrar a rolagem em vez de se espremer. */
-  .ac-conteudo > * {
-    flex: none;
-  }
-  .ac-titulo {
-    margin: 0 0 2px;
-    font-size: 15px;
-    font-weight: 600;
-  }
-  .ac-sub {
-    margin: 0 0 16px;
-    font-size: 11px;
-    color: #5f6774;
-  }
-  .ac-pessoa {
-    margin: 0 0 6px;
-    font-size: 10px;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: #9098a6;
-  }
-  .ac-linha {
+  .linha {
     display: flex;
     flex-direction: row;
     align-items: center;
-    align-self: stretch;
     margin-bottom: 6px;
-    font-size: 12px;
-  }
-  .ac-linha label {
-    flex: 1 1 auto;
-    min-width: 0;
-    color: #9098a6;
-  }
-  .ac-linha select {
-    flex: none;
-    width: 92px;
-  }
-  .ac-grupo {
-    margin-bottom: 14px;
-  }
-  .ac-campo {
-    align-self: stretch;
-    margin-bottom: 8px;
-    padding: 7px 9px;
-    background-color: #0b0d11;
-    border: 1px solid #232830;
-    border-radius: 4px;
-    font-family: inherit;
-    font-size: 11px;
-    color: #eceef2;
-    text-align: left;
   }
 
-  .ac-botao {
-    align-self: stretch;
-    margin-bottom: 8px;
-    padding: 9px 12px;
-    background-color: #1a1e26;
-    border: 1px solid #232830;
-    border-radius: 4px;
-    font-family: inherit;
+  .linha:last-child {
+    margin-bottom: 0;
+  }
+
+  .linha label {
+    flex: 1 1 auto;
+    min-width: 0;
     font-size: 12px;
-    color: #eceef2;
-    text-align: center;
-    cursor: pointer;
-    transition: background-color 150ms;
-  }
-  .ac-botao:hover {
-    background-color: #232830;
-  }
-  .ac-botao[aria-disabled="true"] {
-    color: #5f6774;
-    cursor: default;
-  }
-  .ac-log {
-    align-self: stretch;
-    margin: 8px 0 0;
-    padding: 10px;
-    min-height: 60px;
-    background-color: #14171d;
-    border: 1px solid #232830;
-    border-radius: 4px;
-    font-size: 11px;
-    line-height: 1.5;
     color: #9098a6;
-    white-space: pre-wrap;
   }
-  .ac-nota {
-    margin: 12px 0 0;
-    font-size: 10px;
-    line-height: 1.5;
-    color: #5f6774;
+
+  .linha select {
+    flex: none;
+    width: 96px;
+  }
+
+  .campo {
+    margin-bottom: 10px;
+  }
+
+  .acao sp-button {
+    flex: 1 1 130px;
+  }
+
+  /* A previa lista ate 40 planos: mais alto que o log padrao da familia. */
+  .log {
+    height: 220px;
+    margin: 0;
   }
 </style>
 
-<main class="ac-conteudo">
-  <h1 class="ac-titulo">Podcast AutoCut</h1>
-  <p class="ac-sub">Corte por quem esta falando.</p>
+<header class="topo">
+  <div class="marca">
+    <span class="marca-nome">Podcast AutoCut</span>
+  </div>
+  <div id="acEstado" class="badge">carregando</div>
+</header>
 
-  <div class="ac-grupo">
-    <p class="ac-pessoa">Sequencia</p>
-    <div class="ac-linha"><label for="acFps">Quadros/s</label><select id="acFps"></select></div>
+<main class="conteudo">
+  <section class="secao">
+    <div class="secao-cabeca">
+      <span class="cod">SEQ</span>
+      <span class="secao-rotulo">Sequência ativa</span>
+    </div>
+    <div class="secao-corpo">
+      <div id="acSeqNome" class="seq-nome" data-vazio="sim">Nenhuma sequência selecionada</div>
+      <div class="linha"><label for="acFps">Quadros por segundo</label><select id="acFps"></select></div>
+    </div>
+  </section>
+
+  <div class="par">
+    <section class="secao">
+      <div class="secao-cabeca">
+        <span class="cod cod-pessoa">A</span>
+        <span class="secao-rotulo">Pessoa A</span>
+      </div>
+      <div class="secao-corpo">
+        <div class="linha"><label for="acVideoA">Câmera</label><select id="acVideoA"></select></div>
+        <div class="linha"><label for="acAudioA">Microfone</label><select id="acAudioA"></select></div>
+      </div>
+    </section>
+
+    <section class="secao">
+      <div class="secao-cabeca">
+        <span class="cod cod-pessoa">B</span>
+        <span class="secao-rotulo">Pessoa B</span>
+      </div>
+      <div class="secao-corpo">
+        <div class="linha"><label for="acVideoB">Câmera</label><select id="acVideoB"></select></div>
+        <div class="linha"><label for="acAudioB">Microfone</label><select id="acAudioB"></select></div>
+      </div>
+    </section>
   </div>
 
-  <div class="ac-grupo">
-    <p class="ac-pessoa">Audio para analise</p>
-    <input id="acWav" class="ac-campo" type="text" placeholder="Caminho do WAV multicanal (opcional)" />
-    <div class="ac-linha"><label for="acCanalA">Canal da Pessoa A</label><select id="acCanalA"></select></div>
-    <div class="ac-linha"><label for="acCanalB">Canal da Pessoa B</label><select id="acCanalB"></select></div>
+  <section class="secao">
+    <div class="secao-cabeca">
+      <span class="cod">WAV</span>
+      <span class="secao-rotulo">Quem fala, pelo nível do áudio (opcional)</span>
+    </div>
+    <div class="secao-corpo">
+      <label class="campo">
+        <span class="campo-rotulo">Caminho do WAV com um canal por pessoa</span>
+        <sp-textfield id="acWav" placeholder="vazio = usa a transcrição"></sp-textfield>
+        <span class="campo-nota">
+          Exporte do Premiere em WAV PCM mantendo os canais; 16 kHz basta. Vazio, a análise usa a transcrição dos
+          clipes de áudio.
+        </span>
+      </label>
+      <div class="linha"><label for="acCanalA">Canal da pessoa A</label><select id="acCanalA"></select></div>
+      <div class="linha"><label for="acCanalB">Canal da pessoa B</label><select id="acCanalB"></select></div>
+    </div>
+  </section>
+
+  <div class="acao">
+    <sp-button id="acAnalisar" variant="secondary">Analisar</sp-button>
+    <sp-button id="acAplicar" variant="cta" disabled>Aplicar cortes</sp-button>
   </div>
 
-  <div class="ac-grupo">
-    <p class="ac-pessoa">Pessoa A</p>
-    <div class="ac-linha"><label for="acVideoA">Camera</label><select id="acVideoA"></select></div>
-    <div class="ac-linha"><label for="acAudioA">Audio</label><select id="acAudioA"></select></div>
-  </div>
-
-  <div class="ac-grupo">
-    <p class="ac-pessoa">Pessoa B</p>
-    <div class="ac-linha"><label for="acVideoB">Camera</label><select id="acVideoB"></select></div>
-    <div class="ac-linha"><label for="acAudioB">Audio</label><select id="acAudioB"></select></div>
-  </div>
-
-  <div id="acAnalisar" class="ac-botao" role="button" tabindex="0">ANALISAR</div>
-  <div id="acAplicar" class="ac-botao" role="button" tabindex="0" aria-disabled="true">APLICAR AUTOCUT</div>
-
-  <pre id="acLog" class="ac-log">Abra a sequencia do podcast e clique em ANALISAR.</pre>
-
-  <p class="ac-nota">
-    Com o WAV preenchido, quem fala sai do nivel de cada canal — nao precisa
-    transcrever. Exporte do Premiere em WAV PCM preservando os canais; 16 kHz
-    basta e mantem o arquivo pequeno. Deixando o campo vazio, a analise usa a
-    transcricao dos clipes de audio.
-  </p>
+  <section class="secao secao-log">
+    <div class="secao-cabeca">
+      <span class="cod">LOG</span>
+      <span class="secao-rotulo">Registro</span>
+    </div>
+    <div class="secao-corpo">
+      <pre id="acLog" class="log">Abra a sequência do podcast e clique em Analisar.</pre>
+    </div>
+  </section>
 </main>

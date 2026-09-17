@@ -1,156 +1,90 @@
-<!-- Fragmento: o shell injeta isto direto em document.body. O <style> vem
-     junto porque esta tela so existe dentro do Pro Edition — nao e um painel
-     standalone como o Auto B-roll e o Pro Captions.
+<!-- Fragmento: o shell injeta isto direto em document.body, depois da folha da
+     familia (auto-broll-premiere/src/ui/styles.css). Aqui fica so o acento
+     desta ferramenta e o que nao existe na folha.
 
-     Sem CSS Grid, sem gap, sem var(): nada disso e confiavel no UXP (ver
-     auto-broll-premiere/docs/UXP_ARMADILHAS.md). Espacamento sai de margin. -->
+     Botoes sao sp-button, nao <button>: o <button> nativo ignora o CSS no UXP.
+     Sem CSS Grid, sem gap, sem var() (ver
+     auto-broll-premiere/docs/UXP_ARMADILHAS.md). -->
 <style>
-  html,
-  body {
-    height: 100%;
+  .marca-nome::before {
+    background-color: #e07ba8;
   }
 
-  body {
-    display: flex;
-    flex-direction: column;
+  .cod-split {
+    color: #e07ba8;
+  }
+
+  .campo {
+    margin-bottom: 12px;
+  }
+
+  .acao sp-button#asAplicar {
+    flex: 2 1 180px;
+  }
+
+  .acao sp-button#asDiag {
+    flex: 1 1 110px;
+  }
+
+  .log {
+    height: 180px;
     margin: 0;
-    padding: 0;
-    overflow: hidden;
-    background-color: #0f1216;
-  }
-
-  .as-conteudo {
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    flex: 1 1 auto;
-    min-height: 0;
-    overflow-y: auto;
-    overflow-x: hidden;
-    padding: 16px 12px 24px;
-    font-family: Inter, adobe-clean, "Source Sans 3", "Segoe UI", sans-serif;
-    color: #eceef2;
-    background-color: #0f1216;
-  }
-
-  /* Filho de flex column no UXP encolhe sozinho se deixarem. */
-  .as-conteudo > * {
-    flex: none;
-  }
-
-  .as-titulo {
-    margin: 0 0 2px;
-    font-size: 15px;
-    font-weight: 600;
-  }
-
-  .as-sub {
-    margin: 0 0 16px;
-    font-size: 11px;
-    color: #5f6774;
-  }
-
-  .as-rotulo {
-    margin: 0 0 4px;
-    font-size: 10px;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: #9098a6;
-  }
-
-  .as-campo {
-    margin: 0 0 4px;
-    padding: 6px 9px;
-    background-color: #14171d;
-    border: 1px solid #232830;
-    border-radius: 7px;
-    color: #eceef2;
-    font-family: inherit;
-    font-size: 12px;
-  }
-
-  .as-campo:focus {
-    border-color: #3b82f6;
-    outline: none;
-  }
-
-  .as-dica {
-    margin: 0 0 14px;
-    font-size: 10px;
-    color: #5f6774;
-  }
-
-  .as-check {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    margin: 0 0 14px;
-    font-size: 12px;
-    color: #9098a6;
-    cursor: pointer;
-  }
-
-  .as-check input {
-    margin: 0 8px 0 0;
-  }
-
-  .as-botao {
-    align-self: stretch;
-    margin: 0 0 8px;
-    padding: 9px 14px;
-    border-radius: 7px;
-    border: 1px solid #333b47;
-    background-color: #1a1e26;
-    color: #eceef2;
-    font-family: inherit;
-    font-size: 12px;
-    cursor: pointer;
-  }
-
-  .as-botao:hover {
-    background-color: #21262f;
-  }
-
-  .as-cta {
-    background-color: #3b82f6;
-    border-color: #3b82f6;
-    font-weight: 600;
-  }
-
-  .as-cta:hover {
-    background-color: #2f6fd8;
-  }
-
-  .as-log {
-    margin-top: 10px;
-    padding: 10px;
-    border-radius: 8px;
-    background-color: #14171d;
-    border: 1px solid #232830;
-    font-family: "Source Code Pro", ui-monospace, Menlo, Consolas, monospace;
-    font-size: 11px;
-    line-height: 1.5;
-    color: #cdd2da;
-    white-space: pre-wrap;
   }
 </style>
 
-<main class="as-conteudo">
-  <h1 class="as-titulo">Auto Split</h1>
-  <p class="as-sub">Layout meio a meio: doutor em cima, B-roll na metade de baixo.</p>
+<header class="topo">
+  <div class="marca">
+    <span class="marca-nome">Auto Split</span>
+  </div>
+  <div id="asEstado" class="badge">carregando</div>
+</header>
 
-  <p class="as-rotulo">Faixa de B-roll</p>
-  <input id="asFaixa" class="as-campo" type="text" placeholder="vazio = todas acima da V1" />
-  <p class="as-dica">O numero como voce ve no Premiere: V2 = 2.</p>
+<main class="conteudo">
+  <section class="secao">
+    <div class="secao-cabeca">
+      <span class="cod">SEQ</span>
+      <span class="secao-rotulo">Sequência ativa</span>
+    </div>
+    <div class="secao-corpo">
+      <div id="asSeqNome" class="seq-nome" data-vazio="sim">Nenhuma sequência selecionada</div>
+      <div class="dica">
+        Último passo da edição: revise os B-rolls antes de aplicar. Um Ctrl+Z desfaz cada etapa.
+      </div>
+    </div>
+  </section>
 
-  <p class="as-rotulo">Divisao (% da altura ate o B-roll)</p>
-  <input id="asDivisao" class="as-campo" type="number" value="50" min="40" max="60" />
-  <p class="as-dica">50 = meio a meio. Aceita de 40 a 60.</p>
+  <section class="secao">
+    <div class="secao-cabeca">
+      <span class="cod cod-split">V2+</span>
+      <span class="secao-rotulo">Tela dividida</span>
+    </div>
+    <div class="secao-corpo">
+      <label class="campo">
+        <span class="campo-rotulo">Faixa dos B-rolls</span>
+        <sp-textfield id="asFaixa" placeholder="todas acima da V1"></sp-textfield>
+        <span class="campo-nota">O número como aparece no Premiere: V2 = 2. Vazio usa todas acima da V1.</span>
+      </label>
+      <label class="campo">
+        <span class="campo-rotulo">Onde a tela divide (% da altura)</span>
+        <sp-textfield id="asDivisao" value="50"></sp-textfield>
+        <span class="campo-nota">50 = meio a meio. Aceita de 40 a 60.</span>
+      </label>
+      <sp-checkbox id="asRefazer">Refazer do zero (troca o efeito já aplicado)</sp-checkbox>
+    </div>
+  </section>
 
-  <label class="as-check"><input id="asRefazer" type="checkbox" /> Refazer do zero (troca o efeito ja aplicado)</label>
+  <div class="acao">
+    <sp-button id="asAplicar" variant="cta">Aplicar Auto Split</sp-button>
+    <sp-button id="asDiag" variant="secondary" quiet>Diagnóstico</sp-button>
+  </div>
 
-  <button id="asAplicar" class="as-botao as-cta" type="button">Aplicar Auto Split</button>
-  <button id="asDiag" class="as-botao" type="button">Diagnostico</button>
-
-  <pre id="asLog" class="as-log">carregando</pre>
+  <section class="secao secao-log">
+    <div class="secao-cabeca">
+      <span class="cod">LOG</span>
+      <span class="secao-rotulo">Registro</span>
+    </div>
+    <div class="secao-corpo">
+      <pre id="asLog" class="log">Lendo a sequência...</pre>
+    </div>
+  </section>
 </main>
