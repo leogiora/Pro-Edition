@@ -13,7 +13,7 @@ import {
   lerBrollsAcimaDeV1,
   readJson,
   writeJson,
-} from "../../auto-broll-premiere/src/premiere.ts";
+} from "../ferramentas/auto-broll/src/premiere.ts";
 import {
   calcularEnquadramento,
   fracaoDivisao,

@@ -11,9 +11,9 @@
  * (601/1199 em vez de 600/1200): segundo nao cai em quadro, tick cai.
  */
 
-import { caminhoParaUrl, sourceToSequence, type TimelineClip } from "../../auto-broll-premiere/src/domain.ts";
-import { comTransacao, getSequenceInfo, lerTranscricoes } from "../../auto-broll-premiere/src/premiere.ts";
-import { parseTranscricao } from "../../auto-broll-premiere/src/transcript.ts";
+import { caminhoParaUrl, sourceToSequence, type TimelineClip } from "../ferramentas/auto-broll/src/domain.ts";
+import { comTransacao, getSequenceInfo, lerTranscricoes } from "../ferramentas/auto-broll/src/premiere.ts";
+import { parseTranscricao } from "../ferramentas/auto-broll/src/transcript.ts";
 import { nivelPorJanela } from "./wav.ts";
 import {
   cortes,

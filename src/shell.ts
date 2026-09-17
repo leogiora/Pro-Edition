@@ -53,8 +53,8 @@ export function desenharTrilhas(notacao: string): string {
 }
 
 /**
- * Extrai o miolo do <body> de um painel standalone (auto-broll-premiere ou
- * Pro-Captions) para injetar em document.body do shell — nunca o documento
+ * Extrai o miolo do <body> de um painel standalone (ferramentas/auto-broll ou
+ * ferramentas/pro-captions) para injetar em document.body do shell — nunca o documento
  * inteiro, que tem DOCTYPE/head/tag <body> proprios.
  *
  * Corta ate a marca <!--SCRIPT-->: o que vem depois (o bundle JS do plugin

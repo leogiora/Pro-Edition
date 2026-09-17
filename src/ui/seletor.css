@@ -4,7 +4,7 @@
  * ============================================================================
  *
  * Restricoes do UXP que ditam TODA a estrutura abaixo (lista completa em
- * auto-broll-premiere/docs/UXP_ARMADILHAS.md):
+ * ferramentas/auto-broll/docs/UXP_ARMADILHAS.md):
  *
  *  - `display: grid` e IGNORADO. Layout inteiro em flexbox.
  *  - `gap` e `var()` NAO sao confiaveis. Tokens sao um bloco documentado com

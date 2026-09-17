@@ -6,13 +6,13 @@
 
 import { desenharTrilhas, escolherTela, extrairCorpo, type Ferramenta, type Tela } from "../shell.ts";
 
-import htmlBrollBruto from "../../../auto-broll-premiere/src/ui/index.html";
-import cssBroll from "../../../auto-broll-premiere/src/ui/styles.css";
-import { mount as mountBroll } from "../../../auto-broll-premiere/src/ui/mount.ts";
+import htmlBrollBruto from "../../ferramentas/auto-broll/src/ui/index.html";
+import cssBroll from "../../ferramentas/auto-broll/src/ui/styles.css";
+import { mount as mountBroll } from "../../ferramentas/auto-broll/src/ui/mount.ts";
 
-import htmlCaptionsBruto from "../../../Pro-Captions/src/ui/index.html";
-import cssCaptions from "../../../Pro-Captions/src/ui/styles.css";
-import { mount as mountCaptions } from "../../../Pro-Captions/src/ui/mount.ts";
+import htmlCaptionsBruto from "../../ferramentas/pro-captions/src/ui/index.html";
+import cssCaptions from "../../ferramentas/pro-captions/src/ui/styles.css";
+import { mount as mountCaptions } from "../../ferramentas/pro-captions/src/ui/mount.ts";
 
 import htmlAutocut from "./autocut.html";
 import { mount as mountAutocut } from "./autocut-mount.ts";
@@ -25,7 +25,7 @@ import cssSeletor from "./seletor.css";
 
 /*
  * Barra de voltar do shell — mesmos tokens das folhas da familia (ver
- * auto-broll-premiere/src/ui/styles.css para a tabela completa).
+ * ferramentas/auto-broll/src/ui/styles.css para a tabela completa).
  *
  * So "<- Pro Edition", sem o nome da ferramenta: toda tela ja abre com o
  * proprio cabecalho (nome + status) logo abaixo, e repetir o nome aqui dava
