@@ -75,7 +75,9 @@ export function conferirPalavras(
       continue;
     }
     const encolheu = a.fim - a.inicio - (d.fim - d.inicio);
-    if (encolheu > toleranciaS) {
+    // Folga de 1e-6: sem ela, uma diferenca de exatamente um quadro reprova por
+    // erro de ponto flutuante (0,0333... sai maior que 1/30 na conta binaria).
+    if (encolheu > toleranciaS + 1e-6) {
       problemas.push(`"${a.texto}" encurtou ${encolheu.toFixed(2)}s`);
     }
   }
