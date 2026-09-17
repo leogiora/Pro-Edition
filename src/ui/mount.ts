@@ -133,7 +133,7 @@ async function lerTudo(): Promise<{
 }
 
 async function gerar(): Promise<void> {
-  estado("lendo sequencia", "ativo");
+  estado("lendo sequência", "ativo");
   const { clipes, cortes, palavras } = await lerTudo();
   if (palavras.length === 0) {
     throw new Error("Nenhuma palavra encontrada. A camera principal da V1 tem transcricao?");
