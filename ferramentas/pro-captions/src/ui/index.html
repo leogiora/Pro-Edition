@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title>Pro Captions</title>
+    <!-- O build substitui esta marca pelo conteudo de styles.css.
+         Folha de estilo externa nao carrega no UXP: o caminho relativo e
+         resolvido a partir da raiz do plugin e falha em silencio. -->
+    <!--ESTILOS-->
+  </head>
+  <body>
+    <header class="topo">
+      <div class="marca">
+        <span class="marca-nome">Pro Captions</span>
+      </div>
+      <div id="estado" class="badge">carregando</div>
+    </header>
+
+    <main class="conteudo">
+      <section class="secao">
+        <div class="secao-cabeca">
+          <span class="cod">SEQ</span>
+          <span class="secao-rotulo">Sequência ativa</span>
+        </div>
+        <div class="secao-corpo">
+          <div id="seqNome" class="seq-nome" data-vazio="sim">Nenhuma sequência selecionada</div>
+          <div id="seqDica" class="dica">
+            Abra a sequência no Premiere e clique em Gerar legendas. O painel lê a que estiver ativa na hora do clique.
+          </div>
+        </div>
+      </section>
+
+      <div class="acao">
+        <sp-button id="gerar" variant="cta">Gerar legendas</sp-button>
+        <sp-button id="restaurar" variant="secondary" quiet>Restaurar original</sp-button>
+      </div>
+
+      <section id="secaoLog" class="secao secao-log" data-aberto="sim">
+        <div class="secao-cabeca">
+          <span class="cod">LOG</span>
+          <span class="secao-rotulo">Registro</span>
+          <div
+            id="logToggle"
+            class="secao-acao"
+            role="button"
+            tabindex="0"
+            aria-expanded="true"
+            aria-controls="log"
+            aria-label="Recolher o registro"
+          >
+            Recolher
+          </div>
+        </div>
+        <div class="secao-corpo">
+          <div id="log" class="log"></div>
+        </div>
+      </section>
+    </main>
+
+    <!-- O build substitui esta marca pelo bundle inteiro.
+         Caminho relativo nao resolve no UXP. -->
+    <!--SCRIPT-->
+  </body>
+</html>
