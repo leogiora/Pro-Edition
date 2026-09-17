@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { MARGEM_PADRAO_S, planejarCortes, type Palavra } from "../src/pausas.ts";
+import { conferirPalavras, MARGEM_PADRAO_S, planejarCortes, type Palavra } from "../src/pausas.ts";
 
 const opcoes = { fps: 30, duracaoQ: 300, margemS: MARGEM_PADRAO_S };
 
@@ -92,4 +92,45 @@ test("palavras fora de ordem ou sobrepostas nao geram corte negativo", () => {
   ];
   const plano = planejarCortes(palavras, opcoes);
   for (const c of plano.cortes) assert.ok(c.fimQ > c.inicioQ, `corte invalido: ${JSON.stringify(c)}`);
+});
+
+const umQuadro = 1 / 30;
+
+test("conferirPalavras aprova quando toda palavra continua inteira", () => {
+  const antes: Palavra[] = [
+    { texto: "ola", inicio: 1, fim: 1.5 },
+    { texto: "mundo", inicio: 3, fim: 3.5 },
+  ];
+  const depois: Palavra[] = [
+    { texto: "ola", inicio: 0.08, fim: 0.58 },
+    { texto: "mundo", inicio: 0.74, fim: 1.24 },
+  ];
+  const r = conferirPalavras(antes, depois, umQuadro);
+  assert.equal(r.ok, true);
+  assert.match(r.linhas.join("\n"), /2 de 2 palavras inteiras/);
+});
+
+test("conferirPalavras reprova palavra que sumiu", () => {
+  const antes: Palavra[] = [
+    { texto: "ola", inicio: 1, fim: 1.5 },
+    { texto: "mundo", inicio: 3, fim: 3.5 },
+  ];
+  const depois: Palavra[] = [{ texto: "ola", inicio: 0.08, fim: 0.58 }];
+  const r = conferirPalavras(antes, depois, umQuadro);
+  assert.equal(r.ok, false);
+  assert.match(r.linhas.join("\n"), /mundo/);
+});
+
+test("conferirPalavras reprova palavra encurtada alem da tolerancia", () => {
+  const antes: Palavra[] = [{ texto: "saude", inicio: 1, fim: 1.5 }];
+  const depois: Palavra[] = [{ texto: "saude", inicio: 0.08, fim: 0.4 }];
+  const r = conferirPalavras(antes, depois, umQuadro);
+  assert.equal(r.ok, false);
+  assert.match(r.linhas.join("\n"), /saude/);
+});
+
+test("conferirPalavras aceita diferenca de um quadro", () => {
+  const antes: Palavra[] = [{ texto: "saude", inicio: 1, fim: 1.5 }];
+  const depois: Palavra[] = [{ texto: "saude", inicio: 0.08, fim: 0.58 - umQuadro }];
+  assert.equal(conferirPalavras(antes, depois, umQuadro).ok, true);
 });

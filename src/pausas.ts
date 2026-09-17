@@ -47,6 +47,44 @@ export interface OpcoesPlano {
   readonly margemS: number;
 }
 
+/**
+ * Prova de que o corte nao comeu fala: mesma sequencia de palavras, cada uma
+ * com a mesma duracao. Compara DURACAO e nao posicao — depois do corte a
+ * palavra muda de lugar de proposito.
+ *
+ * Roda sobre a transcricao relida DA TIMELINE depois de aplicar (nunca sobre o
+ * plano): o que interessa e o que o Premiere gravou, nao o que pedimos.
+ */
+export function conferirPalavras(
+  antes: readonly Palavra[],
+  depois: readonly Palavra[],
+  toleranciaS: number
+): { ok: boolean; linhas: string[] } {
+  const problemas: string[] = [];
+  const total = antes.length;
+
+  for (let i = 0; i < total; i++) {
+    const a = antes[i]!;
+    const d = depois[i];
+    if (!d) {
+      problemas.push(`palavra ${i + 1} "${a.texto}" sumiu`);
+      continue;
+    }
+    if (d.texto !== a.texto) {
+      problemas.push(`palavra ${i + 1}: esperava "${a.texto}", veio "${d.texto}"`);
+      continue;
+    }
+    const encolheu = a.fim - a.inicio - (d.fim - d.inicio);
+    if (encolheu > toleranciaS) {
+      problemas.push(`"${a.texto}" encurtou ${encolheu.toFixed(2)}s`);
+    }
+  }
+  if (depois.length > total) problemas.push(`sobraram ${depois.length - total} palavras a mais`);
+
+  if (problemas.length === 0) return { ok: true, linhas: [`${total} de ${total} palavras inteiras.`] };
+  return { ok: false, linhas: [`${total - problemas.length} de ${total} palavras inteiras:`, ...problemas] };
+}
+
 export function planejarCortes(palavras: readonly Palavra[], opcoes: OpcoesPlano): Plano {
   const { fps, duracaoQ, margemS } = opcoes;
   if (!(fps > 0)) throw new Error(`fps invalido: ${fps}`);
