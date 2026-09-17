@@ -20,6 +20,38 @@ export function escolherTela(
   return registro[ferramenta];
 }
 
+const SEGMENTO: Readonly<Record<string, string>> = { "#": "novo", "=": "base", "-": "vazio" };
+
+/**
+ * Desenha a miniatura de timeline de um card do hall a partir de uma notacao
+ * que se le como a propria timeline: `"V2 --##---#|V1 ========"`.
+ *
+ * `#` = clipe que a ferramenta cria ou ajusta, `=` = clipe que ja estava na
+ * sequencia, `-` = vazio. Cada sequencia de caracteres iguais vira um segmento
+ * com flex-grow do tamanho dela — sem largura em %, so o flex que o UXP ja
+ * provou que respeita.
+ */
+export function desenharTrilhas(notacao: string): string {
+  const linhas = notacao.split("|").map((linha) => linha.trim().split(/\s+/));
+  // Trilhas de tamanhos diferentes desalinham os cortes entre V1 e V2 sem erro nenhum.
+  if (new Set(linhas.map(([, faixa = ""]) => faixa.length)).size > 1) {
+    throw new Error(`Trilhas "${notacao}" com tamanhos diferentes`);
+  }
+  return linhas
+    .map(([rotulo, faixa = ""]) => {
+      const segmentos = (faixa.match(/(.)\1*/g) ?? []).map((trecho) => {
+        const tipo = SEGMENTO[trecho[0]!];
+        if (!tipo) throw new Error(`Trilha "${rotulo}": caractere "${trecho[0]}" nao existe na notacao`);
+        return `<span class="seg seg-${tipo}" style="flex-grow: ${trecho.length}"></span>`;
+      });
+      return (
+        `<span class="trilha"><span class="trilha-rotulo">${rotulo}</span>` +
+        `<span class="trilha-faixa">${segmentos.join("")}</span></span>`
+      );
+    })
+    .join("");
+}
+
 /**
  * Extrai o miolo do <body> de um painel standalone (auto-broll-premiere ou
  * Pro-Captions) para injetar em document.body do shell — nunca o documento

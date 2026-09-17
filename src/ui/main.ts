@@ -4,7 +4,7 @@
  * IDs e classes entre os dois plugins, documentada no spec).
  */
 
-import { escolherTela, extrairCorpo, type Ferramenta, type Tela } from "../shell.ts";
+import { desenharTrilhas, escolherTela, extrairCorpo, type Ferramenta, type Tela } from "../shell.ts";
 
 import htmlBrollBruto from "../../../auto-broll-premiere/src/ui/index.html";
 import cssBroll from "../../../auto-broll-premiere/src/ui/styles.css";
@@ -103,10 +103,12 @@ const CSS_NAV = `
   color: #333b47;
 }
 
+/* Onde voce esta e o mais claro do caminho; o resto e o caminho de volta. */
 .pe-nav-atual {
   flex: 1 1 auto;
   min-width: 0;
-  color: #5f6774;
+  font-weight: 600;
+  color: #eceef2;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -138,6 +140,10 @@ function montarSeletor(root: HTMLElement): void {
   ligarAcao(root.querySelector<HTMLElement>("#cardCaptions")!, () => mostrar("captions"));
   ligarAcao(root.querySelector<HTMLElement>("#cardAutocut")!, () => mostrar("autocut"));
   ligarAcao(root.querySelector<HTMLElement>("#cardAutosplit")!, () => mostrar("autosplit"));
+  // Depois dos cliques: miniatura e enfeite, nunca pode deixar o hall morto.
+  root.querySelectorAll<HTMLElement>("[data-trilhas]").forEach((mapa) => {
+    mapa.innerHTML = desenharTrilhas(mapa.dataset.trilhas ?? "");
+  });
 }
 
 const REGISTRO: Readonly<Record<Ferramenta, Tela>> = {
