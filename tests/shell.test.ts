@@ -7,6 +7,7 @@ test("escolherTela devolve a tela certa do registro", () => {
   const semAcao = () => {};
   const registro = {
     seletor: { html: "<a>seletor</a>", css: "s", montar: semAcao } satisfies Tela,
+    pausas: { html: "<f>pausas</f>", css: "f", montar: semAcao } satisfies Tela,
     broll: { html: "<b>broll</b>", css: "b", montar: semAcao } satisfies Tela,
     captions: { html: "<c>captions</c>", css: "c", montar: semAcao } satisfies Tela,
     autocut: { html: "<d>autocut</d>", css: "d", montar: semAcao } satisfies Tela,
@@ -14,6 +15,7 @@ test("escolherTela devolve a tela certa do registro", () => {
   };
 
   assert.equal(escolherTela(registro, "seletor").html, "<a>seletor</a>");
+  assert.equal(escolherTela(registro, "pausas").html, "<f>pausas</f>");
   assert.equal(escolherTela(registro, "broll").html, "<b>broll</b>");
   assert.equal(escolherTela(registro, "captions").html, "<c>captions</c>");
   assert.equal(escolherTela(registro, "autocut").html, "<d>autocut</d>");
@@ -45,6 +47,6 @@ test("desenharTrilhas junta caracteres iguais num segmento e rejeita notacao err
 test("toda miniatura do hall tem notacao valida e trilhas do mesmo tamanho", () => {
   const html = readFileSync(new URL("../src/ui/seletor.html", import.meta.url), "utf8");
   const notacoes = [...html.matchAll(/data-trilhas="([^"]+)"/g)].map((m) => m[1]!);
-  assert.equal(notacoes.length, 4);
+  assert.equal(notacoes.length, 5);
   for (const n of notacoes) desenharTrilhas(n);
 });

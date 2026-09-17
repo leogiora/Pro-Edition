@@ -14,6 +14,9 @@ import htmlCaptionsBruto from "../../ferramentas/pro-captions/src/ui/index.html"
 import cssCaptions from "../../ferramentas/pro-captions/src/ui/styles.css";
 import { mount as mountCaptions } from "../../ferramentas/pro-captions/src/ui/mount.ts";
 
+import htmlPausas from "./pausas.html";
+import { mount as mountPausas } from "./pausas-mount.ts";
+
 import htmlAutocut from "./autocut.html";
 import { mount as mountAutocut } from "./autocut-mount.ts";
 
@@ -109,6 +112,7 @@ function ligarAcao(node: HTMLElement, acao: () => void): void {
 }
 
 function montarSeletor(root: HTMLElement): void {
+  ligarAcao(root.querySelector<HTMLElement>("#cardPausas")!, () => mostrar("pausas"));
   ligarAcao(root.querySelector<HTMLElement>("#cardBroll")!, () => mostrar("broll"));
   ligarAcao(root.querySelector<HTMLElement>("#cardCaptions")!, () => mostrar("captions"));
   ligarAcao(root.querySelector<HTMLElement>("#cardAutocut")!, () => mostrar("autocut"));
@@ -121,6 +125,7 @@ function montarSeletor(root: HTMLElement): void {
 
 const REGISTRO: Readonly<Record<Ferramenta, Tela>> = {
   seletor: { html: htmlSeletor, css: cssSeletor, montar: montarSeletor },
+  pausas: { html: htmlPausas, css: cssBroll, montar: mountPausas },
   broll: { html: extrairCorpo(htmlBrollBruto), css: cssBroll, montar: mountBroll },
   captions: { html: extrairCorpo(htmlCaptionsBruto), css: cssCaptions, montar: mountCaptions },
   // Telas nossas usam a folha da familia do Auto B-roll (topo, secao, badge,

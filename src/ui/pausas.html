@@ -1,0 +1,69 @@
+<!-- Fragmento: o shell injeta isto direto em document.body, depois da folha da
+     familia (ferramentas/auto-broll/src/ui/styles.css). Aqui fica so o acento
+     desta ferramenta e o que nao existe na folha.
+
+     Botoes sao sp-button, nao <button>: o <button> nativo ignora o CSS no UXP.
+     Sem CSS Grid, sem gap, sem var() (ver
+     ferramentas/auto-broll/docs/UXP_ARMADILHAS.md). -->
+<style>
+  .marca-nome::before {
+    background-color: #67c7e2;
+  }
+
+  .cod-pausa {
+    color: #67c7e2;
+  }
+
+  .log {
+    height: 200px;
+    margin: 0;
+  }
+</style>
+
+<header class="topo">
+  <div class="marca">
+    <span class="marca-nome">Auto Pausas</span>
+  </div>
+  <div id="apEstado" class="badge">carregando</div>
+</header>
+
+<main class="conteudo">
+  <section class="secao">
+    <div class="secao-cabeca">
+      <span class="cod">SEQ</span>
+      <span class="secao-rotulo">Sequência ativa</span>
+    </div>
+    <div class="secao-corpo">
+      <div id="apSeqNome" class="seq-nome" data-vazio="sim">Nenhuma sequência selecionada</div>
+      <div id="apDica" class="dica">Abra a gravação bruta: um clipe na V1 com o áudio na A1.</div>
+    </div>
+  </section>
+
+  <section class="secao">
+    <div class="secao-cabeca">
+      <span class="cod cod-pausa">A1</span>
+      <span class="secao-rotulo">Corte das pausas</span>
+    </div>
+    <div class="secao-corpo">
+      <label class="campo">
+        <span class="campo-rotulo">Margem de segurança (segundos)</span>
+        <sp-textfield id="apMargem" value="0,08"></sp-textfield>
+        <span class="campo-nota">O que fica de silêncio de cada lado da palavra. Menor = mais colado.</span>
+      </label>
+    </div>
+  </section>
+
+  <div class="acao">
+    <sp-button id="apCortar" variant="cta">Cortar pausas</sp-button>
+  </div>
+
+  <section class="secao secao-log">
+    <div class="secao-cabeca">
+      <span class="cod">LOG</span>
+      <span class="secao-rotulo">Registro</span>
+    </div>
+    <div class="secao-corpo">
+      <pre id="apLog" class="log">Lendo a sequência...</pre>
+    </div>
+  </section>
+</main>
