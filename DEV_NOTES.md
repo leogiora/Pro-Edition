@@ -261,3 +261,35 @@ deu certo** — falta diagnosticar o que veio.
   que ordem os clones se sobrescrevem, e isso so o Premiere real responde.
 - Config de anti-flicker (`CONFIG_PADRAO`) ainda nao aparece na UI. Os numeros
   vieram do spec e nao foram calibrados com podcast real — e o proximo passo.
+
+## Auto Pausas (2026-09-17/18)
+
+Corte de pausas na gravacao bruta de anuncio. Spec:
+`docs/superpowers/specs/2026-09-17-auto-pausas-design.md`. Plano:
+`docs/superpowers/plans/2026-09-17-auto-pausas.md`. Branch `auto-pausas`.
+
+### API do Premiere 26 — o que a sonda provou ao vivo (fps 23,976)
+
+| Chamada | O que a timeline mostrou DEPOIS |
+|---|---|
+| `createCloneTrackItemAction(item, offset, 0, 0, true, false)` | **Corta** o clipe no offset pedido. O clone tem o tamanho do original, entao o ultimo pedaco passa do fim da midia (101,64 num arquivo de 100,64) e pede `createSetEndAction` |
+| idem | Atinge **so a faixa do item**: clonando so a V1, a A1 continuou inteira. Cada faixa precisa da propria acao |
+| `createRemoveItemsAction(selecao, true, ANY)` | **Fecha o buraco**: removido o pedaco do meio de tres, o terceiro andou de 4,00 para 2,00 nas DUAS faixas e o fim caiu exatamente 2 s. Sincronia mantida |
+| `sequence.getSelection()` + `removeItem`/`addItem` | Funciona para montar a selecao do remove |
+| `createSetInPointAction` | Grava o valor exato (pedi 2,00, timeline devolveu 2,00). Na rodada 1 **aparou a cabeca**: o pedaco andou de 1,00 para 3,00 — mas era o ultimo e passava do fim da midia |
+
+**Todo pedaco nasce com `in=0.00`, herdado do pai.** Um clipe mostra
+`in + (t - inicio)` da midia: sem corrigir o in, cada pedaco repete o inicio do
+video. Corrigir e obrigatorio, e COMO corrigir e a pergunta aberta.
+
+### Onde parou
+
+Sonda rodada 3 escrita e no `dist` (commit `49554c9`), esperando o usuario rodar:
+ela corta em 2 s e 4 s, aplica `setInPoint(2s)` no pedaco **do meio** (caso real,
+sem passar do fim da midia) e, se o pedaco andar, testa `createMoveAction` para
+traze-lo de volta. As duas linhas `LEITURA` do log dao o veredito.
+
+- pedaco FICA no lugar -> mecanica = fatiar, corrigir o in, remover com ripple;
+- pedaco ANDA + move funciona -> a mesma coisa mais um move por pedaco;
+- pedaco ANDA + move falha -> voltar ao spec: sobra remontar com
+  `createOverwriteItemAction` (molde do `inserirPlano` do Auto B-roll).
