@@ -20,6 +20,7 @@ interface ItemLike {
   getStartTime: () => Promise<{ seconds: number }>;
   getEndTime: () => Promise<{ seconds: number }>;
   getInPoint: () => Promise<{ seconds: number }>;
+  getOutPoint: () => Promise<{ seconds: number }>;
   createSetInPointAction: (t: unknown) => unknown;
   createSetEndAction: (t: unknown) => unknown;
 }
@@ -101,107 +102,123 @@ export async function lerGravacao(): Promise<Gravacao> {
 // --------------------------------------------------------------- sonda
 
 /*
- * O que a primeira rodada da sonda provou, no Premiere 26 (fps 23,976):
+ * O que as duas primeiras rodadas provaram, no Premiere 26 (fps 23,976):
  *
- *  - `createCloneTrackItemAction(item, offset, 0, 0, true, false)` CORTA o
- *    clipe no offset pedido: 1 pedaco virou [0-1.00] + [1.00-101.64]. O clone
- *    e do tamanho do original, entao o ultimo pedaco passa do fim (101.64 >
- *    100.64) e pede `createSetEndAction`.
- *  - O clone atinge SO a faixa do item. A A1 continuou inteira: cada faixa
- *    precisa da propria acao, como o Podcast AutoCut ja faz com as quatro.
- *  - `createSetInPointAction` grava exatamente o que se pede (pedi 2.00, a
- *    timeline devolveu 2.00) e apara a CABECA no lugar: o inicio andou de 1.00
- *    para 3.00 e deixou buraco. Nao puxa o que vem depois.
- *  - `createRemoveItemsAction(selecao, true, ANY)` nao lancou e o pedaco sumiu,
- *    mas ele era o ULTIMO da timeline — nao provou que o ripple fecha o buraco.
+ *  1. `createCloneTrackItemAction(item, offset, 0, 0, true, false)` CORTA o
+ *     clipe no offset pedido. Atinge SO a faixa do item: V1 e A1 precisam cada
+ *     uma da sua acao (a A1 ficou inteira quando so a V1 foi clonada).
+ *  2. `createRemoveItemsAction(selecao, true, ANY)` FECHA o buraco: removendo o
+ *     pedaco do meio ([2-4] de tres pedacos), o terceiro andou de 4,00 para
+ *     2,00 nas DUAS faixas e o fim caiu exatamente 2 s. Sincronia mantida.
+ *  3. Todo pedaco nasce com `in=0.00`, herdado do pai. Um clipe mostra
+ *     `in + (t - inicio)` da midia, entao um pedaco com in errado mostra o
+ *     video desde o comeco de novo. Isso PRECISA ser corrigido.
+ *  4. `createSetInPointAction` grava o valor exato pedido, mas na rodada 1 ele
+ *     APAROU A CABECA: o pedaco andou de 1,00 para 3,00 ao receber in=2,00.
+ *     So que aquele pedaco era o ultimo e passava do fim da midia (101,64 num
+ *     arquivo de 100,64), o que pode explicar o comportamento.
  *
- * Esta segunda rodada existe so para essa ultima pergunta, e ja no formato do
- * corte de verdade: corta V1 e A1 nos mesmos dois pontos e remove o pedaco DO
- * MEIO. Se o terceiro pedaco andar para tras e as duas faixas continuarem
- * iguais, a mecanica da ferramenta e fatiar + ripple.
+ * Esta rodada decide o ponto 4 num pedaco do MEIO, que e o caso real, e testa
+ * o `createMoveAction` como plano de recuperacao caso o pedaco ande.
  */
 export async function diagnostico(): Promise<string[]> {
   const linhas: string[] = [];
 
-  const posicoes = async (video: boolean): Promise<string> => {
+  const medir = async (video: boolean) => {
     const { sequence } = await ativa();
     const itens = await itensDa(sequence, video, 0);
-    const lidos = await Promise.all(
-      itens.map(async (i) => {
-        const inicio = (await i.getStartTime()).seconds;
-        const fim = (await i.getEndTime()).seconds;
-        const entrada = (await i.getInPoint()).seconds;
-        return `${inicio.toFixed(2)}-${fim.toFixed(2)} in=${entrada.toFixed(2)}`;
-      })
+    return Promise.all(
+      itens.map(async (i) => ({
+        item: i,
+        inicio: (await i.getStartTime()).seconds,
+        fim: (await i.getEndTime()).seconds,
+        entrada: (await i.getInPoint()).seconds,
+        saida: (await i.getOutPoint()).seconds,
+      }))
     );
-    return `${itens.length} pedaco(s) [${lidos.join(" | ")}]`;
   };
 
   const retrato = async (rotulo: string) => {
-    linhas.push(`${rotulo}: V1 ${await posicoes(true)}`, `${rotulo}: A1 ${await posicoes(false)}`);
+    for (const [nome, video] of [
+      ["V1", true],
+      ["A1", false],
+    ] as const) {
+      const pecas = await medir(video);
+      linhas.push(
+        `${rotulo}: ${nome} ${pecas.length}x [${pecas
+          .map((p) => `${p.inicio.toFixed(2)}-${p.fim.toFixed(2)} in=${p.entrada.toFixed(2)} out=${p.saida.toFixed(2)}`)
+          .join(" | ")}]`
+      );
+    }
   };
 
-  /** Corta as DUAS faixas no mesmo instante, numa transacao so. */
   const cortarEm = async (segundos: number) => {
     const { project, sequence } = await ativa();
     const editor = await ppro.SequenceEditor.getEditor(sequence);
     const alvos: Array<{ item: ItemLike; offset: unknown }> = [];
-
     for (const video of [true, false]) {
-      for (const item of await itensDa(sequence, video, 0)) {
-        const inicio = (await item.getStartTime()).seconds;
-        const fim = (await item.getEndTime()).seconds;
-        // So o pedaco que CONTEM o instante, e nunca em cima de uma borda.
-        if (segundos <= inicio || segundos >= fim) continue;
-        alvos.push({ item, offset: await ppro.TickTime.createWithSeconds(segundos - inicio) });
+      for (const p of await medir(video)) {
+        if (segundos <= p.inicio || segundos >= p.fim) continue;
+        alvos.push({ item: p.item, offset: await ppro.TickTime.createWithSeconds(segundos - p.inicio) });
       }
     }
     comTransacao(project as never, `Auto Pausas: sonda corte em ${segundos}s`, (adicionar) => {
       for (const a of alvos) adicionar(editor.createCloneTrackItemAction(a.item, a.offset, 0, 0, true, false));
     });
-    linhas.push(`corte em ${segundos.toFixed(2)}s: ${alvos.length} faixa(s) atingida(s), esperado 2`);
   };
 
   await retrato("antes");
-
   try {
     await cortarEm(2);
     await cortarEm(4);
   } catch (e) {
     linhas.push(`corte lancou: ${(e as Error)?.message ?? String(e)}`);
   }
-  await retrato("depois dos 2 cortes");
+  await retrato("A) 3 pedacos");
 
-  // Remover o pedaco DO MEIO (o que comeca em 2s) nas duas faixas de uma vez.
+  // A pergunta da rodada: num pedaco do MEIO, setInPoint alinha o conteudo sem
+  // mover, ou apara a cabeca e empurra o pedaco para a direita?
   try {
-    const { project, sequence } = await ativa();
-    const editor = await ppro.SequenceEditor.getEditor(sequence);
-    const selecao = await (sequence as { getSelection: () => Promise<any> }).getSelection();
-    for (const velho of await selecao.getTrackItems()) selecao.removeItem(velho);
-
-    let escolhidos = 0;
-    for (const video of [true, false]) {
-      for (const item of await itensDa(sequence, video, 0)) {
-        const inicio = (await item.getStartTime()).seconds;
-        if (inicio < 1.99 || inicio > 2.01) continue;
-        selecao.addItem(item, false);
-        escolhidos++;
-      }
-    }
-    linhas.push(`selecionados para remover: ${escolhidos} (esperado 2, um por faixa)`);
-
-    comTransacao(project as never, "Auto Pausas: sonda ripple do meio", (adicionar) => {
-      adicionar(editor.createRemoveItemsAction(selecao, true, ppro.Constants.MediaType.ANY));
+    const { project } = await ativa();
+    const meio = (await medir(true)).find((p) => Math.abs(p.inicio - 2) < 0.01);
+    if (!meio) throw new Error("nao achei o pedaco que comeca em 2s");
+    const alvo = await ppro.TickTime.createWithSeconds(2);
+    comTransacao(project as never, "Auto Pausas: sonda in point no meio", (adicionar) => {
+      adicionar(meio.item.createSetInPointAction(alvo));
     });
   } catch (e) {
-    linhas.push(`ripple lancou: ${(e as Error)?.message ?? String(e)}`);
+    linhas.push(`setInPoint lancou: ${(e as Error)?.message ?? String(e)}`);
   }
-  await retrato("depois do ripple do meio");
-
+  const depoisDoIn = await medir(true);
+  await retrato("B) depois do setInPoint(2s) no pedaco do meio");
+  const doMeio = depoisDoIn.find((p) => Math.abs(p.entrada - 2) < 0.01);
   linhas.push(
-    "LEITURA: se o 3o pedaco passou a comecar em 2,00s nas DUAS faixas, o ripple fecha o buraco",
-    "e a mecanica e fatiar + remover. Se ele continuou em 4,00s, o ripple so apaga.",
-    'Desfaça com Ctrl+Z até a timeline voltar ao estado "antes".'
+    doMeio && Math.abs(doMeio.inicio - 2) < 0.01
+      ? "B) LEITURA: o pedaco FICOU em 2,00s com in=2,00 — alinha sem mover. Otimo."
+      : `B) LEITURA: o pedaco ANDOU para ${doMeio?.inicio.toFixed(2)}s — setInPoint apara a cabeca.`
   );
+
+  // Plano de recuperacao: createMoveAction existe na tipagem mas nunca foi
+  // usado neste projeto. Tento levar o pedaco de volta para 2,00s.
+  if (doMeio && Math.abs(doMeio.inicio - 2) >= 0.01) {
+    try {
+      const { project } = await ativa();
+      const atual = doMeio.inicio;
+      const destino = await ppro.TickTime.createWithSeconds(2);
+      comTransacao(project as never, "Auto Pausas: sonda move", (adicionar) => {
+        adicionar((doMeio.item as unknown as { createMoveAction: (t: unknown) => unknown }).createMoveAction(destino));
+      });
+      const agora = (await medir(true)).find((p) => Math.abs(p.entrada - 2) < 0.01);
+      linhas.push(
+        `C) move(2,00s): pedaco saiu de ${atual.toFixed(2)} e foi para ${agora?.inicio.toFixed(2)} ` +
+          "(se foi para 4,00 o valor e relativo, se foi para 2,00 e absoluto)"
+      );
+    } catch (e) {
+      linhas.push(`C) move lancou: ${(e as Error)?.message ?? String(e)}`);
+    }
+    await retrato("C) depois do move");
+  }
+
+  linhas.push('Desfaça com Ctrl+Z até a timeline voltar ao estado "antes".');
   return linhas;
 }

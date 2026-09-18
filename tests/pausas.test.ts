@@ -1,6 +1,14 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { conferirPalavras, MARGEM_PADRAO_S, montarPalavras, planejarCortes, type Palavra } from "../src/pausas.ts";
+import {
+  conferirPalavras,
+  deslocamentos,
+  fonteDoTrecho,
+  MARGEM_PADRAO_S,
+  montarPalavras,
+  planejarCortes,
+  type Palavra,
+} from "../src/pausas.ts";
 
 const opcoes = { fps: 30, duracaoQ: 300, margemS: MARGEM_PADRAO_S };
 
@@ -145,4 +153,25 @@ test("montarPalavras converte a transcricao do Auto B-roll e descarta palavra se
     { texto: "ola", inicio: 1, fim: 1.5 },
     { texto: "mundo", inicio: 3, fim: 3.5 },
   ]);
+});
+
+test("deslocamentos diz quanto cada trecho anda para tras", () => {
+  const plano = planejarCortes(
+    [
+      { texto: "ola", inicio: 1, fim: 1.5 },
+      { texto: "mundo", inicio: 3, fim: 3.5 },
+    ],
+    opcoes
+  );
+  const ds = deslocamentos(plano);
+  assert.equal(ds.length, plano.trechos.length);
+  for (const d of ds) assert.ok(d.andarQ >= 0, "nenhum trecho anda para frente");
+  assert.equal(ds[0]!.andarQ, plano.trechos[0]!.inicioQ, "o primeiro anda o tamanho da cabeca cortada");
+});
+
+test("fonteDoTrecho devolve o instante da midia que cada trecho tem de mostrar", () => {
+  // Clipe comeca na timeline em 0s, mostrando a midia a partir de 10s.
+  assert.equal(fonteDoTrecho({ baseInicioQ: 0, baseFonteQ: 300 }, 90), 390);
+  // Clipe que comeca em 1s na timeline: o trecho em 91 esta 90 quadros adiante.
+  assert.equal(fonteDoTrecho({ baseInicioQ: 30, baseFonteQ: 300 }, 120), 390);
 });

@@ -47,6 +47,26 @@ export interface OpcoesPlano {
   readonly margemS: number;
 }
 
+/** Quanto cada trecho recua na timeline depois que os buracos fecham. */
+export function deslocamentos(plano: Plano): Array<{ trecho: TrechoMantido; andarQ: number }> {
+  return plano.trechos.map((trecho) => ({ trecho, andarQ: trecho.inicioQ - trecho.destinoQ }));
+}
+
+/**
+ * Qual instante da MIDIA um trecho tem de mostrar.
+ *
+ * A copia que o Premiere cria ao cortar nasce com o ponto de entrada do pai
+ * (provado ao vivo: os tres pedacos vieram com `in=0.00`). Sem corrigir, cada
+ * pedaco voltaria a tocar o video desde o comeco. `base` e o clipe inteiro
+ * antes de qualquer corte.
+ */
+export function fonteDoTrecho(
+  base: { readonly baseInicioQ: number; readonly baseFonteQ: number },
+  inicioQ: number
+): number {
+  return base.baseFonteQ + (inicioQ - base.baseInicioQ);
+}
+
 /**
  * Traduz `PalavraEditada` (a transcricao remontada pelo Auto B-roll) para a
  * `Palavra` daqui. Palavra de duracao zero entraria como pausa de graca e
