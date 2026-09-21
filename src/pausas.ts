@@ -176,3 +176,47 @@ export function planejarCortes(palavras: readonly Palavra[], opcoes: OpcoesPlano
 
   return { trechos, cortes, duracaoAntesQ: duracaoQ, duracaoDepoisQ: destino };
 }
+
+// --------------------------------------------------------- audio do Premiere
+
+/** Vem instalado com o Premiere 26: mono, 16 kHz, 16 bits (~1,9 MB por minuto). */
+export const PRESET_WAV = "WAV_Mono_16bit_16kHz.epr";
+
+/**
+ * Onde procurar o preset, a pasta da versao que esta rodando primeiro.
+ * `versaoHost` e o `uxp.host.version` ("26.0.1" -> "Adobe Premiere Pro 2026").
+ *
+ * ponytail: so Windows — o Auto Pausas ainda nao roda no Mac.
+ */
+export function candidatosDoPreset(versaoHost: string, pastasAdobe: readonly string[]): string[] {
+  const maior = Number.parseInt(versaoHost, 10);
+  const daVersao = Number.isFinite(maior) ? `Adobe Premiere Pro ${2000 + maior}` : "";
+  const outras = pastasAdobe
+    .filter((n) => n.startsWith("Adobe Premiere Pro") && n !== daVersao)
+    .sort()
+    .reverse();
+  return [daVersao, ...outras]
+    .filter((n) => n !== "")
+    .map((n) => `C:\\Program Files\\Adobe\\${n}\\Settings\\EncoderPresets\\${PRESET_WAV}`);
+}
+
+/**
+ * Quantos espacos a transcricao marca entre palavras seguidas. Responde "o
+ * Premiere 26 ainda marca pausa?": em 2026-08-10 eram 162 acima de 0,2 s em
+ * 974 palavras; o usuario relata que atualizacoes depois disso pararam de marcar.
+ */
+export function lacunas(palavras: ReadonlyArray<{ readonly start: number; readonly duration: number }>): {
+  total: number;
+  acima02: number;
+  acima05: number;
+} {
+  let acima02 = 0;
+  let acima05 = 0;
+  for (let i = 1; i < palavras.length; i++) {
+    const anterior = palavras[i - 1]!;
+    const espaco = palavras[i]!.start - (anterior.start + anterior.duration);
+    if (espaco > 0.2) acima02++;
+    if (espaco > 0.5) acima05++;
+  }
+  return { total: palavras.length, acima02, acima05 };
+}

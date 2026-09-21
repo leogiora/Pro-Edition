@@ -80,7 +80,7 @@ export function mount(root: HTMLElement): void {
     void (async () => {
       try {
         estado("diagnóstico", "ativo");
-        escrever("Rodando diagnóstico...");
+        escrever("Rodando diagnóstico: exportando o áudio da sequência (pode levar alguns segundos)...");
         escrever(...(await diagnostico()));
         estado("diagnóstico pronto", "ok");
       } catch (e) {

@@ -29,6 +29,17 @@ function texto(v: DataView, offset: number): string {
 }
 
 /**
+ * O export pode devolver a promessa antes de fechar o arquivo, e o cabecalho
+ * RIFF so recebe o tamanho final no fechamento. Completo = o tamanho declarado
+ * bate com o que esta no disco.
+ */
+export function wavCompleto(bytes: Uint8Array): boolean {
+  if (bytes.byteLength < 12) return false;
+  const v = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  return texto(v, 0) === "RIFF" && v.getUint32(4, true) + 8 === bytes.byteLength;
+}
+
+/**
  * Uma amostra normalizada em -1..1.
  *
  * O Premiere exporta WAV em 16, 24 ou 32 bits, e em 32 tanto inteiro quanto

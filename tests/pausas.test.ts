@@ -1,14 +1,17 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
+  candidatosDoPreset,
   conferirPalavras,
   deslocamentos,
   fonteDoTrecho,
+  lacunas,
   MARGEM_PADRAO_S,
   montarPalavras,
   planejarCortes,
   type Palavra,
 } from "../src/pausas.ts";
+import { wavCompleto } from "../src/wav.ts";
 
 const opcoes = { fps: 30, duracaoQ: 300, margemS: MARGEM_PADRAO_S };
 
@@ -167,6 +170,62 @@ test("deslocamentos diz quanto cada trecho anda para tras", () => {
   assert.equal(ds.length, plano.trechos.length);
   for (const d of ds) assert.ok(d.andarQ >= 0, "nenhum trecho anda para frente");
   assert.equal(ds[0]!.andarQ, plano.trechos[0]!.inicioQ, "o primeiro anda o tamanho da cabeca cortada");
+});
+
+/** WAV PCM 16 bits mono minimo, para testar leitura sem arquivo de verdade. */
+function wav16(amostras: readonly number[], taxa = 16000): Uint8Array {
+  const dados = amostras.length * 2;
+  const b = new Uint8Array(44 + dados);
+  const v = new DataView(b.buffer);
+  const marca = (o: number, s: string) => {
+    for (let i = 0; i < 4; i++) v.setUint8(o + i, s.charCodeAt(i));
+  };
+  marca(0, "RIFF");
+  v.setUint32(4, 36 + dados, true);
+  marca(8, "WAVE");
+  marca(12, "fmt ");
+  v.setUint32(16, 16, true);
+  v.setUint16(20, 1, true);
+  v.setUint16(22, 1, true);
+  v.setUint32(24, taxa, true);
+  v.setUint32(28, taxa * 2, true);
+  v.setUint16(32, 2, true);
+  v.setUint16(34, 16, true);
+  marca(36, "data");
+  v.setUint32(40, dados, true);
+  amostras.forEach((a, i) => v.setInt16(44 + i * 2, Math.round(a * 32767), true));
+  return b;
+}
+
+test("wavCompleto confere o tamanho que o cabecalho declara", () => {
+  const w = wav16([0, 0.5, -0.5, 0]);
+  assert.equal(wavCompleto(w), true);
+  assert.equal(wavCompleto(w.subarray(0, w.byteLength - 2)), false, "arquivo ainda sendo escrito");
+  assert.equal(wavCompleto(new Uint8Array(4)), false);
+});
+
+test("candidatosDoPreset tenta primeiro a pasta da versao que esta rodando", () => {
+  const c = candidatosDoPreset("26.0.1", ["Adobe Media Encoder 2026", "Adobe Premiere Pro 2025", "Adobe Premiere Pro 2026"]);
+  assert.deepEqual(c, [
+    "C:\\Program Files\\Adobe\\Adobe Premiere Pro 2026\\Settings\\EncoderPresets\\WAV_Mono_16bit_16kHz.epr",
+    "C:\\Program Files\\Adobe\\Adobe Premiere Pro 2025\\Settings\\EncoderPresets\\WAV_Mono_16bit_16kHz.epr",
+  ]);
+});
+
+test("candidatosDoPreset sem versao conhecida tenta as pastas que existem", () => {
+  assert.deepEqual(candidatosDoPreset("", ["Adobe Premiere Pro 2026"]), [
+    "C:\\Program Files\\Adobe\\Adobe Premiere Pro 2026\\Settings\\EncoderPresets\\WAV_Mono_16bit_16kHz.epr",
+  ]);
+});
+
+test("lacunas conta os espacos que a transcricao marca entre palavras", () => {
+  const r = lacunas([
+    { start: 0, duration: 1 },
+    { start: 1, duration: 1 }, // encostada
+    { start: 2.3, duration: 1 }, // 0,3 s
+    { start: 4, duration: 1 }, // 0,7 s
+  ]);
+  assert.deepEqual(r, { total: 4, acima02: 2, acima05: 1 });
 });
 
 test("fonteDoTrecho devolve o instante da midia que cada trecho tem de mostrar", () => {
