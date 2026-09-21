@@ -331,10 +331,19 @@ o clipe inteiro: 2 transacoes). No fim, sempre devolver o in/out original do ite
 | Niveis | piso p20 -49,8 (sala mais ruidosa), voz p90 -20,5. Os dois limiares coincidem (-39,8): nessa bruta nao ha faixa "fraca" |
 | Calibracao (`scripts/calibrar-pausas.ts`) | 3 cortes (cabeca 0,33 s, pausa de 0,3 s entre frases vira 0,16 s, cauda ~1 s), 12,7 -> 11,3 s, nenhuma palavra tocada. Bruta curta demais para medir respiro |
 
+### Primeiro corte real (2026-09-21, 25.6.6, IMG_3341.MOV de 12,7 s)
+
+Rodou sem erro e sem auto-desfazer (`pausas-desfazer.json` ficou com o estado).
+Timeline: 3 trechos na V1 e 3 na A1, alinhados (print do usuario). O audio
+exportado DEPOIS do corte tem 11,02 s e as duas emendas (6,1 s e 9,1 s) caem em
+silencio de sala (-64 e -70 dB): nenhuma palavra cortada. O registro do corte se
+perdeu porque o usuario clicou Diagnostico em seguida e o arquivo guardava so a
+ultima escrita — agora guarda as ultimas 20.
+
 ### Onde parou
 
-Tasks 8 e 9 prontas (Analisar, Cortar pausas, Desfazer), nunca rodadas no
-Premiere. Falta: o usuario ouvir `previa-pausas.wav` e testar Analisar ->
+Tasks 8 e 9 prontas e o corte ja rodou uma vez (acima). O Desfazer ainda nao
+foi testado. Falta: o usuario ouvir `previa-pausas.wav` e testar Analisar ->
 Cortar -> Desfazer numa bruta real; depois a Task 10 (margem, tirar o
 Diagnostico, guia de uso). Calibracao de respiro pede uma bruta longa
 transcrita (a IMG_1902.MOV de 14 min ainda tem in/out 5-6 s da rodada 4).
