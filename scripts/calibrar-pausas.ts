@@ -53,14 +53,24 @@ const margemS = args.has("margem") ? Number(args.get("margem")) : MARGEM_PADRAO_
 
 const bytes = new Uint8Array(readFileSync(join(pasta, "pausas-diag.wav")));
 const diag = JSON.parse(readFileSync(join(pasta, "pausas-diag.json"), "utf8"));
-const transcricao = parseTranscricao(readFileSync(join(pasta, "pausas-diag-transcricao.json"), "utf8"));
-if (!transcricao) throw new Error("transcricao ilegivel");
+// Diagnostico novo grava "clipes" (sequencia separada); o antigo, "clipe".
+const clipes = (diag.clipes ?? [diag.clipe]) as Array<{ sourceName: string; startSeconds: number; endSeconds: number }>;
+const brutoTranscricao = JSON.parse(readFileSync(join(pasta, "pausas-diag-transcricao.json"), "utf8"));
+const transcricoes = new Map(
+  (brutoTranscricao.fontes ? Object.entries(brutoTranscricao.fontes) : [[clipes[0]!.sourceName, brutoTranscricao]]).map(
+    ([nome, json]) => {
+      const t = parseTranscricao(JSON.stringify(json));
+      if (!t) throw new Error(`transcricao ilegivel: ${nome}`);
+      return [nome as string, t] as const;
+    }
+  )
+);
 
 const janelas = nivelPorJanela(bytes);
 const db = janelas.db[0]!;
 const janelaS = janelas.janelaMs / 1000;
-const clipe = diag.clipe;
-const palavras = montarPalavras(reconstruirTranscricao([clipe], new Map([[clipe.sourceName, transcricao]])));
+const palavras = montarPalavras(reconstruirTranscricao(clipes as never, transcricoes));
+const fimSeq = Math.max(...clipes.map((c) => c.endSeconds));
 
 const ordenado = [...db].sort((a, b) => a - b);
 const pct = (q: number) => ordenado[Math.min(ordenado.length - 1, Math.floor(ordenado.length * q))]!;
@@ -75,7 +85,7 @@ console.log(
 );
 
 // 1. A transcricao do 26 ainda marca pausa?
-const brutas = transcricao.segments.flatMap((s) => s.words.filter((w) => w.type === "word"));
+const brutas = [...transcricoes.values()].flatMap((t) => t.segments.flatMap((s) => s.words.filter((w) => w.type === "word")));
 console.log("lacunas da transcricao:", lacunas(brutas), `· ${palavras.length} palavras na timeline`);
 
 // 2. Quanto o inicio da transcricao erra em relacao a voz forte mais proxima (ate 0,3 s).
@@ -123,7 +133,7 @@ for (const b of blocos.filter((b) => b.motivo !== "fala")) console.log(`  ${b.mo
 // O Diagnostico da rodada 6 gravou fps 0 (getSequenceInfo nao le fps no 25): --fps cobre.
 const fps = Number(args.get("fps")) || (diag.fps as number) || 30;
 console.log(`fps: ${fps}${diag.fps ? "" : " (o Diagnostico nao gravou; use --fps= se nao for 30)"}`);
-const plano = planejarCortes(blocos, { fps, duracaoQ: Math.round((clipe.endSeconds - clipe.startSeconds) * fps), margemS });
+const plano = planejarCortes(blocos, { fps, duracaoQ: Math.round(fimSeq * fps), margemS });
 console.log(`cortes: ${plano.cortes.length} · ${(plano.duracaoAntesQ / fps).toFixed(1)} s -> ${(plano.duracaoDepoisQ / fps).toFixed(1)} s`);
 
 // 5. Previa para ouvir: so o que fica, colado. O cabecalho e escrito do zero —

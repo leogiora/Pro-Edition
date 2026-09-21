@@ -65,7 +65,7 @@ export function mount(root: HTMLElement): void {
     nome.setAttribute("data-vazio", "nao");
     pega("apDica").style.display = "none";
     escrever(
-      `${g.palavras.length} palavras na transcrição · ${relogio(g.duracaoQ, g.fps)} de gravação.`,
+      `${g.clipes} clipe${g.clipes === 1 ? "" : "s"} na V1 · ${g.palavras.length} palavras na transcrição · ${relogio(g.duracaoQ, g.fps)} de gravação.`,
       "Clique em Analisar para ver os cortes. O áudio é lido na hora e leva alguns segundos."
     );
     estado("pronto", "ok");
