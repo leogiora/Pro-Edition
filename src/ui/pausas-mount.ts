@@ -13,6 +13,7 @@ import {
   diagnostico,
   guardarRegistro,
   lerGravacao,
+  type Analise,
 } from "../pausas-premiere.ts";
 import { MARGEM_PADRAO_S, pedacosDoPlano, planejarCortes, primeiraPalavra, relogio, ultimaPalavra } from "../pausas.ts";
 
@@ -43,6 +44,10 @@ export function mount(root: HTMLElement): void {
     estado("falhou", "erro");
     escrever(`Erro: ${(e as Error)?.message ?? String(e)}`);
   };
+
+  // O ultimo Analisar: o corte logo em seguida nao le o audio de novo (o
+  // adapter confere se a V1 continua igual antes de reaproveitar).
+  let analisada: Analise | null = null;
 
   // O export do audio leva segundos: um segundo clique no meio exportaria o
   // mesmo arquivo duas vezes ao mesmo tempo.
@@ -75,6 +80,7 @@ export function mount(root: HTMLElement): void {
     estado("lendo áudio…", "ativo");
     escrever("Exportando o áudio da sequência e medindo a fala...");
     const a = await analisarGravacao();
+    analisada = a;
     const margemS = lerMargem(pega<HTMLInputElement>("apMargem").value);
     const plano = planejarCortes(a.blocos, { fps: a.fps, duracaoQ: a.duracaoQ, margemS });
     // A duracao final conta os espacos que o editor deixou entre os videos (eles ficam).
@@ -112,11 +118,14 @@ export function mount(root: HTMLElement): void {
   pega("apCortar").addEventListener(
     "click",
     umPorVez(async () => {
-      estado("lendo áudio…", "ativo");
-      escrever("Exportando o áudio e cortando. Não mexa na timeline até terminar.");
-      const r = await aplicarPausas(lerMargem(pega<HTMLInputElement>("apMargem").value), (feitos, total) =>
-        estado(`cortando ${feitos}/${total}`, "ativo")
+      estado("preparando…", "ativo");
+      escrever("Cortando. Não mexa na timeline até terminar.");
+      const r = await aplicarPausas(
+        lerMargem(pega<HTMLInputElement>("apMargem").value),
+        (texto) => estado(texto, "ativo"),
+        analisada ?? undefined
       );
+      analisada = null;
       escrever(...r.linhas);
       estado(r.ok ? "cortado" : "cortado com problema", r.ok ? "ok" : "erro");
     })
@@ -126,6 +135,7 @@ export function mount(root: HTMLElement): void {
     "click",
     umPorVez(async () => {
       estado("desfazendo…", "ativo");
+      analisada = null;
       escrever(...(await desfazerPausas()));
       estado("desfeito", "ok");
     })

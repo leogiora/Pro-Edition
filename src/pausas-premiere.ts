@@ -194,6 +194,12 @@ async function lerTranscricoes(fontes: readonly Fonte[]): Promise<Map<string, { 
   return saida;
 }
 
+/** Nome da sequencia + cada clipe da V1 em quadros: muda se o editor mexer em qualquer coisa na V1. */
+function assinaturaDe(s: { info: SequenceInfo; fps: number; v1: readonly ClipeLido[] }): string {
+  const q = (t: Tempo) => Math.round(t.seconds * s.fps);
+  return JSON.stringify([s.info.name, s.v1.map((c) => [c.nome, q(c.inicio), q(c.fim), q(c.entrada)])]);
+}
+
 /** O formato que `reconstruirTranscricao` do Auto B-roll espera. */
 function comOrigem(clipes: readonly ClipeLido[]): ClipeComOrigem[] {
   return clipes.map((c) => ({
@@ -218,6 +224,8 @@ export interface Gravacao {
   readonly clipes: number;
   /** Os clipes da V1 em quadros, para a previa contar os espacos entre os videos. */
   readonly clipesQ: readonly ClipeNaTimeline[];
+  /** A timeline como estava na leitura: se continuar igual, o corte reaproveita a analise. */
+  readonly assinatura: string;
   readonly palavras: readonly Palavra[];
 }
 
@@ -233,6 +241,7 @@ export async function lerGravacao(): Promise<Gravacao> {
     duracaoQ: Math.round(Math.max(...s.v1.map((c) => c.fim.seconds)) * s.fps),
     clipes: s.v1.length,
     clipesQ: s.v1.map((c) => ({ inicioQ: q(c.inicio), fimQ: q(c.fim), midiaQ: q(c.entrada), fonte: indice.get(c.nome)! })),
+    assinatura: assinaturaDe(s),
     palavras,
   };
 }
@@ -476,9 +485,17 @@ export interface ResultadoCorte {
  */
 export async function aplicarPausas(
   margemS: number,
-  aoAvancar: (feitos: number, total: number) => void
+  progresso: (texto: string) => void,
+  jaAnalisada?: Analise
 ): Promise<ResultadoCorte> {
-  const a = await analisarGravacao();
+  // Ler o audio e o que mais demora (~7 s numa bruta de 14 min, painel parado):
+  // se o editor acabou de clicar Analisar e a V1 nao mudou, nao le de novo.
+  const t0 = Date.now();
+  const s = await lerSequencia();
+  const reaproveitou = jaAnalisada !== undefined && jaAnalisada.assinatura === assinaturaDe(s);
+  if (!reaproveitou) progresso("1/3 lendo áudio…");
+  const a = reaproveitou ? jaAnalisada : await analisarGravacao();
+  const tAudio = Date.now();
   const plano = planejarCortes(a.blocos, { fps: a.fps, duracaoQ: a.duracaoQ, margemS });
   if (plano.cortes.length === 0) return { ok: true, linhas: ["Nenhuma pausa para cortar."] };
 
@@ -487,7 +504,6 @@ export async function aplicarPausas(
   const tick = (quadros: number) => ppro.TickTime.createWithTicks(String(Math.round(quadros * tpf)));
   const quadro = (t: Tempo) => Math.round(Number(t.ticks) / tpf);
 
-  const s = await lerSequencia();
   const indice = new Map(s.fontes.map((f, i) => [f.nome, i]));
   const clipesQ = s.v1.map((c) => ({ inicioQ: quadro(c.inicio), fimQ: quadro(c.fim), midiaQ: quadro(c.entrada), fonte: indice.get(c.nome)! }));
   const { pedacos, totalQ } = pedacosDoPlano(plano.trechos, clipesQ);
@@ -533,7 +549,6 @@ export async function aplicarPausas(
     }
   };
 
-  const t0 = Date.now();
   let passos = 0;
   try {
     passos += await colocarEmSequencia(
@@ -542,7 +557,7 @@ export async function aplicarPausas(
       (p) => fonteDe(p).clip.createSetInOutPointsAction(tick(p.midiaDeQ), tick(p.midiaAteQ)),
       (editor, p) => editor.createOverwriteItemAction(fonteDe(p).projectItem, tick(p.destinoQ), 0, 0),
       devolverMarcas,
-      aoAvancar,
+      (feitos, total) => progresso(`2/3 cortando ${feitos}/${total}`),
       conferirPrimeiro
     );
 
@@ -557,9 +572,10 @@ export async function aplicarPausas(
     }
     throw new Error(`O corte parou depois de ${passos} passo(s): ${motivo}. ${volta}`);
   }
-  const segundos = (Date.now() - t0) / 1000;
+  const tCorte = Date.now();
 
   // Conferir LENDO A TIMELINE, nunca pelo que foi pedido.
+  progresso("3/3 conferindo…");
   const depoisV1 = await lerFaixa(true);
   const conferencia = conferirPalavras(a.palavras, palavrasDa(depoisV1, await lerTranscricoes(s.fontes)));
   const v = await pecas(true, a.fps);
@@ -568,11 +584,14 @@ export async function aplicarPausas(
   const fimV1 = v.length > 0 ? Math.max(...v.map((p) => p.ate)) : 0;
   const duracaoOk = Math.abs(fimV1 - totalQ) <= 1;
   const contagemOk = v.length === pedacos.length;
+  const seg = (de: number, ate: number) => ((ate - de) / 1000).toFixed(1).replace(".", ",");
+  const tFim = Date.now();
 
   return {
     ok: conferencia.ok && emSincronia && duracaoOk && contagemOk,
     linhas: [
-      `${plano.cortes.length} pausas cortadas · ${relogio(plano.duracaoAntesQ, a.fps)} → ${relogio(totalQ, a.fps)} · levou ${segundos.toFixed(0)} s`,
+      `${plano.cortes.length} pausas cortadas · ${relogio(plano.duracaoAntesQ, a.fps)} → ${relogio(totalQ, a.fps)} · levou ${seg(t0, tFim)} s`,
+      `tempos: áudio ${reaproveitou ? "aproveitou o Analisar" : `${seg(t0, tAudio)} s`} · corte ${seg(tAudio, tCorte)} s · conferência ${seg(tCorte, tFim)} s`,
       ...conferencia.linhas,
       emSincronia ? "V1 e A1 em sincronia." : `V1 tem ${v.length} pedaços e A1 tem ${au.length}, ou em posições diferentes.`,
       contagemOk ? `${v.length} pedaços na V1, como o plano.` : `A V1 tem ${v.length} pedaços, o plano tinha ${pedacos.length}.`,
