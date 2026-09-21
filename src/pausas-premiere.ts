@@ -15,6 +15,7 @@ import {
   type SequenceInfo,
 } from "../ferramentas/auto-broll/src/premiere.ts";
 import { parseTranscricao, reconstruirTranscricao } from "../ferramentas/auto-broll/src/transcript.ts";
+import { lerFps } from "./autocut-premiere.ts";
 import { candidatosDoPreset, lacunas, montarPalavras, PRESET_WAV, type Palavra } from "./pausas.ts";
 import { nivelPorJanela, wavCompleto } from "./wav.ts";
 
@@ -102,8 +103,12 @@ type Clipe = Awaited<ReturnType<typeof lerClipes>>[number];
  * A gravacao bruta: um clipe so na V1, com transcricao. Cada recusa diz o que
  * fazer — "nao deu" sem instrucao vira pergunta para mim depois.
  */
-async function lerClipeETranscricao(): Promise<{ info: SequenceInfo; clipe: Clipe; json: string }> {
+async function lerClipeETranscricao(): Promise<{ info: SequenceInfo; fps: number; clipe: Clipe; json: string }> {
   const info = await getSequenceInfo();
+  // getSequenceInfo devolve fps 0 no Premiere 25 (rodada 6); lerFps vai pelo
+  // sequence.getTimebase(), provado no 25 e no 26 pelo Podcast AutoCut.
+  const fps = (await lerFps()).valor;
+  if (!(fps > 0)) throw new Error("Não consegui ler a taxa de quadros da sequência.");
   const clipes = await lerClipes(0);
 
   if (clipes.length === 0) {
@@ -124,11 +129,11 @@ async function lerClipeETranscricao(): Promise<{ info: SequenceInfo; clipe: Clip
       `"${clipe.sourceName}" não tem transcrição (${(e as Error)?.message ?? String(e)}). No Premiere: selecione o clipe, Janela > Texto > aba Transcrição > Transcrever, e rode de novo.`
     );
   }
-  return { info, clipe, json };
+  return { info, fps, clipe, json };
 }
 
 export async function lerGravacao(): Promise<Gravacao> {
-  const { info, clipe, json } = await lerClipeETranscricao();
+  const { info, fps, clipe, json } = await lerClipeETranscricao();
   const transcricao = parseTranscricao(json);
   if (!transcricao) {
     throw new Error(`A transcrição de "${clipe.sourceName}" veio num formato que não consegui ler.`);
@@ -141,8 +146,8 @@ export async function lerGravacao(): Promise<Gravacao> {
 
   return {
     nomeSequencia: info.name,
-    fps: info.fps,
-    duracaoQ: Math.round((clipe.endSeconds - clipe.startSeconds) * info.fps),
+    fps,
+    duracaoQ: Math.round((clipe.endSeconds - clipe.startSeconds) * fps),
     palavras,
   };
 }
@@ -296,17 +301,17 @@ export async function diagnostico(): Promise<string[]> {
 
   linhas.push("== 2. Transcrição");
   try {
-    const { info, clipe, json } = await lerClipeETranscricao();
+    const { fps, clipe, json } = await lerClipeETranscricao();
     await writeJson("pausas-diag-transcricao.json", JSON.parse(json));
     const t = parseTranscricao(json);
     const palavras = t ? t.segments.flatMap((s) => s.words.filter((w) => w.type === "word")) : [];
     const l = lacunas(palavras);
     linhas.push(
-      `clipe "${clipe.sourceName}" ${clipe.startSeconds.toFixed(2)}–${clipe.endSeconds.toFixed(2)} s · ${info.fps} fps`,
+      `clipe "${clipe.sourceName}" ${clipe.startSeconds.toFixed(2)}–${clipe.endSeconds.toFixed(2)} s · ${fps} fps`,
       `${l.total} palavras · espaços > 0,2 s: ${l.acima02} · > 0,5 s: ${l.acima05}`
     );
     dados.clipe = clipe;
-    dados.fps = info.fps;
+    dados.fps = fps;
     dados.lacunas = l;
   } catch (e) {
     falha("2) transcrição", e);

@@ -120,7 +120,9 @@ const blocos = blocosDeFala(db, janelaS, palavras, opcoes);
 const conta = (m: string) => blocos.filter((b) => b.motivo === m).length;
 console.log(`blocos: ${blocos.length} · fala ${conta("fala")} · voz sem palavra ${conta("voz-sem-palavra")} · palavra baixa ${conta("palavra-baixa")}`);
 for (const b of blocos.filter((b) => b.motivo !== "fala")) console.log(`  ${b.motivo} em ${b.inicio.toFixed(2)}-${b.fim.toFixed(2)} s`);
-const fps = diag.fps as number;
+// O Diagnostico da rodada 6 gravou fps 0 (getSequenceInfo nao le fps no 25): --fps cobre.
+const fps = Number(args.get("fps")) || (diag.fps as number) || 30;
+console.log(`fps: ${fps}${diag.fps ? "" : " (o Diagnostico nao gravou; use --fps= se nao for 30)"}`);
 const plano = planejarCortes(blocos, { fps, duracaoQ: Math.round((clipe.endSeconds - clipe.startSeconds) * fps), margemS });
 console.log(`cortes: ${plano.cortes.length} · ${(plano.duracaoAntesQ / fps).toFixed(1)} s -> ${(plano.duracaoDepoisQ / fps).toFixed(1)} s`);
 

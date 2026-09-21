@@ -321,8 +321,20 @@ isso o resultado nao pode depender do Ctrl+Z: ou vai para uma sequencia nova
 o clipe inteiro: 2 transacoes). No fim, sempre devolver o in/out original do item
 (`createClearInOutPointsAction` quando nao havia marca).
 
+### Rodada 6 (2026-09-21) — Premiere 25.6.6, bruta nova de 12,7 s (IMG_3341.MOV), transcrita
+
+| O que | Resultado |
+|---|---|
+| `createClearInOutPointsAction()` | Funciona. Sem marca, `getInPoint/getOutPoint` do item devolvem **-400000 s** (sentinela de "sem marca") |
+| `getSequenceInfo().fps` | **0 no 25** (o `taxaDeQuadros` do Auto B-roll nao acha nada). O Auto Pausas passou a usar `lerFps()` do Podcast AutoCut (`sequence.getTimebase()`) |
+| Transcricao do 25 | 42 palavras, 2 espacos > 0,2 s. O INICIO da palavra bate com o som: erro p10 -0,01 · p50 0,00 · p90 +0,03 s |
+| Niveis | piso p20 -49,8 (sala mais ruidosa), voz p90 -20,5. Os dois limiares coincidem (-39,8): nessa bruta nao ha faixa "fraca" |
+| Calibracao (`scripts/calibrar-pausas.ts`) | 3 cortes (cabeca 0,33 s, pausa de 0,3 s entre frases vira 0,16 s, cauda ~1 s), 12,7 -> 11,3 s, nenhuma palavra tocada. Bruta curta demais para medir respiro |
+
 ### Onde parou
 
-Falta: (1) o usuario transcrever a bruta no 25 e rodar de novo so audio +
-transcricao, para calibrar; (2) decidir com ele sequencia nova x mesma sequencia
-com Desfazer proprio.
+Falta: o usuario ouvir `previa-pausas.wav` (Desktop). Para calibrar respiro de
+verdade, uma bruta longa transcrita (a de 14 min, IMG_1902.MOV, ainda tem in/out
+5-6 s esquecidos pela rodada 4 — rodar o Diagnostico com ela na V1 limpa).
+Depois: Tasks 8-10 com a mecanica da rodada 5 (um trecho por transacao, Desfazer
+proprio no painel).
