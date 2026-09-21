@@ -6,7 +6,14 @@
  * telas no mesmo documento. Se isso mudar, este arquivo muda junto.
  */
 
-import { analisarGravacao, aplicarPausas, desfazerPausas, diagnostico, lerGravacao } from "../pausas-premiere.ts";
+import {
+  analisarGravacao,
+  aplicarPausas,
+  desfazerPausas,
+  diagnostico,
+  guardarRegistro,
+  lerGravacao,
+} from "../pausas-premiere.ts";
 import { MARGEM_PADRAO_S, planejarCortes, primeiraPalavra, relogio, ultimaPalavra } from "../pausas.ts";
 
 /** O campo aceita virgula (teclado pt-BR) e ponto. Valor invalido volta ao padrao. */
@@ -24,6 +31,8 @@ export function mount(root: HTMLElement): void {
   const escrever = (...linhas: readonly string[]) => {
     log.textContent = linhas.join("\n");
     log.scrollTop = 0;
+    // Gravar e melhor-esforco: falha de disco nunca pode esconder o resultado da tela.
+    void guardarRegistro(linhas).catch(() => undefined);
   };
   const estado = (texto: string, tom: "ativo" | "ok" | "aviso" | "erro") => {
     const badge = pega("apEstado");
