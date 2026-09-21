@@ -340,6 +340,18 @@ silencio de sala (-64 e -70 dB): nenhuma palavra cortada. O registro do corte se
 perdeu porque o usuario clicou Diagnostico em seguida e o arquivo guardava so a
 ultima escrita — agora guarda as ultimas 20.
 
+### Premiere 26, bruta de 14:25 separada em 10 videos (2026-09-21)
+
+- Corte na bruta inteira e na separada: **371-375 pausas em 4 s de transacoes**
+  (~12 s do clique ao fim, com o export do audio). 1832 de 1832 palavras, V1=A1,
+  contagem e duracao conferem. Um overwrite por transacao e rapido.
+- O editor separa os videos deixando **1,6-3,7 s de espaco** entre eles (10
+  anuncios de 70-112 s). A primeira versao colava tudo; agora o espaco fica e cada
+  video encolhe sozinho (`pedacosDoPlano`), com a V1/A1 esvaziada na primeira
+  transacao.
+- O usuario relatou "carregando muito" — o plugin nao demorou (acima); falta saber
+  se foi o Premiere depois, com ~375 clipes na timeline.
+
 ### Onde parou
 
 Tasks 8 e 9 prontas e o corte ja rodou uma vez (acima). O Desfazer tambem rodou
