@@ -6,19 +6,13 @@
  * telas no mesmo documento. Se isso mudar, este arquivo muda junto.
  */
 
-import { analisarGravacao, diagnostico, lerGravacao } from "../pausas-premiere.ts";
-import { MARGEM_PADRAO_S, planejarCortes, primeiraPalavra, ultimaPalavra } from "../pausas.ts";
+import { analisarGravacao, aplicarPausas, desfazerPausas, diagnostico, lerGravacao } from "../pausas-premiere.ts";
+import { MARGEM_PADRAO_S, planejarCortes, primeiraPalavra, relogio, ultimaPalavra } from "../pausas.ts";
 
 /** O campo aceita virgula (teclado pt-BR) e ponto. Valor invalido volta ao padrao. */
 export function lerMargem(bruto: string): number {
   const n = Number(bruto.trim().replace(",", "."));
   return Number.isFinite(n) && n >= 0 && n <= 1 ? n : MARGEM_PADRAO_S;
-}
-
-/** mm:ss a partir de quadros. O painel nunca mostra quadro cru. */
-export function relogio(quadros: number, fps: number): string {
-  const s = Math.max(0, Math.round(quadros / fps));
-  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 }
 
 export function mount(root: HTMLElement): void {
@@ -103,9 +97,27 @@ export function mount(root: HTMLElement): void {
 
   pega("apAnalisar").addEventListener("click", umPorVez(previa));
 
-  pega("apCortar").addEventListener("click", () => {
-    escrever("Ainda não corta: o corte na timeline entra na próxima etapa. Use Analisar para ver a prévia.");
-  });
+  pega("apCortar").addEventListener(
+    "click",
+    umPorVez(async () => {
+      estado("lendo áudio…", "ativo");
+      escrever("Exportando o áudio e cortando. Não mexa na timeline até terminar.");
+      const r = await aplicarPausas(lerMargem(pega<HTMLInputElement>("apMargem").value), (feitos, total) =>
+        estado(`cortando ${feitos}/${total}`, "ativo")
+      );
+      escrever(...r.linhas);
+      estado(r.ok ? "cortado" : "cortado com problema", r.ok ? "ok" : "erro");
+    })
+  );
+
+  pega("apDesfazer").addEventListener(
+    "click",
+    umPorVez(async () => {
+      estado("desfazendo…", "ativo");
+      escrever(...(await desfazerPausas()));
+      estado("desfeito", "ok");
+    })
+  );
 
   // Temporario: sai quando o corte estiver calibrado (Task 10).
   pega("apDiag").addEventListener(

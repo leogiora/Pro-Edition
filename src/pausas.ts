@@ -81,43 +81,46 @@ export function montarPalavras(
 }
 
 /**
- * Prova de que o corte nao comeu fala: mesma sequencia de palavras, cada uma
- * com a mesma duracao. Compara DURACAO e nao posicao — depois do corte a
- * palavra muda de lugar de proposito.
+ * Prova de que o corte nao comeu fala: as mesmas palavras, na mesma ordem.
  *
- * Roda sobre a transcricao relida DA TIMELINE depois de aplicar (nunca sobre o
- * plano): o que interessa e o que o Premiere gravou, nao o que pedimos.
+ * A duracao NAO entra: a transcricao estica o fim da palavra por cima do
+ * silencio (no 26 atual sempre), e cortar esse silencio e exatamente o trabalho
+ * da ferramenta. Palavra que sumiu e a que teve o INICIO cortado — a remontagem
+ * da transcricao so traz palavra cujo inicio esta dentro de um trecho que ficou.
+ *
+ * Roda sobre a transcricao relida DA TIMELINE depois de aplicar, nunca sobre o plano.
  */
 export function conferirPalavras(
   antes: readonly Palavra[],
-  depois: readonly Palavra[],
-  toleranciaS: number
+  depois: readonly Palavra[]
 ): { ok: boolean; linhas: string[] } {
-  const problemas: string[] = [];
-  const total = antes.length;
-
-  for (let i = 0; i < total; i++) {
-    const a = antes[i]!;
-    const d = depois[i];
-    if (!d) {
-      problemas.push(`palavra ${i + 1} "${a.texto}" sumiu`);
-      continue;
-    }
-    if (d.texto !== a.texto) {
-      problemas.push(`palavra ${i + 1}: esperava "${a.texto}", veio "${d.texto}"`);
-      continue;
-    }
-    const encolheu = a.fim - a.inicio - (d.fim - d.inicio);
-    // Folga de 1e-6: sem ela, uma diferenca de exatamente um quadro reprova por
-    // erro de ponto flutuante (0,0333... sai maior que 1/30 na conta binaria).
-    if (encolheu > toleranciaS + 1e-6) {
-      problemas.push(`"${a.texto}" encurtou ${encolheu.toFixed(2)}s`);
-    }
+  const sumiram: string[] = [];
+  let j = 0;
+  for (const a of antes) {
+    if (j < depois.length && depois[j]!.texto === a.texto) j++;
+    else sumiram.push(`"${a.texto}" (${a.inicio.toFixed(2)} s) sumiu`);
   }
-  if (depois.length > total) problemas.push(`sobraram ${depois.length - total} palavras a mais`);
+  const sobrando = depois.length - j;
+  const presentes = antes.length - sumiram.length;
 
-  if (problemas.length === 0) return { ok: true, linhas: [`${total} de ${total} palavras inteiras.`] };
-  return { ok: false, linhas: [`${total - problemas.length} de ${total} palavras inteiras:`, ...problemas] };
+  if (sumiram.length === 0 && sobrando === 0) {
+    return { ok: true, linhas: [`${antes.length} de ${antes.length} palavras presentes.`] };
+  }
+  return {
+    ok: false,
+    linhas: [
+      `${presentes} de ${antes.length} palavras presentes:`,
+      ...sumiram.slice(0, 10),
+      ...(sumiram.length > 10 ? [`e mais ${sumiram.length - 10}`] : []),
+      ...(sobrando > 0 ? [`${sobrando} palavra(s) a mais ou fora de ordem`] : []),
+    ],
+  };
+}
+
+/** mm:ss a partir de quadros. O painel nunca mostra quadro cru. */
+export function relogio(quadros: number, fps: number): string {
+  const s = Math.max(0, Math.round(quadros / fps));
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 }
 
 export function planejarCortes(palavras: readonly Palavra[], opcoes: OpcoesPlano): Plano {

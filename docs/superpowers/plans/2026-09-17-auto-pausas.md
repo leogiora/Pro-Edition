@@ -2170,6 +2170,10 @@ git commit -m "feat(pausas): aplica o corte e confere palavra a palavra relendo 
 
 ---
 
+**Como a Task 9 ficou de verdade (2026-09-21, depois das rodadas 4-6):** mecanica C encadeada, so com chamadas provadas no 25.6.6 — sem selecao nem remove (nunca provados no 25). (1) uma transacao "preparar": `createSetEndAction` na V1 e na A1 da bruta ate o tamanho final + marca do trecho 0; (2) transacao k: `createOverwriteItemAction(ProjectItem cru, destino k, 0, 0)` + marca do trecho k+1 (no ultimo, devolve a marca original ou `createClearInOutPointsAction`); (3) depois do trecho 0, confere tamanho E quadro de midia do pedaco antes de seguir; erro em qualquer passo chama `desfazerPausas`. `desfazerPausas` = marcar o in/out original + overwrite da bruta inteira no zero (cobre os trechos) + devolver as marcas: 2 transacoes. Conferencia: palavras (texto/ordem), V1=A1, N pedacos = N trechos, fim = duracao do plano (+-1 quadro). Botao Desfazer no painel; o estado vai em `pausas-desfazer.json`.
+
+---
+
 ### Task 10: Calibrar a margem no Premiere, tirar a sonda e documentar
 
 **PARA O EXECUTOR: a calibração é um teste do usuário. Não chute o número.**

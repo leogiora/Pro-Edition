@@ -109,45 +109,43 @@ test("palavras fora de ordem ou sobrepostas nao geram corte negativo", () => {
   for (const c of plano.cortes) assert.ok(c.fimQ > c.inicioQ, `corte invalido: ${JSON.stringify(c)}`);
 });
 
-const umQuadro = 1 / 30;
-
-test("conferirPalavras aprova quando toda palavra continua inteira", () => {
+test("conferirPalavras aprova as mesmas palavras na mesma ordem, mesmo com duracao diferente", () => {
   const antes: Palavra[] = [
-    { texto: "ola", inicio: 1, fim: 1.5 },
+    { texto: "ola", inicio: 1, fim: 3 }, // a transcricao estica o fim por cima do silencio
     { texto: "mundo", inicio: 3, fim: 3.5 },
   ];
   const depois: Palavra[] = [
-    { texto: "ola", inicio: 0.08, fim: 0.58 },
-    { texto: "mundo", inicio: 0.74, fim: 1.24 },
+    { texto: "ola", inicio: 0.08, fim: 0.6 },
+    { texto: "mundo", inicio: 0.7, fim: 1.2 },
   ];
-  const r = conferirPalavras(antes, depois, umQuadro);
+  const r = conferirPalavras(antes, depois);
   assert.equal(r.ok, true);
-  assert.match(r.linhas.join("\n"), /2 de 2 palavras inteiras/);
+  assert.match(r.linhas.join(" "), /2 de 2 palavras presentes/);
 });
 
-test("conferirPalavras reprova palavra que sumiu", () => {
+test("conferirPalavras reprova e nomeia a palavra que sumiu", () => {
   const antes: Palavra[] = [
-    { texto: "ola", inicio: 1, fim: 1.5 },
-    { texto: "mundo", inicio: 3, fim: 3.5 },
+    { texto: "um", inicio: 1, fim: 1.5 },
+    { texto: "dois", inicio: 2, fim: 2.5 },
+    { texto: "tres", inicio: 3, fim: 3.5 },
   ];
-  const depois: Palavra[] = [{ texto: "ola", inicio: 0.08, fim: 0.58 }];
-  const r = conferirPalavras(antes, depois, umQuadro);
+  const depois: Palavra[] = [
+    { texto: "um", inicio: 0, fim: 0.5 },
+    { texto: "tres", inicio: 0.6, fim: 1.1 },
+  ];
+  const r = conferirPalavras(antes, depois);
   assert.equal(r.ok, false);
-  assert.match(r.linhas.join("\n"), /mundo/);
+  assert.match(r.linhas.join(" "), /"dois"/);
+  assert.match(r.linhas.join(" "), /2 de 3/);
 });
 
-test("conferirPalavras reprova palavra encurtada alem da tolerancia", () => {
-  const antes: Palavra[] = [{ texto: "saude", inicio: 1, fim: 1.5 }];
-  const depois: Palavra[] = [{ texto: "saude", inicio: 0.08, fim: 0.4 }];
-  const r = conferirPalavras(antes, depois, umQuadro);
-  assert.equal(r.ok, false);
-  assert.match(r.linhas.join("\n"), /saude/);
-});
-
-test("conferirPalavras aceita diferenca de um quadro", () => {
-  const antes: Palavra[] = [{ texto: "saude", inicio: 1, fim: 1.5 }];
-  const depois: Palavra[] = [{ texto: "saude", inicio: 0.08, fim: 0.58 - umQuadro }];
-  assert.equal(conferirPalavras(antes, depois, umQuadro).ok, true);
+test("conferirPalavras reprova palavra sobrando e ordem trocada", () => {
+  const antes: Palavra[] = [
+    { texto: "um", inicio: 1, fim: 1.5 },
+    { texto: "dois", inicio: 2, fim: 2.5 },
+  ];
+  assert.equal(conferirPalavras(antes, [...antes, { texto: "dois", inicio: 3, fim: 3.5 }]).ok, false);
+  assert.equal(conferirPalavras(antes, [antes[1]!, antes[0]!]).ok, false);
 });
 
 test("montarPalavras converte a transcricao do Auto B-roll e descarta palavra sem duracao", () => {

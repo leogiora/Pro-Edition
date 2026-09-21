@@ -333,8 +333,8 @@ o clipe inteiro: 2 transacoes). No fim, sempre devolver o in/out original do ite
 
 ### Onde parou
 
-Falta: o usuario ouvir `previa-pausas.wav` (Desktop). Para calibrar respiro de
-verdade, uma bruta longa transcrita (a de 14 min, IMG_1902.MOV, ainda tem in/out
-5-6 s esquecidos pela rodada 4 — rodar o Diagnostico com ela na V1 limpa).
-Depois: Tasks 8-10 com a mecanica da rodada 5 (um trecho por transacao, Desfazer
-proprio no painel).
+Tasks 8 e 9 prontas (Analisar, Cortar pausas, Desfazer), nunca rodadas no
+Premiere. Falta: o usuario ouvir `previa-pausas.wav` e testar Analisar ->
+Cortar -> Desfazer numa bruta real; depois a Task 10 (margem, tirar o
+Diagnostico, guia de uso). Calibracao de respiro pede uma bruta longa
+transcrita (a IMG_1902.MOV de 14 min ainda tem in/out 5-6 s da rodada 4).

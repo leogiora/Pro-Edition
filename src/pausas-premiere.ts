@@ -11,6 +11,7 @@ import {
   comTransacao,
   getSequenceInfo,
   lerClipes,
+  readJson,
   writeJson,
   type SequenceInfo,
 } from "../ferramentas/auto-broll/src/premiere.ts";
@@ -19,11 +20,15 @@ import { lerFps } from "./autocut-premiere.ts";
 import {
   blocosDeFala,
   candidatosDoPreset,
+  conferirPalavras,
   lacunas,
   montarPalavras,
+  planejarCortes,
   PRESET_WAV,
+  relogio,
   type Bloco,
   type Palavra,
+  type TrechoMantido,
 } from "./pausas.ts";
 import { nivelPorJanela, wavCompleto } from "./wav.ts";
 
@@ -35,12 +40,18 @@ const uxp = require("uxp") as any;
 
 const CLIP = 1; // ppro.Constants.TrackItemType.CLIP
 
+interface Tempo {
+  readonly seconds: number;
+  readonly ticks: string;
+}
+
 interface ItemLike {
-  getStartTime: () => Promise<{ seconds: number }>;
-  getEndTime: () => Promise<{ seconds: number }>;
-  getInPoint: () => Promise<{ seconds: number }>;
-  getOutPoint: () => Promise<{ seconds: number }>;
+  getStartTime: () => Promise<Tempo>;
+  getEndTime: () => Promise<Tempo>;
+  getInPoint: () => Promise<Tempo>;
+  getOutPoint: () => Promise<Tempo>;
   getProjectItem: () => Promise<unknown>;
+  createSetEndAction: (t: unknown) => unknown;
 }
 
 interface SeqFaixas {
@@ -272,6 +283,229 @@ export async function analisarGravacao(): Promise<Analise> {
   } finally {
     await apagarArquivo(audio.caminho);
   }
+}
+
+// ------------------------------------------------------------------ corte
+
+const ESTADO_DESFAZER = "pausas-desfazer.json";
+const TICKS_POR_SEGUNDO = 254_016_000_000;
+
+/** O que o Desfazer precisa para recolocar a bruta como estava. Ticks em texto, como o Premiere da. */
+interface EstadoDesfazer {
+  readonly sequencia: string;
+  /** In/out do clipe NA TIMELINE antes do corte. */
+  readonly inTicks: string;
+  readonly outTicks: string;
+  /** Marcas do item no painel Projeto; null = nao havia marca. */
+  readonly marcas: { readonly inTicks: string; readonly outTicks: string } | null;
+  readonly quando: string;
+}
+
+/** Sem marca, o item do projeto devolve -400000 s (rodada 6). */
+const semMarca = (t: Tempo) => t.seconds < -1000;
+const tickDeTexto = (ticks: string) => ppro.TickTime.createWithTicks(ticks);
+
+/** Pedacos da V1 ou da A1 em quadros, na ordem: onde estao e de que quadro da midia partem. */
+async function pedacos(video: boolean, fps: number): Promise<Array<{ de: number; ate: number; midia: number }>> {
+  const { sequence } = await ativa();
+  return Promise.all(
+    (await itensDa(sequence, video, 0)).map(async (i) => ({
+      de: Math.round((await i.getStartTime()).seconds * fps),
+      ate: Math.round((await i.getEndTime()).seconds * fps),
+      midia: Math.round((await i.getInPoint()).seconds * fps),
+    }))
+  );
+}
+
+export interface ResultadoCorte {
+  readonly ok: boolean;
+  readonly linhas: readonly string[];
+}
+
+/**
+ * Corta as pausas NA sequencia (escolha do usuario: direto, sem copia).
+ *
+ * So usa o que foi provado no Premiere 25.6.6: aparar o fim do clipe
+ * (`createSetEndAction`, do Auto B-roll), marcar in/out no item do projeto e
+ * fazer overwrite do ProjectItem CRU (rodadas 5 e 6).
+ *
+ * 1. Apara a bruta no tamanho final e marca o primeiro trecho.
+ * 2. Um trecho por transacao (rodada 5: o overwrite so enxerga a marca feita
+ *    ANTES da transacao): a transacao k coloca o trecho k e ja marca o k+1.
+ *    Da esquerda para a direita, cada overwrite cobre a bruta no lugar.
+ *
+ * ponytail: N+1 transacoes para N trechos (~380 numa bruta de 14 min) — o
+ * Ctrl+Z do Premiere desfaz um trecho por vez, por isso existe desfazerPausas.
+ * Se um dia a API aceitar trecho de midia no overwrite, vira uma transacao so.
+ *
+ * Erro no meio: devolve a bruta inteira antes de avisar.
+ */
+export async function aplicarPausas(
+  margemS: number,
+  aoAvancar: (feitos: number, total: number) => void
+): Promise<ResultadoCorte> {
+  const a = await analisarGravacao();
+  const plano = planejarCortes(a.blocos, { fps: a.fps, duracaoQ: a.duracaoQ, margemS });
+  if (plano.cortes.length === 0) return { ok: true, linhas: ["Nenhuma pausa para cortar."] };
+
+  const lido = await lerFps();
+  const tpf = lido.tpf > 0 ? lido.tpf : Math.round(TICKS_POR_SEGUNDO / a.fps);
+  const tick = (quadros: number) => ppro.TickTime.createWithTicks(String(Math.round(quadros * tpf)));
+
+  // O que o Desfazer precisa, gravado ANTES de mexer em qualquer coisa.
+  const { sequence: seq } = await ativa();
+  const [brutoV] = await itensDa(seq, true, 0);
+  const [brutoA] = await itensDa(seq, false, 0);
+  if (!brutoV || !brutoA) throw new Error("A gravação precisa estar na V1 com o áudio na A1.");
+  const inBruto = await brutoV.getInPoint();
+  const outBruto = await brutoV.getOutPoint();
+  const { projectItem, clip } = await midiaDaV1();
+  const VIDEO = ppro.Constants.MediaType.VIDEO;
+  const marcaIn = (await clip.getInPoint(VIDEO)) as Tempo;
+  const marcaOut = (await clip.getOutPoint(VIDEO)) as Tempo;
+  const estado: EstadoDesfazer = {
+    sequencia: a.nomeSequencia,
+    inTicks: inBruto.ticks,
+    outTicks: outBruto.ticks,
+    marcas: semMarca(marcaIn) ? null : { inTicks: marcaIn.ticks, outTicks: marcaOut.ticks },
+    quando: new Date().toISOString(),
+  };
+  await writeJson(ESTADO_DESFAZER, estado);
+
+  // Quadro da MIDIA onde a gravacao comeca na timeline (0 numa bruta inteira).
+  const baseQ = Math.round(Number(inBruto.ticks) / tpf);
+  const marcar = (tr: TrechoMantido) => clip.createSetInOutPointsAction(tick(baseQ + tr.inicioQ), tick(baseQ + tr.fimQ));
+  const devolverMarcas = () =>
+    estado.marcas
+      ? clip.createSetInOutPointsAction(tickDeTexto(estado.marcas.inTicks), tickDeTexto(estado.marcas.outTicks))
+      : clip.createClearInOutPointsAction();
+
+  const trechos = plano.trechos;
+  const t0 = Date.now();
+  let passos = 0;
+  try {
+    {
+      // A bruta ja fica do tamanho final: os overwrites cobrem tudo, e nao sobra nada para remover.
+      const { project } = await ativa();
+      const fim = tick(plano.duracaoDepoisQ);
+      comTransacao(project as never, "Auto Pausas: preparar", (adicionar) => {
+        adicionar(brutoV.createSetEndAction(fim));
+        adicionar(brutoA.createSetEndAction(fim));
+        adicionar(marcar(trechos[0]!));
+      });
+      passos++;
+    }
+    for (let k = 0; k < trechos.length; k++) {
+      const { project, sequence } = await ativa();
+      const editor = await ppro.SequenceEditor.getEditor(sequence);
+      const em = tick(trechos[k]!.destinoQ);
+      const proximo = trechos[k + 1];
+      comTransacao(project as never, `Auto Pausas: trecho ${k + 1} de ${trechos.length}`, (adicionar) => {
+        adicionar(editor.createOverwriteItemAction(projectItem, em, 0, 0));
+        adicionar(proximo ? marcar(proximo) : devolverMarcas());
+      });
+      passos++;
+      aoAvancar(k + 1, trechos.length);
+
+      if (k === 0) {
+        // O primeiro trecho prova a conta antes dos outros ~380: se o pedaco
+        // sair curto, sobraria um quadro da bruta errado em cada corte; se
+        // partir de outro ponto da midia (timecode de camera), mostraria a
+        // fala errada.
+        const esperado = trechos[0]!.fimQ - trechos[0]!.inicioQ;
+        const primeiro = (await pedacos(true, a.fps))[0];
+        const veio = primeiro ? primeiro.ate - primeiro.de : 0;
+        if (!primeiro || primeiro.de !== 0 || veio < esperado) {
+          throw new Error(`o primeiro trecho saiu com ${veio} quadros, o plano pedia ${esperado}`);
+        }
+        const midiaEsperada = baseQ + trechos[0]!.inicioQ;
+        if (Math.abs(primeiro.midia - midiaEsperada) > 1) {
+          throw new Error(`o primeiro trecho parte do quadro ${primeiro.midia} da mídia, o plano pedia ${midiaEsperada}`);
+        }
+      }
+    }
+  } catch (e) {
+    const motivo = (e as Error)?.message ?? String(e);
+    let volta = "A gravação foi devolvida ao original.";
+    try {
+      await desfazerPausas();
+    } catch (e2) {
+      volta = `E NÃO consegui devolver a gravação (${(e2 as Error)?.message ?? String(e2)}): use Ctrl+Z.`;
+    }
+    throw new Error(`O corte parou depois de ${passos} passo(s): ${motivo}. ${volta}`);
+  }
+  const segundos = (Date.now() - t0) / 1000;
+
+  // Conferir LENDO A TIMELINE, nunca pelo que foi pedido.
+  const clipes = await lerClipes(0);
+  const transcricao = parseTranscricao(await transcricaoDaV1());
+  const depois =
+    transcricao && clipes[0]
+      ? montarPalavras(reconstruirTranscricao(clipes, new Map([[clipes[0].sourceName, transcricao]])))
+      : [];
+  const conferencia = conferirPalavras(a.palavras, depois);
+  const v = await pedacos(true, a.fps);
+  const au = await pedacos(false, a.fps);
+  const emSincronia = JSON.stringify(v.map((p) => [p.de, p.ate])) === JSON.stringify(au.map((p) => [p.de, p.ate]));
+  const fimV1 = v.length > 0 ? Math.max(...v.map((p) => p.ate)) : 0;
+  const duracaoOk = Math.abs(fimV1 - plano.duracaoDepoisQ) <= 1;
+  const contagemOk = v.length === trechos.length;
+
+  return {
+    ok: conferencia.ok && emSincronia && duracaoOk && contagemOk,
+    linhas: [
+      `${plano.cortes.length} pausas cortadas · ${relogio(plano.duracaoAntesQ, a.fps)} → ${relogio(plano.duracaoDepoisQ, a.fps)} · levou ${segundos.toFixed(0)} s`,
+      ...conferencia.linhas,
+      emSincronia ? "V1 e A1 em sincronia." : `V1 tem ${v.length} pedaços e A1 tem ${au.length}, ou em posições diferentes.`,
+      contagemOk ? `${v.length} trechos na V1, como o plano.` : `A V1 tem ${v.length} pedaços, o plano tinha ${trechos.length}.`,
+      duracaoOk
+        ? "Duração confere com o plano."
+        : `Duração NÃO confere: a V1 termina no quadro ${fimV1}, o plano dizia ${plano.duracaoDepoisQ}.`,
+      "Para desfazer tudo, use o botão Desfazer (o Ctrl+Z do Premiere desfaz um trecho por vez).",
+    ],
+  };
+}
+
+/**
+ * Recoloca a bruta como estava antes do ultimo corte: um overwrite do clipe
+ * inteiro no zero, que cobre todos os trechos, e as marcas do item de volta.
+ * Duas transacoes, qualquer que seja o tamanho do corte.
+ */
+export async function desfazerPausas(): Promise<string[]> {
+  const estado = (await readJson(ESTADO_DESFAZER)) as EstadoDesfazer | null;
+  if (!estado) throw new Error("Não há corte do Auto Pausas para desfazer.");
+  const { sequence } = await ativa();
+  const nome = (sequence as { name: string }).name;
+  if (nome !== estado.sequencia) {
+    throw new Error(`O último corte foi na sequência "${estado.sequencia}". Abra ela e clique em Desfazer de novo.`);
+  }
+
+  const { projectItem, clip } = await midiaDaV1();
+  {
+    const { project } = await ativa();
+    comTransacao(project as never, "Auto Pausas: desfazer (marcar a bruta)", (adicionar) => {
+      adicionar(clip.createSetInOutPointsAction(tickDeTexto(estado.inTicks), tickDeTexto(estado.outTicks)));
+    });
+  }
+  {
+    const { project, sequence: seq } = await ativa();
+    const editor = await ppro.SequenceEditor.getEditor(seq);
+    const zero = tickDeTexto("0");
+    comTransacao(project as never, "Auto Pausas: desfazer (recolocar a bruta)", (adicionar) => {
+      adicionar(editor.createOverwriteItemAction(projectItem, zero, 0, 0));
+      adicionar(
+        estado.marcas
+          ? clip.createSetInOutPointsAction(tickDeTexto(estado.marcas.inTicks), tickDeTexto(estado.marcas.outTicks))
+          : clip.createClearInOutPointsAction()
+      );
+    });
+  }
+  await writeJson(ESTADO_DESFAZER, null);
+
+  const pecas = await lerClipes(0);
+  return pecas.length === 1
+    ? [`Desfeito: a gravação voltou inteira (${pecas[0]!.endSeconds.toFixed(1).replace(".", ",")} s).`]
+    : [`Desfeito, mas a V1 ficou com ${pecas.length} pedaços: confira a timeline.`];
 }
 
 // --------------------------------------------------------------- sonda
