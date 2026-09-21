@@ -11,7 +11,7 @@
  * Nada disto vai para o git: e a gravacao do usuario, e o repo e publico.
  */
 
-import { readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { parseTranscricao, reconstruirTranscricao } from "../ferramentas/auto-broll/src/transcript.ts";
@@ -32,9 +32,17 @@ const args = new Map(
     return [k!, v ?? ""] as const;
   })
 );
+// O usuario edita no 25 e no 26: vale o Diagnostico mais recente das duas pastas.
+const dadosDaVersao = (v: string) =>
+  join(process.env.APPDATA ?? "", "Adobe", "UXP", "PluginsStorage", "PPRO", v, "External", "com.leogi.proedition", "PluginData");
 const pasta =
   args.get("pasta") ??
-  join(process.env.APPDATA ?? "", "Adobe", "UXP", "PluginsStorage", "PPRO", "26", "External", "com.leogi.proedition", "PluginData");
+  ["25", "26"]
+    .map(dadosDaVersao)
+    .filter((p) => existsSync(join(p, "pausas-diag.json")))
+    .sort((a, b) => statSync(join(b, "pausas-diag.json")).mtimeMs - statSync(join(a, "pausas-diag.json")).mtimeMs)[0] ??
+  dadosDaVersao("26");
+console.log(`dados: ${pasta}`);
 const saida = args.get("saida") ?? join(homedir(), "Desktop", "previa-pausas.wav");
 const opcoes = { ...FALA_PADRAO } as Record<keyof OpcoesFala, number>;
 for (const chave of Object.keys(FALA_PADRAO) as Array<keyof OpcoesFala>) {
