@@ -262,9 +262,17 @@ export async function exportarAudio(nomeArquivo: string): Promise<{
   return { caminho, preset, ms, bytes, completoNaHora };
 }
 
-/** O que o painel mostrou por ultimo, em disco: da para ler o resultado sem o usuario colar nada. */
+/**
+ * O que o painel mostrou, em disco: da para ler o resultado sem o usuario
+ * colar nada. Guarda as ultimas 20 escritas — um clique depois do corte
+ * (Diagnostico, Analisar) nao pode apagar o registro do corte.
+ */
 export async function guardarRegistro(linhas: readonly string[]): Promise<void> {
-  await writeJson("pausas-registro.json", { quando: new Date().toISOString(), linhas });
+  const antes = (await readJson("pausas-registro.json")) as { historico?: unknown[] } | null;
+  const historico = Array.isArray(antes?.historico) ? antes.historico : [];
+  await writeJson("pausas-registro.json", {
+    historico: [...historico, { quando: new Date().toISOString(), linhas }].slice(-20),
+  });
 }
 
 // ---------------------------------------------------------------- analise
