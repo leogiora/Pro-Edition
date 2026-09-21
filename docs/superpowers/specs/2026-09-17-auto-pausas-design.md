@@ -1,7 +1,7 @@
 # Auto Pausas — design
 
-Data: 2026-09-17
-Status: aprovado em chat (3 partes), aguardando revisão do spec escrito
+Data: 2026-09-17 · revisado em 2026-09-21 (áudio como fonte principal)
+Status: revisão de 2026-09-21 aprovada em chat
 
 ## Objetivo
 
@@ -9,70 +9,141 @@ Uma 5ª ferramenta no Pro Edition, **Auto Pausas**, para o primeiro passo da
 edição de anúncio: tirar as pausas e os respiros da gravação bruta, deixando a
 fala **bem colada (estilo reels)**, sem cortar nenhum pedaço de palavra.
 
-O problema que ela resolve não é "cortar pausa" — o Premiere já tem "Excluir
-pausas" na Edição baseada em texto. É **consistência**: o usuário testou o
-recurso nativo e ele tira algumas pausas e deixa outras, e o ritmo muda de um
-vídeo para outro. Auto Pausas aplica a mesma regra, com os mesmos números, em
-todo corte de todo vídeo.
+A régua é o **AutoCut Silences**: o usuário quer o corte de respiros
+"realmente igual o AutoCut" (pedido de 2026-09-21). O problema que ela resolve
+não é "cortar pausa" — o Premiere já tem "Excluir pausas" na Edição baseada em
+texto. É **consistência**: o recurso nativo tira algumas pausas e deixa outras,
+e o ritmo muda de um vídeo para outro. Auto Pausas aplica a mesma regra, com os
+mesmos números, em todo corte de todo vídeo.
+
+## Por que a revisão de 2026-09-21
+
+A primeira versão deste spec tirava a pausa **só da transcrição** (o espaço
+entre uma palavra e a seguinte). É o mesmo método do "Excluir pausas" nativo, e
+herda o defeito dele. O usuário relatou que, **nas atualizações recentes do
+Premiere 26**, o "Excluir pausas" parou de funcionar — "parece que na hora da
+transcrição o Premiere não entende as pausas" — enquanto no 25 funciona.
+
+Evidência local: a transcrição do `IMG_1190.MOV` feita no 26 em 2026-08-10
+ainda tinha as pausas (162 espaços acima de 0,2 s em 974 palavras). Então a
+quebra veio numa atualização posterior, e a transcrição da versão atual é
+confirmada no Diagnóstico (abaixo).
+
+Consequência: o **áudio passa a ser a fonte de onde está a pausa**, como no
+AutoCut. A transcrição continua, mas só no papel em que ela é confiável mesmo
+no 26: **onde cada palavra começa**.
 
 ## Não-objetivos
 
-- **Não** corta hesitações ("ééé", "ããã", "hum"). Decisão do usuário: primeiro
-  ver o corte de pausas funcionando bem; hesitação é um segundo passo.
+- **Não** corta hesitações transcritas ("ééé", "ããã", "hum"). Decisão do
+  usuário: primeiro o corte de pausas funcionando bem.
 - **Não** trabalha com podcast. Só anúncio (Pro Ads).
+- **Não** separa os vídeos de uma bruta nem escolhe o melhor take. São
+  próximos passos, depois deste (decisão de 2026-09-21).
 - **Não** mexe em sequência já editada. Só roda com a gravação bruta: um clipe
   na V1 com o áudio dele na A1, e nenhum outro clipe na sequência (faixas vazias
   podem existir). Qualquer outra coisa é recusada com mensagem dizendo o que
   fazer.
-- **Não** duplica a sequência nem marca antes de cortar. Decisão do usuário
-  (entre cópia, marcar-e-cortar e direto): **corta direto na sequência**, e a
-  rede de segurança é o Ctrl+Z mais a conferência automática descrita abaixo.
-- **Não** lê o áudio. Ler amostra de áudio no UXP não é viável (ver
-  `DEV_NOTES.md`, caminhos investigados no Podcast AutoCut) e o usuário não
-  aceita exportar WAV a cada vídeo. A única fonte é a transcrição do Premiere.
+- **Não** duplica a sequência nem marca antes de cortar. Decisão do usuário:
+  **corta direto na sequência**, e a rede de segurança é o Ctrl+Z mais a
+  conferência automática.
+- **Não** pede export manual. O áudio é extraído pelo próprio plugin dentro do
+  clique (o usuário recusa qualquer passo manual recorrente).
 - **Não** suporta Premiere 25. Só 26+, como o Auto Split.
 
-## De onde vem a pausa
+## De onde vem a pausa: áudio + transcrição
 
-A transcrição do Premiere (a mesma que o Auto B-roll já lê com
-`lerTranscricoes` + `reconstruirTranscricao`) entrega cada palavra com início e
-duração, em resolução de 0,01 s. Um recorte real (`IMG_1190.MOV`, fixture de
-`ferramentas/auto-broll/tests/transcript.test.ts`) mostra o formato:
+### Extrair o áudio (adapter)
 
-- dentro de uma frase as palavras encostam (`"É"` termina em 3,06, onde
-  `"exatamente"` começa) — não há pausa para cortar;
-- entre frases aparece o espaço (`"relógio."` termina em 2,25, `"É"` começa em
-  2,97 — 0,72 s de pausa);
-- antes da primeira palavra há silêncio (`"Bomba"` começa em 0,84).
+1. O plugin exporta a sequência ativa como WAV com
+   `EncoderManager.getManager().exportSequence(sequência, IMMEDIATELY,
+   caminho, preset, exportFull = true)`.
+2. Preset: `WAV_Mono_16bit_16kHz.epr`, que **vem instalado com o Premiere 26**
+   em `Settings/EncoderPresets/` da pasta do programa. Mono e 16 kHz bastam
+   para nível de voz e deixam o arquivo leve (~1,9 MB por minuto): o UXP não
+   tem leitura parcial, o WAV inteiro entra na memória.
+3. O WAV vai para a pasta de dados do plugin, é lido com `nivelPorJanela`
+   (`src/wav.ts`, já testado no Podcast AutoCut: dB por janela de 20 ms) e é
+   apagado em seguida.
 
-**Pausa** = o espaço entre o fim de uma palavra e o início da seguinte, mais o
-silêncio antes da primeira palavra e depois da última.
+O Diagnóstico prova, antes de qualquer código definitivo: se o export imediato
+funciona dentro do painel, quanto tempo leva, onde o preset está e se o
+arquivo sai mono a 16 kHz.
 
-## A regra de corte (lógica pura, `src/pausas.ts`)
+### Os níveis de cada gravação
 
-Entrada: as palavras em tempo de sequência, o fps da sequência, a duração do
-clipe e a margem. Saída: os **trechos que ficam**, em quadros, e para cada
-corte as palavras dos dois lados (para o registro).
+Nada de dB fixo: cada gravação se mede.
 
-1. Para cada pausa entre a palavra `p` e a seguinte `q`, a parte removível é
+- **Piso**: percentil 20 dos níveis (`ruidoDeFundo`, já existe) — o ruído da
+  sala.
+- **Voz**: percentil 90 dos níveis — o volume típico da fala.
+- **Som**: janela acima de `piso + A` dB. **Voz forte**: janela acima de
+  `voz − B` dB. Pontos de partida `A = 10`, `B = 20`; os números finais saem
+  da calibração.
+
+### A regra (lógica pura, `src/pausas.ts`)
+
+Entrada: níveis por janela, o início de cada palavra da transcrição (em tempo
+de sequência) e as opções. Saída: **blocos de fala** — cada um com início, fim
+e as palavras que começam nele.
+
+1. **Um bloco nasce de cada início de palavra.** Buracos de som menores que
+   150 ms não quebram o bloco (é o fechamento de "p", "t", "k" dentro da
+   palavra, não pausa). Blocos que se tocam ou se sobrepõem viram um só.
+2. **Bordas assimétricas.** O começo do bloco vai até onde a **voz forte**
+   começa — o respiro de antes da frase é mais fraco que a voz e fica de fora.
+   O fim do bloco vai até onde o **som** acaba — o final fraco da palavra ("s",
+   "f") fica dentro.
+3. **Som sem nenhuma palavra começando nele:**
+   - forte (pico em voz forte) e com 250 ms ou mais → **fica** e aparece no
+     registro como "voz sem palavra na transcrição" (pode ser fala que a
+     transcrição pulou — nunca cortar fala por dúvida);
+   - o resto (respiro, estalo, ruído) → **sai**, tratado como pausa.
+4. **Palavra que começa no silêncio** (fala baixinha demais para o limiar):
+   ganha um bloco mínimo em volta do início dela e aparece no registro. É a
+   proteção que o AutoCut não tem — lá, voz baixa abaixo do limiar é cortada.
+5. Tolerância entre o início que a transcrição diz e o som real: um início de
+   palavra conta para um som se cair dentro dele ou até 150 ms antes de ele
+   começar. Ponto de partida; calibrada.
+
+Os blocos entram na regra de corte que já existia, no lugar das palavras.
+
+### A regra de corte (sem mudança de comportamento)
+
+Entrada: os blocos de fala, o fps da sequência, a duração do clipe e a margem.
+Saída: os **trechos que ficam**, em quadros, e para cada corte as palavras dos
+dois lados (para o registro).
+
+1. Para cada pausa entre um bloco `p` e o seguinte `q`, a parte removível é
    `[fim(p) + margem, início(q) − margem]`.
-2. Antes da primeira palavra: `[0, início(primeira) − margem]`. Depois da
-   última: `[fim(última) + margem, fim do clipe]`.
+2. Antes do primeiro bloco: `[0, início(primeiro) − margem]`. Depois do
+   último: `[fim(último) + margem, fim do clipe]`.
 3. Encostar em quadro **sempre para dentro da pausa**: o começo do corte
-   arredonda para cima, o fim arredonda para baixo. Nunca entra numa palavra.
-4. Se a parte removível tiver menos de **2 quadros**, a pausa fica inteira (um
-   corte desse tamanho só dá tranco na imagem).
-5. Palavras sobrepostas ou encostadas não geram corte.
+   arredonda para cima, o fim arredonda para baixo.
+4. Se a parte removível tiver menos de **2 quadros**, a pausa fica inteira.
+5. Blocos sobrepostos ou encostados não geram corte.
 6. A mesma margem vale para todos os cortes. **Padrão inicial: 0,08 s de cada
-   lado** (≈ 0,16 s entre frases). O número é calibrado num anúncio real do
-   usuário antes de ser fixado; o painel mostra o campo com o padrão já
-   preenchido.
+   lado**, calibrado num anúncio real; o painel mostra o campo já preenchido.
 7. Os trechos que ficam recebem a posição final na timeline: cada um começa
    onde o anterior termina, a partir do quadro 0.
 
-**Limite conhecido:** quando a transcrição estica a duração de uma palavra por
-cima do silêncio que vem depois, essa pausa não aparece e fica. O erro é sempre
-para o lado seguro (nunca corta fala), só menos colado naquele ponto.
+## Calibração com material real
+
+Os números da regra (`A`, `B`, 150 ms, 250 ms, tolerância) **não são fixados
+no chute**. O Diagnóstico grava na pasta de dados do plugin o WAV e a
+transcrição crua de uma bruta real do usuário (2 a 5 minutos, com respiros). A
+análise é feita fora do Premiere, com um script em `scripts/`, e mede:
+
+- piso, voz e o nível dos respiros dessa gravação;
+- como a transcrição do 26 atual marca as palavras (se ainda há espaço entre
+  elas, se o fim estica por cima do silêncio, quanto o início erra em relação
+  ao som);
+- quanto cada escolha de número corta de respiro e quanto chega perto de fala.
+
+Os números escolhidos entram no código como constantes, com o motivo medido no
+comentário. **O repositório é público**: o WAV e a transcrição do usuário nunca
+são commitados. Os testes usam níveis sintéticos, e qualquer fixture derivada do
+material real vai sem texto de fala.
 
 ## Como aplica no Premiere (`src/pausas-premiere.ts`)
 
@@ -82,19 +153,20 @@ trecho (ponto de entrada e fim ajustados) e cada trecho seguinte é um clone do
 clipe, com ponto de entrada e fim ajustados e movido para a posição calculada.
 Vídeo (V1) e áudio (A1) juntos.
 
-Usa as primitivas que o Podcast AutoCut já provou ao vivo
-(`createCloneTrackItemAction`, que já recebe o deslocamento de tempo,
-`createSetInPointAction`, `createSetEndAction`). `createMoveAction` só entra se
-o clone não cair na posição certa — ela ainda não foi provada ao vivo. A ordem
-em que clones em modo overwrite se sobrescrevem na mesma faixa também não foi
-provada: é a primeira coisa que o teste ao vivo confere. Toda ação nasce dentro de `project.lockedAccess` e toda
-chamada ao Premiere passa por `comLimite`, reaproveitando `comTransacao` do
-adapter do Auto B-roll.
+O que as sondas já provaram ao vivo (tabela em `DEV_NOTES.md`, seção "Auto
+Pausas"): o clone corta no offset pedido e só na faixa do item; o remove com
+ripple fecha o buraco com V1/A1 em sincronia; todo pedaço nasce com `in=0.00`
+e precisa de correção. A pergunta aberta — `setInPoint` num pedaço do meio
+alinha no lugar ou empurra o pedaço — é respondida no Diagnóstico e decide a
+mecânica:
 
-**Plano B**, se a remontagem não se comportar ao vivo: fatiar nas bordas de
-cada pausa (mesma técnica do AutoCut) e remover o pedaço do meio com
-`createRemoveItemsAction(seleção, ripple = true, …)`, do último corte para o
-primeiro para os tempos anteriores não andarem.
+- pedaço fica no lugar → fatiar, corrigir o in, remover com ripple;
+- pedaço anda e o move funciona → o mesmo, mais um move por pedaço;
+- pedaço anda e o move falha → remontar com `createOverwriteItemAction` (molde
+  do `inserirPlano` do Auto B-roll).
+
+Toda ação nasce dentro de `project.lockedAccess` e toda chamada ao Premiere
+passa por `comLimite`, reaproveitando `comTransacao` do adapter do Auto B-roll.
 
 **Desfazer:** o mínimo de transações possível. O número exato de Ctrl+Z é
 medido no Premiere real e escrito no registro.
@@ -102,62 +174,76 @@ medido no Premiere real e escrito no registro.
 ## Conferência depois de aplicar
 
 A prova de que nada de fala saiu **lê o resultado**, não a ausência de erro
-(lição do Auto Split, onde a sonda marcava "ok" sem conferir e deixou passar o
-bug do `32767` duas vezes):
+(lição do Auto Split):
 
 1. Reler os clipes da V1 e da A1 da timeline.
 2. Remontar a transcrição a partir deles com `reconstruirTranscricao`.
-3. Comparar com a transcrição de antes: mesma quantidade de palavras, na mesma
-   ordem, cada uma com a mesma duração (tolerância de 1 quadro).
-4. Registrar "N de N palavras inteiras", ou listar exatamente quais quebraram.
+3. Comparar com a de antes: **mesmas palavras, na mesma ordem**. A duração de
+   cada palavra não entra mais na comparação — no 26 atual ela não é
+   confiável, e cortar o silêncio que a transcrição esticou por cima de uma
+   palavra é exatamente o que a ferramenta deve fazer.
+4. Registrar "N de N palavras presentes", ou listar exatamente quais sumiram.
 
 Também confere que V1 e A1 terminaram com a mesma quantidade de trechos nas
 mesmas posições (áudio não pode dessincronizar).
 
 ## Tela (`src/ui/pausas.html` + `pausas-mount.ts`)
 
-Mesma folha da família (`css: cssBroll`, como AutoCut e Auto Split), acento de
-cor próprio.
+Mesma folha da família (`css: cssBroll`, como AutoCut e Auto Split).
 
-- **Cabeçalho:** "Auto Pausas" + badge de status.
+- **Cabeçalho:** "Auto Pausas" + badge de status ("lendo áudio…" enquanto o
+  export roda).
 - **SEQ — Sequência ativa:** nome, e a confirmação do que achou: gravação na
   V1/A1 e transcrição presente.
 - **Margem de segurança:** um campo com o padrão calibrado.
 - **Botão:** "Cortar pausas" (`sp-button` cta).
-- **LOG — Registro**, que desce até a última linha:
-  - resumo: "38 pausas cortadas · 0:41 → 0:29";
+- **LOG — Registro**, resumo no topo:
+  - "38 pausas cortadas · 0:41 → 0:29";
   - cada corte com as palavras de cada lado: `0:12 · 0,8 s · "saúde" | "então"`;
-  - cortes **maiores que 1 s em destaque** para conferir (é onde uma palavra não
-    transcrita poderia estar escondida);
-  - a conferência: "412 de 412 palavras inteiras";
+  - cortes **maiores que 1 s em destaque** para conferir;
+  - "voz sem palavra na transcrição" e "palavra baixa protegida", com o tempo;
+  - a conferência: "412 de 412 palavras presentes";
   - quantos Ctrl+Z desfazem.
 
 **Recusa com instrução** (nada é alterado):
 - sem sequência ativa;
 - sem transcrição no clipe → dizer como criar (painel Texto → Transcrever);
-- timeline diferente de um clipe na V1 + áudio na A1 → dizer que a ferramenta
-  roda só na gravação bruta, antes de B-roll, música e legenda.
+- timeline diferente de um clipe na V1 + áudio na A1;
+- preset de WAV não encontrado ou export falhou → dizer qual caminho foi
+  tentado.
+
+## Diagnóstico — rodada 4 (uma ida ao Premiere)
+
+Botão temporário "Diagnóstico", rodado **uma vez** pelo usuário numa bruta
+real curta. Em ordem, e cada passo registra o que a timeline/disco mostrou
+depois, não só se lançou erro:
+
+1. **Áudio:** acha o preset, exporta o WAV da sequência, mede o tempo e o
+   tamanho, lê o cabeçalho (taxa, canais, bits) e guarda o arquivo como
+   `pausas-diag.wav` na pasta de dados.
+2. **Transcrição:** guarda o JSON cru do `exportToJSON` do clipe como
+   `pausas-diag-transcricao.json`, e registra quantos espaços entre palavras
+   existem (a pergunta "o 26 ainda marca pausa?").
+3. **Mecânica de corte:** a sonda da rodada 3, sem mudança (corta em 2 s e 4 s,
+   `setInPoint` no pedaço do meio, `createMoveAction` se o pedaço andar). Roda
+   por último porque mexe na timeline; o usuário desfaz com Ctrl+Z.
 
 ## Hall
 
-Card novo **no topo do grupo Pro Ads** (é o primeiro passo da edição), antes do
-Auto B-roll, com a miniatura de timeline mostrando V1 e A1 com os buracos
-fechados. `Ferramenta` ganha `"pausas"` em `src/shell.ts`, registro em
-`src/ui/main.ts`, teste das notações do hall passa a esperar 5 miniaturas.
+Card no topo do grupo Pro Ads (já feito na Task 3).
 
 ## Testes
 
-Automáticos (`tests/pausas.test.ts`, `node --test`):
-- a margem nunca entra na palavra;
-- o arredondamento para quadro vai para dentro da pausa;
-- pausa com menos de 2 quadros removíveis fica;
-- silêncio antes da primeira e depois da última palavra sai;
-- palavras encostadas ou sobrepostas não geram corte;
-- posições finais: cada trecho começa onde o anterior termina e a soma bate com
-  a duração nova;
-- a comparação de antes/depois detecta palavra faltando e palavra encurtada.
+Automáticos (`tests/pausas.test.ts`, `node --test`), com níveis sintéticos:
+- respiro antes da frase sai; final fraco da palavra fica;
+- buraco curto dentro da palavra não quebra o bloco;
+- som forte e longo sem palavra fica e é sinalizado; som fraco sem palavra sai;
+- palavra que começa no silêncio ganha bloco protegido;
+- tudo que já era testado na regra de corte continua (margem, quadro, mínimo
+  de 2 quadros, posições finais);
+- a conferência detecta palavra faltando, sobrando e fora de ordem.
 
 Ao vivo (usuário, Premiere 26, um anúncio real):
-1. confirmar que a remontagem deixa V1/A1 no lugar certo (senão, plano B);
-2. calibrar a margem de 0,08 s ouvindo os cortes;
+1. o Diagnóstico (rodada 4) — uma vez;
+2. aplicar numa bruta e ouvir: calibrar a margem de 0,08 s;
 3. anotar quantos Ctrl+Z desfazem.
