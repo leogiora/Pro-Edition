@@ -26,18 +26,22 @@ import {
   blocosDeFala,
   candidatosDoPreset,
   conferirPalavras,
+  desenhoDoAudio,
+  guardarNaMidia,
   lacunas,
+  montarDaMidia,
   montarPalavras,
   pedacosDoPlano,
   planejarCortes,
   type ClipeNaTimeline,
+  type NiveisDaMidia,
   PRESET_WAV,
   relogio,
   type Bloco,
   type Palavra,
   type Pedaco,
 } from "./pausas.ts";
-import { nivelPorJanela, wavCompleto } from "./wav.ts";
+import { nivelPorJanela, PISO_DB, wavCompleto } from "./wav.ts";
 
 declare function require(id: string): unknown;
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -105,6 +109,17 @@ interface Fonte {
   readonly nome: string;
   readonly projectItem: unknown;
   readonly clip: any;
+  /** O caminho do arquivo: e por ele que o audio ja lido e guardado. */
+  readonly arquivo: string;
+}
+
+/** Dois itens com o mesmo nome no projeto (IMG_0001.MOV de dois dias) nao podem dividir o audio lido. */
+async function arquivoDe(clip: any, nome: string): Promise<string> {
+  try {
+    return String((await clip.getMediaFilePath()) || nome);
+  } catch {
+    return nome;
+  }
 }
 
 async function lerFaixa(video: boolean): Promise<ClipeLido[]> {
@@ -161,8 +176,20 @@ async function lerSequencia(): Promise<{ info: SequenceInfo; fps: number; v1: Cl
   }
 
   const fontes = new Map<string, Fonte>();
-  for (const c of v1) if (!fontes.has(c.nome)) fontes.set(c.nome, { nome: c.nome, projectItem: c.projectItem, clip: c.clip });
+  for (const c of v1) {
+    if (fontes.has(c.nome)) continue;
+    fontes.set(c.nome, { nome: c.nome, projectItem: c.projectItem, clip: c.clip, arquivo: await arquivoDe(c.clip, c.nome) });
+  }
   return { info, fps, v1, fontes: [...fontes.values()] };
+}
+
+type Lida = Awaited<ReturnType<typeof lerSequencia>>;
+
+/** Os clipes da V1 em quadros; a fonte e o indice em `s.fontes`. */
+function clipesEmQuadros(s: Lida): ClipeNaTimeline[] {
+  const q = (t: Tempo) => Math.round(t.seconds * s.fps);
+  const indice = new Map(s.fontes.map((f, i) => [f.nome, i]));
+  return s.v1.map((c) => ({ inicioQ: q(c.inicio), fimQ: q(c.fim), midiaQ: q(c.entrada), fonte: indice.get(c.nome)! }));
 }
 
 /**
@@ -194,12 +221,6 @@ async function lerTranscricoes(fontes: readonly Fonte[]): Promise<Map<string, { 
   return saida;
 }
 
-/** Nome da sequencia + cada clipe da V1 em quadros: muda se o editor mexer em qualquer coisa na V1. */
-function assinaturaDe(s: { info: SequenceInfo; fps: number; v1: readonly ClipeLido[] }): string {
-  const q = (t: Tempo) => Math.round(t.seconds * s.fps);
-  return JSON.stringify([s.info.name, s.v1.map((c) => [c.nome, q(c.inicio), q(c.fim), q(c.entrada)])]);
-}
-
 /** O formato que `reconstruirTranscricao` do Auto B-roll espera. */
 function comOrigem(clipes: readonly ClipeLido[]): ClipeComOrigem[] {
   return clipes.map((c) => ({
@@ -224,26 +245,26 @@ export interface Gravacao {
   readonly clipes: number;
   /** Os clipes da V1 em quadros, para a previa contar os espacos entre os videos. */
   readonly clipesQ: readonly ClipeNaTimeline[];
-  /** A timeline como estava na leitura: se continuar igual, o corte reaproveita a analise. */
-  readonly assinatura: string;
   readonly palavras: readonly Palavra[];
+}
+
+function gravacaoDe(s: Lida, transcricoes: Map<string, { t: TranscricaoOrigem }>): Gravacao {
+  const palavras = palavrasDa(s.v1, transcricoes);
+  if (palavras.length === 0) throw new Error("A transcrição não tem nenhuma palavra dentro da timeline.");
+  const clipesQ = clipesEmQuadros(s);
+  return {
+    nomeSequencia: s.info.name,
+    fps: s.fps,
+    duracaoQ: Math.max(...clipesQ.map((c) => c.fimQ)),
+    clipes: s.v1.length,
+    clipesQ,
+    palavras,
+  };
 }
 
 export async function lerGravacao(): Promise<Gravacao> {
   const s = await lerSequencia();
-  const palavras = palavrasDa(s.v1, await lerTranscricoes(s.fontes));
-  if (palavras.length === 0) throw new Error("A transcrição não tem nenhuma palavra dentro da timeline.");
-  const q = (t: Tempo) => Math.round(t.seconds * s.fps);
-  const indice = new Map(s.fontes.map((f, i) => [f.nome, i]));
-  return {
-    nomeSequencia: s.info.name,
-    fps: s.fps,
-    duracaoQ: Math.round(Math.max(...s.v1.map((c) => c.fim.seconds)) * s.fps),
-    clipes: s.v1.length,
-    clipesQ: s.v1.map((c) => ({ inicioQ: q(c.inicio), fimQ: q(c.fim), midiaQ: q(c.entrada), fonte: indice.get(c.nome)! })),
-    assinatura: assinaturaDe(s),
-    palavras,
-  };
+  return gravacaoDe(s, await lerTranscricoes(s.fontes));
 }
 
 // ------------------------------------------------------------------ audio
@@ -348,25 +369,105 @@ export async function guardarRegistro(linhas: readonly string[]): Promise<void> 
 
 // ---------------------------------------------------------------- analise
 
-export interface Analise extends Gravacao {
-  readonly blocos: readonly Bloco[];
-  readonly segundosAudio: number;
+/** A janela do nivel do audio (20 ms, a de nivelPorJanela). */
+const JANELA_S = 0.02;
+
+/**
+ * O audio ja lido de cada arquivo (pelo caminho), em tempo de MIDIA, enquanto o
+ * Premiere estiver aberto. Separar os videos, cortar e desfazer mudam a
+ * timeline, nao o arquivo: cada bruta e exportada uma vez so.
+ *
+ * ponytail: so na memoria e so as 4 ultimas brutas; gravar em disco se reabrir
+ * o Premiere no meio de uma bruta virar rotina.
+ */
+const lidos = new Map<string, NiveisDaMidia>();
+
+/** O nivel da timeline de agora, montado do que ja foi lido; null se falta ler algum trecho. */
+function nivelDaTimeline(s: Lida): number[] | null {
+  const clipes = clipesEmQuadros(s);
+  const duracaoQ = Math.max(...clipes.map((c) => c.fimQ));
+  return montarDaMidia(s.fontes.map((f) => lidos.get(f.arquivo)), JANELA_S, clipes, s.fps, duracaoQ, PISO_DB);
 }
 
-/** Transcricao + audio -> blocos de fala. Nao toca na timeline; o WAV temporario nunca fica. */
-export async function analisarGravacao(): Promise<Analise> {
-  const g = await lerGravacao();
+/** O que o audio da timeline toca e onde. Se mudar durante o export, o WAV nao e o dela. */
+function desenhoDe(s: Lida): string {
+  return `${s.info.name}|${desenhoDoAudio(clipesEmQuadros(s).map((c) => ({ ...c, fonte: s.fontes[c.fonte]!.arquivo })))}`;
+}
+
+async function lerAudioAgora(): Promise<number> {
+  const antes = await lerSequencia();
   const audio = await exportarAudio("pausas-audio.wav");
   try {
-    const janelas = nivelPorJanela(audio.bytes);
-    return {
-      ...g,
-      blocos: blocosDeFala(janelas.db[0] ?? [], janelas.janelaMs / 1000, g.palavras),
-      segundosAudio: audio.ms / 1000,
-    };
+    // Cortar com a lamina no meio da leitura nao muda o som; mover um video muda.
+    if (desenhoDe(await lerSequencia()) !== desenhoDe(antes)) {
+      throw new Error("A timeline mudou enquanto o áudio era lido. Clique de novo sem mexer nela.");
+    }
+    const midia = antes.fontes.map((f) => lidos.get(f.arquivo) ?? []);
+    const db = nivelPorJanela(audio.bytes, JANELA_S * 1000).db[0] ?? [];
+    guardarNaMidia(db, JANELA_S, clipesEmQuadros(antes), antes.fps, midia);
+    antes.fontes.forEach((f, i) => {
+      lidos.delete(f.arquivo); // a mais recente vai para o fim da fila
+      lidos.set(f.arquivo, midia[i]!);
+    });
+    while (lidos.size > 4) lidos.delete(lidos.keys().next().value!);
+    return audio.ms;
   } finally {
     await apagarArquivo(audio.caminho);
   }
+}
+
+let lendo: Promise<number> | null = null;
+
+/**
+ * Exporta o audio da sequencia e guarda o nivel de cada arquivo. Uma leitura
+ * por vez: quem chega no meio (o Cortar clicado durante a leitura que o painel
+ * comecou sozinho) espera a mesma.
+ */
+export function lerAudio(): Promise<number> {
+  lendo ??= lerAudioAgora().finally(() => {
+    lendo = null;
+  });
+  return lendo;
+}
+
+/** Barata, para o painel vigiar a timeline sem pesar: qual sequencia e quantos clipes na V1. */
+export async function sondaDaV1(): Promise<string> {
+  const { sequence } = await ativa();
+  const seq = sequence as SeqFaixas & { name?: string; guid?: unknown };
+  const faixa = await seq.getVideoTrack(0);
+  const itens = faixa ? await faixa.getTrackItems(CLIP, false) : [];
+  return `${String(seq.guid ?? "")}|${seq.name ?? ""}|${itens.length}`;
+}
+
+/** O audio da timeline de agora ja foi lido? So le a timeline, nao exporta nada. */
+export async function audioPronto(): Promise<boolean> {
+  return nivelDaTimeline(await lerSequencia()) !== null;
+}
+
+export interface Analise extends Gravacao {
+  readonly blocos: readonly Bloco[];
+  /** Quanto esperou pelo audio: ~0 quando o painel ja tinha lido sozinho. */
+  readonly segundosAudio: number;
+}
+
+/**
+ * Transcricao + audio -> blocos de fala. Nao toca na timeline. So exporta o
+ * audio se a timeline tocar algum trecho de midia que ainda nao foi lido.
+ */
+export async function analisarGravacao(aoLerAudio: () => void = () => undefined): Promise<Analise> {
+  const s = await lerSequencia();
+  const g = gravacaoDe(s, await lerTranscricoes(s.fontes));
+  const t0 = Date.now();
+  // A leitura que o painel comecou sozinho pode estar no meio: esperar sai mais rapido que comecar outra.
+  if (lendo) await lendo.catch(() => undefined);
+  let db = nivelDaTimeline(s);
+  if (!db) {
+    aoLerAudio();
+    await lerAudio();
+    db = nivelDaTimeline(s);
+  }
+  if (!db) throw new Error("A timeline mudou enquanto o áudio era lido. Clique de novo sem mexer nela.");
+  return { ...g, blocos: blocosDeFala(db, JANELA_S, g.palavras), segundosAudio: (Date.now() - t0) / 1000 };
 }
 
 // ------------------------------------------------------------------ corte
@@ -418,6 +519,9 @@ async function tudoNaV1eA1(): Promise<unknown[]> {
  * transacao (rodada 5), entao a transacao k coloca o pedaco k e ja marca o
  * k+1; a ultima devolve as marcas. `depoisDoPrimeiro` roda entre o pedaco 0 e
  * o 1 — e onde o corte confere a conta antes de fazer as outras centenas.
+ *
+ * `medida` conta as transacoes feitas (para o erro dizer onde parou) e quanto
+ * do tempo foi o Premiere executando, para saber o que ainda da para acelerar.
  */
 async function colocarEmSequencia<T>(
   pedacos: readonly T[],
@@ -426,32 +530,35 @@ async function colocarEmSequencia<T>(
   colocar: (editor: any, p: T) => unknown,
   devolverMarcas: () => unknown[],
   aoAvancar: (feitos: number, total: number) => void,
-  depoisDoPrimeiro: () => Promise<void> = async () => undefined
-): Promise<number> {
-  let passos = 0;
+  depoisDoPrimeiro: () => Promise<void> = async () => undefined,
+  medida: { passos: number; msPremiere: number } = { passos: 0, msPremiere: 0 }
+): Promise<void> {
+  const transacao = (project: unknown, texto: string, montar: (adicionar: (acao: unknown) => void) => void) => {
+    const t = Date.now();
+    comTransacao(project as never, texto, montar);
+    medida.msPremiere += Date.now() - t;
+    medida.passos++;
+  };
   {
     const velhos = await tudoNaV1eA1();
     const { project, sequence } = await ativa();
     const editor = await ppro.SequenceEditor.getEditor(sequence);
-    comTransacao(project as never, `${rotulo}: preparar`, (adicionar) => {
+    transacao(project, `${rotulo}: preparar`, (adicionar) => {
       if (velhos.length > 0) adicionar(acaoRemover(editor, velhos));
       adicionar(marcar(pedacos[0]!));
     });
-    passos++;
   }
   for (let k = 0; k < pedacos.length; k++) {
     const { project, sequence } = await ativa();
     const editor = await ppro.SequenceEditor.getEditor(sequence);
     const proximo = pedacos[k + 1];
-    comTransacao(project as never, `${rotulo}: ${k + 1} de ${pedacos.length}`, (adicionar) => {
+    transacao(project, `${rotulo}: ${k + 1} de ${pedacos.length}`, (adicionar) => {
       adicionar(colocar(editor, pedacos[k]!));
       for (const acao of proximo ? [marcar(proximo)] : devolverMarcas()) adicionar(acao);
     });
-    passos++;
     aoAvancar(k + 1, pedacos.length);
     if (k === 0) await depoisDoPrimeiro();
   }
-  return passos;
 }
 
 /** Pedacos da V1 ou da A1 em quadros, na ordem: onde estao e de que quadro da midia partem. */
@@ -483,18 +590,12 @@ export interface ResultadoCorte {
  *
  * Erro no meio: devolve a sequencia antes de avisar.
  */
-export async function aplicarPausas(
-  margemS: number,
-  progresso: (texto: string) => void,
-  jaAnalisada?: Analise
-): Promise<ResultadoCorte> {
-  // Ler o audio e o que mais demora (~7 s numa bruta de 14 min, painel parado):
-  // se o editor acabou de clicar Analisar e a V1 nao mudou, nao le de novo.
+export async function aplicarPausas(margemS: number, progresso: (texto: string) => void): Promise<ResultadoCorte> {
+  // O audio normalmente ja foi lido sozinho pelo painel (~7 s numa bruta de 14
+  // min): so exporta aqui se a timeline tocar algum trecho ainda nao lido.
   const t0 = Date.now();
   const s = await lerSequencia();
-  const reaproveitou = jaAnalisada !== undefined && jaAnalisada.assinatura === assinaturaDe(s);
-  if (!reaproveitou) progresso("1/3 lendo áudio…");
-  const a = reaproveitou ? jaAnalisada : await analisarGravacao();
+  const a = await analisarGravacao(() => progresso("1/3 lendo áudio…"));
   const tAudio = Date.now();
   const plano = planejarCortes(a.blocos, { fps: a.fps, duracaoQ: a.duracaoQ, margemS });
   if (plano.cortes.length === 0) return { ok: true, linhas: ["Nenhuma pausa para cortar."] };
@@ -549,18 +650,18 @@ export async function aplicarPausas(
     }
   };
 
-  let passos = 0;
+  const medida = { passos: 0, msPremiere: 0 };
   try {
-    passos += await colocarEmSequencia(
+    await colocarEmSequencia(
       pedacos,
       "Auto Pausas",
       (p) => fonteDe(p).clip.createSetInOutPointsAction(tick(p.midiaDeQ), tick(p.midiaAteQ)),
       (editor, p) => editor.createOverwriteItemAction(fonteDe(p).projectItem, tick(p.destinoQ), 0, 0),
       devolverMarcas,
       (feitos, total) => progresso(`2/3 cortando ${feitos}/${total}`),
-      conferirPrimeiro
+      conferirPrimeiro,
+      medida
     );
-
   } catch (e) {
     const motivo = (e as Error)?.message ?? String(e);
     let volta = "A sequência foi devolvida como estava.";
@@ -570,7 +671,7 @@ export async function aplicarPausas(
     } catch (e2) {
       volta = `E NÃO consegui devolver a sequência (${(e2 as Error)?.message ?? String(e2)}): use Ctrl+Z.`;
     }
-    throw new Error(`O corte parou depois de ${passos} passo(s): ${motivo}. ${volta}`);
+    throw new Error(`O corte parou depois de ${medida.passos} passo(s): ${motivo}. ${volta}`);
   }
   const tCorte = Date.now();
 
@@ -591,7 +692,7 @@ export async function aplicarPausas(
     ok: conferencia.ok && emSincronia && duracaoOk && contagemOk,
     linhas: [
       `${plano.cortes.length} pausas cortadas · ${relogio(plano.duracaoAntesQ, a.fps)} → ${relogio(totalQ, a.fps)} · levou ${seg(t0, tFim)} s`,
-      `tempos: áudio ${reaproveitou ? "aproveitou o Analisar" : `${seg(t0, tAudio)} s`} · corte ${seg(tAudio, tCorte)} s · conferência ${seg(tCorte, tFim)} s`,
+      `tempos: leitura ${seg(t0, tAudio)} s (${a.segundosAudio >= 0.5 ? `áudio lido na hora: ${a.segundosAudio.toFixed(1).replace(".", ",")} s` : "áudio já lido"}) · corte ${seg(tAudio, tCorte)} s, ${seg(0, medida.msPremiere)} s dentro do Premiere · conferência ${seg(tCorte, tFim)} s`,
       ...conferencia.linhas,
       emSincronia ? "V1 e A1 em sincronia." : `V1 tem ${v.length} pedaços e A1 tem ${au.length}, ou em posições diferentes.`,
       contagemOk ? `${v.length} pedaços na V1, como o plano.` : `A V1 tem ${v.length} pedaços, o plano tinha ${pedacos.length}.`,
@@ -607,6 +708,8 @@ export async function aplicarPausas(
  * inteira volta em 3 transacoes; uma separada, em uma por clipe).
  */
 export async function desfazerPausas(emMaos?: readonly Fonte[]): Promise<string[]> {
+  // Mexer na timeline no meio do export que o painel faz sozinho, nao.
+  if (lendo) await lendo.catch(() => undefined);
   const estado = (await readJson(ESTADO_DESFAZER)) as EstadoDesfazer | null;
   if (!estado) throw new Error("Não há corte do Auto Pausas para desfazer.");
   const { sequence } = await ativa();
@@ -681,6 +784,8 @@ export async function diagnostico(): Promise<string[]> {
   }
 
   linhas.push(`== 1. Áudio (Premiere ${dados.host})`);
+  // Dois exports ao mesmo tempo, nao: a leitura que o painel faz sozinho pode estar no meio.
+  if (lendo) await lendo.catch(() => undefined);
   try {
     const info = await getSequenceInfo();
     const r = await exportarAudio("pausas-diag.wav");

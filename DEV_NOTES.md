@@ -349,8 +349,28 @@ ultima escrita — agora guarda as ultimas 20.
   anuncios de 70-112 s). A primeira versao colava tudo; agora o espaco fica e cada
   video encolhe sozinho (`pedacosDoPlano`), com a V1/A1 esvaziada na primeira
   transacao.
-- O usuario relatou "carregando muito" — o plugin nao demorou (acima); falta saber
-  se foi o Premiere depois, com ~375 clipes na timeline.
+- O usuario relatou "carregando muito": era o painel parado no selo. O tempo do
+  clique era 7,2 s lendo o audio + 3,4 s de transacoes (330 pedacos) + 0,3 s de
+  conferencia.
+
+### Audio lido uma vez por bruta (2026-09-21)
+
+Pedido: "imediato, igual o nativo". O export do audio saiu do clique:
+
+- O nivel (janelas de 20 ms) fica guardado **por arquivo, em tempo de midia**
+  (`guardarNaMidia`/`montarDaMidia`, chave = `getMediaFilePath()`). Separar os
+  videos, cortar e desfazer mudam a timeline, nao o arquivo: cada bruta e exportada
+  uma vez por sessao do Premiere (so na memoria, as 4 ultimas).
+- O painel le sozinho: ao abrir a ferramenta e numa vigia de 2 s que so olha
+  sequencia + quantos clipes ha na V1 (`sondaDaV1`). Quando isso muda e fica parado
+  uma volta, confere a cobertura e, se faltar, exporta. Leitura com a timeline
+  mudando e jogada fora (`desenhoDoAudio`: lamina nao muda o som, mover muda).
+- Cortar/Analisar/Desfazer/Diagnostico esperam a leitura em andamento
+  (`lerAudio` e uma por vez). Sem timer orfao: a vigia para quando o `#apLog` da
+  abertura dela some (o shell troca o `document.body`).
+- O corte agora diz quanto das transacoes foi o Premiere executando ("X s dentro
+  do Premiere"). Se for quase tudo, 3 s e o piso da API (um overwrite por
+  transacao); se nao, reaproveitar projeto/editor entre transacoes e o proximo passo.
 
 ### Onde parou
 

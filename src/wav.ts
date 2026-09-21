@@ -18,7 +18,7 @@ export interface Janelas {
 }
 
 /** Abaixo disto e silencio digital, e log10(0) seria -Infinity. */
-const PISO_DB = -120;
+export const PISO_DB = -120;
 
 const PCM = 1;
 const FLOAT = 3;

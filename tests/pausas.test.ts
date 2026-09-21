@@ -5,10 +5,13 @@ import {
   candidatosDoPreset,
   conferirPalavras,
   deslocamentos,
+  desenhoDoAudio,
   FALA_PADRAO,
   fonteDoTrecho,
+  guardarNaMidia,
   lacunas,
   MARGEM_PADRAO_S,
+  montarDaMidia,
   montarPalavras,
   pedacosDoPlano,
   planejarCortes,
@@ -408,4 +411,55 @@ test("cada video encolhe sozinho e o proximo comeca depois do mesmo espaco", () 
 test("clipe que nao comeca no inicio da midia desloca a midia do pedaco", () => {
   const r = pedacosDoPlano([trecho(10, 20)], [{ inicioQ: 0, fimQ: 100, midiaQ: 300, fonte: 0 }]);
   assert.deepEqual(r.pedacos, [{ fonte: 0, midiaDeQ: 310, midiaAteQ: 320, destinoQ: 0 }]);
+});
+
+// ------------------------------------------------ audio em tempo de midia
+
+test("audio lido com a bruta inteira serve para a bruta ja separada", () => {
+  // fps 25: 1 quadro = 0,04 s = 2 janelas de 20 ms. O nivel exportado = numero da janela.
+  const midia: number[][] = [[]];
+  guardarNaMidia(Array.from({ length: 500 }, (_, i) => i), 0.02, [{ inicioQ: 0, fimQ: 250, midiaQ: 0, fonte: 0 }], 25, midia);
+  // Separada: 0-2 s da midia, espaco de 10 quadros, depois a midia de 3 s a 4,6 s.
+  const separada = [
+    { inicioQ: 0, fimQ: 50, midiaQ: 0, fonte: 0 },
+    { inicioQ: 60, fimQ: 100, midiaQ: 75, fonte: 0 },
+  ];
+  const db = montarDaMidia(midia, 0.02, separada, 25, 100, -120)!;
+  assert.equal(db.length, 200);
+  assert.equal(db[0], 0);
+  assert.equal(db[99], 99);
+  assert.equal(db[100], -120, "o espaco entre os videos e silencio, como no export");
+  assert.equal(db[119], -120);
+  assert.equal(db[120], 150, "o segundo video toca a midia de 3 s em diante");
+  assert.equal(db[199], 229);
+});
+
+test("trecho da midia que nunca foi lido pede o audio de novo", () => {
+  const midia: number[][] = [[]];
+  guardarNaMidia(Array.from({ length: 100 }, () => -30), 0.02, [{ inicioQ: 0, fimQ: 50, midiaQ: 0, fonte: 0 }], 25, midia);
+  assert.equal(montarDaMidia(midia, 0.02, [{ inicioQ: 0, fimQ: 50, midiaQ: 100, fonte: 0 }], 25, 50, -120), null);
+  assert.equal(montarDaMidia([undefined], 0.02, [{ inicioQ: 0, fimQ: 50, midiaQ: 0, fonte: 0 }], 25, 50, -120), null);
+});
+
+test("meia janela de arredondamento na borda do clipe nao pede o audio de novo", () => {
+  // fps 30: a borda do clipe cai no meio de uma janela de 20 ms.
+  const midia: number[][] = [[]];
+  guardarNaMidia(Array.from({ length: 60 }, (_, i) => i), 0.02, [{ inicioQ: 1, fimQ: 31, midiaQ: 0, fonte: 0 }], 30, midia);
+  const db = montarDaMidia(midia, 0.02, [{ inicioQ: 5, fimQ: 35, midiaQ: 0, fonte: 0 }], 30, 35, -120);
+  assert.notEqual(db, null);
+  assert.equal(db!.length, 59);
+});
+
+test("cortar com a lamina nao muda o desenho do audio; mover muda", () => {
+  const inteira = [{ inicioQ: 0, fimQ: 100, midiaQ: 0, fonte: "a.mov" }];
+  const laminada = [
+    { inicioQ: 40, fimQ: 100, midiaQ: 40, fonte: "a.mov" },
+    { inicioQ: 0, fimQ: 40, midiaQ: 0, fonte: "a.mov" },
+  ];
+  const movida = [
+    { inicioQ: 0, fimQ: 40, midiaQ: 0, fonte: "a.mov" },
+    { inicioQ: 50, fimQ: 110, midiaQ: 40, fonte: "a.mov" },
+  ];
+  assert.equal(desenhoDoAudio(laminada), desenhoDoAudio(inteira));
+  assert.notEqual(desenhoDoAudio(movida), desenhoDoAudio(inteira));
 });

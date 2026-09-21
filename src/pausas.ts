@@ -377,6 +377,87 @@ export function pedacosDoPlano(
   return { pedacos, totalQ: destino };
 }
 
+// ------------------------------------------------- audio em tempo de midia
+
+/**
+ * O nivel do audio de UM arquivo em tempo de midia: uma posicao por janela,
+ * buraco = trecho ainda nao lido. Separar os videos, cortar e desfazer mexem
+ * na timeline, nao no arquivo: lido uma vez, serve para qualquer arrumacao.
+ */
+export type NiveisDaMidia = number[];
+
+/** Janelas da timeline que comecam dentro do clipe. */
+function janelasDo(c: ClipeNaTimeline, fps: number, janelaS: number): [number, number] {
+  const janela = (q: number) => Math.ceil(q / fps / janelaS - 1e-6);
+  return [janela(c.inicioQ), janela(c.fimQ)];
+}
+
+/** Que janela da midia toca na janela `w` da timeline. */
+function naMidia(c: ClipeNaTimeline, fps: number, janelaS: number, w: number): number {
+  return Math.round((c.midiaQ / fps + w * janelaS - c.inicioQ / fps) / janelaS);
+}
+
+/** Guarda o que o export da timeline mostrou, em tempo de midia de cada arquivo (`midia[fonte]`). */
+export function guardarNaMidia(
+  db: readonly number[],
+  janelaS: number,
+  clipes: readonly ClipeNaTimeline[],
+  fps: number,
+  midia: NiveisDaMidia[]
+): void {
+  for (const c of clipes) {
+    const alvo = midia[c.fonte]!;
+    const [de, ate] = janelasDo(c, fps, janelaS);
+    for (let w = de; w < Math.min(ate, db.length); w++) alvo[naMidia(c, fps, janelaS, w)] = db[w]!;
+  }
+}
+
+/**
+ * O nivel da timeline montado do que ja foi lido de cada arquivo, igual ao
+ * export da sequencia: o espaco entre os videos e silencio. null = algum
+ * trecho da timeline nunca foi lido.
+ */
+export function montarDaMidia(
+  midia: ReadonlyArray<NiveisDaMidia | undefined>,
+  janelaS: number,
+  clipes: readonly ClipeNaTimeline[],
+  fps: number,
+  duracaoQ: number,
+  silencioDb: number
+): number[] | null {
+  const db = new Array<number>(Math.ceil(duracaoQ / fps / janelaS - 1e-6)).fill(silencioDb);
+  for (const c of clipes) {
+    const fonte = midia[c.fonte];
+    if (!fonte) return null;
+    const [de, ate] = janelasDo(c, fps, janelaS);
+    for (let w = de; w < Math.min(ate, db.length); w++) {
+      const i = naMidia(c, fps, janelaS, w);
+      // Quem guardou pode ter arredondado a borda para a janela vizinha.
+      const v = fonte[i] ?? fonte[i - 1] ?? fonte[i + 1];
+      if (v === undefined) return null;
+      db[w] = v;
+    }
+  }
+  return db;
+}
+
+/**
+ * O que o audio da timeline toca e onde, com os cortes de lamina desfeitos
+ * (lamina nao muda o som). Se isto mudar durante o export, o audio lido pode
+ * nao ser o da timeline.
+ */
+export function desenhoDoAudio(
+  clipes: ReadonlyArray<{ readonly inicioQ: number; readonly fimQ: number; readonly midiaQ: number; readonly fonte: string }>
+): string {
+  const juntos: Array<[number, number, number, string]> = [];
+  for (const c of [...clipes].sort((a, b) => a.inicioQ - b.inicioQ)) {
+    const u = juntos[juntos.length - 1];
+    if (u && u[1] === c.inicioQ && u[3] === c.fonte && u[2] + (u[1] - u[0]) === c.midiaQ) u[1] = c.fimQ;
+    else juntos.push([c.inicioQ, c.fimQ, c.midiaQ, c.fonte]);
+  }
+  return JSON.stringify(juntos);
+}
+
 /** Um bloco leva a frase inteira; o registro mostra so a palavra encostada no corte. */
 export function ultimaPalavra(texto: string): string {
   return texto.trim().split(/\s+/).pop() || "…";

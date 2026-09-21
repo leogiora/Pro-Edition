@@ -9,11 +9,13 @@
 import {
   analisarGravacao,
   aplicarPausas,
+  audioPronto,
   desfazerPausas,
   diagnostico,
   guardarRegistro,
+  lerAudio,
   lerGravacao,
-  type Analise,
+  sondaDaV1,
 } from "../pausas-premiere.ts";
 import { MARGEM_PADRAO_S, pedacosDoPlano, planejarCortes, primeiraPalavra, relogio, ultimaPalavra } from "../pausas.ts";
 
@@ -22,6 +24,9 @@ export function lerMargem(bruto: string): number {
   const n = Number(bruto.trim().replace(",", "."));
   return Number.isFinite(n) && n >= 0 && n <= 1 ? n : MARGEM_PADRAO_S;
 }
+
+/** Cada abertura da tela ganha um numero: a vigia de uma tela velha se reconhece e para. */
+let aberturas = 0;
 
 export function mount(root: HTMLElement): void {
   const pega = <T extends HTMLElement>(id: string): T => root.querySelector<T>(`#${id}`)!;
@@ -45,10 +50,6 @@ export function mount(root: HTMLElement): void {
     escrever(`Erro: ${(e as Error)?.message ?? String(e)}`);
   };
 
-  // O ultimo Analisar: o corte logo em seguida nao le o audio de novo (o
-  // adapter confere se a V1 continua igual antes de reaproveitar).
-  let analisada: Analise | null = null;
-
   // O export do audio leva segundos: um segundo clique no meio exportaria o
   // mesmo arquivo duas vezes ao mesmo tempo.
   let ocupado = false;
@@ -62,7 +63,6 @@ export function mount(root: HTMLElement): void {
       });
   };
 
-  // Abrir a tela so le a sequencia: o audio e exportado no clique, nao aqui.
   const abrir = async () => {
     const g = await lerGravacao();
     const nome = pega("apSeqNome");
@@ -71,16 +71,15 @@ export function mount(root: HTMLElement): void {
     pega("apDica").style.display = "none";
     escrever(
       `${g.clipes} clipe${g.clipes === 1 ? "" : "s"} na V1 · ${g.palavras.length} palavras na transcrição · ${relogio(g.duracaoQ, g.fps)} de gravação.`,
-      "Clique em Analisar para ver os cortes. O áudio é lido na hora e leva alguns segundos."
+      "O áudio de cada bruta é lido sozinho, uma vez (uns segundos): depois disso, Cortar pausas vai direto."
     );
     estado("pronto", "ok");
   };
 
   const previa = async () => {
-    estado("lendo áudio…", "ativo");
-    escrever("Exportando o áudio da sequência e medindo a fala...");
-    const a = await analisarGravacao();
-    analisada = a;
+    estado("analisando…", "ativo");
+    escrever("Medindo a fala...");
+    const a = await analisarGravacao(() => estado("lendo áudio…", "ativo"));
     const margemS = lerMargem(pega<HTMLInputElement>("apMargem").value);
     const plano = planejarCortes(a.blocos, { fps: a.fps, duracaoQ: a.duracaoQ, margemS });
     // A duracao final conta os espacos que o editor deixou entre os videos (eles ficam).
@@ -91,9 +90,9 @@ export function mount(root: HTMLElement): void {
     escrever(
       `${plano.cortes.length} pausas para cortar · ${relogio(plano.duracaoAntesQ, a.fps)} → ${relogio(totalQ, a.fps)}` +
         (a.clipes > 1 ? ` · ${a.clipes} vídeos, o espaço entre eles fica` : ""),
-      `${a.palavras.length} palavras · ${a.blocos.length} blocos de fala · áudio lido em ${a.segundosAudio
-        .toFixed(1)
-        .replace(".", ",")} s · margem ${String(margemS).replace(".", ",")} s`,
+      `${a.palavras.length} palavras · ${a.blocos.length} blocos de fala · ${
+        a.segundosAudio >= 0.5 ? `áudio lido em ${a.segundosAudio.toFixed(1).replace(".", ",")} s` : "áudio já lido"
+      } · margem ${String(margemS).replace(".", ",")} s`,
       ...avisos.map((b) =>
         b.motivo === "voz-sem-palavra"
           ? `${quando(b.inicio)} · voz sem palavra na transcrição (fica)`
@@ -111,7 +110,48 @@ export function mount(root: HTMLElement): void {
     estado("prévia pronta", "ok");
   };
 
-  void abrir().catch(mostrarErro);
+  // O audio de cada bruta e lido SOZINHO, uma vez, quando ela aparece na V1 e
+  // a timeline para por um instante: quando o editor termina de separar os
+  // videos e clica Cortar, ja esta lido (antes: ~7 s parado no selo a cada
+  // clique). A vigia so olha a sequencia e quantos clipes ha na V1; a timeline
+  // inteira so e lida quando isso muda.
+  let sondaVista = "";
+  let sondaTratada = "";
+  let vigiando = false;
+  const vigiar = async (agora = false) => {
+    if (ocupado || vigiando) return;
+    vigiando = true;
+    let leu = false;
+    try {
+      const sonda = await sondaDaV1();
+      const parada = agora || sonda === sondaVista;
+      sondaVista = sonda;
+      if (!parada || sonda === sondaTratada) return;
+      sondaTratada = sonda;
+      if (await audioPronto()) return;
+      leu = true;
+      estado("lendo áudio…", "ativo");
+      await lerAudio();
+    } catch {
+      // Timeline que o corte recusaria, ou que mudou no meio da leitura: o erro
+      // de verdade aparece no clique, e o clique le o audio se ainda faltar.
+    } finally {
+      vigiando = false;
+      if (leu && !ocupado) estado("pronto", "ok");
+    }
+  };
+  // O shell troca o document.body inteiro ao mudar de ferramenta: a vigia
+  // desta abertura para quando o log dela some.
+  const abertura = String(++aberturas);
+  log.setAttribute("data-abertura", abertura);
+  const vigia = setInterval(() => {
+    if (document.getElementById("apLog")?.getAttribute("data-abertura") !== abertura) clearInterval(vigia);
+    else void vigiar();
+  }, 2000);
+
+  void abrir()
+    .catch(mostrarErro)
+    .finally(() => vigiar(true));
 
   pega("apAnalisar").addEventListener("click", umPorVez(previa));
 
@@ -120,12 +160,7 @@ export function mount(root: HTMLElement): void {
     umPorVez(async () => {
       estado("preparando…", "ativo");
       escrever("Cortando. Não mexa na timeline até terminar.");
-      const r = await aplicarPausas(
-        lerMargem(pega<HTMLInputElement>("apMargem").value),
-        (texto) => estado(texto, "ativo"),
-        analisada ?? undefined
-      );
-      analisada = null;
+      const r = await aplicarPausas(lerMargem(pega<HTMLInputElement>("apMargem").value), (texto) => estado(texto, "ativo"));
       escrever(...r.linhas);
       estado(r.ok ? "cortado" : "cortado com problema", r.ok ? "ok" : "erro");
     })
@@ -135,7 +170,6 @@ export function mount(root: HTMLElement): void {
     "click",
     umPorVez(async () => {
       estado("desfazendo…", "ativo");
-      analisada = null;
       escrever(...(await desfazerPausas()));
       estado("desfeito", "ok");
     })
