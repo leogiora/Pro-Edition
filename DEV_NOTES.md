@@ -342,8 +342,8 @@ ultima escrita — agora guarda as ultimas 20.
 
 ### Onde parou
 
-Tasks 8 e 9 prontas e o corte ja rodou uma vez (acima). O Desfazer ainda nao
-foi testado. Falta: o usuario ouvir `previa-pausas.wav` e testar Analisar ->
+Tasks 8 e 9 prontas e o corte ja rodou uma vez (acima). O Desfazer tambem rodou
+(2026-09-21): "Desfeito: a gravacao voltou inteira (12,7 s)", estado zerado. Falta: o usuario ouvir `previa-pausas.wav` e testar Analisar ->
 Cortar -> Desfazer numa bruta real; depois a Task 10 (margem, tirar o
 Diagnostico, guia de uso). Calibracao de respiro pede uma bruta longa
 transcrita (a IMG_1902.MOV de 14 min ainda tem in/out 5-6 s da rodada 4).
