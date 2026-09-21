@@ -184,3 +184,35 @@ for (const p of pedacos) {
 }
 writeFileSync(saida, wav);
 console.log(`previa gravada em ${saida} (${(total / 2 / janelas.taxa).toFixed(1)} s)`);
+
+// 6. O que SAIU e tinha voz: cada corte com pelo menos 60 ms de voz forte vai
+// para cortes-com-voz.wav, com meio segundo de silencio entre um e outro. E o
+// arquivo para o editor ouvir e dizer se ali tinha fala de verdade.
+const comVoz: Array<{ de: number; ate: number; voz: number; antes: string; depois: string }> = [];
+for (const c of plano.cortes) {
+  const de = c.inicioQ / fps;
+  const ate = c.fimQ / fps;
+  let voz = 0;
+  for (let i = Math.floor(de / janelaS); i < Math.ceil(ate / janelaS); i++) if (db[i] !== undefined && db[i]! > limiarVoz) voz += janelaS;
+  if (voz >= 0.06) comVoz.push({ de, ate, voz, antes: c.antes.split(" ").pop() ?? "", depois: c.depois.split(" ")[0] ?? "" });
+}
+const mmss = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
+console.log(`cortes que levam voz forte (>= 60 ms): ${comVoz.length} de ${plano.cortes.length}`);
+for (const c of comVoz.slice(0, 40)) {
+  console.log(`  ${mmss(c.de)} · ${(c.ate - c.de).toFixed(2)} s · voz ${(c.voz * 1000).toFixed(0)} ms · "${c.antes}" | "${c.depois}"`);
+}
+const silencio = new Uint8Array(Math.round(0.5 * janelas.taxa) * 2);
+const partes = comVoz.flatMap((c) => [bytes.subarray(dados + byteDe(c.de), dados + byteDe(c.ate)), silencio]);
+const totalVoz = partes.reduce((n, p) => n + p.byteLength, 0);
+const wavVoz = new Uint8Array(44 + totalVoz);
+wavVoz.set(wav.subarray(0, 44));
+new DataView(wavVoz.buffer).setUint32(4, 36 + totalVoz, true);
+new DataView(wavVoz.buffer).setUint32(40, totalVoz, true);
+let c2 = 44;
+for (const p of partes) {
+  wavVoz.set(p, c2);
+  c2 += p.byteLength;
+}
+const saidaVoz = saida.replace(/[^\\/]+$/, "cortes-com-voz.wav");
+writeFileSync(saidaVoz, wavVoz);
+console.log(`cortes com voz gravados em ${saidaVoz}`);
