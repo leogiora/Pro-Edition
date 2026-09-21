@@ -30,6 +30,7 @@ import {
   montarPalavras,
   pedacosDoPlano,
   planejarCortes,
+  type ClipeNaTimeline,
   PRESET_WAV,
   relogio,
   type Bloco,
@@ -215,6 +216,8 @@ export interface Gravacao {
   readonly fps: number;
   readonly duracaoQ: number;
   readonly clipes: number;
+  /** Os clipes da V1 em quadros, para a previa contar os espacos entre os videos. */
+  readonly clipesQ: readonly ClipeNaTimeline[];
   readonly palavras: readonly Palavra[];
 }
 
@@ -222,11 +225,14 @@ export async function lerGravacao(): Promise<Gravacao> {
   const s = await lerSequencia();
   const palavras = palavrasDa(s.v1, await lerTranscricoes(s.fontes));
   if (palavras.length === 0) throw new Error("A transcrição não tem nenhuma palavra dentro da timeline.");
+  const q = (t: Tempo) => Math.round(t.seconds * s.fps);
+  const indice = new Map(s.fontes.map((f, i) => [f.nome, i]));
   return {
     nomeSequencia: s.info.name,
     fps: s.fps,
     duracaoQ: Math.round(Math.max(...s.v1.map((c) => c.fim.seconds)) * s.fps),
     clipes: s.v1.length,
+    clipesQ: s.v1.map((c) => ({ inicioQ: q(c.inicio), fimQ: q(c.fim), midiaQ: q(c.entrada), fonte: indice.get(c.nome)! })),
     palavras,
   };
 }
@@ -373,27 +379,31 @@ const semMarca = (t: Tempo) => t.seconds < -1000;
 const tickDeTexto = (ticks: string) => ppro.TickTime.createWithTicks(ticks);
 
 /**
- * Tira itens da timeline sem ripple, no molde do Auto B-roll (que tira o audio
- * dos B-rolls assim no 25 e no 26: "audio removido de N B-rolls" nos logs).
+ * Acao que tira itens sem ripple, no molde do Auto B-roll (que tira o audio dos
+ * B-rolls assim no 25 e no 26: "audio removido de N B-rolls" nos logs). Tem de
+ * ser montada DENTRO da transacao: a selecao nasce ali.
  */
-async function removerItens(itens: readonly unknown[], rotulo: string): Promise<void> {
-  if (itens.length === 0) return;
-  const { project, sequence } = await ativa();
-  const editor = await ppro.SequenceEditor.getEditor(sequence);
-  comTransacao(project as never, rotulo, (adicionar) => {
-    let selecao: { addItem: (i: unknown, d: boolean) => boolean } | null = null;
-    ppro.TrackItemSelection.createEmptySelection((s: typeof selecao) => {
-      selecao = s;
-    });
-    if (!selecao) throw new Error("createEmptySelection nao devolveu selecao");
-    const sel = selecao as { addItem: (i: unknown, d: boolean) => boolean };
-    for (const i of itens) sel.addItem(i, false);
-    adicionar(editor.createRemoveItemsAction(sel, false, ppro.Constants.MediaType.ANY, false));
+function acaoRemover(editor: any, itens: readonly unknown[]): unknown {
+  let selecao: { addItem: (i: unknown, d: boolean) => boolean } | null = null;
+  ppro.TrackItemSelection.createEmptySelection((s: typeof selecao) => {
+    selecao = s;
   });
+  if (!selecao) throw new Error("createEmptySelection nao devolveu selecao");
+  const sel = selecao as { addItem: (i: unknown, d: boolean) => boolean };
+  for (const i of itens) sel.addItem(i, false);
+  return editor.createRemoveItemsAction(sel, false, ppro.Constants.MediaType.ANY, false);
+}
+
+/** Tudo que esta na V1 e na A1 agora — o corte e o Desfazer esvaziam antes de recolocar. */
+async function tudoNaV1eA1(): Promise<unknown[]> {
+  const { sequence } = await ativa();
+  return [...(await itensDa(sequence, true, 0)), ...(await itensDa(sequence, false, 0))];
 }
 
 /**
- * Coloca uma lista de pedacos, um por transacao, da esquerda para a direita.
+ * Esvazia a V1 e a A1 e coloca uma lista de pedacos, um por transacao, da
+ * esquerda para a direita. Esvaziar antes e o que deixa os espacos entre os
+ * videos vazios de verdade — sem sobra da sequencia antiga dentro deles.
  *
  * O overwrite so enxerga o in/out marcado no item do projeto ANTES da
  * transacao (rodada 5), entao a transacao k coloca o pedaco k e ja marca o
@@ -411,8 +421,13 @@ async function colocarEmSequencia<T>(
 ): Promise<number> {
   let passos = 0;
   {
-    const { project } = await ativa();
-    comTransacao(project as never, `${rotulo}: preparar`, (adicionar) => adicionar(marcar(pedacos[0]!)));
+    const velhos = await tudoNaV1eA1();
+    const { project, sequence } = await ativa();
+    const editor = await ppro.SequenceEditor.getEditor(sequence);
+    comTransacao(project as never, `${rotulo}: preparar`, (adicionar) => {
+      if (velhos.length > 0) adicionar(acaoRemover(editor, velhos));
+      adicionar(marcar(pedacos[0]!));
+    });
     passos++;
   }
   for (let k = 0; k < pedacos.length; k++) {
@@ -450,8 +465,8 @@ export interface ResultadoCorte {
  *
  * So usa o que foi provado no Premiere 25.6.6: marcar in/out no item do projeto,
  * overwrite do ProjectItem CRU (rodadas 5 e 6) e remover sem ripple (Auto B-roll).
- * Cada pedaco sai do ARQUIVO, nao da timeline, entao pode sobrescrever a
- * sequencia da esquerda para a direita; no fim sai o que sobrou.
+ * Cada pedaco sai do ARQUIVO, nao da timeline: a V1/A1 e esvaziada e os pedacos
+ * voltam da esquerda para a direita, com os espacos entre os videos mantidos.
  *
  * ponytail: uma transacao por pedaco (~380 numa bruta de 14 min) — o Ctrl+Z do
  * Premiere desfaz um pedaco por vez, por isso existe desfazerPausas. Se um dia
@@ -510,7 +525,7 @@ export async function aplicarPausas(
     const primeiro = (await pecas(true, a.fps))[0];
     const esperado = p.midiaAteQ - p.midiaDeQ;
     const veio = primeiro ? primeiro.ate - primeiro.de : 0;
-    if (!primeiro || primeiro.de !== 0 || veio < esperado) {
+    if (!primeiro || primeiro.de !== p.destinoQ || veio < esperado) {
       throw new Error(`o primeiro pedaço saiu com ${veio} quadros, o plano pedia ${esperado}`);
     }
     if (Math.abs(primeiro.midia - p.midiaDeQ) > 1) {
@@ -531,21 +546,12 @@ export async function aplicarPausas(
       conferirPrimeiro
     );
 
-    // O que sobrou da sequencia depois do ultimo pedaco colado.
-    const { sequence } = await ativa();
-    const sobra: unknown[] = [];
-    for (const video of [true, false]) {
-      for (const i of await itensDa(sequence, video, 0)) {
-        if ((await i.getStartTime()).seconds * a.fps >= totalQ - 0.5) sobra.push(i);
-      }
-    }
-    await removerItens(sobra, "Auto Pausas: tirar a sobra");
-    if (sobra.length > 0) passos++;
   } catch (e) {
     const motivo = (e as Error)?.message ?? String(e);
     let volta = "A sequência foi devolvida como estava.";
     try {
-      await desfazerPausas();
+      // As fontes vao em maos: se o erro veio logo depois de esvaziar, a timeline nao tem de onde tira-las.
+      await desfazerPausas(s.fontes);
     } catch (e2) {
       volta = `E NÃO consegui devolver a sequência (${(e2 as Error)?.message ?? String(e2)}): use Ctrl+Z.`;
     }
@@ -581,7 +587,7 @@ export async function aplicarPausas(
  * A1 e recoloca cada clipe original pelo mesmo encadeamento do corte (a bruta
  * inteira volta em 3 transacoes; uma separada, em uma por clipe).
  */
-export async function desfazerPausas(): Promise<string[]> {
+export async function desfazerPausas(emMaos?: readonly Fonte[]): Promise<string[]> {
   const estado = (await readJson(ESTADO_DESFAZER)) as EstadoDesfazer | null;
   if (!estado) throw new Error("Não há corte do Auto Pausas para desfazer.");
   const { sequence } = await ativa();
@@ -591,7 +597,7 @@ export async function desfazerPausas(): Promise<string[]> {
   }
 
   // Os itens do projeto saem da timeline ANTES de esvazia-la: depois nao ha de onde pegar.
-  const atuais = await lerFaixa(true);
+  const atuais: ReadonlyArray<{ nome: string; projectItem: unknown; clip: any }> = emMaos ?? (await lerFaixa(true));
   const fontes = estado.fontes.map((f) => {
     const achado = atuais.find((c) => c.nome === f.nome && c.clip);
     // ponytail: arquivo que o corte tirou inteiro nao volta; guardar o caminho da midia se isso acontecer.
@@ -599,8 +605,6 @@ export async function desfazerPausas(): Promise<string[]> {
     return { projectItem: achado.projectItem, clip: achado.clip };
   });
 
-  const todos = [...(await itensDa(sequence, true, 0)), ...(await itensDa(sequence, false, 0))];
-  await removerItens(todos, "Auto Pausas: desfazer (tirar os pedaços)");
   await colocarEmSequencia(
     estado.clipes,
     "Auto Pausas: desfazer",

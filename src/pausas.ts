@@ -342,8 +342,12 @@ export interface Pedaco {
 /**
  * Divide cada trecho que fica nas emendas que o editor fez ao separar a bruta.
  * Cada pedaco sai do ARQUIVO original (fonte + quadros da midia), nao da
- * timeline, e os destinos sao colados a partir do 0 — um buraco entre dois
- * clipes dentro de um trecho fecha, entao nenhum conteudo velho fica aparecendo.
+ * timeline.
+ *
+ * O espaco que o editor deixa entre dois clipes E a separacao dos videos
+ * (2026-09-21: ~2-3 s entre cada um dos 10 anuncios de uma bruta): ele fica do
+ * mesmo tamanho. Cada video encolhe sozinho e o seguinte comeca depois do mesmo
+ * espaco.
  */
 export function pedacosDoPlano(
   trechos: readonly TrechoMantido[],
@@ -352,9 +356,12 @@ export function pedacosDoPlano(
   const emOrdem = [...clipes].sort((a, b) => a.inicioQ - b.inicioQ);
   const pedacos: Pedaco[] = [];
   let destino = 0;
-  // ponytail: trechos x clipes (~600 x 200 numa bruta longa); dois ponteiros se um dia pesar.
-  for (const tr of trechos) {
-    for (const c of emOrdem) {
+  let fimAnterior = 0;
+  // ponytail: clipes x trechos (~200 x 600 numa bruta longa); dois ponteiros se um dia pesar.
+  for (const c of emOrdem) {
+    destino += Math.max(0, c.inicioQ - fimAnterior);
+    fimAnterior = c.fimQ;
+    for (const tr of trechos) {
       const de = Math.max(tr.inicioQ, c.inicioQ);
       const ate = Math.min(tr.fimQ, c.fimQ);
       if (ate <= de) continue;

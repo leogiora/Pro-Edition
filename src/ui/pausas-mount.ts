@@ -14,7 +14,7 @@ import {
   guardarRegistro,
   lerGravacao,
 } from "../pausas-premiere.ts";
-import { MARGEM_PADRAO_S, planejarCortes, primeiraPalavra, relogio, ultimaPalavra } from "../pausas.ts";
+import { MARGEM_PADRAO_S, pedacosDoPlano, planejarCortes, primeiraPalavra, relogio, ultimaPalavra } from "../pausas.ts";
 
 /** O campo aceita virgula (teclado pt-BR) e ponto. Valor invalido volta ao padrao. */
 export function lerMargem(bruto: string): number {
@@ -77,11 +77,14 @@ export function mount(root: HTMLElement): void {
     const a = await analisarGravacao();
     const margemS = lerMargem(pega<HTMLInputElement>("apMargem").value);
     const plano = planejarCortes(a.blocos, { fps: a.fps, duracaoQ: a.duracaoQ, margemS });
+    // A duracao final conta os espacos que o editor deixou entre os videos (eles ficam).
+    const { totalQ } = pedacosDoPlano(plano.trechos, a.clipesQ);
     const quando = (segundos: number) => relogio(Math.round(segundos * a.fps), a.fps);
     const avisos = a.blocos.filter((b) => b.motivo !== "fala");
 
     escrever(
-      `${plano.cortes.length} pausas para cortar · ${relogio(plano.duracaoAntesQ, a.fps)} → ${relogio(plano.duracaoDepoisQ, a.fps)}`,
+      `${plano.cortes.length} pausas para cortar · ${relogio(plano.duracaoAntesQ, a.fps)} → ${relogio(totalQ, a.fps)}` +
+        (a.clipes > 1 ? ` · ${a.clipes} vídeos, o espaço entre eles fica` : ""),
       `${a.palavras.length} palavras · ${a.blocos.length} blocos de fala · áudio lido em ${a.segundosAudio
         .toFixed(1)
         .replace(".", ",")} s · margem ${String(margemS).replace(".", ",")} s`,

@@ -377,7 +377,7 @@ test("clipes de arquivos diferentes levam a fonte de cada um", () => {
   );
 });
 
-test("buraco entre clipes dentro de um trecho fecha: nenhum conteudo velho aparece", () => {
+test("o espaco que o editor deixou entre dois videos continua do mesmo tamanho", () => {
   const clipes = [
     { inicioQ: 0, fimQ: 50, midiaQ: 0, fonte: 0 },
     { inicioQ: 55, fimQ: 100, midiaQ: 200, fonte: 0 },
@@ -385,9 +385,24 @@ test("buraco entre clipes dentro de um trecho fecha: nenhum conteudo velho apare
   const r = pedacosDoPlano([trecho(45, 60)], clipes);
   assert.deepEqual(r.pedacos, [
     { fonte: 0, midiaDeQ: 45, midiaAteQ: 50, destinoQ: 0 },
-    { fonte: 0, midiaDeQ: 200, midiaAteQ: 205, destinoQ: 5 },
+    { fonte: 0, midiaDeQ: 200, midiaAteQ: 205, destinoQ: 10 },
   ]);
-  assert.equal(r.totalQ, 10);
+  assert.equal(r.totalQ, 15);
+});
+
+test("cada video encolhe sozinho e o proximo comeca depois do mesmo espaco", () => {
+  const clipes = [
+    { inicioQ: 0, fimQ: 100, midiaQ: 0, fonte: 0 },
+    { inicioQ: 110, fimQ: 200, midiaQ: 300, fonte: 0 },
+  ];
+  const r = pedacosDoPlano([trecho(10, 40), trecho(50, 90), trecho(120, 150)], clipes);
+  assert.deepEqual(r.pedacos, [
+    { fonte: 0, midiaDeQ: 10, midiaAteQ: 40, destinoQ: 0 },
+    { fonte: 0, midiaDeQ: 50, midiaAteQ: 90, destinoQ: 30 },
+    // o primeiro video acabou em 70; o espaco de 10 que o editor deixou fica
+    { fonte: 0, midiaDeQ: 310, midiaAteQ: 340, destinoQ: 80 },
+  ]);
+  assert.equal(r.totalQ, 110);
 });
 
 test("clipe que nao comeca no inicio da midia desloca a midia do pedaco", () => {
