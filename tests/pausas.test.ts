@@ -1,9 +1,11 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
+  blocosDeFala,
   candidatosDoPreset,
   conferirPalavras,
   deslocamentos,
+  FALA_PADRAO,
   fonteDoTrecho,
   lacunas,
   MARGEM_PADRAO_S,
@@ -233,4 +235,98 @@ test("fonteDoTrecho devolve o instante da midia que cada trecho tem de mostrar",
   assert.equal(fonteDoTrecho({ baseInicioQ: 0, baseFonteQ: 300 }, 90), 390);
   // Clipe que comeca em 1s na timeline: o trecho em 91 esta 90 quadros adiante.
   assert.equal(fonteDoTrecho({ baseInicioQ: 30, baseFonteQ: 300 }, 120), 390);
+});
+
+const J = 0.02;
+
+/** Nivel por janela de 20 ms: [inicioS, fimS, dB] por trecho; o resto e silencio de sala. */
+function niveis(duracaoS: number, trechos: ReadonlyArray<readonly [number, number, number]>, silencio = -60): number[] {
+  const db = new Array<number>(Math.round(duracaoS / J)).fill(silencio);
+  for (const [de, ate, nivel] of trechos) {
+    for (let i = Math.round(de / J); i < Math.round(ate / J); i++) db[i] = nivel;
+  }
+  return db;
+}
+
+const perto = (a: number, b: number) => Math.abs(a - b) < 1e-6;
+
+// Cena padrao: respiro fraco antes da frase, voz forte, final fraco ("s") e silencio.
+// Piso -60, voz tipica -20: som acima de -50, voz forte acima de -40.
+const cena = (d = 0) =>
+  niveis(
+    4,
+    [
+      [0.5, 0.9, -45 + d], // respiro
+      [1.0, 2.0, -20 + d], // voz
+      [2.0, 2.1, -45 + d], // final fraco
+    ],
+    -60 + d
+  );
+
+test("o respiro antes da frase fica fora e o final fraco da palavra fica dentro", () => {
+  // Transcricao do 26: o fim da palavra estica por cima do silencio.
+  const blocos = blocosDeFala(cena(), J, [{ texto: "vamos", inicio: 1.0, fim: 3.5 }]);
+  assert.equal(blocos.length, 1);
+  assert.ok(perto(blocos[0]!.inicio, 1.0), `inicio ${blocos[0]!.inicio}`);
+  assert.ok(perto(blocos[0]!.fim, 2.1), `fim ${blocos[0]!.fim}`);
+  assert.equal(blocos[0]!.motivo, "fala");
+  assert.equal(blocos[0]!.texto, "vamos");
+});
+
+test("a mesma cena 15 dB mais baixa da os mesmos blocos: cada gravacao se mede", () => {
+  const a = blocosDeFala(cena(), J, [{ texto: "vamos", inicio: 1.0, fim: 3.5 }]);
+  const b = blocosDeFala(cena(-15), J, [{ texto: "vamos", inicio: 1.0, fim: 3.5 }]);
+  assert.deepEqual(b, a);
+});
+
+test("ataque fraco ('s' de 'saude') fica quando a transcricao diz que a palavra comeca ali", () => {
+  const db = niveis(4, [
+    [0.9, 1.0, -45], // "s"
+    [1.0, 2.0, -20],
+  ]);
+  const [bloco] = blocosDeFala(db, J, [{ texto: "saude", inicio: 0.9, fim: 2.0 }]);
+  assert.ok(perto(bloco!.inicio, 0.9), `inicio ${bloco!.inicio}`);
+});
+
+test("buraco curto dentro da palavra nao quebra o bloco", () => {
+  const db = niveis(4, [
+    [1.0, 1.4, -20],
+    [1.48, 2.0, -20], // 80 ms de fechamento do "p"
+  ]);
+  const blocos = blocosDeFala(db, J, [{ texto: "compra", inicio: 1.0, fim: 2.0 }]);
+  assert.equal(blocos.length, 1);
+});
+
+test("voz forte e longa sem palavra fica e e sinalizada; estalo curto sai", () => {
+  const db = niveis(6, [
+    [1.0, 2.0, -20], // fala transcrita
+    [3.0, 3.4, -20], // voz sem palavra (0,4 s)
+    [4.5, 4.6, -20], // estalo (0,1 s)
+  ]);
+  const blocos = blocosDeFala(db, J, [{ texto: "ola", inicio: 1.0, fim: 2.0 }]);
+  assert.equal(blocos.length, 2, JSON.stringify(blocos));
+  assert.equal(blocos[1]!.motivo, "voz-sem-palavra");
+  assert.ok(perto(blocos[1]!.inicio, 3.0));
+});
+
+test("palavra que comeca no silencio ganha bloco protegido", () => {
+  const db = niveis(4, [[1.0, 2.0, -20]]);
+  const blocos = blocosDeFala(db, J, [
+    { texto: "ola", inicio: 1.0, fim: 2.0 },
+    { texto: "tchau", inicio: 3.0, fim: 3.9 },
+  ]);
+  const baixa = blocos.find((b) => b.motivo === "palavra-baixa");
+  assert.ok(baixa, JSON.stringify(blocos));
+  assert.equal(baixa!.texto, "tchau");
+  assert.ok(perto(baixa!.inicio, 3.0));
+  assert.ok(perto(baixa!.fim, 3.0 + FALA_PADRAO.protecaoMaxS), "no maximo 0,5 s");
+});
+
+test("blocos entram direto no corte: o respiro cai dentro do corte da cabeca", () => {
+  const blocos = blocosDeFala(cena(), J, [{ texto: "vamos", inicio: 1.0, fim: 3.5 }]);
+  const plano = planejarCortes(blocos, { fps: 30, duracaoQ: 120, margemS: MARGEM_PADRAO_S });
+  const cabeca = plano.cortes[0]!;
+  assert.equal(cabeca.inicioQ, 0);
+  // respiro de 0,5 a 0,9 s = quadros 15 a 27; o corte vai ate (1,0 - 0,08) * 30 = 27,6 -> 27
+  assert.equal(cabeca.fimQ, 27);
 });

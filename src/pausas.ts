@@ -177,6 +177,144 @@ export function planejarCortes(palavras: readonly Palavra[], opcoes: OpcoesPlano
   return { trechos, cortes, duracaoAntesQ: duracaoQ, duracaoDepoisQ: destino };
 }
 
+// ------------------------------------------------------------ fala no audio
+
+/**
+ * Como a fala e achada no nivel do audio. Pontos de partida da revisao de
+ * 2026-09-21; a calibracao com uma bruta real troca pelos numeros medidos.
+ */
+export interface OpcoesFala {
+  /** Janela conta como SOM quando passa do piso (ruido da sala) por isto. */
+  readonly somAcimaDoPisoDb: number;
+  /** Janela conta como VOZ FORTE quando fica a menos disto do nivel tipico da fala. */
+  readonly vozAbaixoDoTipicoDb: number;
+  /** Buraco de voz menor que isto nao separa dois pedacos (fechamento de "p", "t", "k"). */
+  readonly buracoMaxS: number;
+  /** Quanto antes da voz forte um inicio de palavra ainda pertence a ela (ataque fraco: "s", "f"). */
+  readonly ataqueMaxS: number;
+  /** Quanto som fraco depois da voz forte fica, como final de palavra. */
+  readonly caudaMaxS: number;
+  /** Voz forte sem nenhuma palavra: a partir deste tamanho fica (pode ser fala nao transcrita). */
+  readonly vozSemPalavraMinS: number;
+  /** Tamanho maximo do bloco de uma palavra que comeca no silencio. */
+  readonly protecaoMaxS: number;
+}
+
+export const FALA_PADRAO: OpcoesFala = {
+  somAcimaDoPisoDb: 10,
+  vozAbaixoDoTipicoDb: 20,
+  buracoMaxS: 0.15,
+  ataqueMaxS: 0.15,
+  caudaMaxS: 0.15,
+  vozSemPalavraMinS: 0.25,
+  protecaoMaxS: 0.5,
+};
+
+export type MotivoBloco = "fala" | "voz-sem-palavra" | "palavra-baixa";
+
+/** Um pedaco que fica. `texto` sao as palavras que comecam nele. */
+export interface Bloco extends Palavra {
+  readonly motivo: MotivoBloco;
+}
+
+const EPS = 1e-9;
+
+/** Valor na posicao `q` (0..1) dos valores em ordem. */
+function percentil(valores: readonly number[], q: number): number {
+  const ordenado = [...valores].sort((a, b) => a - b);
+  return ordenado[Math.min(ordenado.length - 1, Math.floor(ordenado.length * q))]!;
+}
+
+/**
+ * Onde tem fala, lido do AUDIO. A transcricao entra so com o inicio de cada
+ * palavra — a parte que o Premiere 26 atual ainda marca direito.
+ *
+ * `db` e o nivel de um canal por janela de `janelaS` segundos, com o zero no
+ * mesmo relogio das palavras (tempo de sequencia). O que nao vira bloco e
+ * pausa: silencio, respiro, estalo.
+ *
+ * Nenhum dB fixo: piso (percentil 20) e voz tipica (percentil 90) saem da
+ * propria gravacao, entao uma bruta mais baixa da o mesmo resultado.
+ */
+export function blocosDeFala(
+  db: readonly number[],
+  janelaS: number,
+  palavras: readonly Palavra[],
+  opcoes: OpcoesFala = FALA_PADRAO
+): Bloco[] {
+  const limiarSom = db.length > 0 ? percentil(db, 0.2) + opcoes.somAcimaDoPisoDb : Infinity;
+  const limiarVoz = db.length > 0 ? Math.max(limiarSom, percentil(db, 0.9) - opcoes.vozAbaixoDoTipicoDb) : Infinity;
+  const t = (janela: number) => janela * janelaS;
+
+  // 1. Nucleos de voz forte. Buraco curto (fechamento de consoante) nao separa.
+  const nucleos: Array<{ de: number; ate: number }> = [];
+  for (let i = 0; i < db.length; i++) {
+    if (db[i]! <= limiarVoz) continue;
+    const ultimo = nucleos[nucleos.length - 1];
+    if (ultimo && (i - ultimo.ate) * janelaS < opcoes.buracoMaxS - EPS) ultimo.ate = i + 1;
+    else nucleos.push({ de: i, ate: i + 1 });
+  }
+
+  // O final fraco da palavra ("s", "f") fica, ate o som acabar ou ate caudaMaxS.
+  const cauda = (ate: number) => {
+    let j = ate;
+    while (j < db.length && (j + 1 - ate) * janelaS <= opcoes.caudaMaxS + EPS && db[j]! > limiarSom) j++;
+    return t(j);
+  };
+  const protegida = (p: Palavra): Bloco => ({
+    texto: p.texto,
+    inicio: p.inicio,
+    fim: p.inicio + Math.min(Math.max(p.fim - p.inicio, janelaS), opcoes.protecaoMaxS),
+    motivo: "palavra-baixa",
+  });
+
+  // 2. Cada nucleo leva as palavras que comecam nele ou no ataque logo antes.
+  const emOrdem = [...palavras].sort((a, b) => a.inicio - b.inicio);
+  const blocos: Bloco[] = [];
+  let k = 0;
+  for (const n of nucleos) {
+    const de = t(n.de);
+    const ate = t(n.ate);
+    while (k < emOrdem.length && emOrdem[k]!.inicio < de - opcoes.ataqueMaxS - EPS) blocos.push(protegida(emOrdem[k++]!));
+    const primeira = k;
+    while (k < emOrdem.length && emOrdem[k]!.inicio < ate - EPS) k++;
+    const dele = emOrdem.slice(primeira, k);
+
+    if (dele.length === 0) {
+      // Voz sem palavra: longa fica (pode ser fala que a transcricao pulou); curta e estalo.
+      if (ate - de >= opcoes.vozSemPalavraMinS - EPS) {
+        blocos.push({ texto: "", inicio: de, fim: cauda(n.ate), motivo: "voz-sem-palavra" });
+      }
+      continue;
+    }
+    blocos.push({
+      texto: dele.map((p) => p.texto).join(" "),
+      inicio: Math.min(de, dele[0]!.inicio),
+      fim: cauda(n.ate),
+      motivo: "fala",
+    });
+  }
+  while (k < emOrdem.length) blocos.push(protegida(emOrdem[k++]!));
+
+  // 3. Blocos que se tocam viram um so.
+  blocos.sort((a, b) => a.inicio - b.inicio);
+  const juntos: Bloco[] = [];
+  for (const b of blocos) {
+    const ultimo = juntos[juntos.length - 1];
+    if (ultimo && b.inicio <= ultimo.fim + EPS) {
+      juntos[juntos.length - 1] = {
+        texto: [ultimo.texto, b.texto].filter((x) => x !== "").join(" "),
+        inicio: ultimo.inicio,
+        fim: Math.max(ultimo.fim, b.fim),
+        motivo: ultimo.motivo === "fala" || b.motivo === "fala" ? "fala" : ultimo.motivo,
+      };
+    } else {
+      juntos.push(b);
+    }
+  }
+  return juntos;
+}
+
 // --------------------------------------------------------- audio do Premiere
 
 /** Vem instalado com o Premiere 26: mono, 16 kHz, 16 bits (~1,9 MB por minuto). */
