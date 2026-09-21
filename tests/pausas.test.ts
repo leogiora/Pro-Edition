@@ -10,6 +10,7 @@ import {
   lacunas,
   MARGEM_PADRAO_S,
   montarPalavras,
+  pedacosDoPlano,
   planejarCortes,
   primeiraPalavra,
   ultimaPalavra,
@@ -336,4 +337,60 @@ test("o registro mostra so a palavra de cada lado do corte", () => {
   assert.equal(primeiraPalavra("então vamos"), "então");
   assert.equal(ultimaPalavra(""), "…");
   assert.equal(primeiraPalavra(""), "…");
+});
+
+// ---------------------------------------------------------- sequencia separada
+
+const trecho = (inicioQ: number, fimQ: number, destinoQ = 0) => ({ inicioQ, fimQ, destinoQ });
+
+test("um clipe so: cada trecho vira um pedaco, colados a partir do zero", () => {
+  const r = pedacosDoPlano([trecho(10, 40), trecho(50, 90, 30)], [{ inicioQ: 0, fimQ: 100, midiaQ: 0, fonte: 0 }]);
+  assert.deepEqual(r.pedacos, [
+    { fonte: 0, midiaDeQ: 10, midiaAteQ: 40, destinoQ: 0 },
+    { fonte: 0, midiaDeQ: 50, midiaAteQ: 90, destinoQ: 30 },
+  ]);
+  assert.equal(r.totalQ, 70);
+});
+
+test("trecho que atravessa uma emenda do editor vira dois pedacos, cada um da sua parte da midia", () => {
+  // O editor tirou um take: o clipe B continua a midia bem mais adiante.
+  const clipes = [
+    { inicioQ: 0, fimQ: 50, midiaQ: 100, fonte: 0 },
+    { inicioQ: 50, fimQ: 100, midiaQ: 500, fonte: 0 },
+  ];
+  const r = pedacosDoPlano([trecho(40, 60)], clipes);
+  assert.deepEqual(r.pedacos, [
+    { fonte: 0, midiaDeQ: 140, midiaAteQ: 150, destinoQ: 0 },
+    { fonte: 0, midiaDeQ: 500, midiaAteQ: 510, destinoQ: 10 },
+  ]);
+});
+
+test("clipes de arquivos diferentes levam a fonte de cada um", () => {
+  const clipes = [
+    { inicioQ: 0, fimQ: 50, midiaQ: 0, fonte: 0 },
+    { inicioQ: 50, fimQ: 100, midiaQ: 0, fonte: 1 },
+  ];
+  const r = pedacosDoPlano([trecho(0, 100)], clipes);
+  assert.deepEqual(
+    r.pedacos.map((p) => p.fonte),
+    [0, 1]
+  );
+});
+
+test("buraco entre clipes dentro de um trecho fecha: nenhum conteudo velho aparece", () => {
+  const clipes = [
+    { inicioQ: 0, fimQ: 50, midiaQ: 0, fonte: 0 },
+    { inicioQ: 55, fimQ: 100, midiaQ: 200, fonte: 0 },
+  ];
+  const r = pedacosDoPlano([trecho(45, 60)], clipes);
+  assert.deepEqual(r.pedacos, [
+    { fonte: 0, midiaDeQ: 45, midiaAteQ: 50, destinoQ: 0 },
+    { fonte: 0, midiaDeQ: 200, midiaAteQ: 205, destinoQ: 5 },
+  ]);
+  assert.equal(r.totalQ, 10);
+});
+
+test("clipe que nao comeca no inicio da midia desloca a midia do pedaco", () => {
+  const r = pedacosDoPlano([trecho(10, 20)], [{ inicioQ: 0, fimQ: 100, midiaQ: 300, fonte: 0 }]);
+  assert.deepEqual(r.pedacos, [{ fonte: 0, midiaDeQ: 310, midiaAteQ: 320, destinoQ: 0 }]);
 });

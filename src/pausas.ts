@@ -318,6 +318,58 @@ export function blocosDeFala(
   return juntos;
 }
 
+// ------------------------------------------------------ sequencia separada
+
+/** Um clipe da V1 como o editor deixou, em quadros. */
+export interface ClipeNaTimeline {
+  /** Onde o clipe esta na sequencia. */
+  readonly inicioQ: number;
+  readonly fimQ: number;
+  /** Quadro da midia que aparece no inicio do clipe (o in point). */
+  readonly midiaQ: number;
+  /** Qual item do projeto (indice numa lista do adapter). */
+  readonly fonte: number;
+}
+
+/** Um overwrite: de que item, de que quadro a que quadro da midia, e onde entra. */
+export interface Pedaco {
+  readonly fonte: number;
+  readonly midiaDeQ: number;
+  readonly midiaAteQ: number;
+  readonly destinoQ: number;
+}
+
+/**
+ * Divide cada trecho que fica nas emendas que o editor fez ao separar a bruta.
+ * Cada pedaco sai do ARQUIVO original (fonte + quadros da midia), nao da
+ * timeline, e os destinos sao colados a partir do 0 — um buraco entre dois
+ * clipes dentro de um trecho fecha, entao nenhum conteudo velho fica aparecendo.
+ */
+export function pedacosDoPlano(
+  trechos: readonly TrechoMantido[],
+  clipes: readonly ClipeNaTimeline[]
+): { pedacos: Pedaco[]; totalQ: number } {
+  const emOrdem = [...clipes].sort((a, b) => a.inicioQ - b.inicioQ);
+  const pedacos: Pedaco[] = [];
+  let destino = 0;
+  // ponytail: trechos x clipes (~600 x 200 numa bruta longa); dois ponteiros se um dia pesar.
+  for (const tr of trechos) {
+    for (const c of emOrdem) {
+      const de = Math.max(tr.inicioQ, c.inicioQ);
+      const ate = Math.min(tr.fimQ, c.fimQ);
+      if (ate <= de) continue;
+      pedacos.push({
+        fonte: c.fonte,
+        midiaDeQ: c.midiaQ + (de - c.inicioQ),
+        midiaAteQ: c.midiaQ + (ate - c.inicioQ),
+        destinoQ: destino,
+      });
+      destino += ate - de;
+    }
+  }
+  return { pedacos, totalQ: destino };
+}
+
 /** Um bloco leva a frase inteira; o registro mostra so a palavra encostada no corte. */
 export function ultimaPalavra(texto: string): string {
   return texto.trim().split(/\s+/).pop() || "…";
