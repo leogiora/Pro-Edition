@@ -302,9 +302,27 @@ de 3 transacoes proprias, e uma bruta de 14 min tem ~379 pausas (mais de mil
 Ctrl+Z). O caminho e o plano C (in/out no item do projeto + overwrite), que a
 rodada 5 testa chamada por chamada, com o in/out relativo ao que o item ja tem.
 
+### Rodada 5 (2026-09-21) — Premiere 25.6.6, mesma bruta
+
+| O que | Resultado |
+|---|---|
+| `ClipProjectItem.createSetInOutPointsAction(in, out)` | **Funciona.** Pedi 10,00-11,00, o item releu 10,00-11,00. Conta em segundos da midia a partir de 0 (arquivo do iPhone), nao em timecode |
+| `createOverwriteItemAction(ProjectItem CRU, t, 0, 0)` | **Respeita o in/out marcado**: pedaco de 1,00 s nas DUAS faixas mostrando a midia desde 9,97 (10,00 encostado no quadro de baixo, 23,976 fps). O "NAO respeitou" do log foi erro da sonda: ela esperava o in relativo ao marcado ANTES, que era o 5-6 esquecido pela rodada 4 |
+| overwrite com o `ClipProjectItem` (cast) | **Invalid parameter** (e o erro da rodada 4). Overwrite quer o ProjectItem cru, como o Auto B-roll |
+| Dois pares marcar+overwrite na MESMA transacao | **Nao funciona**: os dois overwrites usaram o in/out que valia ANTES da transacao (10-11). A acao guarda o in/out de quando e criada |
+| `Transcript.exportToJSON` pelo item da V1 | **Illegal Parameter type** de novo. No 25 esse erro = clipe SEM transcricao: os logs do Auto B-roll no 25 (18/08 e 17/09) mostram o mesmo erro nos B-rolls, que nunca sao transcritos, e sucesso no clipe transcrito. A hipotese do nome repetido estava errada |
+| Efeito colateral | A rodada 4 deixou o `IMG_1902.MOV` com in/out 5-6 s no painel Projeto (a sonda caiu antes de devolver). Usuario precisa limpar as marcas (`createClearInOutPointsAction` existe para o plugin fazer isso) |
+
+**Ruling da mecanica:** plano C, mas **um trecho por transacao**, encadeado:
+a transacao k faz o overwrite do trecho k-1 (in/out ja marcado) e marca o in/out
+do trecho k. Sao N+1 transacoes para N cortes — ~380 numa bruta de 14 min. Por
+isso o resultado nao pode depender do Ctrl+Z: ou vai para uma sequencia nova
+(bruta intacta), ou o painel ganha um "Desfazer" proprio (tirar tudo e recolocar
+o clipe inteiro: 2 transacoes). No fim, sempre devolver o in/out original do item
+(`createClearInOutPointsAction` quando nao havia marca).
+
 ### Onde parou
 
-Rodada 5 do Diagnostico: transcricao lida pelo item da V1 (e tambem pelo nome,
-para confirmar a hipotese), e o plano C em passos separados, cada um relendo o
-resultado; inclui dois pares numa transacao so, para saber se o corte inteiro
-cabe num Ctrl+Z.
+Falta: (1) o usuario transcrever a bruta no 25 e rodar de novo so audio +
+transcricao, para calibrar; (2) decidir com ele sequencia nova x mesma sequencia
+com Desfazer proprio.

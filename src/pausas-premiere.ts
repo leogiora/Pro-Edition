@@ -11,7 +11,6 @@ import {
   comTransacao,
   getSequenceInfo,
   lerClipes,
-  lerTranscricoes,
   writeJson,
   type SequenceInfo,
 } from "../ferramentas/auto-broll/src/premiere.ts";
@@ -71,14 +70,22 @@ async function midiaDaV1(): Promise<{ projectItem: unknown; clip: any }> {
 }
 
 /**
- * A transcricao do clipe da V1, pelo item que esta NA TIMELINE — nunca pelo
- * nome: a sequencia criada a partir do clipe tem o MESMO nome dele, e a busca
- * por nome pegou a sequencia na rodada 4 ("Illegal Parameter type").
+ * A transcricao do clipe da V1, pelo item que esta NA TIMELINE, e nao pelo
+ * nome: a sequencia criada a partir do clipe costuma ter o mesmo nome dele.
+ *
+ * No Premiere 25, clipe SEM transcricao nao devolve vazio: `exportToJSON` lanca
+ * "Illegal Parameter type" (os B-rolls dao esse erro nos logs do Auto B-roll).
  */
 async function transcricaoDaV1(): Promise<string> {
   const { clip } = await midiaDaV1();
-  const json = (await comLimite("ler a transcrição", ppro.Transcript.exportToJSON(clip) as Promise<string | null>)) ?? "";
-  if (!json) throw new Error("veio vazia");
+  let json: string | null = null;
+  try {
+    json = await comLimite("ler a transcrição", ppro.Transcript.exportToJSON(clip) as Promise<string | null>);
+  } catch (e) {
+    const msg = (e as Error)?.message ?? String(e);
+    throw new Error(/illegal parameter/i.test(msg) ? "o clipe ainda não foi transcrito" : msg);
+  }
+  if (!json) throw new Error("o clipe ainda não foi transcrito");
   return json;
 }
 
@@ -114,7 +121,7 @@ async function lerClipeETranscricao(): Promise<{ info: SequenceInfo; clipe: Clip
     json = await transcricaoDaV1();
   } catch (e) {
     throw new Error(
-      `"${clipe.sourceName}" não tem transcrição (${(e as Error)?.message ?? String(e)}). No Premiere: painel Texto > Transcrever, e rode de novo.`
+      `"${clipe.sourceName}" não tem transcrição (${(e as Error)?.message ?? String(e)}). No Premiere: selecione o clipe, Janela > Texto > aba Transcrição > Transcrever, e rode de novo.`
     );
   }
   return { info, clipe, json };
@@ -230,149 +237,43 @@ export async function exportarAudio(nomeArquivo: string): Promise<{
 // --------------------------------------------------------------- sonda
 
 /*
- * Rodada 4 (25.6.6) descartou a mecanica por clone: cada clone e uma copia
- * INTEIRA com in=0, `setInPoint` apara a cabeca mantendo o out (o pedaco do
- * meio virou duracao zero) e `move` e relativo. Sem slip, seriam 3 transacoes
- * por pedaco — mais de mil Ctrl+Z numa bruta de 14 min. Ver DEV_NOTES.
+ * As rodadas 4 e 5 (Premiere 25.6.6) fecharam a mecanica — ver DEV_NOTES:
+ * overwrite do ProjectItem CRU respeita o in/out marcado no item do projeto,
+ * mas so o marcado ANTES da transacao; entao e um trecho por transacao.
  *
- * O caminho e o plano C: marcar in/out NO ITEM DO PROJETO e fazer overwrite,
- * como o Auto B-roll ja faz com B-roll. Na rodada 4 isso deu "Invalid
- * parameter" sem dizer qual chamada; aqui cada passo roda sozinho e rele o
- * resultado.
+ * O que sobra para o Diagnostico e juntar, da MESMA bruta, o audio e a
+ * transcricao para a calibracao. Nao mexe mais na timeline.
  */
-async function sondaOverwrite(linhas: string[]): Promise<void> {
+
+/** A rodada 4 deixou o clipe com in/out 5-6 s no painel Projeto: limpar. */
+async function limparMarcasDaV1(): Promise<string> {
+  const { project } = await ativa();
+  const { clip } = await midiaDaV1();
+  comTransacao(project as never, "Auto Pausas: limpar marcas do clipe", (adicionar) => {
+    adicionar(clip.createClearInOutPointsAction());
+  });
+  const { clip: lido } = await midiaDaV1();
   const VIDEO = ppro.Constants.MediaType.VIDEO;
-  const erro = (e: unknown) => (e as Error)?.message ?? String(e);
-  const tick = (s: number) => ppro.TickTime.createWithSeconds(s);
-
-  const pecaEm = async (t: number, video: boolean) => {
-    const { sequence } = await ativa();
-    for (const i of await itensDa(sequence, video, 0)) {
-      const inicio = (await i.getStartTime()).seconds;
-      if (Math.abs(inicio - t) < 0.05) {
-        return { inicio, fim: (await i.getEndTime()).seconds, entrada: (await i.getInPoint()).seconds };
-      }
-    }
-    return null;
-  };
-  const retrato = async (rotulo: string, t: number, pedidoIn: number, pedidoDur: number) => {
-    const v = await pecaEm(t, true);
-    const a = await pecaEm(t, false);
-    const txt = (p: { inicio: number; fim: number; entrada: number } | null) =>
-      p ? `${p.inicio.toFixed(2)}-${p.fim.toFixed(2)} in=${p.entrada.toFixed(2)}` : "nada";
-    const certo = (p: { inicio: number; fim: number; entrada: number } | null) =>
-      p !== null && Math.abs(p.entrada - pedidoIn) < 0.05 && Math.abs(p.fim - p.inicio - pedidoDur) < 0.05;
-    linhas.push(
-      `${rotulo}: V1 ${txt(v)} · A1 ${txt(a)} (pedi in=${pedidoIn.toFixed(2)}, ${pedidoDur.toFixed(2)} s) → ${
-        certo(v) && certo(a) ? "RESPEITOU" : "NÃO respeitou"
-      }`
-    );
-  };
-  const marcar = async (rotulo: string, deS: number, ateS: number) => {
-    const { project } = await ativa();
-    const { clip } = await midiaDaV1();
-    const a = await tick(deS);
-    const b = await tick(ateS);
-    comTransacao(project as never, `Auto Pausas: ${rotulo}`, (adicionar) => {
-      adicionar(clip.createSetInOutPointsAction(a, b));
-    });
-    const { clip: lido } = await midiaDaV1();
-    linhas.push(
-      `${rotulo}: pedi ${deS.toFixed(2)}–${ateS.toFixed(2)}, o item diz ${(await lido.getInPoint(VIDEO)).seconds.toFixed(2)}–${(
-        await lido.getOutPoint(VIDEO)
-      ).seconds.toFixed(2)}`
-    );
-  };
-
-  // D1. Em que relogio o item do projeto guarda o in/out? (o da V1 diz 0,00)
-  const { clip: original } = await midiaDaV1();
-  const inAntes = await original.getInPoint(VIDEO);
-  const outAntes = await original.getOutPoint(VIDEO);
-  const base = inAntes.seconds as number;
-  linhas.push(`D1) in/out do item no projeto: ${base.toFixed(2)} – ${(outAntes.seconds as number).toFixed(2)} s`);
-  const { sequence: seq } = await ativa();
-  const fimSeq = (await (seq as SeqFaixas).getEndTime()).seconds;
-
-  // D2. Marcar 5-6 s, contado a partir do in que o item ja tem.
-  try {
-    await marcar("D2) in/out +5–6 s", base + 5, base + 6);
-  } catch (e) {
-    linhas.push(`D2) marcar in/out falhou: ${erro(e)}`);
-  }
-
-  // D3. Overwrite com o ProjectItem cru, como o Auto B-roll (provado la).
-  try {
-    const { project, sequence } = await ativa();
-    const { projectItem } = await midiaDaV1();
-    const editor = await ppro.SequenceEditor.getEditor(sequence);
-    const em = await tick(fimSeq + 2);
-    comTransacao(project as never, "Auto Pausas: sonda overwrite", (adicionar) => {
-      adicionar(editor.createOverwriteItemAction(projectItem, em, 0, 0));
-    });
-    await retrato("D3) overwrite (ProjectItem cru)", fimSeq + 2, 5, 1);
-  } catch (e) {
-    linhas.push(`D3) overwrite com ProjectItem cru falhou: ${erro(e)}`);
-    try {
-      const { project, sequence } = await ativa();
-      const { clip } = await midiaDaV1();
-      const editor = await ppro.SequenceEditor.getEditor(sequence);
-      const em = await tick(fimSeq + 2);
-      comTransacao(project as never, "Auto Pausas: sonda overwrite (cast)", (adicionar) => {
-        adicionar(editor.createOverwriteItemAction(clip, em, 0, 0));
-      });
-      await retrato("D3b) overwrite (ClipProjectItem)", fimSeq + 2, 5, 1);
-    } catch (e2) {
-      linhas.push(`D3b) overwrite com ClipProjectItem falhou: ${erro(e2)}`);
-    }
-  }
-
-  // D4. Dois pares marcar+overwrite numa transacao so: o corte inteiro cabe
-  // num Ctrl+Z? So se cada overwrite ler o in/out na hora de executar.
-  try {
-    const { project, sequence } = await ativa();
-    const { projectItem, clip } = await midiaDaV1();
-    const editor = await ppro.SequenceEditor.getEditor(sequence);
-    const [a1, b1, em1, a2, b2, em2] = await Promise.all([
-      tick(base + 10),
-      tick(base + 11),
-      tick(fimSeq + 5),
-      tick(base + 20),
-      tick(base + 22),
-      tick(fimSeq + 8),
-    ]);
-    comTransacao(project as never, "Auto Pausas: sonda dois pares", (adicionar) => {
-      adicionar(clip.createSetInOutPointsAction(a1, b1));
-      adicionar(editor.createOverwriteItemAction(projectItem, em1, 0, 0));
-      adicionar(clip.createSetInOutPointsAction(a2, b2));
-      adicionar(editor.createOverwriteItemAction(projectItem, em2, 0, 0));
-    });
-    await retrato("D4) par 1 na mesma transação", fimSeq + 5, 10, 1);
-    await retrato("D4) par 2 na mesma transação", fimSeq + 8, 20, 2);
-  } catch (e) {
-    linhas.push(`D4) dois pares numa transação falhou: ${erro(e)}`);
-  }
-
-  // D5. Devolver o in/out do item ao que era.
-  try {
-    await marcar("D5) in/out devolvido", base, outAntes.seconds as number);
-  } catch (e) {
-    linhas.push(`D5) devolver in/out falhou: ${erro(e)} — confira as marcas do clipe no painel Projeto`);
-  }
+  return `marcas do clipe limpas: in/out agora ${(await lido.getInPoint(VIDEO)).seconds.toFixed(2)}–${(
+    await lido.getOutPoint(VIDEO)
+  ).seconds.toFixed(2)} s`;
 }
 
 /**
- * Rodada 5 — o que a rodada 4 deixou em aberto, numa ida so:
- *  1. o audio de novo (para o WAV bater com a transcricao desta bruta);
- *  2. a transcricao pelo item da V1, e tambem pelo nome, para confirmar por
- *     que a rodada 4 falhou;
- *  3. o plano C (in/out no item do projeto + overwrite), chamada por chamada.
- * O WAV e a transcricao ficam na pasta de dados para a calibracao; o registro
- * vai para pausas-diag.json, para ninguem precisar colar log.
+ * Rodada 6 — so leitura: limpa as marcas que a rodada 4 esqueceu, exporta o
+ * audio e guarda a transcricao da mesma bruta. O WAV e a transcricao ficam na
+ * pasta de dados para a calibracao; o registro vai para pausas-diag.json.
  */
 export async function diagnostico(): Promise<string[]> {
   const linhas: string[] = [];
   const dados: Record<string, unknown> = { quando: new Date().toISOString(), host: String(uxp.host?.version ?? "?") };
   const falha = (passo: string, e: unknown) => linhas.push(`${passo} falhou: ${(e as Error)?.message ?? String(e)}`);
+
+  try {
+    linhas.push(await limparMarcasDaV1());
+  } catch (e) {
+    falha("limpar marcas", e);
+  }
 
   linhas.push(`== 1. Áudio (Premiere ${dados.host})`);
   try {
@@ -388,16 +289,7 @@ export async function diagnostico(): Promise<string[]> {
       `WAV: ${janelas.db.length} canal(is) a ${janelas.taxa} Hz · ${segundos.toFixed(1)} s de áudio (sequência: ${info.durationSeconds.toFixed(1)} s)`,
       `níveis (dB): p10 ${p(0.1)} · p20 ${p(0.2)} · p50 ${p(0.5)} · p90 ${p(0.9)} · p99 ${p(0.99)}`
     );
-    dados.audio = {
-      preset: r.preset,
-      ms: r.ms,
-      bytes: r.bytes.byteLength,
-      completoNaHora: r.completoNaHora,
-      taxa: janelas.taxa,
-      canais: janelas.db.length,
-      segundos,
-      sequenciaSegundos: info.durationSeconds,
-    };
+    dados.audio = { ms: r.ms, bytes: r.bytes.byteLength, taxa: janelas.taxa, canais: janelas.db.length, segundos };
   } catch (e) {
     falha("1) áudio", e);
   }
@@ -410,35 +302,17 @@ export async function diagnostico(): Promise<string[]> {
     const palavras = t ? t.segments.flatMap((s) => s.words.filter((w) => w.type === "word")) : [];
     const l = lacunas(palavras);
     linhas.push(
-      `pelo item da V1: OK · clipe "${clipe.sourceName}" ${clipe.startSeconds.toFixed(2)}–${clipe.endSeconds.toFixed(2)} s · ${info.fps} fps`,
-      `${l.total} palavras · espaços > 0,2 s: ${l.acima02} · > 0,5 s: ${l.acima05}`,
-      l.acima02 === 0
-        ? "LEITURA: a transcrição NÃO marca pausa."
-        : `LEITURA: a transcrição marca ${l.acima02} pausas.`
+      `clipe "${clipe.sourceName}" ${clipe.startSeconds.toFixed(2)}–${clipe.endSeconds.toFixed(2)} s · ${info.fps} fps`,
+      `${l.total} palavras · espaços > 0,2 s: ${l.acima02} · > 0,5 s: ${l.acima05}`
     );
     dados.clipe = clipe;
     dados.fps = info.fps;
     dados.lacunas = l;
-
-    const porNome = await lerTranscricoes([clipe.sourceName]);
-    linhas.push(
-      porNome.transcricoes.has(clipe.sourceName)
-        ? "pelo nome: também funcionou (então a rodada 4 falhou por outro motivo)"
-        : `pelo nome: falhou (${porNome.falhas.map((f) => f.motivo).join("; ")}) — confirma a troca pela sequência de mesmo nome`
-    );
   } catch (e) {
     falha("2) transcrição", e);
   }
 
-  // Mexe na timeline: por ultimo, depois que o audio ja foi exportado.
-  linhas.push("== 3. Overwrite com in/out (plano C)");
-  try {
-    await sondaOverwrite(linhas);
-  } catch (e) {
-    falha("3) overwrite", e);
-  }
-
-  linhas.push('Pronto. Pode apagar a cópia da sequência (os pedaços de teste ficaram depois do fim dela).');
+  linhas.push("Pronto. Nada foi mexido na timeline.");
   dados.linhas = linhas;
   try {
     await writeJson("pausas-diag.json", dados);
