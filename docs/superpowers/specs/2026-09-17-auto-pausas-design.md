@@ -196,7 +196,9 @@ Mesma folha da família (`css: cssBroll`, como AutoCut e Auto Split).
 - **SEQ — Sequência ativa:** nome, e a confirmação do que achou: gravação na
   V1/A1 e transcrição presente.
 - **Margem de segurança:** um campo com o padrão calibrado.
-- **Botão:** "Cortar pausas" (`sp-button` cta).
+- **Botões:** "Analisar" (exporta o áudio e mostra a prévia, sem mexer na
+  timeline) e "Cortar pausas" (`sp-button` cta). Abrir a tela só lê a
+  sequência — o export do áudio acontece no clique, não ao abrir.
 - **LOG — Registro**, resumo no topo:
   - "38 pausas cortadas · 0:41 → 0:29";
   - cada corte com as palavras de cada lado: `0:12 · 0,8 s · "saúde" | "então"`;
@@ -209,6 +211,8 @@ Mesma folha da família (`css: cssBroll`, como AutoCut e Auto Split).
 - sem sequência ativa;
 - sem transcrição no clipe → dizer como criar (painel Texto → Transcrever);
 - timeline diferente de um clipe na V1 + áudio na A1;
+- gravação que não começa no 00:00 da sequência (o WAV exportado começa no
+  zero, e o plano conta quadros a partir dele);
 - preset de WAV não encontrado ou export falhou → dizer qual caminho foi
   tentado.
 
