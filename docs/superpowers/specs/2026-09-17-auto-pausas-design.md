@@ -49,7 +49,7 @@ no 26: **onde cada palavra começa**.
   conferência automática.
 - **Não** pede export manual. O áudio é extraído pelo próprio plugin dentro do
   clique (o usuário recusa qualquer passo manual recorrente).
-- **Não** suporta Premiere 25. Só 26+, como o Auto Split.
+- Roda no **Premiere 25.6+ e 26**. O usuário edita no 25 hoje (no 26 o "Excluir pausas" nativo quebrou), e a rodada 4 do Diagnóstico provou o export de áudio no 25.6.6.
 
 ## De onde vem a pausa: áudio + transcrição
 
