@@ -282,14 +282,29 @@ Corte de pausas na gravacao bruta de anuncio. Spec:
 `in + (t - inicio)` da midia: sem corrigir o in, cada pedaco repete o inicio do
 video. Corrigir e obrigatorio, e COMO corrigir e a pergunta aberta.
 
+### Rodada 4 (2026-09-21) — rodou no Premiere **25.6.6**, bruta de 14 min
+
+O usuario rodou no 25 (e o que ele usa hoje: no 26 o "Excluir pausas" nativo
+parou de funcionar). Resultado lido de `pausas-diag.json` na PluginData do 25.
+
+| O que | Resultado |
+|---|---|
+| `EncoderManager.exportSequence` IMEDIATO + `WAV_Mono_16bit_16kHz.epr` (pasta `Adobe Premiere Pro 2025\Settings\EncoderPresets`) | **Funciona.** 865 s de audio em 5,8 s, 27,7 MB, mono 16 kHz, arquivo completo quando a promessa volta |
+| Niveis da bruta (dB, janela 20 ms) | p10 -60,3 · p20 -56,4 · p50 -33,6 · p90 -16,5 · p99 -10,8. Sala e fala bem separadas |
+| `Transcript.exportToJSON` via `lerTranscricoes` (busca por NOME) | **Illegal Parameter type.** Hipotese: a sequencia criada do clipe tem o MESMO nome (`IMG_1902.MOV`) e a busca por nome pegou a sequencia. Rodada 5 le pelo `getProjectItem()` do item da V1 |
+| Clone em 2 s e 4 s | Igual ao 26: cada pedaco e uma COPIA INTEIRA do clipe com `in=0`, sobrescrevendo o que vem depois; o ultimo passa do fim da midia |
+| `createSetInPointAction(2s)` no pedaco do meio `[2-4] in 0 out 2` | **Apara a cabeca mantendo o out**: virou `[4,00-4,00] in 2 out 2` (duracao zero). Nao e slip |
+| `createMoveAction(2s)` | **Relativo**: o pedaco foi de 4,00 para 6,00 |
+| Overwrite com in/out marcado no item do projeto | **Invalid parameter** — nao se sabe qual das chamadas. Duas suspeitas: passei o `ClipProjectItem` (cast) onde o Auto B-roll passa o `ProjectItem` cru; e o in/out do item do projeto pode estar em tempo ABSOLUTO da midia (timecode do iPhone), entao 5-6 s cairia antes do inicio |
+
+**Ruling:** mecanica por clone esta descartada — sem slip, cada pedaco precisaria
+de 3 transacoes proprias, e uma bruta de 14 min tem ~379 pausas (mais de mil
+Ctrl+Z). O caminho e o plano C (in/out no item do projeto + overwrite), que a
+rodada 5 testa chamada por chamada, com o in/out relativo ao que o item ja tem.
+
 ### Onde parou
 
-Sonda rodada 3 escrita e no `dist` (commit `49554c9`), esperando o usuario rodar:
-ela corta em 2 s e 4 s, aplica `setInPoint(2s)` no pedaco **do meio** (caso real,
-sem passar do fim da midia) e, se o pedaco andar, testa `createMoveAction` para
-traze-lo de volta. As duas linhas `LEITURA` do log dao o veredito.
-
-- pedaco FICA no lugar -> mecanica = fatiar, corrigir o in, remover com ripple;
-- pedaco ANDA + move funciona -> a mesma coisa mais um move por pedaco;
-- pedaco ANDA + move falha -> voltar ao spec: sobra remontar com
-  `createOverwriteItemAction` (molde do `inserirPlano` do Auto B-roll).
+Rodada 5 do Diagnostico: transcricao lida pelo item da V1 (e tambem pelo nome,
+para confirmar a hipotese), e o plano C em passos separados, cada um relendo o
+resultado; inclui dois pares numa transacao so, para saber se o corte inteiro
+cabe num Ctrl+Z.

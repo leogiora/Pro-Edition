@@ -1322,6 +1322,18 @@ Com `pausas-diag.json` lido, decidir e ANOTAR no `DEV_NOTES.md` (seção "Auto P
 
 ---
 
+- [x] **Step 10: Rodada 5 (acrescentada depois do ruling da rodada 4)**
+
+A rodada 4 rodou no Premiere **25.6.6** (o que o usuario usa hoje) e respondeu: audio OK (865 s em 5,8 s); mecanica por clone DESCARTADA (setInPoint apara a cabeca, move e relativo — seriam 3 transacoes por pedaco); transcricao e overwrite com in/out deram erro de parametro. Detalhe em `DEV_NOTES.md`, "Rodada 4".
+
+A rodada 5 (commit desta etapa) troca a sonda de clone por:
+- transcricao lida pelo `getProjectItem()` do item da V1 (`transcricaoDaV1`, que o `lerGravacao` passa a usar), e tambem pelo nome so para confirmar a causa;
+- plano C chamada por chamada: D1 in/out atual do item do projeto (em que relogio ele conta), D2 marcar `base+5..base+6` e reler, D3 overwrite com o `ProjectItem` cru (D3b com o cast se falhar), D4 dois pares marcar+overwrite numa transacao so, D5 devolver o in/out.
+
+Ruling da rodada 5 → decide a Task 9: D3 "RESPEITOU" = mecanica C; D4 "RESPEITOU" nos dois pares = o corte inteiro numa transacao (um Ctrl+Z).
+
+---
+
 ### Task 6: A regra dos blocos de fala (lógica pura)
 
 Pode ser feita enquanto o usuário não roda o Diagnóstico: os números são pontos de partida, e a Task 7 os calibra.

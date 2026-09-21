@@ -32,13 +32,13 @@ interface ItemLike {
   getEndTime: () => Promise<{ seconds: number }>;
   getInPoint: () => Promise<{ seconds: number }>;
   getOutPoint: () => Promise<{ seconds: number }>;
-  createSetInPointAction: (t: unknown) => unknown;
-  createSetEndAction: (t: unknown) => unknown;
+  getProjectItem: () => Promise<unknown>;
 }
 
 interface SeqFaixas {
   getVideoTrack: (i: number) => Promise<{ getTrackItems: (t: number, e: boolean) => Promise<ItemLike[]> } | null>;
   getAudioTrack: (i: number) => Promise<{ getTrackItems: (t: number, e: boolean) => Promise<ItemLike[]> } | null>;
+  getEndTime: () => Promise<{ seconds: number }>;
 }
 
 async function ativa(): Promise<{ project: unknown; sequence: unknown }> {
@@ -57,6 +57,29 @@ async function itensDa(sequence: unknown, video: boolean, indice: number): Promi
   const itens = await faixa.getTrackItems(CLIP, false);
   const medidos = await Promise.all(itens.map(async (i) => ({ i, s: (await i.getStartTime()).seconds })));
   return medidos.sort((a, b) => a.s - b.s).map((m) => m.i);
+}
+
+/** O item do projeto por tras do (primeiro) clipe da V1, cru e como ClipProjectItem. */
+async function midiaDaV1(): Promise<{ projectItem: unknown; clip: any }> {
+  const { sequence } = await ativa();
+  const [item] = await itensDa(sequence, true, 0);
+  if (!item) throw new Error("Nenhum clipe na V1.");
+  const projectItem = await item.getProjectItem();
+  const clip = ppro.ClipProjectItem.cast(projectItem);
+  if (!clip) throw new Error("O clipe da V1 não é um arquivo de mídia.");
+  return { projectItem, clip };
+}
+
+/**
+ * A transcricao do clipe da V1, pelo item que esta NA TIMELINE — nunca pelo
+ * nome: a sequencia criada a partir do clipe tem o MESMO nome dele, e a busca
+ * por nome pegou a sequencia na rodada 4 ("Illegal Parameter type").
+ */
+async function transcricaoDaV1(): Promise<string> {
+  const { clip } = await midiaDaV1();
+  const json = (await comLimite("ler a transcrição", ppro.Transcript.exportToJSON(clip) as Promise<string | null>)) ?? "";
+  if (!json) throw new Error("veio vazia");
+  return json;
 }
 
 export interface Gravacao {
@@ -86,12 +109,12 @@ async function lerClipeETranscricao(): Promise<{ info: SequenceInfo; clipe: Clip
   }
 
   const clipe = clipes[0]!;
-  const { transcricoes, falhas } = await lerTranscricoes([clipe.sourceName]);
-  const json = transcricoes.get(clipe.sourceName);
-  if (!json) {
-    const motivo = falhas.find((f) => f.nome === clipe.sourceName)?.motivo ?? "sem transcrição";
+  let json: string;
+  try {
+    json = await transcricaoDaV1();
+  } catch (e) {
     throw new Error(
-      `"${clipe.sourceName}" não tem transcrição (${motivo}). No Premiere: painel Texto > Transcrever, e rode de novo.`
+      `"${clipe.sourceName}" não tem transcrição (${(e as Error)?.message ?? String(e)}). No Premiere: painel Texto > Transcrever, e rode de novo.`
     );
   }
   return { info, clipe, json };
@@ -167,7 +190,7 @@ export async function acharPreset(): Promise<string> {
  * do clique — nada de export manual.
  *
  * Se a promessa voltar antes de o arquivo fechar, espera o cabecalho RIFF
- * fechar (ate 10 s). `completoNaHora` responde se essa espera e necessaria.
+ * fechar (ate 10 s). Na rodada 4 (25.6.6) ele ja veio completo: 865 s em 5,8 s.
  */
 export async function exportarAudio(nomeArquivo: string): Promise<{
   readonly caminho: string;
@@ -207,202 +230,144 @@ export async function exportarAudio(nomeArquivo: string): Promise<{
 // --------------------------------------------------------------- sonda
 
 /*
- * O que as duas primeiras rodadas provaram, no Premiere 26 (fps 23,976):
+ * Rodada 4 (25.6.6) descartou a mecanica por clone: cada clone e uma copia
+ * INTEIRA com in=0, `setInPoint` apara a cabeca mantendo o out (o pedaco do
+ * meio virou duracao zero) e `move` e relativo. Sem slip, seriam 3 transacoes
+ * por pedaco — mais de mil Ctrl+Z numa bruta de 14 min. Ver DEV_NOTES.
  *
- *  1. `createCloneTrackItemAction(item, offset, 0, 0, true, false)` CORTA o
- *     clipe no offset pedido. Atinge SO a faixa do item: V1 e A1 precisam cada
- *     uma da sua acao (a A1 ficou inteira quando so a V1 foi clonada).
- *  2. `createRemoveItemsAction(selecao, true, ANY)` FECHA o buraco: removendo o
- *     pedaco do meio ([2-4] de tres pedacos), o terceiro andou de 4,00 para
- *     2,00 nas DUAS faixas e o fim caiu exatamente 2 s. Sincronia mantida.
- *  3. Todo pedaco nasce com `in=0.00`, herdado do pai. Um clipe mostra
- *     `in + (t - inicio)` da midia, entao um pedaco com in errado mostra o
- *     video desde o comeco de novo. Isso PRECISA ser corrigido.
- *  4. `createSetInPointAction` grava o valor exato pedido, mas na rodada 1 ele
- *     APAROU A CABECA: o pedaco andou de 1,00 para 3,00 ao receber in=2,00.
- *     So que aquele pedaco era o ultimo e passava do fim da midia (101,64 num
- *     arquivo de 100,64), o que pode explicar o comportamento.
- *
- * A rodada 3 (esta funcao) decide o ponto 4 num pedaco do MEIO, que e o caso
- * real, e testa o `createMoveAction` como plano de recuperacao caso o pedaco ande.
+ * O caminho e o plano C: marcar in/out NO ITEM DO PROJETO e fazer overwrite,
+ * como o Auto B-roll ja faz com B-roll. Na rodada 4 isso deu "Invalid
+ * parameter" sem dizer qual chamada; aqui cada passo roda sozinho e rele o
+ * resultado.
  */
-async function sondaMecanica(linhas: string[]): Promise<void> {
-  const medir = async (video: boolean) => {
+async function sondaOverwrite(linhas: string[]): Promise<void> {
+  const VIDEO = ppro.Constants.MediaType.VIDEO;
+  const erro = (e: unknown) => (e as Error)?.message ?? String(e);
+  const tick = (s: number) => ppro.TickTime.createWithSeconds(s);
+
+  const pecaEm = async (t: number, video: boolean) => {
     const { sequence } = await ativa();
-    const itens = await itensDa(sequence, video, 0);
-    return Promise.all(
-      itens.map(async (i) => ({
-        item: i,
-        inicio: (await i.getStartTime()).seconds,
-        fim: (await i.getEndTime()).seconds,
-        entrada: (await i.getInPoint()).seconds,
-        saida: (await i.getOutPoint()).seconds,
-      }))
+    for (const i of await itensDa(sequence, video, 0)) {
+      const inicio = (await i.getStartTime()).seconds;
+      if (Math.abs(inicio - t) < 0.05) {
+        return { inicio, fim: (await i.getEndTime()).seconds, entrada: (await i.getInPoint()).seconds };
+      }
+    }
+    return null;
+  };
+  const retrato = async (rotulo: string, t: number, pedidoIn: number, pedidoDur: number) => {
+    const v = await pecaEm(t, true);
+    const a = await pecaEm(t, false);
+    const txt = (p: { inicio: number; fim: number; entrada: number } | null) =>
+      p ? `${p.inicio.toFixed(2)}-${p.fim.toFixed(2)} in=${p.entrada.toFixed(2)}` : "nada";
+    const certo = (p: { inicio: number; fim: number; entrada: number } | null) =>
+      p !== null && Math.abs(p.entrada - pedidoIn) < 0.05 && Math.abs(p.fim - p.inicio - pedidoDur) < 0.05;
+    linhas.push(
+      `${rotulo}: V1 ${txt(v)} · A1 ${txt(a)} (pedi in=${pedidoIn.toFixed(2)}, ${pedidoDur.toFixed(2)} s) → ${
+        certo(v) && certo(a) ? "RESPEITOU" : "NÃO respeitou"
+      }`
+    );
+  };
+  const marcar = async (rotulo: string, deS: number, ateS: number) => {
+    const { project } = await ativa();
+    const { clip } = await midiaDaV1();
+    const a = await tick(deS);
+    const b = await tick(ateS);
+    comTransacao(project as never, `Auto Pausas: ${rotulo}`, (adicionar) => {
+      adicionar(clip.createSetInOutPointsAction(a, b));
+    });
+    const { clip: lido } = await midiaDaV1();
+    linhas.push(
+      `${rotulo}: pedi ${deS.toFixed(2)}–${ateS.toFixed(2)}, o item diz ${(await lido.getInPoint(VIDEO)).seconds.toFixed(2)}–${(
+        await lido.getOutPoint(VIDEO)
+      ).seconds.toFixed(2)}`
     );
   };
 
-  const retrato = async (rotulo: string) => {
-    for (const [nome, video] of [
-      ["V1", true],
-      ["A1", false],
-    ] as const) {
-      const pecas = await medir(video);
-      linhas.push(
-        `${rotulo}: ${nome} ${pecas.length}x [${pecas
-          .map((p) => `${p.inicio.toFixed(2)}-${p.fim.toFixed(2)} in=${p.entrada.toFixed(2)} out=${p.saida.toFixed(2)}`)
-          .join(" | ")}]`
-      );
-    }
-  };
-
-  const cortarEm = async (segundos: number) => {
-    const { project, sequence } = await ativa();
-    const editor = await ppro.SequenceEditor.getEditor(sequence);
-    const alvos: Array<{ item: ItemLike; offset: unknown }> = [];
-    for (const video of [true, false]) {
-      for (const p of await medir(video)) {
-        if (segundos <= p.inicio || segundos >= p.fim) continue;
-        alvos.push({ item: p.item, offset: await ppro.TickTime.createWithSeconds(segundos - p.inicio) });
-      }
-    }
-    comTransacao(project as never, `Auto Pausas: sonda corte em ${segundos}s`, (adicionar) => {
-      for (const a of alvos) adicionar(editor.createCloneTrackItemAction(a.item, a.offset, 0, 0, true, false));
-    });
-  };
-
-  await retrato("antes");
-  try {
-    await cortarEm(2);
-    await cortarEm(4);
-  } catch (e) {
-    linhas.push(`corte lancou: ${(e as Error)?.message ?? String(e)}`);
-  }
-  await retrato("A) 3 pedacos");
-
-  // A pergunta da rodada: num pedaco do MEIO, setInPoint alinha o conteudo sem
-  // mover, ou apara a cabeca e empurra o pedaco para a direita?
-  try {
-    const { project } = await ativa();
-    const meio = (await medir(true)).find((p) => Math.abs(p.inicio - 2) < 0.01);
-    if (!meio) throw new Error("nao achei o pedaco que comeca em 2s");
-    const alvo = await ppro.TickTime.createWithSeconds(2);
-    comTransacao(project as never, "Auto Pausas: sonda in point no meio", (adicionar) => {
-      adicionar(meio.item.createSetInPointAction(alvo));
-    });
-  } catch (e) {
-    linhas.push(`setInPoint lancou: ${(e as Error)?.message ?? String(e)}`);
-  }
-  const depoisDoIn = await medir(true);
-  await retrato("B) depois do setInPoint(2s) no pedaco do meio");
-  const doMeio = depoisDoIn.find((p) => Math.abs(p.entrada - 2) < 0.01);
-  linhas.push(
-    doMeio && Math.abs(doMeio.inicio - 2) < 0.01
-      ? "B) LEITURA: o pedaco FICOU em 2,00s com in=2,00 — alinha sem mover. Otimo."
-      : `B) LEITURA: o pedaco ANDOU para ${doMeio?.inicio.toFixed(2)}s — setInPoint apara a cabeca.`
-  );
-
-  // Plano de recuperacao: createMoveAction existe na tipagem mas nunca foi
-  // usado neste projeto. Tento levar o pedaco de volta para 2,00s.
-  if (doMeio && Math.abs(doMeio.inicio - 2) >= 0.01) {
-    try {
-      const { project } = await ativa();
-      const atual = doMeio.inicio;
-      const destino = await ppro.TickTime.createWithSeconds(2);
-      comTransacao(project as never, "Auto Pausas: sonda move", (adicionar) => {
-        adicionar((doMeio.item as unknown as { createMoveAction: (t: unknown) => unknown }).createMoveAction(destino));
-      });
-      const agora = (await medir(true)).find((p) => Math.abs(p.entrada - 2) < 0.01);
-      linhas.push(
-        `C) move(2,00s): pedaco saiu de ${atual.toFixed(2)} e foi para ${agora?.inicio.toFixed(2)} ` +
-          "(se foi para 4,00 o valor e relativo, se foi para 2,00 e absoluto)"
-      );
-    } catch (e) {
-      linhas.push(`C) move lancou: ${(e as Error)?.message ?? String(e)}`);
-    }
-    await retrato("C) depois do move");
-  }
-}
-
-/**
- * Plano C da mecanica, testado na mesma ida: marcar in/out NO ITEM DO PROJETO
- * e fazer overwrite. Se o pedaco inserido mostrar so o trecho marcado, da para
- * remontar a gravacao inteira sem depender do setInPoint dos clones.
- * Devolve o in/out do item ao que era antes.
- */
-async function sondaOverwrite(linhas: string[]): Promise<void> {
-  // Handles novos antes de cada transacao, como na sonda da rodada 3.
-  const clipDaV1 = async () => {
-    const { sequence } = await ativa();
-    const [item] = await itensDa(sequence, true, 0);
-    if (!item) throw new Error("V1 vazia");
-    const pi = await (item as unknown as { getProjectItem: () => Promise<unknown> }).getProjectItem();
-    const clip = ppro.ClipProjectItem.cast(pi);
-    if (!clip) throw new Error("o clipe da V1 nao e um ClipProjectItem");
-    return clip;
-  };
-
-  const VIDEO = ppro.Constants.MediaType.VIDEO;
-  const original = await clipDaV1();
+  // D1. Em que relogio o item do projeto guarda o in/out? (o da V1 diz 0,00)
+  const { clip: original } = await midiaDaV1();
   const inAntes = await original.getInPoint(VIDEO);
   const outAntes = await original.getOutPoint(VIDEO);
+  const base = inAntes.seconds as number;
+  linhas.push(`D1) in/out do item no projeto: ${base.toFixed(2)} – ${(outAntes.seconds as number).toFixed(2)} s`);
   const { sequence: seq } = await ativa();
-  const destino = (await (seq as { getEndTime: () => Promise<{ seconds: number }> }).getEndTime()).seconds + 2;
+  const fimSeq = (await (seq as SeqFaixas).getEndTime()).seconds;
 
-  {
-    const { project } = await ativa();
-    const clip = await clipDaV1();
-    const marcarIn = await ppro.TickTime.createWithSeconds(5);
-    const marcarOut = await ppro.TickTime.createWithSeconds(6);
-    comTransacao(project as never, "Auto Pausas: sonda in/out no item", (adicionar) => {
-      adicionar(clip.createSetInOutPointsAction(marcarIn, marcarOut));
-    });
+  // D2. Marcar 5-6 s, contado a partir do in que o item ja tem.
+  try {
+    await marcar("D2) in/out +5–6 s", base + 5, base + 6);
+  } catch (e) {
+    linhas.push(`D2) marcar in/out falhou: ${erro(e)}`);
   }
-  {
+
+  // D3. Overwrite com o ProjectItem cru, como o Auto B-roll (provado la).
+  try {
     const { project, sequence } = await ativa();
-    const clip = await clipDaV1();
+    const { projectItem } = await midiaDaV1();
     const editor = await ppro.SequenceEditor.getEditor(sequence);
-    const em = await ppro.TickTime.createWithSeconds(destino);
+    const em = await tick(fimSeq + 2);
     comTransacao(project as never, "Auto Pausas: sonda overwrite", (adicionar) => {
-      adicionar(editor.createOverwriteItemAction(clip, em, 0, 0));
+      adicionar(editor.createOverwriteItemAction(projectItem, em, 0, 0));
     });
+    await retrato("D3) overwrite (ProjectItem cru)", fimSeq + 2, 5, 1);
+  } catch (e) {
+    linhas.push(`D3) overwrite com ProjectItem cru falhou: ${erro(e)}`);
+    try {
+      const { project, sequence } = await ativa();
+      const { clip } = await midiaDaV1();
+      const editor = await ppro.SequenceEditor.getEditor(sequence);
+      const em = await tick(fimSeq + 2);
+      comTransacao(project as never, "Auto Pausas: sonda overwrite (cast)", (adicionar) => {
+        adicionar(editor.createOverwriteItemAction(clip, em, 0, 0));
+      });
+      await retrato("D3b) overwrite (ClipProjectItem)", fimSeq + 2, 5, 1);
+    } catch (e2) {
+      linhas.push(`D3b) overwrite com ClipProjectItem falhou: ${erro(e2)}`);
+    }
   }
 
-  const { sequence } = await ativa();
-  const pecas = await itensDa(sequence, true, 0);
-  const nova = (
-    await Promise.all(
-      pecas.map(async (i) => ({
-        inicio: (await i.getStartTime()).seconds,
-        fim: (await i.getEndTime()).seconds,
-        entrada: (await i.getInPoint()).seconds,
-      }))
-    )
-  ).find((p) => Math.abs(p.inicio - destino) < 0.05);
-  linhas.push(
-    nova
-      ? `D) overwrite com in/out 5-6 s: pedaco em ${nova.inicio.toFixed(2)}-${nova.fim.toFixed(2)} mostrando a midia desde ${nova.entrada.toFixed(2)} s`
-      : `D) overwrite com in/out: NENHUM pedaco apareceu em ${destino.toFixed(2)} s`,
-    nova && Math.abs(nova.entrada - 5) < 0.05 && Math.abs(nova.fim - nova.inicio - 1) < 0.05
-      ? "D) LEITURA: overwrite respeita o in/out do item — remontagem pelo plano C funciona."
-      : "D) LEITURA: overwrite NAO respeitou o in/out marcado."
-  );
-
-  {
-    const { project } = await ativa();
-    const clip = await clipDaV1();
-    comTransacao(project as never, "Auto Pausas: sonda devolve in/out", (adicionar) => {
-      adicionar(clip.createSetInOutPointsAction(inAntes, outAntes));
+  // D4. Dois pares marcar+overwrite numa transacao so: o corte inteiro cabe
+  // num Ctrl+Z? So se cada overwrite ler o in/out na hora de executar.
+  try {
+    const { project, sequence } = await ativa();
+    const { projectItem, clip } = await midiaDaV1();
+    const editor = await ppro.SequenceEditor.getEditor(sequence);
+    const [a1, b1, em1, a2, b2, em2] = await Promise.all([
+      tick(base + 10),
+      tick(base + 11),
+      tick(fimSeq + 5),
+      tick(base + 20),
+      tick(base + 22),
+      tick(fimSeq + 8),
+    ]);
+    comTransacao(project as never, "Auto Pausas: sonda dois pares", (adicionar) => {
+      adicionar(clip.createSetInOutPointsAction(a1, b1));
+      adicionar(editor.createOverwriteItemAction(projectItem, em1, 0, 0));
+      adicionar(clip.createSetInOutPointsAction(a2, b2));
+      adicionar(editor.createOverwriteItemAction(projectItem, em2, 0, 0));
     });
+    await retrato("D4) par 1 na mesma transação", fimSeq + 5, 10, 1);
+    await retrato("D4) par 2 na mesma transação", fimSeq + 8, 20, 2);
+  } catch (e) {
+    linhas.push(`D4) dois pares numa transação falhou: ${erro(e)}`);
+  }
+
+  // D5. Devolver o in/out do item ao que era.
+  try {
+    await marcar("D5) in/out devolvido", base, outAntes.seconds as number);
+  } catch (e) {
+    linhas.push(`D5) devolver in/out falhou: ${erro(e)} — confira as marcas do clipe no painel Projeto`);
   }
 }
 
 /**
- * Rodada 4 — uma ida ao Premiere responde tudo que falta:
- *  1. o export do audio pelo proprio plugin funciona? quanto tempo, que formato?
- *  2. a transcricao do 26 atual ainda marca pausa?
- *  3. a mecanica de corte (rodada 3) e o plano C (overwrite com in/out).
- * O WAV e a transcricao ficam na pasta de dados para a calibracao (Task 7);
- * o registro tambem vai para pausas-diag.json, para ninguem precisar colar log.
+ * Rodada 5 — o que a rodada 4 deixou em aberto, numa ida so:
+ *  1. o audio de novo (para o WAV bater com a transcricao desta bruta);
+ *  2. a transcricao pelo item da V1, e tambem pelo nome, para confirmar por
+ *     que a rodada 4 falhou;
+ *  3. o plano C (in/out no item do projeto + overwrite), chamada por chamada.
+ * O WAV e a transcricao ficam na pasta de dados para a calibracao; o registro
+ * vai para pausas-diag.json, para ninguem precisar colar log.
  */
 export async function diagnostico(): Promise<string[]> {
   const linhas: string[] = [];
@@ -419,20 +384,15 @@ export async function diagnostico(): Promise<string[]> {
     const p = (q: number) => (ordenado[Math.floor((ordenado.length - 1) * q)] ?? NaN).toFixed(1);
     const segundos = (db.length * janelas.janelaMs) / 1000;
     linhas.push(
-      `preset: ${r.preset}`,
-      `export: ${(r.ms / 1000).toFixed(1)} s · ${(r.bytes.byteLength / 1e6).toFixed(1)} MB · completo na hora: ${
-        r.completoNaHora ? "sim" : "NÃO"
-      } · completo no fim: ${wavCompleto(r.bytes) ? "sim" : "NÃO"}`,
+      `export: ${(r.ms / 1000).toFixed(1)} s · ${(r.bytes.byteLength / 1e6).toFixed(1)} MB · completo: ${wavCompleto(r.bytes) ? "sim" : "NÃO"}`,
       `WAV: ${janelas.db.length} canal(is) a ${janelas.taxa} Hz · ${segundos.toFixed(1)} s de áudio (sequência: ${info.durationSeconds.toFixed(1)} s)`,
-      `níveis (dB): p10 ${p(0.1)} · p20 ${p(0.2)} · p50 ${p(0.5)} · p90 ${p(0.9)} · p99 ${p(0.99)}`,
-      `guardado: ${r.caminho}`
+      `níveis (dB): p10 ${p(0.1)} · p20 ${p(0.2)} · p50 ${p(0.5)} · p90 ${p(0.9)} · p99 ${p(0.99)}`
     );
     dados.audio = {
       preset: r.preset,
       ms: r.ms,
       bytes: r.bytes.byteLength,
       completoNaHora: r.completoNaHora,
-      completoNoFim: wavCompleto(r.bytes),
       taxa: janelas.taxa,
       canais: janelas.db.length,
       segundos,
@@ -450,33 +410,35 @@ export async function diagnostico(): Promise<string[]> {
     const palavras = t ? t.segments.flatMap((s) => s.words.filter((w) => w.type === "word")) : [];
     const l = lacunas(palavras);
     linhas.push(
-      `clipe "${clipe.sourceName}": timeline ${clipe.startSeconds.toFixed(2)}–${clipe.endSeconds.toFixed(2)} s, in ${clipe.inPointSeconds.toFixed(2)} · ${info.fps} fps`,
+      `pelo item da V1: OK · clipe "${clipe.sourceName}" ${clipe.startSeconds.toFixed(2)}–${clipe.endSeconds.toFixed(2)} s · ${info.fps} fps`,
       `${l.total} palavras · espaços > 0,2 s: ${l.acima02} · > 0,5 s: ${l.acima05}`,
       l.acima02 === 0
-        ? "LEITURA: a transcrição NÃO marca pausa — confirma o problema do 26."
-        : `LEITURA: a transcrição ainda marca ${l.acima02} pausas.`
+        ? "LEITURA: a transcrição NÃO marca pausa."
+        : `LEITURA: a transcrição marca ${l.acima02} pausas.`
     );
     dados.clipe = clipe;
     dados.fps = info.fps;
     dados.lacunas = l;
+
+    const porNome = await lerTranscricoes([clipe.sourceName]);
+    linhas.push(
+      porNome.transcricoes.has(clipe.sourceName)
+        ? "pelo nome: também funcionou (então a rodada 4 falhou por outro motivo)"
+        : `pelo nome: falhou (${porNome.falhas.map((f) => f.motivo).join("; ")}) — confirma a troca pela sequência de mesmo nome`
+    );
   } catch (e) {
     falha("2) transcrição", e);
   }
 
   // Mexe na timeline: por ultimo, depois que o audio ja foi exportado.
-  linhas.push("== 3. Mecânica de corte");
-  try {
-    await sondaMecanica(linhas);
-  } catch (e) {
-    falha("3) mecânica", e);
-  }
+  linhas.push("== 3. Overwrite com in/out (plano C)");
   try {
     await sondaOverwrite(linhas);
   } catch (e) {
-    falha("3D) overwrite", e);
+    falha("3) overwrite", e);
   }
 
-  linhas.push('Pronto. Desfaça com Ctrl+Z até a timeline voltar ao "antes" (ou apague a cópia da sequência).');
+  linhas.push('Pronto. Pode apagar a cópia da sequência (os pedaços de teste ficaram depois do fim dela).');
   dados.linhas = linhas;
   try {
     await writeJson("pausas-diag.json", dados);
