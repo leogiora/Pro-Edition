@@ -229,8 +229,11 @@ function percentil(valores: readonly number[], q: number): number {
 }
 
 /**
- * Onde tem fala, lido do AUDIO. A transcricao entra so com o inicio de cada
- * palavra — a parte que o Premiere 26 atual ainda marca direito.
+ * Onde tem fala, lido do AUDIO. A transcricao entra com o inicio de cada
+ * palavra — a parte que o Premiere 26 atual ainda marca direito — e o fim so
+ * para uma coisa: voz forte que ela ainda conta como a palavra (a ultima
+ * silaba depois de um "s" ou "t" fraco) fica com a palavra. O fim nunca segura
+ * silencio: a transcricao estica ~0,2 s alem da voz.
  *
  * `db` e o nivel de um canal por janela de `janelaS` segundos, com o zero no
  * mesmo relogio das palavras (tempo de sequencia). O que nao vira bloco e
@@ -284,6 +287,14 @@ export function blocosDeFala(
     const dele = emOrdem.slice(primeira, k);
 
     if (dele.length === 0) {
+      // Voz que a transcricao ainda conta como a palavra anterior e o FIM dela:
+      // a ultima silaba depois de uma consoante fraca ("telemedici" + "na",
+      // 2026-09-21). Fica com a palavra, ponte e tudo.
+      const anterior = emOrdem[k - 1];
+      if (anterior && anterior.fim > de + EPS) {
+        blocos.push({ texto: "", inicio: anterior.inicio, fim: cauda(n.ate), motivo: "fala" });
+        continue;
+      }
       // Voz sem palavra: longa fica (pode ser fala que a transcricao pulou); curta e estalo.
       if (ate - de >= opcoes.vozSemPalavraMinS - EPS) {
         blocos.push({ texto: "", inicio: de, fim: cauda(n.ate), motivo: "voz-sem-palavra" });

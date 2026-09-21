@@ -371,6 +371,23 @@ Pedido: "imediato, igual o nativo". O export do audio saiu do clique:
 - O corte agora diz quanto das transacoes foi o Premiere executando ("X s dentro
   do Premiere"). Se for quase tudo, 3 s e o piso da API (um overwrite por
   transacao); se nao, reaproveitar projeto/editor entre transacoes e o proximo passo.
+- **Medido (26.5.0, bruta de 15:32 em 10 videos):** "levou 4,1 s · leitura 0,1 s
+  (audio ja lido) · corte 3,8 s, 3,6 s dentro do Premiere · conferencia 0,3 s".
+  O painel gasta 0,2 s: os 3,6 s sao o Premiere fazendo 324 overwrites. Piso da API.
+
+### "Ainda corta algumas falas" (2026-09-21)
+
+Diagnostico da separada ANTES do corte + `calibrar-pausas.ts`: 5 de 325 cortes
+levavam voz forte, todos logo depois de palavra de fim de frase ("telemedicina.",
+"desmentir.", "explicar."). Era a ULTIMA SILABA: depois de uma consoante fraca
+("s" de "-ci-", "t" de "-tir") a voz volta forte por ~0,2 s, sem inicio de palavra
+— e a regra "voz sem palavra < 0,25 s = estalo" jogava fora. A transcricao ainda
+dava a palavra como em curso ali (fim 0,45-0,57 s adiante). Correcao: nucleo de
+voz sem inicio de palavra que cai dentro do [inicio, fim] da palavra anterior fica
+com ela. Na bruta: 7 trechos mudam, +2,0 s no total, 0 cortes com voz forte.
+Um dos 7 (5:04, "coisa," -> "Respirar") parece respiro alto: fica 0,35 s dele.
+Se respiro dentro do fim esticado da transcricao virar queixa, o proximo passo e
+medir vozeamento (autocorrelacao) em vez de mexer em limiar de dB.
 
 ### Onde parou
 

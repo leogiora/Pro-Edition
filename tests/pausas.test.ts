@@ -313,6 +313,30 @@ test("voz forte e longa sem palavra fica e e sinalizada; estalo curto sai", () =
   assert.ok(perto(blocos[1]!.inicio, 3.0));
 });
 
+test("a ultima silaba depois de uma consoante fraca fica com a palavra", () => {
+  // "telemedicina." da bruta real (7:42): voz, o "s" fraco de "-ci-" (0,22 s,
+  // quebra o nucleo) e o "na" forte e curto (0,22 s), sem inicio de palavra.
+  const db = niveis(4, [
+    [1.0, 1.4, -20],
+    [1.4, 1.62, -45],
+    [1.62, 1.84, -22],
+  ]);
+  const blocos = blocosDeFala(db, J, [{ texto: "telemedicina.", inicio: 1.0, fim: 2.2 }]);
+  assert.equal(blocos.length, 1, JSON.stringify(blocos));
+  assert.ok(blocos[0]!.fim >= 1.84 - 1e-9, `o "na" fica: o bloco termina em ${blocos[0]!.fim}`);
+  assert.equal(blocos[0]!.motivo, "fala");
+});
+
+test("voz curta depois que a transcricao da a palavra por terminada continua sendo estalo", () => {
+  const db = niveis(4, [
+    [1.0, 1.4, -20],
+    [1.9, 1.96, -20], // estalo de 60 ms
+  ]);
+  const blocos = blocosDeFala(db, J, [{ texto: "fim.", inicio: 1.0, fim: 1.6 }]);
+  assert.equal(blocos.length, 1, JSON.stringify(blocos));
+  assert.ok(blocos[0]!.fim < 1.9, `o estalo sai: o bloco termina em ${blocos[0]!.fim}`);
+});
+
 test("palavra que comeca no silencio ganha bloco protegido", () => {
   const db = niveis(4, [[1.0, 2.0, -20]]);
   const blocos = blocosDeFala(db, J, [
