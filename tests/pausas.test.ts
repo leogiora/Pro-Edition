@@ -11,6 +11,8 @@ import {
   MARGEM_PADRAO_S,
   montarPalavras,
   planejarCortes,
+  primeiraPalavra,
+  ultimaPalavra,
   type Palavra,
 } from "../src/pausas.ts";
 import { wavCompleto } from "../src/wav.ts";
@@ -329,4 +331,11 @@ test("blocos entram direto no corte: o respiro cai dentro do corte da cabeca", (
   assert.equal(cabeca.inicioQ, 0);
   // respiro de 0,5 a 0,9 s = quadros 15 a 27; o corte vai ate (1,0 - 0,08) * 30 = 27,6 -> 27
   assert.equal(cabeca.fimQ, 27);
+});
+
+test("o registro mostra so a palavra de cada lado do corte", () => {
+  assert.equal(ultimaPalavra("a consulta de hoje"), "hoje");
+  assert.equal(primeiraPalavra("então vamos"), "então");
+  assert.equal(ultimaPalavra(""), "…");
+  assert.equal(primeiraPalavra(""), "…");
 });

@@ -16,7 +16,15 @@ import {
 } from "../ferramentas/auto-broll/src/premiere.ts";
 import { parseTranscricao, reconstruirTranscricao } from "../ferramentas/auto-broll/src/transcript.ts";
 import { lerFps } from "./autocut-premiere.ts";
-import { candidatosDoPreset, lacunas, montarPalavras, PRESET_WAV, type Palavra } from "./pausas.ts";
+import {
+  blocosDeFala,
+  candidatosDoPreset,
+  lacunas,
+  montarPalavras,
+  PRESET_WAV,
+  type Bloco,
+  type Palavra,
+} from "./pausas.ts";
 import { nivelPorJanela, wavCompleto } from "./wav.ts";
 
 declare function require(id: string): unknown;
@@ -121,6 +129,10 @@ async function lerClipeETranscricao(): Promise<{ info: SequenceInfo; fps: number
   }
 
   const clipe = clipes[0]!;
+  // O WAV exportado comeca no zero da sequencia e o plano conta quadros a partir dele.
+  if (Math.abs(clipe.startSeconds) > 0.001) {
+    throw new Error("A gravação precisa começar no início da sequência (00:00). Arraste o clipe para o começo e rode de novo.");
+  }
   let json: string;
   try {
     json = await transcricaoDaV1();
@@ -237,6 +249,29 @@ export async function exportarAudio(nomeArquivo: string): Promise<{
     bytes = await lerBytes(arquivo);
   }
   return { caminho, preset, ms, bytes, completoNaHora };
+}
+
+// ---------------------------------------------------------------- analise
+
+export interface Analise extends Gravacao {
+  readonly blocos: readonly Bloco[];
+  readonly segundosAudio: number;
+}
+
+/** Transcricao + audio -> blocos de fala. Nao toca na timeline; o WAV temporario nunca fica. */
+export async function analisarGravacao(): Promise<Analise> {
+  const g = await lerGravacao();
+  const audio = await exportarAudio("pausas-audio.wav");
+  try {
+    const janelas = nivelPorJanela(audio.bytes);
+    return {
+      ...g,
+      blocos: blocosDeFala(janelas.db[0] ?? [], janelas.janelaMs / 1000, g.palavras),
+      segundosAudio: audio.ms / 1000,
+    };
+  } finally {
+    await apagarArquivo(audio.caminho);
+  }
 }
 
 // --------------------------------------------------------------- sonda

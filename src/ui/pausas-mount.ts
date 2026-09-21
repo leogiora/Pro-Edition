@@ -6,8 +6,8 @@
  * telas no mesmo documento. Se isso mudar, este arquivo muda junto.
  */
 
-import { diagnostico, lerGravacao } from "../pausas-premiere.ts";
-import { MARGEM_PADRAO_S, planejarCortes } from "../pausas.ts";
+import { analisarGravacao, diagnostico, lerGravacao } from "../pausas-premiere.ts";
+import { MARGEM_PADRAO_S, planejarCortes, primeiraPalavra, ultimaPalavra } from "../pausas.ts";
 
 /** O campo aceita virgula (teclado pt-BR) e ponto. Valor invalido volta ao padrao. */
 export function lerMargem(bruto: string): number {
@@ -41,51 +41,80 @@ export function mount(root: HTMLElement): void {
     escrever(`Erro: ${(e as Error)?.message ?? String(e)}`);
   };
 
-  const previa = async () => {
+  // O export do audio leva segundos: um segundo clique no meio exportaria o
+  // mesmo arquivo duas vezes ao mesmo tempo.
+  let ocupado = false;
+  const umPorVez = (tarefa: () => Promise<void>) => () => {
+    if (ocupado) return;
+    ocupado = true;
+    void tarefa()
+      .catch(mostrarErro)
+      .finally(() => {
+        ocupado = false;
+      });
+  };
+
+  // Abrir a tela so le a sequencia: o audio e exportado no clique, nao aqui.
+  const abrir = async () => {
     const g = await lerGravacao();
     const nome = pega("apSeqNome");
     nome.textContent = g.nomeSequencia;
     nome.setAttribute("data-vazio", "nao");
     pega("apDica").style.display = "none";
+    escrever(
+      `${g.palavras.length} palavras na transcrição · ${relogio(g.duracaoQ, g.fps)} de gravação.`,
+      "Clique em Analisar para ver os cortes. O áudio é lido na hora e leva alguns segundos."
+    );
+    estado("pronto", "ok");
+  };
 
-    const plano = planejarCortes(g.palavras, {
-      fps: g.fps,
-      duracaoQ: g.duracaoQ,
-      margemS: lerMargem(pega<HTMLInputElement>("apMargem").value),
-    });
+  const previa = async () => {
+    estado("lendo áudio…", "ativo");
+    escrever("Exportando o áudio da sequência e medindo a fala...");
+    const a = await analisarGravacao();
+    const margemS = lerMargem(pega<HTMLInputElement>("apMargem").value);
+    const plano = planejarCortes(a.blocos, { fps: a.fps, duracaoQ: a.duracaoQ, margemS });
+    const quando = (segundos: number) => relogio(Math.round(segundos * a.fps), a.fps);
+    const avisos = a.blocos.filter((b) => b.motivo !== "fala");
 
     escrever(
-      `${plano.cortes.length} pausas para cortar · ${relogio(plano.duracaoAntesQ, g.fps)} → ${relogio(plano.duracaoDepoisQ, g.fps)}`,
-      `${g.palavras.length} palavras na transcrição · margem de ${lerMargem(pega<HTMLInputElement>("apMargem").value)}s`,
+      `${plano.cortes.length} pausas para cortar · ${relogio(plano.duracaoAntesQ, a.fps)} → ${relogio(plano.duracaoDepoisQ, a.fps)}`,
+      `${a.palavras.length} palavras · ${a.blocos.length} blocos de fala · áudio lido em ${a.segundosAudio
+        .toFixed(1)
+        .replace(".", ",")} s · margem ${String(margemS).replace(".", ",")} s`,
+      ...avisos.map((b) =>
+        b.motivo === "voz-sem-palavra"
+          ? `${quando(b.inicio)} · voz sem palavra na transcrição (fica)`
+          : `${quando(b.inicio)} · palavra baixa protegida: "${b.texto}"`
+      ),
       "",
       ...plano.cortes.map((c) => {
-        const seg = ((c.fimQ - c.inicioQ) / g.fps).toFixed(1).replace(".", ",");
+        const seg = ((c.fimQ - c.inicioQ) / a.fps).toFixed(1).replace(".", ",");
         // Corte maior que 1s e onde uma palavra nao transcrita poderia estar
-        // escondida: e o unico lugar que pede conferencia humana.
-        const aviso = c.fimQ - c.inicioQ > g.fps ? "  <- confira" : "";
-        return `${relogio(c.inicioQ, g.fps)} · ${seg} s · "${c.antes}" | "${c.depois}"${aviso}`;
+        // escondida: e o lugar que pede conferencia humana.
+        const aviso = c.fimQ - c.inicioQ > a.fps ? "  <- confira" : "";
+        return `${relogio(c.inicioQ, a.fps)} · ${seg} s · "${ultimaPalavra(c.antes)}" | "${primeiraPalavra(c.depois)}"${aviso}`;
       })
     );
     estado("prévia pronta", "ok");
   };
 
-  void previa().catch(mostrarErro);
+  void abrir().catch(mostrarErro);
+
+  pega("apAnalisar").addEventListener("click", umPorVez(previa));
 
   pega("apCortar").addEventListener("click", () => {
-    escrever("Ainda não corta: o teste da mecânica no Premiere vem antes (Task 5).");
+    escrever("Ainda não corta: o corte na timeline entra na próxima etapa. Use Analisar para ver a prévia.");
   });
 
-  // Temporario: sai quando a mecanica de corte estiver provada (Task 7).
-  pega("apDiag").addEventListener("click", () => {
-    void (async () => {
-      try {
-        estado("diagnóstico", "ativo");
-        escrever("Rodando diagnóstico: exportando o áudio da sequência (pode levar alguns segundos)...");
-        escrever(...(await diagnostico()));
-        estado("diagnóstico pronto", "ok");
-      } catch (e) {
-        mostrarErro(e);
-      }
-    })();
-  });
+  // Temporario: sai quando o corte estiver calibrado (Task 10).
+  pega("apDiag").addEventListener(
+    "click",
+    umPorVez(async () => {
+      estado("diagnóstico", "ativo");
+      escrever("Rodando diagnóstico: exportando o áudio da sequência (pode levar alguns segundos)...");
+      escrever(...(await diagnostico()));
+      estado("diagnóstico pronto", "ok");
+    })
+  );
 }

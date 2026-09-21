@@ -315,6 +315,15 @@ export function blocosDeFala(
   return juntos;
 }
 
+/** Um bloco leva a frase inteira; o registro mostra so a palavra encostada no corte. */
+export function ultimaPalavra(texto: string): string {
+  return texto.trim().split(/\s+/).pop() || "…";
+}
+
+export function primeiraPalavra(texto: string): string {
+  return texto.trim().split(/\s+/)[0] || "…";
+}
+
 // --------------------------------------------------------- audio do Premiere
 
 /** Vem instalado com o Premiere 26: mono, 16 kHz, 16 bits (~1,9 MB por minuto). */
