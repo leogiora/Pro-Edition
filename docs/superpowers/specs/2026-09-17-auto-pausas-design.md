@@ -40,10 +40,12 @@ no 26: **onde cada palavra começa**.
 - **Não** trabalha com podcast. Só anúncio (Pro Ads).
 - **Não** separa os vídeos de uma bruta nem escolhe o melhor take. São
   próximos passos, depois deste (decisão de 2026-09-21).
-- **Não** mexe em sequência já editada. Só roda com a gravação bruta: um clipe
-  na V1 com o áudio dele na A1, e nenhum outro clipe na sequência (faixas vazias
-  podem existir). Qualquer outra coisa é recusada com mensagem dizendo o que
-  fazer.
+- Roda na bruta **inteira** (um clipe) **ou já separada pelo editor** (vários
+  clipes na V1, colados ou não, do mesmo arquivo ou de arquivos diferentes).
+  Decisão de 2026-09-21: o fluxo real é bruta inteira → o editor pica para
+  separar os vídeos → Auto Pausas. As emendas do editor continuam emendas no
+  resultado. Recusa com instrução: clipe com velocidade alterada, e A1 que não
+  acompanha a V1 clipe a clipe (áudio de gravador separado).
 - **Não** duplica a sequência nem marca antes de cortar. Decisão do usuário:
   **corta direto na sequência**, e a rede de segurança é o Ctrl+Z mais a
   conferência automática.
@@ -211,8 +213,6 @@ Mesma folha da família (`css: cssBroll`, como AutoCut e Auto Split).
 - sem sequência ativa;
 - sem transcrição no clipe → dizer como criar (painel Texto → Transcrever);
 - timeline diferente de um clipe na V1 + áudio na A1;
-- gravação que não começa no 00:00 da sequência (o WAV exportado começa no
-  zero, e o plano conta quadros a partir dele);
 - preset de WAV não encontrado ou export falhou → dizer qual caminho foi
   tentado.
 

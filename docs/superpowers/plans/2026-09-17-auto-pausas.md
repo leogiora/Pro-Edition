@@ -2174,6 +2174,17 @@ git commit -m "feat(pausas): aplica o corte e confere palavra a palavra relendo 
 
 ---
 
+### Task 9b: Sequência separada pelo editor (vários clipes na V1)
+
+Pedido de 2026-09-21, depois do primeiro corte real: o editor pica a bruta para separar os vídeos e SÓ DEPOIS tira as pausas. Mesma regra de pausa; muda a leitura e a montagem.
+
+- **Pura (`src/pausas.ts`):** `pedacosDoPlano(trechos, clipes)` divide cada trecho que fica nas emendas do editor e diz, para cada pedaço, de que item de projeto (`fonte`), de que quadro a que quadro da mídia, e onde entra. Destinos contíguos a partir de 0 — um buraco entre clipes dentro de um trecho fecha, nunca deixa aparecer conteúdo velho. Testes: um clipe; trecho atravessando emenda; duas fontes; buraco entre clipes; clipe com in ≠ 0.
+- **Adapter:** lê todos os clipes da V1 (posição, in, velocidade, item do projeto) e a A1; recusa velocidade ≠ 1 e A1 que não acompanha a V1. Transcrição de cada fonte pelo próprio item (nunca por nome). O 00:00 deixa de ser exigido (buraco no começo é silêncio e sai).
+- **Corte:** o mesmo encadeamento (overwrite do pedaço k com a marca feita na transação anterior + marca do k+1), agora por pedaço e por fonte; no fim, devolve as marcas de todas as fontes tocadas e remove o que sobrou depois do último pedaço com `TrackItemSelection.createEmptySelection` + `createRemoveItemsAction(sel, false, ANY, false)` — o molde do Auto B-roll, provado no 25 e no 26 ("audio removido de N B-rolls"). Sai o "preparar" com `createSetEndAction`.
+- **Desfazer:** guarda a lista dos clipes originais (posição, in/out, fonte) e as marcas de cada fonte; tira tudo da V1/A1 e recoloca clipe a clipe pelo mesmo encadeamento.
+
+---
+
 ### Task 10: Calibrar a margem no Premiere, tirar a sonda e documentar
 
 **PARA O EXECUTOR: a calibração é um teste do usuário. Não chute o número.**
