@@ -389,6 +389,28 @@ Um dos 7 (5:04, "coisa," -> "Respirar") parece respiro alto: fica 0,35 s dele.
 Se respiro dentro do fim esticado da transcricao virar queixa, o proximo passo e
 medir vozeamento (autocorrelacao) em vez de mexer em limiar de dB.
 
+### Paridade com o AutoCut Silences (2026-09-22)
+
+Comparacao com o relatorio que ele mandou (`deep-research-report.md`, 2026-09-21;
+o arquivo saiu do Downloads dele — o conteudo esta no transcript da sessao
+`c2902af4`). AutoCut Silences = limiar em dB (IA so estima o nivel), duracao minima
+de silencio, duracao minima de fala, padding, tratamento do silencio
+(cortar/mutar/manter), transicoes J/L e Sequence Preview. Ponto fraco documentado:
+"voz baixa abaixo do threshold e removida".
+
+Ja igual ou melhor no Auto Pausas: nivel automatico por gravacao (percentis, sem dB
+fixo), respiro sai como classe propria (limiar duplo + inicio de palavra), fala baixa
+e fim de palavra protegidos pela transcricao, margem, previa (Analisar), Desfazer,
+espaco entre os videos mantido, conferencia depois do corte (palavras/sincronia/
+duracao) e corte em ~4 s.
+
+Falta para fechar: (1) ele confirmar de ouvido o conserto da ultima silaba
+(`470aad0`); (2) Task 10 — tirar o Diagnostico, guia de uso, merge no main.
+
+Opcional, so se ele sentir falta (nao fazer antes de pedido): pausa minima e limiar
+manual, mutar/marcar em vez de cortar, J/L cut, rodar sem transcricao, previa
+desenhada (onda) e timeline com outras faixas (musica/B-roll).
+
 ### Onde parou
 
 Tasks 8 e 9 prontas e o corte ja rodou uma vez (acima). O Desfazer tambem rodou

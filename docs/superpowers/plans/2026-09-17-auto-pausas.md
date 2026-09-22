@@ -2196,13 +2196,15 @@ Pedido de 2026-09-21, depois do primeiro corte real: o editor pica a bruta para 
 - Modify: `tests/pausas.test.ts` (remover o teste de `lacunas`)
 - Modify: `DEV_NOTES.md`, `docs/GUIA-DE-USO.md`
 
-- [ ] **Step 1: Pedir o teste ao usuário**
+- [x] **Step 1: Pedir o teste ao usuário**
 
 Aplicar ("Cortar pausas") num anúncio real e ouvir: fala colada demais (aumentar a margem) ou sobrando ar (diminuir). Pedir também o número de Ctrl+Z que desfez tudo e se a conferência disse "N de N palavras presentes".
 
-- [ ] **Step 2: Ajustar a margem padrão**
+**Feito (2026-09-21, Premiere 26.5.0, bruta de 15:32 em 10 vídeos):** ritmo aprovado com margem **0,08** ("ficou bom"), conferência "1832 de 1832 palavras presentes", corte em 4,1 s. Duas queixas viraram commits: velocidade (`37cddc5`) e fala cortada no fim da palavra (`470aad0`). **Falta ele ouvir o resultado do `470aad0`** antes do Step 3: se a última sílaba voltou em "telemedicina", "desmentir" e "explicar", e se o respiro de 5:04 ("coisa," → "Respirar") incomoda.
 
-Trocar `MARGEM_PADRAO_S` pelo valor aprovado (e o `value` do `apMargem` no HTML), atualizando os quadros esperados nos testes da Task 1 que dependem dele.
+- [x] **Step 2: Ajustar a margem padrão**
+
+0,08 já era o padrão e foi o valor aprovado: `MARGEM_PADRAO_S` e o `value` do `apMargem` ficam como estão.
 
 - [ ] **Step 3: Remover a sonda**
 
