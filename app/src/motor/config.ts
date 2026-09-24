@@ -13,6 +13,9 @@ import { join } from "node:path";
 export interface Preferencias {
   /** Pasta da biblioteca de B-rolls. */
   readonly pastaBroll?: string;
+  /** Ultima musica escolhida no Acabamento, e o volume dela. */
+  readonly trilha?: string;
+  readonly volumeTrilhaDb?: number;
 }
 
 export class Config {

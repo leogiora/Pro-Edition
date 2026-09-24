@@ -26,7 +26,7 @@ import { sondar } from "./midia.ts";
 const PASTA_PADRAO = join(process.env.USERPROFILE ?? "C:\\Users\\leogi", "Downloads", "Brolls - 2026");
 
 /** A pasta de dados do painel com o aprendizado mais recente (Premiere 25 ou 26, Pro Edition ou Auto B-roll). */
-async function pastaDoPainel(): Promise<string | null> {
+export async function pastaDoPainel(): Promise<string | null> {
   const base = join(process.env.APPDATA ?? "", "Adobe", "UXP", "PluginsStorage", "PPRO");
   let melhor: { pasta: string; quando: number } | null = null;
   for (const versao of await readdir(base).catch(() => [] as string[])) {
@@ -39,7 +39,7 @@ async function pastaDoPainel(): Promise<string | null> {
   return melhor?.pasta ?? null;
 }
 
-async function jsonDe(pasta: string | null, nome: string): Promise<unknown> {
+export async function jsonDe(pasta: string | null, nome: string): Promise<unknown> {
   if (pasta === null) return null;
   try {
     return JSON.parse(await readFile(join(pasta, nome), "utf8"));

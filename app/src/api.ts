@@ -7,12 +7,24 @@ import type { Legendas, BlocoLegenda } from "./motor/legendas.ts";
 import type { EntradaPausas, ResultadoPausasSalvo } from "./motor/pausas.ts";
 import type { EntradaBroll, ResultadoBrollSalvo } from "./motor/broll.ts";
 import type { Preferencias } from "./motor/config.ts";
+import type { EntradaAcabamento, OpcoesAcabamentoTela, ResultadoAcabamentoSalvo } from "./motor/acabamento.ts";
 
-export type { Legendas, BlocoLegenda, EntradaPausas, ResultadoPausasSalvo, EntradaBroll, ResultadoBrollSalvo, Preferencias };
+export type {
+  Legendas,
+  BlocoLegenda,
+  EntradaPausas,
+  ResultadoPausasSalvo,
+  EntradaBroll,
+  ResultadoBrollSalvo,
+  Preferencias,
+  EntradaAcabamento,
+  OpcoesAcabamentoTela,
+  ResultadoAcabamentoSalvo,
+};
 
 export interface ProApi {
   /** Seletor de arquivo do Windows. Vazio = cancelou. */
-  escolher(tipo: "midia" | "sequencia" | "xml"): Promise<string[]>;
+  escolher(tipo: "midia" | "sequencia" | "xml" | "musica"): Promise<string[]>;
   /** Caminho de um arquivo arrastado para a janela. */
   caminhoDe(arquivo: File): string;
   temChave(): Promise<boolean>;
@@ -26,6 +38,8 @@ export interface ProApi {
   abrirBroll(caminho: string): Promise<EntradaBroll>;
   rodarBroll(caminho: string): Promise<ResultadoBrollSalvo>;
   preferencias(): Promise<Preferencias>;
+  abrirAcabamento(caminho: string): Promise<EntradaAcabamento>;
+  rodarAcabamento(caminho: string, opcoes: OpcoesAcabamentoTela): Promise<ResultadoAcabamentoSalvo>;
   /** Abre o seletor de pasta e guarda a escolha. null = cancelou. */
   escolherPastaBroll(): Promise<string | null>;
   /** Progresso do motor ("extraindo o áudio", "transcrevendo..."). */

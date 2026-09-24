@@ -30,11 +30,10 @@
           <span class="card-nome">Auto B-roll</span>
           <span class="card-desc">Escolhe o B-roll pelo que o doutor fala, com o que o painel já aprendeu, e coloca na V2.</span>
         </button>
-        <div class="card em-breve">
-          <span class="card-nome">Auto Split</span>
-          <span class="card-desc">Doutor em cima, B-roll embaixo, com o enquadramento de cada arquivo.</span>
-          <span class="selo">em construção</span>
-        </div>
+        <button class="card" data-abre="acabamento" style="--acento:#3b82f6">
+          <span class="card-nome">Acabamento</span>
+          <span class="card-desc">Split meio a meio, trilha em cada variação, e B-roll e trilha terminando junto com o doutor.</span>
+        </button>
       </div>
     </section>
     <section class="grupo">
@@ -90,6 +89,31 @@
       <ol id="brollLista" class="colocados"></ol>
       <details id="brollDescartes"><summary></summary><ul class="linhas"></ul></details>
       <p id="brollSalvos" class="salvos"></p>
+    </section>
+  </main>
+
+  <main id="acabamento" class="tela" hidden>
+    <div class="soltar" tabindex="0" role="button" data-escolher="xml">
+      <strong>Arraste a sequência com B-roll (.xml)</strong>
+      <span>a que o Auto B-roll gerou, ou a sua exportada do Premiere · ou clique para escolher</span>
+    </div>
+    <div class="linha-estado">
+      <span class="arquivo"></span>
+      <span class="estado"></span>
+    </div>
+    <section id="acabEntrada" class="painel" hidden>
+      <p id="acabResumo" class="grande"></p>
+      <label class="opcao"><input type="checkbox" id="acabSplit" /> Split: doutor em cima, B-roll embaixo</label>
+      <p class="dica">Caixa de baixo começando em <input id="acabDivisao" type="number" min="40" max="60" value="50" class="numero" /> % da altura · enquadramento pelo perfil de cada B-roll</p>
+      <label class="opcao"><input type="checkbox" id="acabComTrilha" /> Trilha em cada variação</label>
+      <p class="dica"><span id="acabTrilha">nenhuma música escolhida</span> <button id="acabEscolherTrilha" type="button">Escolher música</button> · volume <input id="acabVolume" type="number" min="-60" max="0" step="1" value="-20" class="numero" /> dB</p>
+      <p class="dica">B-roll e trilha sempre terminam junto com o doutor em cada variação.</p>
+      <button id="acabRodar" class="primario">Montar versão final</button>
+    </section>
+    <section id="acabResultado" class="painel" hidden>
+      <p id="acabFeito" class="grande"></p>
+      <ul id="acabLinhas" class="linhas"></ul>
+      <p id="acabSalvos" class="salvos"></p>
     </section>
   </main>
 

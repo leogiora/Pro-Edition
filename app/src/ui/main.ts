@@ -36,8 +36,14 @@ const duracao = (s: number): string => {
 
 /* ---------------------------------------------------------------- telas */
 
-type Tela = "hall" | "pausas" | "broll" | "legendas";
-const TITULOS: Record<Tela, string> = { hall: "", pausas: "Auto Pausas", broll: "Auto B-roll", legendas: "Legendas" };
+type Tela = "hall" | "pausas" | "broll" | "acabamento" | "legendas";
+const TITULOS: Record<Tela, string> = {
+  hall: "",
+  pausas: "Auto Pausas",
+  broll: "Auto B-roll",
+  acabamento: "Acabamento",
+  legendas: "Legendas",
+};
 let tela: Tela = "hall";
 
 function abrir(nova: Tela): void {
@@ -195,6 +201,79 @@ $<HTMLButtonElement>("brollRodar").addEventListener("click", async () => {
   }
 });
 
+/* ------------------------------------------------------------ acabamento */
+
+let acabamento = "";
+let musica: string | null = null;
+
+function mostrarMusica(): void {
+  $("acabTrilha").textContent = musica === null ? "nenhuma música escolhida" : nomeDe(musica);
+}
+
+async function abrirAcabamento(caminho: string): Promise<void> {
+  abrir("acabamento");
+  acabamento = caminho;
+  $("acabEntrada").hidden = true;
+  $("acabResultado").hidden = true;
+  linha("acabamento").arquivo.textContent = nomeDe(caminho);
+  $("acabamento").querySelector(".soltar")?.classList.add("compacto");
+  estado("acabamento", "lendo", "ativo");
+  try {
+    const e = await pro.abrirAcabamento(caminho);
+    $("acabResumo").textContent = `${e.nome} · ${e.variacoes} variação(ões) · ${e.brolls} B-roll(s) na V2`;
+    musica = e.trilha;
+    mostrarMusica();
+    $<HTMLInputElement>("acabComTrilha").checked = musica !== null;
+    $<HTMLInputElement>("acabVolume").value = String(e.volumeTrilhaDb);
+    $("acabEntrada").hidden = false;
+    estado("acabamento", e.avisos.length > 0 ? e.avisos.join(" · ") : "pronto", e.avisos.length > 0 ? "" : "ok");
+  } catch (erro) {
+    estado("acabamento", mensagem(erro), "erro");
+  }
+}
+
+$("acabEscolherTrilha").addEventListener("click", async () => {
+  const [escolhida] = await pro.escolher("musica");
+  if (escolhida === undefined) return;
+  musica = escolhida;
+  $<HTMLInputElement>("acabComTrilha").checked = true;
+  mostrarMusica();
+});
+
+$<HTMLButtonElement>("acabRodar").addEventListener("click", async () => {
+  const botao = $<HTMLButtonElement>("acabRodar");
+  const comTrilha = $<HTMLInputElement>("acabComTrilha").checked;
+  if (comTrilha && musica === null) {
+    estado("acabamento", "escolha a música da trilha (ou desmarque a trilha)", "erro");
+    return;
+  }
+  botao.disabled = true;
+  estado("acabamento", "montando", "ativo");
+  try {
+    const r = await pro.rodarAcabamento(acabamento, {
+      split: $<HTMLInputElement>("acabSplit").checked,
+      divisao: Number($<HTMLInputElement>("acabDivisao").value),
+      trilha: comTrilha ? musica : null,
+      volumeTrilhaDb: Number($<HTMLInputElement>("acabVolume").value),
+    });
+    $("acabFeito").textContent = `${r.variacoes} variação(ões) prontas`;
+    $("acabLinhas").replaceChildren(
+      ...[
+        `${r.aparados} B-roll(s) aparados no fim do doutor`,
+        ...(r.enquadrados > 0 ? [`${r.enquadrados} B-roll(s) no Split`] : []),
+        ...r.avisos,
+      ].map((t) => Object.assign(document.createElement("li"), { textContent: t }))
+    );
+    mostrarSalvos($("acabSalvos"), r.salvos);
+    $("acabResultado").hidden = false;
+    estado("acabamento", "no Premiere: Arquivo > Importar o .xml", "ok");
+  } catch (erro) {
+    estado("acabamento", mensagem(erro), "erro");
+  } finally {
+    botao.disabled = false;
+  }
+});
+
 /* ------------------------------------------------------------ legendas */
 
 const MAX_CARACTERES = 20;
@@ -283,12 +362,13 @@ function receber(caminhos: string[]): void {
   if (caminhos.length === 0) return;
   const xml = caminhos.find((c) => /\.xml$/i.test(c));
   if (tela === "broll" && xml !== undefined) void abrirBroll(xml);
+  else if (tela === "acabamento" && xml !== undefined) void abrirAcabamento(xml);
   else if (tela === "pausas" || xml !== undefined || caminhos.length > 1) void abrirPausas(caminhos);
   else void gerar(caminhos[0]!);
 }
 
 for (const zona of document.querySelectorAll<HTMLElement>("[data-escolher]")) {
-  const escolher = async (): Promise<void> => receber(await pro.escolher(zona.dataset.escolher as "midia" | "sequencia" | "xml"));
+  const escolher = async (): Promise<void> => receber(await pro.escolher(zona.dataset.escolher as "midia" | "sequencia" | "xml" | "musica"));
   zona.addEventListener("click", () => void escolher());
   zona.addEventListener("keydown", (e) => {
     if (e.key === "Enter" || e.key === " ") void escolher();

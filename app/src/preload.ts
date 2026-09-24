@@ -15,6 +15,8 @@ const api: ProApi = {
   abrirBroll: (caminho) => ipcRenderer.invoke("broll:abrir", caminho),
   rodarBroll: (caminho) => ipcRenderer.invoke("broll:rodar", caminho),
   preferencias: () => ipcRenderer.invoke("preferencias"),
+  abrirAcabamento: (caminho) => ipcRenderer.invoke("acabamento:abrir", caminho),
+  rodarAcabamento: (caminho, opcoes) => ipcRenderer.invoke("acabamento:rodar", caminho, opcoes),
   escolherPastaBroll: () => ipcRenderer.invoke("broll:pasta"),
   aoAvisar: (fn) => void ipcRenderer.on("aviso", (_e, texto: string) => fn(texto)),
   aoAbrir: (fn) => void ipcRenderer.on("abrir", (_e, caminho: string) => fn(caminho)),

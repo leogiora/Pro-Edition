@@ -10,6 +10,7 @@ import { join } from "node:path";
 
 import { Config } from "./motor/config.ts";
 import { gerarLegendas, salvarSrts, type BlocoLegenda } from "./motor/legendas.ts";
+import { abrirParaAcabamento, rodarAcabamento, type OpcoesAcabamentoTela } from "./motor/acabamento.ts";
 import { abrirParaBroll, rodarBroll } from "./motor/broll.ts";
 import { abrirParaPausas, rodarPausas } from "./motor/pausas.ts";
 
@@ -63,6 +64,11 @@ const FILTROS = {
     properties: ["openFile"] as Array<"openFile" | "multiSelections">,
     filters: [{ name: "Sequência XML", extensions: ["xml"] }],
   },
+  musica: {
+    title: "Música da trilha",
+    properties: ["openFile"] as Array<"openFile" | "multiSelections">,
+    filters: [{ name: "Áudio", extensions: ["wav", "mp3", "m4a", "aac", "flac", "aif", "aiff"] }],
+  },
   sequencia: {
     title: "Sequência exportada do Premiere (.xml) ou as brutas",
     properties: ["openFile", "multiSelections"] as Array<"openFile" | "multiSelections">,
@@ -109,6 +115,10 @@ ipcMain.handle("broll:rodar", (evento, caminho: string) =>
 );
 
 ipcMain.handle("preferencias", () => cfg.preferencias());
+
+ipcMain.handle("acabamento:abrir", (_e, caminho: string) => abrirParaAcabamento(caminho, cfg));
+
+ipcMain.handle("acabamento:rodar", (_e, caminho: string, opcoes: OpcoesAcabamentoTela) => rodarAcabamento(caminho, opcoes, cfg));
 
 ipcMain.handle("broll:pasta", async (evento) => {
   const janela = BrowserWindow.fromWebContents(evento.sender);

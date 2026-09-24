@@ -62,6 +62,21 @@ Dado real (variação 1, biblioteca de 251 arquivos, aprendizado do Leo): 6
 B-rolls — Frustrado, Hormônio em "hormônio", Doutor em "Eu sou médico",
 Consulta médica em "A consulta aqui" — e 9 recusas com motivo.
 
+### Acabamento
+
+Variação = trecho contínuo da V1 (o espaço de ≥ 1 s entre vídeos separa).
+B-roll que passa do fim do doutor é aparado; o que começa num espaço sai.
+Split (opcional): a geometria do painel (`src/autosplit.ts`,
+`calcularEnquadramento`) com o perfil empacotado (`src/autosplit-perfil.json`)
+e os ajustes que o Leo ensinou (`autosplit-perfil-override.json` do PluginData)
+→ escala, posição e Cortar (topo + feather 5%) no XML. O "subir o doutor" do
+painel só vale para bruta em pé e ficou de fora (as brutas do Andro são
+deitadas). Trilha (opcional): a música do começo, repetindo se for curta,
+cortada no fim de cada variação, no volume escolhido (padrão −20 dB).
+
+**Crop/flop do doutor largado na cadeira** é decisão de olho: continua manual.
+Automatizar pede ver o quadro (modelo de visão), fase futura.
+
 **Limite:** o XML de saída leva a V1/A1 como o leitor entendeu (sem Lumetri).
 Se o Premiere perder a cor, copiar só a V2 da sequência importada para a
 sequência original (mesmo tempo, cola no 00:00 com a V2 alvo).
@@ -82,7 +97,7 @@ Legenda (é o "Abrir com" do Windows).
 | 1 | Programa + Legendas (arrasta vídeo/áudio → revisa → `.srt`) | feito (2026-09-24) |
 | 2 | Auto Pausas: XML exportado do Premiere (ou brutas) → XML sem pausas + legenda | feito (2026-09-24), falta rodar com a chave |
 | 3 | Auto B-roll: XML → B-roll pela fala na V2, com o aprendizado do painel | feito (2026-09-24); o Aprender ainda é do painel |
-| 4 | Auto Split, trilha e fim de cada variação, crop/flop | a fazer |
+| 4 | Acabamento: Split, trilha por variação, B-roll e trilha terminando com o doutor | feito (2026-09-24); crop/flop do doutor fica manual |
 | 5 | Podcast AutoCut (2 câmeras, 2 microfones) | a fazer |
 | 6 | Instalador `.exe` (Leo e Felipe) com ffmpeg junto | a fazer |
 

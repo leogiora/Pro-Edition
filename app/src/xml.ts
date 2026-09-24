@@ -36,12 +36,13 @@ export interface Clipe {
   readonly deslocamento?: { readonly x: number; readonly y: number };
   /** Espelha na horizontal. */
   readonly flop?: boolean;
-  /** Corte das bordas, em % de cada lado. */
+  /** Corte das bordas, em % de cada lado; `suavizar` e o feather da borda, em %. */
   readonly recorte?: {
     readonly esquerda: number;
     readonly direita: number;
     readonly topo: number;
     readonly base: number;
+    readonly suavizar?: number;
   };
   readonly ganhoDb?: number;
   /** Clipes com o mesmo grupo ficam vinculados (video e audio andam juntos). */
@@ -130,7 +131,8 @@ function filtrosDeVideo(c: Clipe, s: Sequencia): string {
         parametro("left", "left", String(r.esquerda), 0, 100) +
           parametro("right", "right", String(r.direita), 0, 100) +
           parametro("top", "top", String(r.topo), 0, 100) +
-          parametro("bottom", "bottom", String(r.base), 0, 100)
+          parametro("bottom", "bottom", String(r.base), 0, 100) +
+          (r.suavizar !== undefined ? parametro("edgefeather", "edgefeather", String(r.suavizar), 0, 100) : "")
       )
     );
   }

@@ -163,3 +163,7 @@ dialog input { width: 100%; font: inherit; color: var(--txt); background: var(--
 .pasta .caminho { flex: 1; font-size: 12px; color: var(--txt-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .acoes { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
 #brollOrigem { margin-left: 0; }
+
+/* ------------------------------------------------------------ acabamento */
+.numero { width: 64px; font: inherit; color: var(--txt); background: var(--bg-0); border: 1px solid var(--line-2); border-radius: 6px; padding: 2px 6px; }
+.dica button { padding: 2px 10px; font-size: 12px; margin-left: 6px; }

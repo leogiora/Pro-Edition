@@ -158,7 +158,15 @@ export function lerSequenciaXml(conteudo: string): SequenciaLida {
         : {}),
       ...(video.some((e) => texto(e, "effectid")?.toLowerCase() === "flop") ? { flop: true } : {}),
       ...(recorte
-        ? { recorte: { esquerda: valor(recorte, "left"), direita: valor(recorte, "right"), topo: valor(recorte, "top"), base: valor(recorte, "bottom") } }
+        ? {
+            recorte: {
+              esquerda: valor(recorte, "left"),
+              direita: valor(recorte, "right"),
+              topo: valor(recorte, "top"),
+              base: valor(recorte, "bottom"),
+              ...(parametro(recorte, "edgefeather") ? { suavizar: valor(recorte, "edgefeather") } : {}),
+            },
+          }
         : {}),
       ...(ganho !== undefined && ganho > 0 ? { ganhoDb: 20 * Math.log10(ganho) } : {}),
       // O grupo e o menor id entre os vinculados: video e audio do mesmo par caem no mesmo.
