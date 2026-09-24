@@ -1,6 +1,33 @@
 # RETOMAR — Pro Captions
 
-## 2026-09-24 — transcricao pelo ElevenLabs (LER PRIMEIRO)
+## 2026-09-24 (Claude Code) — segmentacao no estilo do Leo
+
+**Achado que muda a meta:** a segmentacao da legenda revisada e quase toda a
+do Premiere. Dos 86 blocos que o Premiere gerou na variacao 1, o Leo so juntou
+dois pares ("atencao no" + "que eu", "um super" + "homem"); ele corrige
+palavra, nao quebra. E a pausa medida pelo ElevenLabs NAO prediz a quebra dele
+(ha pausa de 0,3 s dentro de bloco e quebra com 0,02 s) — "quebrar nas pausas"
+foi testado e descartado. Meta real: blocos de 1 a 3 palavras que leiam bem.
+
+**O que mudou:** `partir` (segmentar.ts) virou programacao dinamica sobre a
+frase inteira (o guloso fazia "evita a hora" / "H"); `custoDoBloco` multa
+bloco terminando em artigo/preposicao/conjuncao e palavra curta sozinha;
+`Preset.maxPalavras` (3 no ElevenLabs, sem limite no Premiere).
+
+**Medido contra o gabarito** (script de medida na conversa: alinha as palavras
+e compara onde cada lado quebra):
+
+| | blocos iguais aos do Leo | F1 das quebras |
+|---|---|---|
+| antes | 34/84 | 0,714 |
+| agora | 46/84 | 0,785 |
+
+Testado e descartado: multa por bloco longo no tempo (+1 bloco, ruido);
+`maxPalavras` 4 (pior). O que sobra de diferenca e arbitrio do Premiere
+("E sabe o que" / "ela pensa"), nao erro — nao perseguir com mais regra em
+cima de uma variacao so. Proximo ganho real: medir numa segunda variacao.
+
+## 2026-09-24 — transcricao pelo ElevenLabs
 
 **Por que:** a transcricao do Premiere erra palavras que mudam o sentido, e as
 regras deste plugin so corrigem a forma do texto. Teste real (variacao 1 do

@@ -50,78 +50,95 @@ function emFrases(palavras: readonly PalavraRevisada[], preset: Preset): Palavra
 const larguraDe = (palavras: readonly PalavraRevisada[]): number =>
   palavras.reduce((soma, p, i) => soma + p.text.length + (i > 0 ? 1 : 0), 0);
 
+const cabe = (palavras: readonly PalavraRevisada[], preset: Preset): boolean =>
+  larguraDe(palavras) <= preset.maxCaracteres && palavras.length <= preset.maxPalavras;
+
 /**
- * Parte uma frase que nao cabe em uma linha.
+ * Artigo, preposicao, conjuncao e pronome atono puxam a palavra seguinte:
+ * "tratar o" / "que precisa" deixa o leitor esperando o resto no bloco de baixo.
+ */
+const PENDURADAS: ReadonlySet<string> = new Set([
+  "o", "a", "os", "as", "um", "uma", "uns", "umas",
+  "de", "do", "da", "dos", "das", "em", "no", "na", "nos", "nas",
+  "ao", "à", "por", "pelo", "pela", "pra", "pro", "com", "sem",
+  "me", "te", "se", "lhe", "meu", "minha", "seu", "sua",
+  "e", "ou", "mas", "que", "porque",
+]);
+
+/**
+ * Quanto custa por um bloco na tela. Menor e melhor.
  *
- * Guloso da esquerda: pega o maior prefixo que cabe, depois recua ate o melhor
- * ponto de quebra dentro do que cabe. Recuar importa — quebrar no limite exato
- * do orcamento separa artigo de substantivo e deixa bloco de uma palavra so.
+ * Cada bloco custa 1, entao o custo total empurra para menos blocos, mais
+ * cheios; o resto sao os descontos e as multas de cada ponto de quebra.
+ */
+function custoDoBloco(
+  bloco: readonly PalavraRevisada[],
+  fechaAFrase: boolean,
+  preset: Preset,
+  cortes: readonly number[]
+): number {
+  const ultima = bloco[bloco.length - 1];
+  if (ultima === undefined) return Infinity;
+  let custo = 1;
+
+  // Palavra curta sozinha pisca na tela ("H", "no"). Palavra longa sozinha
+  // ("circulação", "telemedicina") e comum na legenda revisada do editor.
+  if (bloco.length === 1 && nucleo(ultima.text).corpo.length < 4) custo += 2;
+
+  if (fechaAFrase) return custo;
+
+  if (PENDURADAS.has(nucleo(ultima.text).corpo.toLowerCase())) custo += 3;
+
+  // Pontuacao ja e uma pausa: quebrar ali soa natural.
+  if (/[.,;:!?]$/.test(ultima.text)) custo -= 1.5;
+
+  // Corte de video dentro da tolerancia: o diferencial do produto.
+  if (cortes.some((c) => Math.abs(c - ultima.fim) <= preset.toleranciaCorteSegundos)) custo -= 2;
+
+  return custo;
+}
+
+/**
+ * Parte uma frase que nao cabe em um bloco.
  *
- * O corte de video entra aqui como preferencia, nunca como obrigacao: a ordem
- * de prioridade da secao 26 da spec poe timing da fala acima da harmonizacao
- * com cortes, e o orcamento de caracteres e hard constraint. Um corte fora do
- * que cabe simplesmente nao e considerado.
+ * Programacao dinamica: de todas as formas de partir, fica a de menor custo
+ * somado. Olhar a frase inteira importa — o guloso da esquerda que existia
+ * aqui enchia o primeiro bloco e deixava a sobra onde caisse ("evita a hora" /
+ * "H", "sexual masculina há" / "mais de 10" / "anos").
+ *
+ * O corte de video entra como preferencia, nunca como obrigacao: a ordem de
+ * prioridade da secao 26 da spec poe timing da fala acima da harmonizacao com
+ * cortes, e o orcamento do bloco e hard constraint.
  */
 function partir(
   frase: readonly PalavraRevisada[],
   preset: Preset,
   cortes: readonly number[] = []
 ): PalavraRevisada[][] {
-  if (larguraDe(frase) <= preset.maxCaracteres) return [[...frase]];
+  if (cabe(frase, preset)) return [[...frase]];
 
-  const partes: PalavraRevisada[][] = [];
-  let resto = [...frase];
-
-  while (resto.length > 0) {
-    if (larguraDe(resto) <= preset.maxCaracteres) {
-      partes.push(resto);
-      break;
-    }
-
-    // Maior prefixo que cabe. Pelo menos uma palavra, sempre: uma palavra
-    // sozinha maior que o orcamento e melhor que um bloco vazio.
-    let maximo = 1;
-    for (let n = 1; n <= resto.length; n++) {
-      if (larguraDe(resto.slice(0, n)) > preset.maxCaracteres) break;
-      maximo = n;
-    }
-
-    let corte = maximo;
-    let melhor = -Infinity;
-
-    // Considera recuar ate a metade do prefixo. Menos que isso desperdicaria
-    // linha; mais apertado que isso deixa cortes de video fora de alcance e a
-    // harmonizacao nunca chega a acontecer.
-    const minimo = Math.max(1, Math.ceil(maximo * 0.5));
-    for (let n = minimo; n <= maximo; n++) {
-      const ultima = resto[n - 1];
-      if (ultima === undefined) continue;
-
-      let nota = 0;
-
-      // Quanto mais perto do limite, menos linha desperdicada.
-      nota += (n / maximo) * 2;
-
-      // Pontuacao ja e uma pausa: quebrar ali soa natural.
-      if (/[.,;:!?]$/.test(ultima.text)) nota += 3;
-
-      // Corte de video dentro da tolerancia: o diferencial do produto.
-      const distanciaCorte = Math.min(...cortes.map((c) => Math.abs(c - ultima.fim)), Infinity);
-      if (distanciaCorte <= preset.toleranciaCorteSegundos) nota += 4;
-
-      // Deixar uma palavra orfa no proximo bloco e feio.
-      if (resto.length - n === 1) nota -= 2;
-
-      if (nota > melhor) {
-        melhor = nota;
-        corte = n;
+  const n = frase.length;
+  // melhor[j]: menor custo para as j primeiras palavras; inicio[j]: onde
+  // comeca o ultimo bloco dessa solucao.
+  const melhor: number[] = [0];
+  const inicio: number[] = [0];
+  for (let j = 1; j <= n; j++) {
+    melhor[j] = Infinity;
+    inicio[j] = j - 1;
+    for (let i = j - 1; i >= 0; i--) {
+      const bloco = frase.slice(i, j);
+      // Uma palavra sozinha maior que o orcamento e melhor que nada.
+      if (bloco.length > 1 && !cabe(bloco, preset)) break;
+      const custo = (melhor[i] ?? Infinity) + custoDoBloco(bloco, j === n, preset, cortes);
+      if (custo < (melhor[j] ?? Infinity)) {
+        melhor[j] = custo;
+        inicio[j] = i;
       }
     }
-
-    partes.push(resto.slice(0, corte));
-    resto = resto.slice(corte);
   }
 
+  const partes: PalavraRevisada[][] = [];
+  for (let j = n; j > 0; j = inicio[j] ?? 0) partes.unshift(frase.slice(inicio[j] ?? 0, j));
   return partes;
 }
 

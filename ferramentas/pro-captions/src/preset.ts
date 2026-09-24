@@ -15,6 +15,11 @@ export interface Preset {
    * fica entre 21 e 23 e varia com a largura dos glifos, entao 20 da folga.
    */
   readonly maxCaracteres: number;
+  /**
+   * Palavras por bloco. A legenda revisada do editor (variacao 1 do Andro
+   * 19.09) tem 2,1 palavras por bloco e quase nenhum com mais de 3.
+   */
+  readonly maxPalavras: number;
   /** Silencio maior que isto quebra a frase mesmo sem `eos`. */
   readonly pausaQuebraSegundos: number;
   /** Distancia maxima para encostar uma quebra de bloco num corte. */
@@ -50,6 +55,7 @@ export interface Preset {
 
 export const PRESET_PADRAO: Preset = {
   maxCaracteres: 20,
+  maxPalavras: Infinity,
   pausaQuebraSegundos: 1.5,
   toleranciaCorteSegundos: 0.25,
   termosProtegidos: ["Androclinic", "Cristiano Estivalet"],
@@ -81,4 +87,5 @@ export const PRESET_ELEVENLABS: Preset = {
   ...PRESET_PADRAO,
   confiarNoAcento: true,
   quebrarEmPontuacao: true,
+  maxPalavras: 3,
 };

@@ -108,6 +108,21 @@ test("variacao 1 real: quebra nas virgulas, como a legenda revisada", () => {
   }
 });
 
+test("variacao 1 real: blocos curtos, sem artigo pendurado, como a legenda revisada", () => {
+  const blocos = gerarBlocos(palavrasDoElevenLabs(REAL) ?? [], [], PRESET_ELEVENLABS)
+    .filter((b) => b.estilo === "normal")
+    .map((b) => b.texto);
+  for (const b of blocos) {
+    assert.ok(b.split(" ").length <= 3, `mais de 3 palavras: "${b}"`);
+    assert.doesNotMatch(b, / (o|a|um|de|do|no|na|em|e|que)$/i, `terminou pendurado: "${b}"`);
+  }
+  // Antes: "evita a hora" / "H", "estresse e tratar o" / "que precisa".
+  assert.ok(!blocos.includes("H"));
+  for (const esperado of ["o problema", "a solução", "o que precisa", "um problema"]) {
+    assert.ok(blocos.includes(esperado), `faltou o bloco "${esperado}"`);
+  }
+});
+
 test("o preset padrao (Premiere) nao muda: virgula nao fecha bloco, e/é continua corrigido", () => {
   const palavras = "Ele e bom, ela sabe|".split(" ").map((bruto, i) => ({
     text: bruto.replace("|", ""),
