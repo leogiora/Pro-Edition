@@ -161,6 +161,8 @@ async function ouvirSequencia(registrar: Registrar, progresso: (t: string) => vo
 interface Movimento {
   readonly escala: unknown;
   readonly posicao: unknown;
+  /** O valor de Position como veio, para o log quando a leitura falhar. */
+  readonly bruto: unknown;
   readonly temLumetri: boolean;
   readonly lumetri: unknown;
 }
@@ -198,6 +200,16 @@ async function valorDe(p: ReturnType<ComponenteLike["getParam"]> | null): Promis
   return v && typeof v === "object" && "value" in (v as object) ? (v as { value: unknown }).value : v;
 }
 
+/**
+ * Position volta como PointF (x/y no prototipo) ou como lista [x, y] — o
+ * autosplit ja tinha visto as duas formas (yDe). Normaliza para {x, y}.
+ */
+function pontoDe(v: unknown): { x: number; y: number } | undefined {
+  const x = Array.isArray(v) ? Number(v[0]) : Number((v as { x?: unknown } | null)?.x);
+  const y = Array.isArray(v) ? Number(v[1]) : Number((v as { y?: unknown } | null)?.y);
+  return Number.isFinite(x) && Number.isFinite(y) ? { x, y } : undefined;
+}
+
 /** Zoom, posicao e a cor de cada clipe da V1 ANTES do corte — o corte recria os pedacos do arquivo. */
 async function lerMovimentos(v1: readonly ClipeLido[]): Promise<Movimento[]> {
   const saida: Movimento[] = [];
@@ -206,12 +218,23 @@ async function lerMovimentos(v1: readonly ClipeLido[]): Promise<Movimento[]> {
     const lumetri = await componente(c.item, MATCH_LUMETRI);
     saida.push({
       escala: motion ? await valorDe(param(motion, "Scale")).catch(() => undefined) : undefined,
-      posicao: motion ? await valorDe(param(motion, "Position")).catch(() => undefined) : undefined,
+      bruto: motion ? await valorDe(param(motion, "Position")).catch((e) => `erro: ${(e as Error).message}`) : undefined,
+      posicao: motion ? pontoDe(await valorDe(param(motion, "Position")).catch(() => undefined)) : undefined,
       temLumetri: lumetri !== null,
       lumetri,
     });
   }
   return saida;
+}
+
+/** O que um valor nativo tem, para o log: tipo, lista ou as chaves do prototipo. */
+function descrever(v: unknown): string {
+  if (v === null || v === undefined) return String(v);
+  if (Array.isArray(v)) return `lista ${JSON.stringify(v)}`;
+  if (typeof v !== "object") return `${typeof v} ${String(v)}`;
+  const chaves: string[] = [];
+  for (let o: object | null = v as object; o && o !== Object.prototype; o = Object.getPrototypeOf(o)) chaves.push(...Object.getOwnPropertyNames(o));
+  return `objeto {${[...new Set(chaves)].slice(0, 12).join(",")}}`;
 }
 
 const ehPadrao = (m: Movimento): boolean => {
@@ -244,6 +267,16 @@ async function reaplicarMovimentos(
 
   const acoes: Array<() => unknown> = [];
   const lumetri: Array<() => unknown> = [];
+  let comEscala = 0;
+  let comPosicao = 0;
+  // O que foi lido de cada clipe original: e o que diz se a leitura funcionou.
+  movimentos.forEach((m, i) => {
+    const pt = m.posicao as { x?: number; y?: number } | undefined;
+    registrar(
+      `  clipe ${i + 1}: escala ${String(m.escala)} · posição ${pt ? `${pt.x!.toFixed(3)},${pt.y!.toFixed(3)}` : `não lida (${descrever(m.bruto)})`}${m.temLumetri ? " · Lumetri" : ""}`,
+      "vazio"
+    );
+  });
   for (const [k, p] of pedacos.entries()) {
     const origem = originais.findIndex((o) => p.origemQ >= o.inicioQ && p.origemQ < o.fimQ);
     const m = movimentos[origem];
@@ -253,9 +286,13 @@ async function reaplicarMovimentos(
       const motion = await componente(item, MATCH_MOTION);
       const escala = motion ? param(motion, "Scale") : null;
       const posicao = motion ? param(motion, "Position") : null;
-      if (escala && Number.isFinite(Number(m.escala))) acoes.push(() => escala.createSetValueAction(escala.createKeyframe(Number(m.escala)), true));
+      if (escala && Number.isFinite(Number(m.escala))) {
+        comEscala++;
+        acoes.push(() => escala.createSetValueAction(escala.createKeyframe(Number(m.escala)), true));
+      }
       const pt = m.posicao as { x?: number; y?: number } | undefined;
       if (posicao && pt && Number.isFinite(pt.x) && Number.isFinite(pt.y)) {
+        comPosicao++;
         acoes.push(() => {
           const P = (ppro as { PointF: new (x?: number, y?: number) => { x: number; y: number } }).PointF;
           const ponto = new P(pt.x, pt.y);
@@ -274,7 +311,7 @@ async function reaplicarMovimentos(
     comTransacao(project as never, "Editar: zoom e posição dos pedaços", (adicionar) => {
       for (const a of acoes) adicionar(a());
     });
-    registrar(`zoom e posição devolvidos a ${pedacos.length} pedaços`, "ok");
+    registrar(`zoom devolvido a ${comEscala} e posição a ${comPosicao} de ${pedacos.length} pedaços`, "ok");
   }
   if (lumetri.length > 0) {
     // Experimental: a API aceita anexar um componente; se ela copiar o Lumetri

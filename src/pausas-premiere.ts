@@ -512,6 +512,25 @@ async function tudoNaV1eA1(): Promise<unknown[]> {
   return [...(await itensDa(sequence, true, 0)), ...(await itensDa(sequence, false, 0))];
 }
 
+const nomeDoItem = async (i: ItemLike) => ((await i.getProjectItem()) as { name?: string } | null)?.name ?? "?";
+
+/**
+ * Os outros canais da gravacao, por faixa de audio alem da A1 (A2 = [0]). O
+ * overwrite do arquivo poe cada canal numa faixa, mesmo que o editor tenha
+ * deixado so a A1 — gravacao dual mono voltava com a A2 cheia de pedacos.
+ */
+async function outrosCanais(nomes: ReadonlySet<string>): Promise<ItemLike[][]> {
+  const { sequence } = await ativa();
+  const total = await (sequence as { getAudioTrackCount: () => Promise<number> }).getAudioTrackCount();
+  const faixas: ItemLike[][] = [];
+  for (let f = 1; f < total; f++) {
+    const itens = await itensDa(sequence, false, f);
+    const deQuem = await Promise.all(itens.map(nomeDoItem));
+    faixas.push(itens.filter((_, k) => nomes.has(deQuem[k]!)));
+  }
+  return faixas;
+}
+
 /**
  * Esvazia a V1 e a A1 e coloca uma lista de pedacos, um por transacao, da
  * esquerda para a direita. Esvaziar antes e o que deixa os espacos entre os
@@ -541,8 +560,10 @@ async function colocarEmSequencia<T>(
     medida.msPremiere += Date.now() - t;
     medida.passos++;
   };
+  const nomes = new Set(await Promise.all((await itensDa((await ativa()).sequence, true, 0)).map(nomeDoItem)));
+  const canaisAntes = await outrosCanais(nomes);
   {
-    const velhos = await tudoNaV1eA1();
+    const velhos = [...(await tudoNaV1eA1()), ...canaisAntes.flat()];
     const { project, sequence } = await ativa();
     const editor = await ppro.SequenceEditor.getEditor(sequence);
     transacao(project, `${rotulo}: preparar`, (adicionar) => {
@@ -560,6 +581,14 @@ async function colocarEmSequencia<T>(
     });
     aoAvancar(k + 1, pedacos.length);
     if (k === 0) await depoisDoPrimeiro();
+  }
+
+  // Faixa onde o editor tinha tirado o canal continua sem ele.
+  const sobras = (await outrosCanais(nomes)).flatMap((itens, f) => (canaisAntes[f]?.length ? [] : itens));
+  if (sobras.length > 0) {
+    const { project, sequence } = await ativa();
+    const editor = await ppro.SequenceEditor.getEditor(sequence);
+    transacao(project, `${rotulo}: tirar canais que não estavam`, (adicionar) => adicionar(acaoRemover(editor, sobras)));
   }
 }
 

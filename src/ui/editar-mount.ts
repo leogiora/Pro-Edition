@@ -45,8 +45,8 @@ export function mount(root: HTMLElement): void {
         `${relogio(e.duracaoS)} · ${e.clipesV1} clipe(s) na V1 · ${e.variacoes} variação(ões) · ` +
         `${e.brollsAcimaDaV1} B-roll(s) acima da V1 · ${e.faixasDeLegenda} faixa(s) de legenda`;
       // Reconhecer o que ja foi feito: B-roll e legenda que ja estao la nao entram de novo por padrao.
-      if (e.brollsAcimaDaV1 > 0) (pega("edBroll") as HTMLElement & { checked?: boolean }).checked = false;
-      if (e.faixasDeLegenda > 0) (pega("edLegendas") as HTMLElement & { checked?: boolean }).checked = false;
+      (pega("edBroll") as HTMLElement & { checked?: boolean }).checked = e.brollsAcimaDaV1 === 0;
+      (pega("edLegendas") as HTMLElement & { checked?: boolean }).checked = e.faixasDeLegenda === 0;
       if (!e.temChave) registrar("Sem chave do ElevenLabs: salve a chave no Pro Captions antes de editar.", "aviso");
       estado("pronto", "ok");
     } catch (erro) {
