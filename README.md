@@ -1,6 +1,8 @@
 # Pro Edition
 
-Painel UXP para o Premiere Pro que reúne as ferramentas de edição num lugar só:
+Painel UXP para o Premiere Pro que reúne as ferramentas de edição num lugar só.
+O **programa** `app/` é o Pro Edition fora do Premiere (ver `app/LEIA-ME.md`).
+
 
 | Grupo   | Ferramenta      | Código                      |
 |---------|-----------------|-----------------------------|
@@ -21,6 +23,7 @@ com o histórico inteiro.
 Pro-Edition/                 raiz = o plugin que o Premiere carrega (manifest.json, dist/)
 ├─ src/                      tela inicial, navegação, Podcast AutoCut e Auto Split
 ├─ tests/
+├─ app/                      o programa (Electron): gera .srt e sequências XML
 ├─ ferramentas/
 │  ├─ auto-broll/            também continua funcionando como plugin sozinho
 │  └─ pro-captions/          idem

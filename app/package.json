@@ -1,0 +1,21 @@
+{
+  "name": "pro-edition-app",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Pro Edition fora do Premiere: um programa que gera legendas e sequencias (XML) que o Premiere abre prontas.",
+  "main": "dist/main.cjs",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "start": "npm run build && electron .",
+    "check": "tsc --noEmit",
+    "test": "node --test \"tests/*.test.ts\"",
+    "verify": "npm run check && npm test && npm run build"
+  },
+  "devDependencies": {
+    "@types/node": "^24.13.6",
+    "electron": "^44.4.5",
+    "esbuild": "^0.25.12",
+    "typescript": "^5.9.3"
+  }
+}

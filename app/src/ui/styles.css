@@ -1,0 +1,140 @@
+/* Mesma familia visual do painel Pro Edition (tokens em src/ui/seletor.css da raiz). */
+:root {
+  --bg-0: #0d0f13;
+  --bg-1: #14171d;
+  --bg-2: #1a1e26;
+  --bg-3: #202631;
+  --line: #232830;
+  --line-2: #333b47;
+  --txt: #eceef2;
+  --txt-2: #9098a6;
+  --txt-3: #5f6774;
+  --azul: #3b82f6;
+  --verde: #4ecb8d;
+  --ambar: #eeab4c;
+  --vermelho: #ff7d71;
+  --raio: 10px;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+
+html, body { height: 100%; margin: 0; }
+
+body {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-0);
+  color: var(--txt);
+  font: 14px/1.45 Inter, "Segoe UI", sans-serif;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 7px 14px;
+  cursor: pointer;
+}
+button:hover { background: var(--bg-3); border-color: var(--line-2); }
+button:focus-visible, input:focus-visible, .soltar:focus-visible { outline: 2px solid var(--azul); outline-offset: 2px; }
+button.primario { background: var(--txt); color: var(--bg-0); border-color: var(--txt); font-weight: 600; }
+button.primario:hover { background: #fff; }
+button:disabled { opacity: .45; cursor: default; }
+
+/* ------------------------------------------------------------------ topo */
+.topo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 48px;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg-1);
+}
+.marca { font-weight: 700; letter-spacing: .01em; }
+.titulo { color: var(--txt-2); }
+.migalha { background: none; border: none; padding: 6px 4px; color: var(--txt-2); }
+.migalha:hover { background: none; color: var(--txt); }
+.icone { margin-left: auto; background: none; border: none; font-size: 18px; color: var(--txt-2); padding: 4px 8px; }
+.icone:hover { background: var(--bg-2); color: var(--txt); }
+
+.tela { flex: 1; overflow: auto; padding: 24px; }
+
+/* ------------------------------------------------------------------ hall */
+.grupo + .grupo { margin-top: 28px; }
+.grupo h2 { margin: 0 0 12px; font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--txt-3); }
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
+.card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  min-height: 118px;
+  padding: 16px;
+  text-align: left;
+  background: var(--bg-1);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--acento, var(--line-2));
+  border-radius: var(--raio);
+}
+.card-nome { font-weight: 600; font-size: 15px; }
+.card-desc { color: var(--txt-2); font-size: 13px; }
+.card.em-breve { opacity: .55; }
+.selo { margin-top: auto; font-size: 11px; color: var(--txt-3); border: 1px solid var(--line-2); border-radius: 999px; padding: 1px 8px; }
+
+/* ------------------------------------------------------------- legendas */
+.soltar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 28px 16px;
+  text-align: center;
+  border: 1.5px dashed var(--line-2);
+  border-radius: var(--raio);
+  background: var(--bg-1);
+  cursor: pointer;
+}
+.soltar span { color: var(--txt-2); font-size: 13px; }
+.soltar.sobre { border-color: var(--ambar); background: var(--bg-2); }
+.soltar.compacto { flex-direction: row; justify-content: center; padding: 10px 16px; }
+.soltar.compacto span { display: none; }
+
+.linha-estado { display: flex; gap: 12px; align-items: baseline; margin: 14px 2px; min-height: 20px; }
+.arquivo { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.estado { color: var(--txt-2); }
+.estado.erro { color: var(--vermelho); }
+.estado.ok { color: var(--verde); }
+.estado.ativo::after { content: " …"; }
+
+.resumo { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); position: sticky; top: -24px; background: var(--bg-0); z-index: 1; }
+.espaco { flex: 1; }
+.salvos { color: var(--verde); margin: 10px 0 0; }
+.salvos button { margin-left: 8px; padding: 3px 10px; font-size: 12px; }
+
+.blocos { list-style: none; margin: 8px 0 0; padding: 0; }
+.bloco { display: grid; grid-template-columns: 76px 1fr 38px; gap: 12px; align-items: center; padding: 4px 8px; border-radius: 6px; }
+.bloco:hover { background: var(--bg-1); }
+.bloco time { color: var(--txt-3); font-variant-numeric: tabular-nums; font-size: 12px; }
+.bloco input { width: 100%; font: inherit; color: var(--txt); background: transparent; border: 1px solid transparent; border-radius: 6px; padding: 4px 8px; }
+.bloco input:hover { border-color: var(--line); }
+.bloco input:focus { border-color: var(--line-2); background: var(--bg-2); outline: none; }
+.bloco .conta { color: var(--txt-3); font-size: 12px; text-align: right; font-variant-numeric: tabular-nums; }
+.bloco .conta.estourou { color: var(--vermelho); font-weight: 600; }
+.bloco.preco input { color: var(--ambar); font-weight: 700; }
+.bloco.revisar { background: rgba(238, 171, 76, .08); }
+.bloco .motivo { grid-column: 2 / 4; color: var(--ambar); font-size: 12px; padding: 0 8px 4px; }
+
+/* ------------------------------------------------------------- config */
+dialog { background: var(--bg-1); color: var(--txt); border: 1px solid var(--line-2); border-radius: var(--raio); padding: 20px; width: min(440px, 90vw); }
+dialog::backdrop { background: rgba(0, 0, 0, .6); }
+dialog h2 { margin: 0 0 16px; font-size: 16px; }
+dialog label { display: block; color: var(--txt-2); font-size: 13px; margin-bottom: 6px; }
+dialog input { width: 100%; font: inherit; color: var(--txt); background: var(--bg-0); border: 1px solid var(--line-2); border-radius: 8px; padding: 8px 10px; }
+.dica { color: var(--txt-3); font-size: 12px; margin: 8px 0 0; }
+.dica.erro { color: var(--vermelho); }
+.dica.ok { color: var(--verde); }
+.acoes { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }

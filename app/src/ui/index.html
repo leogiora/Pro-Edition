@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'" />
+  <title>Pro Edition</title>
+  <!--STYLE-->
+</head>
+<body>
+  <header class="topo">
+    <button id="voltar" class="migalha" hidden>← Pro Edition</button>
+    <span id="marca" class="marca">Pro Edition</span>
+    <span id="titulo" class="titulo"></span>
+    <button id="abrirConfig" class="icone" title="Configurações" aria-label="Configurações">⚙</button>
+  </header>
+
+  <main id="hall" class="tela">
+    <section class="grupo">
+      <h2>Pro Ads</h2>
+      <div class="cards">
+        <button class="card" data-abre="legendas" style="--acento:#eeab4c">
+          <span class="card-nome">Legendas</span>
+          <span class="card-desc">Transcreve com o ElevenLabs e gera o .srt no seu padrão, com os preços num arquivo separado.</span>
+        </button>
+        <div class="card em-breve">
+          <span class="card-nome">Auto Pausas</span>
+          <span class="card-desc">Tira as pausas e os respiros das brutas e entrega a sequência pronta para o Premiere.</span>
+          <span class="selo">em construção</span>
+        </div>
+        <div class="card em-breve">
+          <span class="card-nome">Auto B-roll</span>
+          <span class="card-desc">Escolhe o B-roll pelo que o doutor fala e coloca na V2.</span>
+          <span class="selo">em construção</span>
+        </div>
+        <div class="card em-breve">
+          <span class="card-nome">Auto Split</span>
+          <span class="card-desc">Doutor em cima, B-roll embaixo, com o enquadramento de cada arquivo.</span>
+          <span class="selo">em construção</span>
+        </div>
+      </div>
+    </section>
+    <section class="grupo">
+      <h2>Podcast</h2>
+      <div class="cards">
+        <div class="card em-breve">
+          <span class="card-nome">Podcast AutoCut</span>
+          <span class="card-desc">Duas câmeras, dois microfones: corta para quem está falando.</span>
+          <span class="selo">em construção</span>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <main id="legendas" class="tela" hidden>
+    <div id="soltar" class="soltar" tabindex="0" role="button">
+      <strong>Arraste o vídeo ou o áudio da sequência</strong>
+      <span>exportado desde o começo da sequência, para o tempo da legenda bater · ou clique para escolher</span>
+    </div>
+    <div class="linha-estado">
+      <span id="arquivo" class="arquivo"></span>
+      <span id="estado" class="estado"></span>
+    </div>
+    <div id="resultado" hidden>
+      <div class="resumo">
+        <span id="resumo"></span>
+        <span class="espaco"></span>
+        <button id="salvar" class="primario">Salvar .srt</button>
+      </div>
+      <p id="salvos" class="salvos" hidden></p>
+      <ol id="blocos" class="blocos"></ol>
+    </div>
+  </main>
+
+  <dialog id="config">
+    <form method="dialog">
+      <h2>Configurações</h2>
+      <label for="chave">Chave do ElevenLabs</label>
+      <input id="chave" type="password" placeholder="sk_..." autocomplete="off" />
+      <p id="chaveEstado" class="dica">A chave fica guardada cifrada neste computador.</p>
+      <div class="acoes">
+        <button value="fechar">Fechar</button>
+        <button id="salvarChave" class="primario" value="">Salvar chave</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!--SCRIPT-->
+</body>
+</html>

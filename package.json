@@ -9,8 +9,8 @@
     "watch": "node scripts/build.mjs --watch",
     "check": "tsc --noEmit",
     "test": "node --test \"tests/*.test.ts\"",
-    "verify": "npm --prefix ferramentas/auto-broll run verify && npm --prefix ferramentas/pro-captions run verify && npm run check && npm test && npm run build",
-    "preparar": "npm ci && npm --prefix ferramentas/auto-broll ci && npm --prefix ferramentas/pro-captions ci"
+    "verify": "npm --prefix ferramentas/auto-broll run verify && npm --prefix app run verify && npm --prefix ferramentas/pro-captions run verify && npm run check && npm test && npm run build",
+    "preparar": "npm ci && npm --prefix ferramentas/auto-broll ci && npm --prefix ferramentas/pro-captions ci && npm --prefix app ci && node app/node_modules/electron/install.js"
   },
   "devDependencies": {
     "@types/node": "^24.13.3",
