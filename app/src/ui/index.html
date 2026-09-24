@@ -26,11 +26,10 @@
           <span class="card-nome">Legendas</span>
           <span class="card-desc">Transcreve com o ElevenLabs e gera o .srt no seu padrão, com os preços num arquivo separado.</span>
         </button>
-        <div class="card em-breve">
+        <button class="card" data-abre="broll" style="--acento:#8d82f5">
           <span class="card-nome">Auto B-roll</span>
-          <span class="card-desc">Escolhe o B-roll pelo que o doutor fala e coloca na V2.</span>
-          <span class="selo">em construção</span>
-        </div>
+          <span class="card-desc">Escolhe o B-roll pelo que o doutor fala, com o que o painel já aprendeu, e coloca na V2.</span>
+        </button>
         <div class="card em-breve">
           <span class="card-nome">Auto Split</span>
           <span class="card-desc">Doutor em cima, B-roll embaixo, com o enquadramento de cada arquivo.</span>
@@ -72,6 +71,28 @@
     </section>
   </main>
 
+  <main id="broll" class="tela" hidden>
+    <div class="soltar" tabindex="0" role="button" data-escolher="xml">
+      <strong>Arraste a sequência exportada do Premiere (.xml)</strong>
+      <span>a sequência já sem pausas, com o doutor na V1 · ou clique para escolher</span>
+    </div>
+    <div class="linha-estado">
+      <span class="arquivo"></span>
+      <span class="estado"></span>
+    </div>
+    <section id="brollEntrada" class="painel" hidden>
+      <p id="brollResumo" class="grande"></p>
+      <p id="brollOrigem" class="dica"></p>
+      <button id="brollRodar" class="primario">Colocar B-rolls</button>
+    </section>
+    <section id="brollResultado" class="painel" hidden>
+      <p id="brollFeito" class="grande"></p>
+      <ol id="brollLista" class="colocados"></ol>
+      <details id="brollDescartes"><summary></summary><ul class="linhas"></ul></details>
+      <p id="brollSalvos" class="salvos"></p>
+    </section>
+  </main>
+
   <main id="legendas" class="tela" hidden>
     <div class="soltar" tabindex="0" role="button" data-escolher="midia">
       <strong>Arraste o vídeo ou o áudio da sequência</strong>
@@ -98,6 +119,11 @@
       <label for="chave">Chave do ElevenLabs</label>
       <input id="chave" type="password" placeholder="sk_..." autocomplete="off" />
       <p id="chaveEstado" class="dica">A chave fica guardada cifrada neste computador.</p>
+      <label class="rotulo-pasta">Pasta dos B-rolls</label>
+      <div class="pasta">
+        <span id="pastaBroll" class="caminho"></span>
+        <button id="trocarPasta" type="button">Trocar</button>
+      </div>
       <div class="acoes">
         <button value="fechar">Fechar</button>
         <button id="salvarChave" class="primario" value="">Salvar chave</button>

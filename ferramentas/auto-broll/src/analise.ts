@@ -10,6 +10,7 @@ import {
   reconstruirTranscricao,
   type ClipeComOrigem,
   type Frase,
+  type PalavraEditada,
   type TranscricaoOrigem,
 } from "./transcript.ts";
 
@@ -121,8 +122,6 @@ function porLigacaoAprendida(
 
 export function analisar(entrada: EntradaAnalise): Analise {
   const avisos: string[] = [];
-  const duracaoMinima = entrada.duracaoMinima ?? DURACAO_MINIMA;
-  const scoreMinimo = entrada.scoreMinimo ?? SCORE_MINIMO;
 
   const transcricoes = new Map<string, TranscricaoOrigem>();
   for (const [nome, json] of entrada.transcricoesJson) {
@@ -136,6 +135,22 @@ export function analisar(entrada: EntradaAnalise): Analise {
   }
 
   const palavras = reconstruirTranscricao(entrada.clipes, transcricoes);
+  const r = analisarPalavras(palavras, entrada);
+  return { ...r, avisos: [...avisos, ...r.avisos] };
+}
+
+/**
+ * A mesma analise a partir de palavras ja no tempo da sequencia — o caminho
+ * do programa Pro Edition, onde a fala vem do ElevenLabs e nao da transcricao
+ * do Premiere.
+ */
+export function analisarPalavras(
+  palavras: readonly PalavraEditada[],
+  entrada: Omit<EntradaAnalise, "clipes" | "transcricoesJson">
+): Analise {
+  const avisos: string[] = [];
+  const duracaoMinima = entrada.duracaoMinima ?? DURACAO_MINIMA;
+  const scoreMinimo = entrada.scoreMinimo ?? SCORE_MINIMO;
   const frases = agruparEmFrases(palavras);
 
   const conceitos: Conceito[] = conceitosDeArquivos(entrada.biblioteca);

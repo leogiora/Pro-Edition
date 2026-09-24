@@ -10,6 +10,7 @@ import { join } from "node:path";
 
 import { Config } from "./motor/config.ts";
 import { gerarLegendas, salvarSrts, type BlocoLegenda } from "./motor/legendas.ts";
+import { abrirParaBroll, rodarBroll } from "./motor/broll.ts";
 import { abrirParaPausas, rodarPausas } from "./motor/pausas.ts";
 
 const cfg = new Config(app.getPath("userData"));
@@ -34,7 +35,9 @@ function criarJanela(): void {
   janela.removeMenu();
   void janela.loadFile(join(__dirname, "index.html"));
 
-  janela.webContents.once("did-finish-load", () => {
+  janela.webContents.once("did-finish-load", async () => {
+    // So para conferir a tela sem clicar (ex.: abrir um card antes do arquivo chegar).
+    if (process.env.PRO_EDITION_JS !== undefined) await janela.webContents.executeJavaScript(process.env.PRO_EDITION_JS);
     const arquivo = arquivoDaLinha();
     if (arquivo !== undefined) janela.webContents.send("abrir", arquivo);
 
@@ -54,6 +57,11 @@ const FILTROS = {
     title: "Vídeo ou áudio da sequência",
     properties: ["openFile"] as Array<"openFile" | "multiSelections">,
     filters: [{ name: "Vídeo, áudio ou transcrição", extensions: MIDIA }],
+  },
+  xml: {
+    title: "Sequência exportada do Premiere (.xml)",
+    properties: ["openFile"] as Array<"openFile" | "multiSelections">,
+    filters: [{ name: "Sequência XML", extensions: ["xml"] }],
   },
   sequencia: {
     title: "Sequência exportada do Premiere (.xml) ou as brutas",
@@ -93,6 +101,24 @@ ipcMain.handle("pausas:abrir", (_e, caminhos: string[]) => abrirParaPausas(camin
 ipcMain.handle("pausas:rodar", (evento, caminhos: string[], opcoes: { legendas: boolean }) =>
   rodarPausas(caminhos, opcoes, cfg, (texto) => evento.sender.send("aviso", texto))
 );
+
+ipcMain.handle("broll:abrir", (_e, caminho: string) => abrirParaBroll(caminho, cfg));
+
+ipcMain.handle("broll:rodar", (evento, caminho: string) =>
+  rodarBroll(caminho, cfg, (texto) => evento.sender.send("aviso", texto))
+);
+
+ipcMain.handle("preferencias", () => cfg.preferencias());
+
+ipcMain.handle("broll:pasta", async (evento) => {
+  const janela = BrowserWindow.fromWebContents(evento.sender);
+  const opcoes = { title: "Pasta dos B-rolls", properties: ["openDirectory" as const] };
+  const r = janela === null ? await dialog.showOpenDialog(opcoes) : await dialog.showOpenDialog(janela, opcoes);
+  const pasta = r.canceled ? undefined : r.filePaths[0];
+  if (pasta === undefined) return null;
+  await cfg.salvarPreferencias({ pastaBroll: pasta });
+  return pasta;
+});
 
 // Uma janela so: abrir outro arquivo pelo Windows manda para a que ja existe.
 if (!app.requestSingleInstanceLock()) {

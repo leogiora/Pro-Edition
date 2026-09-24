@@ -23,6 +23,7 @@ import {
 } from "../../src/pausas.ts";
 import { PISO_DB } from "../../src/wav.ts";
 import type { PalavraEditada } from "../../ferramentas/pro-captions/src/transcript.ts";
+import { palavrasNaSequencia } from "./sequencia.ts";
 import type { Clipe, Sequencia } from "./xml.ts";
 
 export { MARGEM_PADRAO_S };
@@ -92,14 +93,11 @@ export function tirarPausas(
   const clipesQ: ClipeNaTimeline[] = v1.map((c, i) => ({ inicioQ: c.inicioQ, fimQ: c.fimQ, midiaQ: c.entradaQ, fonte: i }));
   const duracaoQ = Math.max(...v1.map((c) => c.fimQ));
 
-  // Palavras no tempo da sequencia: as que comecam dentro do trecho de cada clipe.
-  const naTimeline: Palavra[] = v1.flatMap((c) => {
-    const de = c.entradaQ / fps;
-    const ate = (c.entradaQ + c.fimQ - c.inicioQ) / fps;
-    return falaDe(c)
-      .filter((p) => p.inicio >= de && p.inicio < ate)
-      .map((p) => ({ texto: p.text, inicio: c.inicioQ / fps + (p.inicio - de), fim: c.inicioQ / fps + (Math.min(p.fim, ate) - de) }));
-  });
+  const naTimeline: Palavra[] = palavrasNaSequencia(v1, fps, (c) => fontes.get(c)?.palavras ?? []).map((p) => ({
+    texto: p.text,
+    inicio: p.inicio,
+    fim: p.fim,
+  }));
 
   const db = montarDaMidia(v1.map((c) => [...fonteDe(c).niveis]), JANELA_S, clipesQ, fps, duracaoQ, PISO_DB);
   if (db === null) throw new Error("O áudio lido não cobre a sequência inteira. Algum arquivo está mais curto que o clipe?");

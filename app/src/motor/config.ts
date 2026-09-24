@@ -10,8 +10,41 @@ import { safeStorage } from "electron";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
+export interface Preferencias {
+  /** Pasta da biblioteca de B-rolls. */
+  readonly pastaBroll?: string;
+}
+
 export class Config {
-  constructor(private readonly pasta: string) {}
+  constructor(readonly pasta: string) {}
+
+  async preferencias(): Promise<Preferencias> {
+    try {
+      return JSON.parse(await readFile(join(this.pasta, "preferencias.json"), "utf8")) as Preferencias;
+    } catch {
+      return {};
+    }
+  }
+
+  async salvarPreferencias(mudancas: Preferencias): Promise<void> {
+    await mkdir(this.pasta, { recursive: true });
+    const atual = await this.preferencias();
+    await writeFile(join(this.pasta, "preferencias.json"), JSON.stringify({ ...atual, ...mudancas }, null, 2), "utf8");
+  }
+
+  /** Um JSON qualquer da pasta do programa (caches). null se nao existe ou quebrou. */
+  async lerJson(nome: string): Promise<unknown> {
+    try {
+      return JSON.parse(await readFile(join(this.pasta, nome), "utf8"));
+    } catch {
+      return null;
+    }
+  }
+
+  async gravarJson(nome: string, dados: unknown): Promise<void> {
+    await mkdir(this.pasta, { recursive: true });
+    await writeFile(join(this.pasta, nome), JSON.stringify(dados), "utf8");
+  }
 
   private get arquivoChave(): string {
     return join(this.pasta, "elevenlabs-chave.bin");

@@ -43,6 +43,29 @@ da sequência nova, então a legenda vem junto sem transcrever de novo.
 Teste com dado real (áudio da variação 1, já limpo pelo Leo): 58,5 s → 57,3 s,
 11 cortes, 174 de 174 palavras presentes.
 
+### Auto B-roll
+
+Entra o XML da sequência (já sem pausas). A fala vem da transcrição de cada
+arquivo da V1 (a mesma que o Auto Pausas pagou) levada ao tempo da sequência
+(`src/sequencia.ts`). O núcleo é o do painel (`analisarPalavras`, `planejar`,
+`semSobrepor`), com o aprendizado que o painel juntou — lido da pasta
+`PluginData` mais recente (Premiere 25/26, Pro Edition ou Auto B-roll):
+`aprendizado.json`, `ligacoes.json`, `sinonimos.json`, `intensidade.json`,
+`config.json` (pasta da biblioteca). Só leitura: o **Aprender** (ver o que o Leo
+manteve ou apagou) continua no painel até ser portado.
+
+A biblioteca é sondada pelo ffprobe uma vez (cache `biblioteca.json` na pasta
+do programa). B-roll entra na V2 cobrindo a tela, sem áudio; o que já está na
+V2 fica e nada entra por cima.
+
+Dado real (variação 1, biblioteca de 251 arquivos, aprendizado do Leo): 6
+B-rolls — Frustrado, Hormônio em "hormônio", Doutor em "Eu sou médico",
+Consulta médica em "A consulta aqui" — e 9 recusas com motivo.
+
+**Limite:** o XML de saída leva a V1/A1 como o leitor entendeu (sem Lumetri).
+Se o Premiere perder a cor, copiar só a V2 da sequência importada para a
+sequência original (mesmo tempo, cola no 00:00 com a V2 alvo).
+
 O núcleo de cada ferramenta **não é copiado**: o programa importa direto de
 `ferramentas/pro-captions/src`, `ferramentas/auto-broll/src` e `src/` da raiz.
 Só a ponta muda (ffmpeg no lugar do export do Premiere, XML no lugar da API).
@@ -58,7 +81,7 @@ Legenda (é o "Abrir com" do Windows).
 | 0 | Prova do XML no Premiere (`scripts/prova-xml.ts`) | **esperando o Leo importar** |
 | 1 | Programa + Legendas (arrasta vídeo/áudio → revisa → `.srt`) | feito (2026-09-24) |
 | 2 | Auto Pausas: XML exportado do Premiere (ou brutas) → XML sem pausas + legenda | feito (2026-09-24), falta rodar com a chave |
-| 3 | Auto B-roll: B-roll pela fala, na V2 | a fazer |
+| 3 | Auto B-roll: XML → B-roll pela fala na V2, com o aprendizado do painel | feito (2026-09-24); o Aprender ainda é do painel |
 | 4 | Auto Split, trilha e fim de cada variação, crop/flop | a fazer |
 | 5 | Podcast AutoCut (2 câmeras, 2 microfones) | a fazer |
 | 6 | Instalador `.exe` (Leo e Felipe) com ffmpeg junto | a fazer |

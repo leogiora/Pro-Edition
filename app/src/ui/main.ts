@@ -36,8 +36,8 @@ const duracao = (s: number): string => {
 
 /* ---------------------------------------------------------------- telas */
 
-type Tela = "hall" | "pausas" | "legendas";
-const TITULOS: Record<Tela, string> = { hall: "", pausas: "Auto Pausas", legendas: "Legendas" };
+type Tela = "hall" | "pausas" | "broll" | "legendas";
+const TITULOS: Record<Tela, string> = { hall: "", pausas: "Auto Pausas", broll: "Auto B-roll", legendas: "Legendas" };
 let tela: Tela = "hall";
 
 function abrir(nova: Tela): void {
@@ -133,6 +133,68 @@ $<HTMLButtonElement>("pausasRodar").addEventListener("click", async () => {
   }
 });
 
+/* ----------------------------------------------------------- auto b-roll */
+
+let broll = "";
+
+async function abrirBroll(caminho: string): Promise<void> {
+  abrir("broll");
+  broll = caminho;
+  $("brollEntrada").hidden = true;
+  $("brollResultado").hidden = true;
+  linha("broll").arquivo.textContent = nomeDe(caminho);
+  $("broll").querySelector(".soltar")?.classList.add("compacto");
+  estado("broll", "lendo", "ativo");
+  try {
+    const e = await pro.abrirBroll(caminho);
+    $("brollResumo").replaceChildren(
+      `${e.nome} · `,
+      Object.assign(document.createElement("strong"), { textContent: duracao(e.duracaoS) }),
+      e.jaNaV2 > 0 ? ` · ${e.jaNaV2} B-roll(s) já na V2 ficam onde estão` : ""
+    );
+    $("brollOrigem").textContent = `Biblioteca: ${e.pastaBroll} · ${e.origem}`;
+    $("brollEntrada").hidden = false;
+    estado("broll", e.avisos.length > 0 ? e.avisos.join(" · ") : "pronto", e.avisos.length > 0 ? "" : "ok");
+  } catch (erro) {
+    estado("broll", mensagem(erro), "erro");
+  }
+}
+
+$<HTMLButtonElement>("brollRodar").addEventListener("click", async () => {
+  const botao = $<HTMLButtonElement>("brollRodar");
+  botao.disabled = true;
+  $("brollResultado").hidden = true;
+  estado("broll", "começando", "ativo");
+  try {
+    const r = await pro.rodarBroll(broll);
+    $("brollFeito").textContent = `${r.colocados.length} B-roll(s) colocados na V2`;
+    $("brollLista").replaceChildren(
+      ...r.colocados.map((c) => {
+        const li = document.createElement("li");
+        li.append(
+          Object.assign(document.createElement("time"), { textContent: `${relogio(c.inicio)}` }),
+          Object.assign(document.createElement("span"), { className: "arq", textContent: `${c.arquivo} · ${c.duracao.toFixed(1)} s` }),
+          Object.assign(document.createElement("span"), { className: "porque", textContent: c.motivo }),
+          Object.assign(document.createElement("span"), { className: "frase", textContent: `"${c.frase}"` })
+        );
+        return li;
+      })
+    );
+    const descartes = $("brollDescartes");
+    (descartes.querySelector("summary") as HTMLElement).textContent = `${r.descartes.length} sugestão(ões) que ficaram de fora`;
+    (descartes.querySelector("ul") as HTMLElement).replaceChildren(
+      ...[...r.avisos, ...r.descartes].map((t) => Object.assign(document.createElement("li"), { textContent: t }))
+    );
+    mostrarSalvos($("brollSalvos"), r.salvos);
+    $("brollResultado").hidden = false;
+    estado("broll", "no Premiere: Arquivo > Importar o .xml", "ok");
+  } catch (erro) {
+    estado("broll", mensagem(erro), "erro");
+  } finally {
+    botao.disabled = false;
+  }
+});
+
 /* ------------------------------------------------------------ legendas */
 
 const MAX_CARACTERES = 20;
@@ -216,16 +278,17 @@ $<HTMLButtonElement>("salvar").addEventListener("click", async () => {
 
 /* ------------------------------------------------- arquivos que chegam */
 
-/** .xml e brutas vao para o Auto Pausas; audio, video solto e .json para a Legenda. */
+/** .xml e brutas vao para o Auto Pausas (ou o B-roll, se aberto); audio, video solto e .json para a Legenda. */
 function receber(caminhos: string[]): void {
   if (caminhos.length === 0) return;
-  const xml = caminhos.some((c) => /\.xml$/i.test(c));
-  if (tela === "pausas" || xml || caminhos.length > 1) void abrirPausas(caminhos);
+  const xml = caminhos.find((c) => /\.xml$/i.test(c));
+  if (tela === "broll" && xml !== undefined) void abrirBroll(xml);
+  else if (tela === "pausas" || xml !== undefined || caminhos.length > 1) void abrirPausas(caminhos);
   else void gerar(caminhos[0]!);
 }
 
 for (const zona of document.querySelectorAll<HTMLElement>("[data-escolher]")) {
-  const escolher = async (): Promise<void> => receber(await pro.escolher(zona.dataset.escolher as "midia" | "sequencia"));
+  const escolher = async (): Promise<void> => receber(await pro.escolher(zona.dataset.escolher as "midia" | "sequencia" | "xml"));
   zona.addEventListener("click", () => void escolher());
   zona.addEventListener("keydown", (e) => {
     if (e.key === "Enter" || e.key === " ") void escolher();
@@ -258,9 +321,18 @@ async function atualizarChave(): Promise<void> {
   dica.className = `dica${tem ? " ok" : ""}`;
 }
 
+async function atualizarPasta(): Promise<void> {
+  $("pastaBroll").textContent = (await pro.preferencias()).pastaBroll ?? "a do painel do Premiere (ou Downloads\Brolls - 2026)";
+}
+
 $("abrirConfig").addEventListener("click", () => {
   void atualizarChave();
+  void atualizarPasta();
   config.showModal();
+});
+
+$("trocarPasta").addEventListener("click", async () => {
+  if ((await pro.escolherPastaBroll()) !== null) await atualizarPasta();
 });
 
 $("salvarChave").addEventListener("click", async (e) => {

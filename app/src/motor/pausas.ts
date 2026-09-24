@@ -6,14 +6,14 @@ import { existsSync } from "node:fs";
 import { readFile, writeFile } from "node:fs/promises";
 import { basename, dirname, extname, join } from "node:path";
 
-import { palavrasDoElevenLabs } from "../../../ferramentas/pro-captions/src/elevenlabs.ts";
 import { nivelPorJanela } from "../../../src/wav.ts";
 import { arquivosDaV1, JANELA_S, sequenciaDasBrutas, tirarPausas, type FonteAnalisada } from "../pausas.ts";
 import { lerSequenciaXml } from "../xml-ler.ts";
 import { sequenciaParaXml, type Sequencia } from "../xml.ts";
 import type { Config } from "./config.ts";
-import { legendasDasPalavras, salvarSrts, transcreverWav } from "./legendas.ts";
-import { audioParaTranscrever, sondar } from "./midia.ts";
+import { falaDoArquivo } from "./fala.ts";
+import { legendasDasPalavras, salvarSrts } from "./legendas.ts";
+import { sondar } from "./midia.ts";
 
 export interface EntradaPausas {
   readonly nome: string;
@@ -84,12 +84,8 @@ export async function rodarPausas(
   // (numeros por janela) e as palavras ficam na memoria.
   const fontes = new Map<string, FonteAnalisada>();
   for (const [i, arquivo] of arquivos.entries()) {
-    const quem = `${i + 1}/${arquivos.length} ${basename(arquivo)}`;
-    avisar(`lendo o áudio ${quem}`);
-    const wav = await audioParaTranscrever(arquivo);
-    const niveis = nivelPorJanela(wav, JANELA_S * 1000).db[0] ?? [];
-    const { json } = await transcreverWav(wav, cfg, (t) => avisar(`${t} ${quem}`));
-    fontes.set(arquivo, { niveis, palavras: palavrasDoElevenLabs(json) ?? [] });
+    const { wav, palavras } = await falaDoArquivo(arquivo, `${i + 1}/${arquivos.length} ${basename(arquivo)}`, cfg, avisar);
+    fontes.set(arquivo, { niveis: nivelPorJanela(wav, JANELA_S * 1000).db[0] ?? [], palavras });
   }
 
   avisar("cortando as pausas");
