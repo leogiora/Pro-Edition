@@ -105,9 +105,10 @@ function filtrosDeVideo(c: Clipe, s: Sequencia): string {
   const filtros: string[] = [];
   if (c.escala !== undefined || c.deslocamento !== undefined) {
     const d = c.deslocamento ?? { x: 0, y: 0 };
-    // ponytail: centro normalizado pela largura/altura inteira da sequencia;
-    // conferir na prova (Posicao no painel) e trocar para meia largura se errar.
-    const centro = `<horiz>${d.x / s.largura}</horiz><vert>${d.y / s.altura}</vert>`;
+    // O Premiere le o centro como fracao do tamanho do ARQUIVO, nao da
+    // sequencia (prova de 2026-09-24: horiz 0,25 numa bruta 3840 deslocou
+    // 960 px). Sem o tamanho do arquivo, cai na sequencia.
+    const centro = `<horiz>${d.x / (c.midia.largura ?? s.largura)}</horiz><vert>${d.y / (c.midia.altura ?? s.altura)}</vert>`;
     filtros.push(
       efeito(
         "Basic Motion",

@@ -154,7 +154,12 @@ export function lerSequenciaXml(conteudo: string): SequenciaLida {
       ...(texto(item, "enabled")?.toUpperCase() === "FALSE" ? { ativo: false } : {}),
       ...(escala !== undefined ? { escala } : {}),
       ...(centro !== undefined
-        ? { deslocamento: { x: (numero(centro, "horiz") ?? 0) * (numero(formato, "width") ?? 1080), y: (numero(centro, "vert") ?? 0) * (numero(formato, "height") ?? 1920) } }
+        ? {
+            deslocamento: {
+              x: (numero(centro, "horiz") ?? 0) * (m.largura ?? numero(formato, "width") ?? 1080),
+              y: (numero(centro, "vert") ?? 0) * (m.altura ?? numero(formato, "height") ?? 1920),
+            },
+          }
         : {}),
       ...(video.some((e) => texto(e, "effectid")?.toLowerCase() === "flop") ? { flop: true } : {}),
       ...(recorte

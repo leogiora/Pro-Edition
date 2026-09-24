@@ -1,7 +1,7 @@
 // Sequencia de teste do botao Editar: as variacoes 1 e 2 do Andro 19.09 ainda
 // brutas (com pausas), separadas como o Leo deixa antes do Auto Pausas, com
 // zoom 90 (e a 2a deslocada) para conferir que o enquadramento acompanha.
-//   node scripts/teste-editar.ts <saida.xml>
+//   node scripts/teste-editar.ts "<pasta>/TESTE Editar 5.xml"   (o nome da sequencia vem do arquivo)
 import { writeFile } from "node:fs/promises";
 
 import { sondar } from "../src/motor/midia.ts";
@@ -26,6 +26,7 @@ const video: Clipe[] = trechos.map((t, k) => ({
 }));
 const audio: Clipe[] = trechos.map((t, k) => ({ midia, ...t, grupo: `g${k}` }));
 
-const saida = process.argv[2] ?? "teste-editar.xml";
-await writeFile(saida, sequenciaParaXml({ nome: "TESTE Editar", fps: FPS, largura: 1080, altura: 1920, video: [video], audio: [audio] }), "utf8");
+const saida = process.argv[2] ?? "TESTE Editar.xml";
+const nome = saida.replace(/^.*[\\/]/, "").replace(/\.xml$/i, "");
+await writeFile(saida, sequenciaParaXml({ nome, fps: FPS, largura: 1080, altura: 1920, video: [video], audio: [audio] }), "utf8");
 console.log(saida);

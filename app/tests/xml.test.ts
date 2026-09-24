@@ -47,7 +47,8 @@ test("xml: cabecalho, sequencia, um <file> completo por arquivo e referencias de
 test("xml: escala, deslocamento, flop, ganho, vinculo e crossfade", () => {
   const xml = sequenciaParaXml(seq());
   assert.match(xml, /<parameterid>scale<\/parameterid><name>Scale<\/name><valuemin>0<\/valuemin><valuemax>1000<\/valuemax><value>90<\/value>/);
-  assert.match(xml, /<horiz>0\.25<\/horiz><vert>0<\/vert>/);
+  // 270 px numa bruta de 3840: o Premiere mede o centro pelo arquivo.
+  assert.match(xml, /<horiz>0\.0703125<\/horiz><vert>0<\/vert>/);
   assert.equal(xml.match(/<effectid>Flop<\/effectid>/g)?.length, 1);
   assert.match(xml, new RegExp(`<value>${ganhoLinear(-12).toFixed(6)}</value>`));
   // Video 1 (clipitem-1) e audio 1 (clipitem-3) se apontam.
