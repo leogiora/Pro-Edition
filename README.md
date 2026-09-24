@@ -6,6 +6,7 @@ O **programa** `app/` é o Pro Edition fora do Premiere (ver `app/LEIA-ME.md`).
 
 | Grupo   | Ferramenta      | Código                      |
 |---------|-----------------|-----------------------------|
+| Pro Ads | **Editar** (tudo de uma vez) | `src/editar*.ts`   |
 | Pro Ads | Auto B-roll     | `ferramentas/auto-broll/`   |
 | Pro Ads | Pro Captions    | `ferramentas/pro-captions/` |
 | Pro Ads | Pro Captions: Timeline (ajudante CEP, painel separado) | `ferramentas/pro-captions-timeline/` |
@@ -16,6 +17,25 @@ Tudo mora **neste repositório, no branch `main`**. Até 2026-09-17 o Auto B-rol
 Pro Captions eram repositórios separados (`leogiora/auto-broll-premiere` e
 `leogiora/Pro-Captions`, hoje arquivados). Eles foram trazidos para `ferramentas/`
 com o histórico inteiro.
+
+## Editar
+
+O primeiro cartão do Pro Ads. Lê a sequência aberta (clipes da V1, variações
+separadas por 1 s ou mais de vão, B-rolls e legendas que já existem) e, num clique:
+manda o áudio uma vez para o ElevenLabs, corta as pausas (zoom, posição e Lumetri
+de cada clipe voltam em cada pedaço), põe os B-rolls, opcionalmente o Split, e
+cria as faixas de legenda e de preço. O registro de cada execução fica em
+`editar-log.json`, na pasta de dados do plugin.
+
+UXP não cria faixa de legenda. Quem cria é a **ponte**: uma extensão CEP escondida
+(`ferramentas/pro-captions-timeline/ponte.html`) que abre com o Premiere e atende
+o pedido que o Editar grava em `timeline-pedido.txt`. Ela só liga quando a janela
+do Premiere é ativada. Sem ela o Editar avisa e as legendas entram pelo painel
+Pro Captions: Timeline.
+
+Provado no Premiere 25.6.6 (TESTE Editar 3 e 5, 3:00 → 2:27 em 11 s). Ainda
+falta: o estilo da legenda (Pro-Captions 96 / Preço 150) é aplicado à mão, e a
+trilha e o fim de variação só existem no programa `app/`.
 
 ## Estrutura
 
