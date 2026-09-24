@@ -18,6 +18,22 @@ Pelo terminal: `npm start` dentro de `app/`.
 Primeira vez numa máquina: `npm run preparar` na raiz (instala e baixa o
 Electron). O ffmpeg precisa estar no PATH (`winget install ffmpeg`).
 
+### Instalar em outra máquina (Felipe)
+
+`npm run instalador` dentro de `app/` gera `release/Pro Edition Setup <versão>.exe`
+(~110 MB, instala por usuário e cria o atalho). O instalador não é assinado: o
+Windows mostra "O Windows protegeu o computador" → **Mais informações →
+Executar assim mesmo**. Na máquina nova, uma vez: `winget install ffmpeg`.
+
+O ffmpeg não vai dentro do instalador de propósito: o build completo tem
+222 MB por executável (ffmpeg + ffprobe = 444 MB). Se isso virar problema,
+empacotar um build "essentials" em `extraResources` e apontar
+`PRO_EDITION_FFMPEG` para ele (já suportado em `src/motor/midia.ts`).
+
+A chave do ElevenLabs e as transcrições pagas ficam em
+`%APPDATA%\pro-edition-app\` de cada máquina (a chave é cifrada pelo Windows e
+não abre em outro computador).
+
 ## Como é feito
 
 ```
@@ -110,7 +126,7 @@ Legenda (é o "Abrir com" do Windows).
 | 3 | Auto B-roll: XML → B-roll pela fala na V2, com o aprendizado do painel | feito (2026-09-24); o Aprender ainda é do painel |
 | 4 | Acabamento: Split, trilha por variação, B-roll e trilha terminando com o doutor | feito (2026-09-24); crop/flop do doutor fica manual |
 | 5 | Podcast AutoCut: XML sincronizado → 4 trilhas cortadas juntas, quem fala ligado | feito (2026-09-24) |
-| 6 | Instalador `.exe` (Leo e Felipe) com ffmpeg junto | a fazer |
+| 6 | Instalador `.exe` (`npm run instalador`) | feito (2026-09-24); ffmpeg fica fora (winget) |
 
 ### Fase 0 — o que a prova precisa mostrar
 

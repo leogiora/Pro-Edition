@@ -10,12 +10,35 @@
     "start": "npm run build && electron .",
     "check": "tsc --noEmit",
     "test": "node --test \"tests/*.test.ts\"",
-    "verify": "npm run check && npm test && npm run build"
+    "verify": "npm run check && npm test && npm run build",
+    "instalador": "npm run verify && electron-builder --win nsis"
   },
   "devDependencies": {
     "@types/node": "^24.13.6",
     "electron": "^44.4.5",
+    "electron-builder": "^26.15.3",
     "esbuild": "^0.25.12",
     "typescript": "^5.9.3"
+  },
+  "build": {
+    "appId": "com.leogi.proedition.app",
+    "productName": "Pro Edition",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**",
+      "package.json"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "scripts/icone.ico"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "createDesktopShortcut": true,
+      "shortcutName": "Pro Edition"
+    }
   }
 }
