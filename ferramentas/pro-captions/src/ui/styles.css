@@ -305,6 +305,38 @@ body {
   margin-top: 5px;
 }
 
+/* ================================================================= CHAVE === */
+
+/*
+ * Campo da chave e botao na mesma linha, em flexbox (grid nao funciona no
+ * UXP). O campo fica com o espaco que sobrar; em painel estreito o botao
+ * desce para a linha de baixo em vez de espremer o campo.
+ */
+.linha-chave {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  flex: none;
+  margin-top: 6px;
+  margin-left: -4px;
+  margin-right: -4px;
+}
+
+.linha-chave .campo-chave {
+  flex: 1 1 160px;
+  margin-left: 4px;
+  margin-right: 4px;
+  margin-bottom: 4px;
+}
+
+.linha-chave sp-button {
+  flex: none;
+  margin-left: 4px;
+  margin-right: 4px;
+  margin-bottom: 4px;
+}
+
 /* =============================================================== BUTTON === */
 
 /*

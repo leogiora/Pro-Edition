@@ -138,3 +138,32 @@ captions" — dois cliques, não reconfiguração manual.
 4. `Janela > UXP Plugins > Pro Captions`.
 5. Ao abrir, o painel ja roda a leitura sozinho. Para a escrita, clicar em
    **Prova da Fase 0**.
+
+---
+
+## ElevenLabs (2026-09-24) — a medir no Premiere real
+
+Codigo escrito e testado fora do Premiere (97 testes, com a resposta REAL do
+ElevenLabs para a variacao 1 do Andro 19.09). Falta provar dentro do painel:
+
+| # | Requisito | Resultado | Como medir |
+|---|---|---|---|
+| L1 | `exportSequence` com `WAV_Mono_16bit_16kHz.epr` no Pro Captions | ja provado no Auto Pausas (865 s em 5,8 s); falta ver no log do Pro Captions | log: linha "áudio: mm:ss · N MB" |
+| L2 | `fetch` sai do UXP com `network.domains` no manifest | **a medir** | log: "ElevenLabs respondeu em N s" |
+| L3 | Corpo multipart montado a mao (sem FormData) aceito pela API | **a medir** — conferido com parser padrao de multipart no Node/Python | idem |
+| L4 | `keyterms` repetido por campo aceito | **a medir** — se recusar, o painel tenta sem termos e registra | log: "recusou os termos-chave" |
+| L5 | Tempo da resposta == tempo da sequencia (audio exportado desde o zero) | **a medir** | legenda importada cai em cima da fala |
+
+## Colocar o .srt na timeline pelo ajudante CEP (2026-09-24) — a medir
+
+O UXP continua sem criar faixa de legenda (E7c falhou; conferido de novo na
+tipagem 27.0.0-beta.57). O ajudante `ferramentas/pro-captions-timeline/` usa o
+ExtendScript `Sequence.createCaptionTrack(projectItem, 0, CAPTION_FORMAT_SUBTITLE)`.
+Logica testada fora do Premiere com um Premiere de mentira (ES3 conferido com
+acorn); falta a prova real:
+
+| # | Requisito | Resultado |
+|---|---|---|
+| T1 | O painel CEP carrega com PlayerDebugMode (Premiere 25 e 26) | **a medir** |
+| T2 | `importFiles` + `createCaptionTrack` cria a faixa com os cues do .srt, sem re-segmentar | **a medir** (o E5b ja provou que importar .srt preserva os cues) |
+| T3 | Duas faixas (texto e preco) na mesma chamada | **a medir** |

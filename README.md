@@ -6,6 +6,7 @@ Painel UXP para o Premiere Pro que reúne as ferramentas de edição num lugar s
 |---------|-----------------|-----------------------------|
 | Pro Ads | Auto B-roll     | `ferramentas/auto-broll/`   |
 | Pro Ads | Pro Captions    | `ferramentas/pro-captions/` |
+| Pro Ads | Pro Captions: Timeline (ajudante CEP, painel separado) | `ferramentas/pro-captions-timeline/` |
 | Pro Ads | Auto Split      | `src/autosplit*.ts`         |
 | Podcast | Podcast AutoCut | `src/autocut*.ts`           |
 

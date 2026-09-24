@@ -280,8 +280,20 @@ export function detectarPrecos(palavras: readonly string[]): Preco[] {
     const jaEhPreco = new Set(saida.map((pr) => pr.inicio));
     for (const num of numerais) {
       if (jaEhPreco.has(num.inicio)) continue;
-      if (!ANCORA_DE_COMPARACAO.has(chave(num.inicio - 1))) continue;
-      saida.push({ ...num, certeza: "alta" });
+      if (ANCORA_DE_COMPARACAO.has(chave(num.inicio - 1))) {
+        saida.push({ ...num, certeza: "alta" });
+        continue;
+      }
+      // O preco novo sem a moeda falada: "tá saindo 1.000 reais, mas na
+      // telemedicina, veja bem, 196." O numero fecha a frase, depois de um
+      // preco ja confirmado — nao sobra substantivo para ele contar
+      // ("15.000 homens"). Entra como preco, mas vai para revisao: a legenda
+      // vai mostrar "REAIS" que talvez nao tenha sido dito.
+      const fechaAFrase = num.fim === palavras.length - 1;
+      const depoisDoPreco = saida.some((pr) => pr.certeza === "alta" && pr.fim < num.inicio);
+      if (fechaAFrase && depoisDoPreco && num.valor >= 10) {
+        saida.push({ ...num, certeza: "media" });
+      }
     }
     saida.sort((a, b) => a.inicio - b.inicio);
   }

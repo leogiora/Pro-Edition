@@ -21,9 +21,31 @@ export interface Preset {
   readonly toleranciaCorteSegundos: number;
   /** Termos que nao podem depender so da transcricao automatica. */
   readonly termosProtegidos: readonly string[];
+  /**
+   * Palavras que o ElevenLabs deve esperar ouvir (keyterms). Nao corrigem o
+   * texto depois: so aumentam a chance de o reconhecimento acertar de
+   * primeira. Nome de marca, de medico e termo tecnico entram aqui.
+   */
+  readonly termosChave: readonly string[];
   /** Faixa de video lida para cortes e transcricao. 0 = V1. */
   readonly trackDeCortes: number;
   readonly maiusculas: boolean;
+  /**
+   * A transcricao ja acerta "e"/"é" e nao precisa da correcao por contexto.
+   *
+   * A correcao existe porque o ASR do Premiere troca os dois o tempo todo. O
+   * ElevenLabs acerta — e ai a regra passa a estragar: "assume o problema e
+   * busca a solucao" virava "problema é busca" (teste de 2026-09-24).
+   */
+  readonly confiarNoAcento: boolean;
+  /**
+   * Virgula, ponto e virgula e dois-pontos fecham bloco.
+   *
+   * O Premiere quase nao pontua, entao isto nao muda nada nele. O ElevenLabs
+   * pontua como quem fala — e a legenda revisada do editor quebra exatamente
+   * ali ("Ela espera" / "tenta entender" / "finge que tá tudo bem").
+   */
+  readonly quebrarEmPontuacao: boolean;
 }
 
 export const PRESET_PADRAO: Preset = {
@@ -31,6 +53,32 @@ export const PRESET_PADRAO: Preset = {
   pausaQuebraSegundos: 1.5,
   toleranciaCorteSegundos: 0.25,
   termosProtegidos: ["Androclinic", "Cristiano Estivalet"],
+  termosChave: [
+    "AndroClinic",
+    "Estivalet",
+    "anamnese",
+    "testosterona",
+    "telemedicina",
+    "teleconsulta",
+    "disfunção erétil",
+    "azulzinho",
+    "hora H",
+    "sigilo total",
+    "libido",
+    "ereção",
+    "urologista",
+    "hormônio",
+    "estresse",
+  ],
   trackDeCortes: 0,
   maiusculas: true,
+  confiarNoAcento: false,
+  quebrarEmPontuacao: false,
+};
+
+/** O mesmo padrao, ajustado para a transcricao do ElevenLabs. */
+export const PRESET_ELEVENLABS: Preset = {
+  ...PRESET_PADRAO,
+  confiarNoAcento: true,
+  quebrarEmPontuacao: true,
 };

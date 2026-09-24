@@ -1,0 +1,1761 @@
+{
+  "language_code": null,
+  "segments": [
+    {
+      "text": "Voc\u00ea falha, inventa desculpa, evita a hora H. E ela? Ela espera, tenta entender, finge que t\u00e1 tudo bem, at\u00e9 que um dia ela cansa. E presta aten\u00e7\u00e3o no que eu vou te contar: ela n\u00e3o cansa de voc\u00ea, ela cansa do descaso, porque ela n\u00e3o espera um super-homem. Ela espera o homem que se cuida, que assume o problema e busca a solu\u00e7\u00e3o. E sabe o que ela pensa do homem que sabe que tem um problema e n\u00e3o faz nada? Ela pensa: \"Se ele n\u00e3o se cuida, ele n\u00e3o me valoriza.\" A falha, ela perdoa. O descaso, n\u00e3o. E se cuidar tem caminho. Investigar a causa, horm\u00f4nio, circula\u00e7\u00e3o, sono, estresse e tratar o que precisa ser tratado. Eu sou m\u00e9dico focado em sa\u00fade sexual masculina h\u00e1 mais de 10 anos. J\u00e1 s\u00e3o mais de 15.000 homens tratados. A consulta aqui no meu consult\u00f3rio t\u00e1 saindo 1.000 reais, mas na telemedicina da AndroClinic, veja bem, 196. Sigilo total de onde voc\u00ea estiver. Ela cansou de esperar. N\u00e3o deixa ela esperar mais. Clica no link.",
+      "start_time": 0.06,
+      "end_time": 58.5,
+      "speaker": {
+        "id": "speaker_0",
+        "name": "Speaker 0"
+      },
+      "words": [
+        {
+          "text": "Voc\u00ea",
+          "start_time": 0.06,
+          "end_time": 0.28
+        },
+        {
+          "text": " ",
+          "start_time": 0.28,
+          "end_time": 0.48
+        },
+        {
+          "text": "falha,",
+          "start_time": 0.48,
+          "end_time": 0.84
+        },
+        {
+          "text": " ",
+          "start_time": 0.84,
+          "end_time": 1.08
+        },
+        {
+          "text": "inventa",
+          "start_time": 1.08,
+          "end_time": 1.46
+        },
+        {
+          "text": " ",
+          "start_time": 1.46,
+          "end_time": 1.5
+        },
+        {
+          "text": "desculpa,",
+          "start_time": 1.5,
+          "end_time": 2.0
+        },
+        {
+          "text": " ",
+          "start_time": 2.0,
+          "end_time": 2.28
+        },
+        {
+          "text": "evita",
+          "start_time": 2.28,
+          "end_time": 2.74
+        },
+        {
+          "text": " ",
+          "start_time": 2.74,
+          "end_time": 2.96
+        },
+        {
+          "text": "a",
+          "start_time": 2.96,
+          "end_time": 3.08
+        },
+        {
+          "text": " ",
+          "start_time": 3.08,
+          "end_time": 3.12
+        },
+        {
+          "text": "hora",
+          "start_time": 3.12,
+          "end_time": 3.28
+        },
+        {
+          "text": " ",
+          "start_time": 3.28,
+          "end_time": 3.38
+        },
+        {
+          "text": "H.",
+          "start_time": 3.38,
+          "end_time": 3.48
+        },
+        {
+          "text": " ",
+          "start_time": 3.48,
+          "end_time": 3.76
+        },
+        {
+          "text": "E",
+          "start_time": 3.76,
+          "end_time": 3.86
+        },
+        {
+          "text": " ",
+          "start_time": 3.86,
+          "end_time": 3.94
+        },
+        {
+          "text": "ela?",
+          "start_time": 3.94,
+          "end_time": 4.12
+        },
+        {
+          "text": " ",
+          "start_time": 4.12,
+          "end_time": 4.3
+        },
+        {
+          "text": "Ela",
+          "start_time": 4.3,
+          "end_time": 4.42
+        },
+        {
+          "text": " ",
+          "start_time": 4.42,
+          "end_time": 4.46
+        },
+        {
+          "text": "espera,",
+          "start_time": 4.46,
+          "end_time": 4.9
+        },
+        {
+          "text": " ",
+          "start_time": 4.9,
+          "end_time": 5.12
+        },
+        {
+          "text": "tenta",
+          "start_time": 5.12,
+          "end_time": 5.32
+        },
+        {
+          "text": " ",
+          "start_time": 5.32,
+          "end_time": 5.34
+        },
+        {
+          "text": "entender,",
+          "start_time": 5.34,
+          "end_time": 5.8
+        },
+        {
+          "text": " ",
+          "start_time": 5.8,
+          "end_time": 6.1
+        },
+        {
+          "text": "finge",
+          "start_time": 6.1,
+          "end_time": 6.34
+        },
+        {
+          "text": " ",
+          "start_time": 6.34,
+          "end_time": 6.42
+        },
+        {
+          "text": "que",
+          "start_time": 6.42,
+          "end_time": 6.52
+        },
+        {
+          "text": " ",
+          "start_time": 6.52,
+          "end_time": 6.64
+        },
+        {
+          "text": "t\u00e1",
+          "start_time": 6.64,
+          "end_time": 6.88
+        },
+        {
+          "text": " ",
+          "start_time": 6.88,
+          "end_time": 7.0
+        },
+        {
+          "text": "tudo",
+          "start_time": 7.0,
+          "end_time": 7.2
+        },
+        {
+          "text": " ",
+          "start_time": 7.2,
+          "end_time": 7.24
+        },
+        {
+          "text": "bem,",
+          "start_time": 7.24,
+          "end_time": 7.44
+        },
+        {
+          "text": " ",
+          "start_time": 7.44,
+          "end_time": 7.64
+        },
+        {
+          "text": "at\u00e9",
+          "start_time": 7.7,
+          "end_time": 7.9
+        },
+        {
+          "text": " ",
+          "start_time": 7.9,
+          "end_time": 7.92
+        },
+        {
+          "text": "que",
+          "start_time": 7.92,
+          "end_time": 7.98
+        },
+        {
+          "text": " ",
+          "start_time": 7.98,
+          "end_time": 8.0
+        },
+        {
+          "text": "um",
+          "start_time": 8.0,
+          "end_time": 8.08
+        },
+        {
+          "text": " ",
+          "start_time": 8.08,
+          "end_time": 8.14
+        },
+        {
+          "text": "dia",
+          "start_time": 8.14,
+          "end_time": 8.28
+        },
+        {
+          "text": " ",
+          "start_time": 8.28,
+          "end_time": 8.34
+        },
+        {
+          "text": "ela",
+          "start_time": 8.34,
+          "end_time": 8.46
+        },
+        {
+          "text": " ",
+          "start_time": 8.46,
+          "end_time": 8.64
+        },
+        {
+          "text": "cansa.",
+          "start_time": 8.64,
+          "end_time": 9.02
+        },
+        {
+          "text": " ",
+          "start_time": 9.02,
+          "end_time": 9.26
+        },
+        {
+          "text": "E",
+          "start_time": 9.26,
+          "end_time": 9.36
+        },
+        {
+          "text": " ",
+          "start_time": 9.36,
+          "end_time": 9.4
+        },
+        {
+          "text": "presta",
+          "start_time": 9.4,
+          "end_time": 9.56
+        },
+        {
+          "text": " ",
+          "start_time": 9.56,
+          "end_time": 9.6
+        },
+        {
+          "text": "aten\u00e7\u00e3o",
+          "start_time": 9.6,
+          "end_time": 9.98
+        },
+        {
+          "text": " ",
+          "start_time": 9.98,
+          "end_time": 10.02
+        },
+        {
+          "text": "no",
+          "start_time": 10.02,
+          "end_time": 10.1
+        },
+        {
+          "text": " ",
+          "start_time": 10.1,
+          "end_time": 10.12
+        },
+        {
+          "text": "que",
+          "start_time": 10.12,
+          "end_time": 10.14
+        },
+        {
+          "text": " ",
+          "start_time": 10.14,
+          "end_time": 10.16
+        },
+        {
+          "text": "eu",
+          "start_time": 10.16,
+          "end_time": 10.22
+        },
+        {
+          "text": " ",
+          "start_time": 10.22,
+          "end_time": 10.26
+        },
+        {
+          "text": "vou",
+          "start_time": 10.26,
+          "end_time": 10.32
+        },
+        {
+          "text": " ",
+          "start_time": 10.32,
+          "end_time": 10.36
+        },
+        {
+          "text": "te",
+          "start_time": 10.36,
+          "end_time": 10.42
+        },
+        {
+          "text": " ",
+          "start_time": 10.42,
+          "end_time": 10.46
+        },
+        {
+          "text": "contar:",
+          "start_time": 10.46,
+          "end_time": 10.76
+        },
+        {
+          "text": " ",
+          "start_time": 10.76,
+          "end_time": 11.02
+        },
+        {
+          "text": "ela",
+          "start_time": 11.02,
+          "end_time": 11.16
+        },
+        {
+          "text": " ",
+          "start_time": 11.16,
+          "end_time": 11.2
+        },
+        {
+          "text": "n\u00e3o",
+          "start_time": 11.2,
+          "end_time": 11.42
+        },
+        {
+          "text": " ",
+          "start_time": 11.42,
+          "end_time": 11.46
+        },
+        {
+          "text": "cansa",
+          "start_time": 11.46,
+          "end_time": 11.9
+        },
+        {
+          "text": " ",
+          "start_time": 11.9,
+          "end_time": 12.2
+        },
+        {
+          "text": "de",
+          "start_time": 12.2,
+          "end_time": 12.3
+        },
+        {
+          "text": " ",
+          "start_time": 12.3,
+          "end_time": 12.34
+        },
+        {
+          "text": "voc\u00ea,",
+          "start_time": 12.34,
+          "end_time": 12.74
+        },
+        {
+          "text": " ",
+          "start_time": 12.74,
+          "end_time": 12.96
+        },
+        {
+          "text": "ela",
+          "start_time": 12.96,
+          "end_time": 13.18
+        },
+        {
+          "text": " ",
+          "start_time": 13.18,
+          "end_time": 13.24
+        },
+        {
+          "text": "cansa",
+          "start_time": 13.24,
+          "end_time": 13.5
+        },
+        {
+          "text": " ",
+          "start_time": 13.5,
+          "end_time": 13.54
+        },
+        {
+          "text": "do",
+          "start_time": 13.54,
+          "end_time": 13.62
+        },
+        {
+          "text": " ",
+          "start_time": 13.62,
+          "end_time": 13.7
+        },
+        {
+          "text": "descaso,",
+          "start_time": 13.7,
+          "end_time": 14.62
+        },
+        {
+          "text": " ",
+          "start_time": 14.62,
+          "end_time": 14.82
+        },
+        {
+          "text": "porque",
+          "start_time": 14.82,
+          "end_time": 14.96
+        },
+        {
+          "text": " ",
+          "start_time": 14.96,
+          "end_time": 14.98
+        },
+        {
+          "text": "ela",
+          "start_time": 14.98,
+          "end_time": 15.08
+        },
+        {
+          "text": " ",
+          "start_time": 15.08,
+          "end_time": 15.12
+        },
+        {
+          "text": "n\u00e3o",
+          "start_time": 15.12,
+          "end_time": 15.2
+        },
+        {
+          "text": " ",
+          "start_time": 15.2,
+          "end_time": 15.22
+        },
+        {
+          "text": "espera",
+          "start_time": 15.22,
+          "end_time": 15.56
+        },
+        {
+          "text": " ",
+          "start_time": 15.56,
+          "end_time": 15.58
+        },
+        {
+          "text": "um",
+          "start_time": 15.58,
+          "end_time": 15.76
+        },
+        {
+          "text": " ",
+          "start_time": 15.76,
+          "end_time": 15.8
+        },
+        {
+          "text": "super-homem.",
+          "start_time": 15.8,
+          "end_time": 16.36
+        },
+        {
+          "text": " ",
+          "start_time": 16.36,
+          "end_time": 16.56
+        },
+        {
+          "text": "Ela",
+          "start_time": 16.56,
+          "end_time": 16.64
+        },
+        {
+          "text": " ",
+          "start_time": 16.64,
+          "end_time": 16.68
+        },
+        {
+          "text": "espera",
+          "start_time": 16.68,
+          "end_time": 17.2
+        },
+        {
+          "text": " ",
+          "start_time": 17.2,
+          "end_time": 17.28
+        },
+        {
+          "text": "o",
+          "start_time": 17.28,
+          "end_time": 17.38
+        },
+        {
+          "text": " ",
+          "start_time": 17.38,
+          "end_time": 17.38
+        },
+        {
+          "text": "homem",
+          "start_time": 17.44,
+          "end_time": 17.7
+        },
+        {
+          "text": " ",
+          "start_time": 17.7,
+          "end_time": 18.0
+        },
+        {
+          "text": "que",
+          "start_time": 18.0,
+          "end_time": 18.1
+        },
+        {
+          "text": " ",
+          "start_time": 18.1,
+          "end_time": 18.14
+        },
+        {
+          "text": "se",
+          "start_time": 18.14,
+          "end_time": 18.34
+        },
+        {
+          "text": " ",
+          "start_time": 18.34,
+          "end_time": 18.38
+        },
+        {
+          "text": "cuida,",
+          "start_time": 18.38,
+          "end_time": 18.72
+        },
+        {
+          "text": " ",
+          "start_time": 18.72,
+          "end_time": 18.94
+        },
+        {
+          "text": "que",
+          "start_time": 18.94,
+          "end_time": 19.0
+        },
+        {
+          "text": " ",
+          "start_time": 19.0,
+          "end_time": 19.06
+        },
+        {
+          "text": "assume",
+          "start_time": 19.06,
+          "end_time": 19.44
+        },
+        {
+          "text": " ",
+          "start_time": 19.44,
+          "end_time": 19.46
+        },
+        {
+          "text": "o",
+          "start_time": 19.46,
+          "end_time": 19.52
+        },
+        {
+          "text": " ",
+          "start_time": 19.52,
+          "end_time": 19.54
+        },
+        {
+          "text": "problema",
+          "start_time": 19.54,
+          "end_time": 19.94
+        },
+        {
+          "text": " ",
+          "start_time": 19.94,
+          "end_time": 20.12
+        },
+        {
+          "text": "e",
+          "start_time": 20.12,
+          "end_time": 20.2
+        },
+        {
+          "text": " ",
+          "start_time": 20.2,
+          "end_time": 20.22
+        },
+        {
+          "text": "busca",
+          "start_time": 20.24,
+          "end_time": 20.44
+        },
+        {
+          "text": " ",
+          "start_time": 20.44,
+          "end_time": 20.46
+        },
+        {
+          "text": "a",
+          "start_time": 20.46,
+          "end_time": 20.52
+        },
+        {
+          "text": " ",
+          "start_time": 20.52,
+          "end_time": 20.54
+        },
+        {
+          "text": "solu\u00e7\u00e3o.",
+          "start_time": 20.54,
+          "end_time": 20.94
+        },
+        {
+          "text": " ",
+          "start_time": 20.94,
+          "end_time": 21.14
+        },
+        {
+          "text": "E",
+          "start_time": 21.14,
+          "end_time": 21.18
+        },
+        {
+          "text": " ",
+          "start_time": 21.18,
+          "end_time": 21.22
+        },
+        {
+          "text": "sabe",
+          "start_time": 21.22,
+          "end_time": 21.38
+        },
+        {
+          "text": " ",
+          "start_time": 21.38,
+          "end_time": 21.4
+        },
+        {
+          "text": "o",
+          "start_time": 21.4,
+          "end_time": 21.46
+        },
+        {
+          "text": " ",
+          "start_time": 21.46,
+          "end_time": 21.48
+        },
+        {
+          "text": "que",
+          "start_time": 21.48,
+          "end_time": 21.54
+        },
+        {
+          "text": " ",
+          "start_time": 21.54,
+          "end_time": 21.56
+        },
+        {
+          "text": "ela",
+          "start_time": 21.56,
+          "end_time": 21.8
+        },
+        {
+          "text": " ",
+          "start_time": 21.8,
+          "end_time": 21.84
+        },
+        {
+          "text": "pensa",
+          "start_time": 21.84,
+          "end_time": 22.2
+        },
+        {
+          "text": " ",
+          "start_time": 22.2,
+          "end_time": 22.22
+        },
+        {
+          "text": "do",
+          "start_time": 22.22,
+          "end_time": 22.32
+        },
+        {
+          "text": " ",
+          "start_time": 22.32,
+          "end_time": 22.34
+        },
+        {
+          "text": "homem",
+          "start_time": 22.34,
+          "end_time": 22.74
+        },
+        {
+          "text": " ",
+          "start_time": 22.74,
+          "end_time": 22.76
+        },
+        {
+          "text": "que",
+          "start_time": 22.76,
+          "end_time": 22.88
+        },
+        {
+          "text": " ",
+          "start_time": 22.88,
+          "end_time": 23.04
+        },
+        {
+          "text": "sabe",
+          "start_time": 23.04,
+          "end_time": 23.34
+        },
+        {
+          "text": " ",
+          "start_time": 23.34,
+          "end_time": 23.38
+        },
+        {
+          "text": "que",
+          "start_time": 23.38,
+          "end_time": 23.46
+        },
+        {
+          "text": " ",
+          "start_time": 23.46,
+          "end_time": 23.52
+        },
+        {
+          "text": "tem",
+          "start_time": 23.52,
+          "end_time": 23.62
+        },
+        {
+          "text": " ",
+          "start_time": 23.62,
+          "end_time": 23.64
+        },
+        {
+          "text": "um",
+          "start_time": 23.64,
+          "end_time": 23.7
+        },
+        {
+          "text": " ",
+          "start_time": 23.7,
+          "end_time": 23.72
+        },
+        {
+          "text": "problema",
+          "start_time": 23.72,
+          "end_time": 24.16
+        },
+        {
+          "text": " ",
+          "start_time": 24.16,
+          "end_time": 24.34
+        },
+        {
+          "text": "e",
+          "start_time": 24.34,
+          "end_time": 24.38
+        },
+        {
+          "text": " ",
+          "start_time": 24.38,
+          "end_time": 24.4
+        },
+        {
+          "text": "n\u00e3o",
+          "start_time": 24.4,
+          "end_time": 24.5
+        },
+        {
+          "text": " ",
+          "start_time": 24.5,
+          "end_time": 24.56
+        },
+        {
+          "text": "faz",
+          "start_time": 24.56,
+          "end_time": 24.72
+        },
+        {
+          "text": " ",
+          "start_time": 24.72,
+          "end_time": 24.76
+        },
+        {
+          "text": "nada?",
+          "start_time": 24.76,
+          "end_time": 25.08
+        },
+        {
+          "text": " ",
+          "start_time": 25.08,
+          "end_time": 25.36
+        },
+        {
+          "text": "Ela",
+          "start_time": 25.36,
+          "end_time": 25.5
+        },
+        {
+          "text": " ",
+          "start_time": 25.5,
+          "end_time": 25.62
+        },
+        {
+          "text": "pensa:",
+          "start_time": 25.62,
+          "end_time": 25.96
+        },
+        {
+          "text": " ",
+          "start_time": 25.96,
+          "end_time": 26.16
+        },
+        {
+          "text": "\"Se",
+          "start_time": 26.16,
+          "end_time": 26.34
+        },
+        {
+          "text": " ",
+          "start_time": 26.34,
+          "end_time": 26.44
+        },
+        {
+          "text": "ele",
+          "start_time": 26.44,
+          "end_time": 26.64
+        },
+        {
+          "text": " ",
+          "start_time": 26.64,
+          "end_time": 26.7
+        },
+        {
+          "text": "n\u00e3o",
+          "start_time": 26.7,
+          "end_time": 26.86
+        },
+        {
+          "text": " ",
+          "start_time": 26.86,
+          "end_time": 26.9
+        },
+        {
+          "text": "se",
+          "start_time": 26.9,
+          "end_time": 26.98
+        },
+        {
+          "text": " ",
+          "start_time": 26.98,
+          "end_time": 27.1
+        },
+        {
+          "text": "cuida,",
+          "start_time": 27.1,
+          "end_time": 27.36
+        },
+        {
+          "text": " ",
+          "start_time": 27.36,
+          "end_time": 27.6
+        },
+        {
+          "text": "ele",
+          "start_time": 27.6,
+          "end_time": 27.8
+        },
+        {
+          "text": " ",
+          "start_time": 27.8,
+          "end_time": 27.86
+        },
+        {
+          "text": "n\u00e3o",
+          "start_time": 27.86,
+          "end_time": 28.04
+        },
+        {
+          "text": " ",
+          "start_time": 28.04,
+          "end_time": 28.06
+        },
+        {
+          "text": "me",
+          "start_time": 28.06,
+          "end_time": 28.2
+        },
+        {
+          "text": " ",
+          "start_time": 28.2,
+          "end_time": 28.24
+        },
+        {
+          "text": "valoriza.\"",
+          "start_time": 28.24,
+          "end_time": 28.82
+        },
+        {
+          "text": " ",
+          "start_time": 28.82,
+          "end_time": 29.02
+        },
+        {
+          "text": "A",
+          "start_time": 29.02,
+          "end_time": 29.06
+        },
+        {
+          "text": " ",
+          "start_time": 29.06,
+          "end_time": 29.16
+        },
+        {
+          "text": "falha,",
+          "start_time": 29.16,
+          "end_time": 29.48
+        },
+        {
+          "text": " ",
+          "start_time": 29.48,
+          "end_time": 29.68
+        },
+        {
+          "text": "ela",
+          "start_time": 29.68,
+          "end_time": 29.84
+        },
+        {
+          "text": " ",
+          "start_time": 29.84,
+          "end_time": 29.86
+        },
+        {
+          "text": "perdoa.",
+          "start_time": 29.86,
+          "end_time": 30.34
+        },
+        {
+          "text": " ",
+          "start_time": 30.34,
+          "end_time": 30.38
+        },
+        {
+          "text": "O",
+          "start_time": 30.38,
+          "end_time": 30.42
+        },
+        {
+          "text": " ",
+          "start_time": 30.42,
+          "end_time": 30.46
+        },
+        {
+          "text": "descaso,",
+          "start_time": 30.46,
+          "end_time": 30.96
+        },
+        {
+          "text": " ",
+          "start_time": 30.96,
+          "end_time": 31.26
+        },
+        {
+          "text": "n\u00e3o.",
+          "start_time": 31.26,
+          "end_time": 31.52
+        },
+        {
+          "text": " ",
+          "start_time": 31.52,
+          "end_time": 31.54
+        },
+        {
+          "text": "E",
+          "start_time": 31.54,
+          "end_time": 31.6
+        },
+        {
+          "text": " ",
+          "start_time": 31.6,
+          "end_time": 31.64
+        },
+        {
+          "text": "se",
+          "start_time": 31.64,
+          "end_time": 31.74
+        },
+        {
+          "text": " ",
+          "start_time": 31.74,
+          "end_time": 31.78
+        },
+        {
+          "text": "cuidar",
+          "start_time": 31.78,
+          "end_time": 32.119
+        },
+        {
+          "text": " ",
+          "start_time": 32.119,
+          "end_time": 32.32
+        },
+        {
+          "text": "tem",
+          "start_time": 32.32,
+          "end_time": 32.439
+        },
+        {
+          "text": " ",
+          "start_time": 32.439,
+          "end_time": 32.479
+        },
+        {
+          "text": "caminho.",
+          "start_time": 32.479,
+          "end_time": 32.86
+        },
+        {
+          "text": " ",
+          "start_time": 32.86,
+          "end_time": 33.02
+        },
+        {
+          "text": "Investigar",
+          "start_time": 33.04,
+          "end_time": 33.54
+        },
+        {
+          "text": " ",
+          "start_time": 33.54,
+          "end_time": 33.66
+        },
+        {
+          "text": "a",
+          "start_time": 33.66,
+          "end_time": 33.66
+        },
+        {
+          "text": " ",
+          "start_time": 33.66,
+          "end_time": 33.7
+        },
+        {
+          "text": "causa,",
+          "start_time": 33.7,
+          "end_time": 34.16
+        },
+        {
+          "text": " ",
+          "start_time": 34.16,
+          "end_time": 34.38
+        },
+        {
+          "text": "horm\u00f4nio,",
+          "start_time": 34.38,
+          "end_time": 35.06
+        },
+        {
+          "text": " ",
+          "start_time": 35.06,
+          "end_time": 35.22
+        },
+        {
+          "text": "circula\u00e7\u00e3o,",
+          "start_time": 35.22,
+          "end_time": 36.06
+        },
+        {
+          "text": " ",
+          "start_time": 36.06,
+          "end_time": 36.3
+        },
+        {
+          "text": "sono,",
+          "start_time": 36.3,
+          "end_time": 36.66
+        },
+        {
+          "text": " ",
+          "start_time": 36.66,
+          "end_time": 36.68
+        },
+        {
+          "text": "estresse",
+          "start_time": 36.68,
+          "end_time": 37.42
+        },
+        {
+          "text": " ",
+          "start_time": 37.42,
+          "end_time": 37.62
+        },
+        {
+          "text": "e",
+          "start_time": 37.62,
+          "end_time": 37.66
+        },
+        {
+          "text": " ",
+          "start_time": 37.66,
+          "end_time": 37.72
+        },
+        {
+          "text": "tratar",
+          "start_time": 37.72,
+          "end_time": 38.08
+        },
+        {
+          "text": " ",
+          "start_time": 38.08,
+          "end_time": 38.34
+        },
+        {
+          "text": "o",
+          "start_time": 38.34,
+          "end_time": 38.36
+        },
+        {
+          "text": " ",
+          "start_time": 38.36,
+          "end_time": 38.44
+        },
+        {
+          "text": "que",
+          "start_time": 38.44,
+          "end_time": 38.56
+        },
+        {
+          "text": " ",
+          "start_time": 38.56,
+          "end_time": 38.58
+        },
+        {
+          "text": "precisa",
+          "start_time": 38.58,
+          "end_time": 39.04
+        },
+        {
+          "text": " ",
+          "start_time": 39.04,
+          "end_time": 39.08
+        },
+        {
+          "text": "ser",
+          "start_time": 39.08,
+          "end_time": 39.18
+        },
+        {
+          "text": " ",
+          "start_time": 39.18,
+          "end_time": 39.22
+        },
+        {
+          "text": "tratado.",
+          "start_time": 39.22,
+          "end_time": 39.7
+        },
+        {
+          "text": " ",
+          "start_time": 39.7,
+          "end_time": 39.86
+        },
+        {
+          "text": "Eu",
+          "start_time": 39.86,
+          "end_time": 39.94
+        },
+        {
+          "text": " ",
+          "start_time": 39.94,
+          "end_time": 39.96
+        },
+        {
+          "text": "sou",
+          "start_time": 39.96,
+          "end_time": 40.06
+        },
+        {
+          "text": " ",
+          "start_time": 40.06,
+          "end_time": 40.1
+        },
+        {
+          "text": "m\u00e9dico",
+          "start_time": 40.1,
+          "end_time": 40.36
+        },
+        {
+          "text": " ",
+          "start_time": 40.36,
+          "end_time": 40.4
+        },
+        {
+          "text": "focado",
+          "start_time": 40.4,
+          "end_time": 40.64
+        },
+        {
+          "text": " ",
+          "start_time": 40.64,
+          "end_time": 40.66
+        },
+        {
+          "text": "em",
+          "start_time": 40.66,
+          "end_time": 40.76
+        },
+        {
+          "text": " ",
+          "start_time": 40.76,
+          "end_time": 40.78
+        },
+        {
+          "text": "sa\u00fade",
+          "start_time": 40.78,
+          "end_time": 41.06
+        },
+        {
+          "text": " ",
+          "start_time": 41.06,
+          "end_time": 41.1
+        },
+        {
+          "text": "sexual",
+          "start_time": 41.1,
+          "end_time": 41.4
+        },
+        {
+          "text": " ",
+          "start_time": 41.4,
+          "end_time": 41.44
+        },
+        {
+          "text": "masculina",
+          "start_time": 41.44,
+          "end_time": 41.84
+        },
+        {
+          "text": " ",
+          "start_time": 41.84,
+          "end_time": 41.86
+        },
+        {
+          "text": "h\u00e1",
+          "start_time": 41.86,
+          "end_time": 41.96
+        },
+        {
+          "text": " ",
+          "start_time": 41.96,
+          "end_time": 42.02
+        },
+        {
+          "text": "mais",
+          "start_time": 42.02,
+          "end_time": 42.22
+        },
+        {
+          "text": " ",
+          "start_time": 42.22,
+          "end_time": 42.26
+        },
+        {
+          "text": "de",
+          "start_time": 42.26,
+          "end_time": 42.32
+        },
+        {
+          "text": " ",
+          "start_time": 42.32,
+          "end_time": 42.4
+        },
+        {
+          "text": "10",
+          "start_time": 42.4,
+          "end_time": 42.66
+        },
+        {
+          "text": " ",
+          "start_time": 42.66,
+          "end_time": 42.74
+        },
+        {
+          "text": "anos.",
+          "start_time": 42.74,
+          "end_time": 43.06
+        },
+        {
+          "text": " ",
+          "start_time": 43.06,
+          "end_time": 43.24
+        },
+        {
+          "text": "J\u00e1",
+          "start_time": 43.24,
+          "end_time": 43.32
+        },
+        {
+          "text": " ",
+          "start_time": 43.32,
+          "end_time": 43.34
+        },
+        {
+          "text": "s\u00e3o",
+          "start_time": 43.34,
+          "end_time": 43.44
+        },
+        {
+          "text": " ",
+          "start_time": 43.44,
+          "end_time": 43.48
+        },
+        {
+          "text": "mais",
+          "start_time": 43.48,
+          "end_time": 43.66
+        },
+        {
+          "text": " ",
+          "start_time": 43.66,
+          "end_time": 43.68
+        },
+        {
+          "text": "de",
+          "start_time": 43.68,
+          "end_time": 43.76
+        },
+        {
+          "text": " ",
+          "start_time": 43.76,
+          "end_time": 44.06
+        },
+        {
+          "text": "15.000",
+          "start_time": 44.06,
+          "end_time": 45.0
+        },
+        {
+          "text": " ",
+          "start_time": 45.0,
+          "end_time": 45.02
+        },
+        {
+          "text": "homens",
+          "start_time": 45.02,
+          "end_time": 45.32
+        },
+        {
+          "text": " ",
+          "start_time": 45.32,
+          "end_time": 45.38
+        },
+        {
+          "text": "tratados.",
+          "start_time": 45.38,
+          "end_time": 45.88
+        },
+        {
+          "text": " ",
+          "start_time": 45.88,
+          "end_time": 46.08
+        },
+        {
+          "text": "A",
+          "start_time": 46.08,
+          "end_time": 46.12
+        },
+        {
+          "text": " ",
+          "start_time": 46.12,
+          "end_time": 46.18
+        },
+        {
+          "text": "consulta",
+          "start_time": 46.18,
+          "end_time": 46.46
+        },
+        {
+          "text": " ",
+          "start_time": 46.46,
+          "end_time": 46.48
+        },
+        {
+          "text": "aqui",
+          "start_time": 46.48,
+          "end_time": 46.56
+        },
+        {
+          "text": " ",
+          "start_time": 46.56,
+          "end_time": 46.58
+        },
+        {
+          "text": "no",
+          "start_time": 46.6,
+          "end_time": 46.64
+        },
+        {
+          "text": " ",
+          "start_time": 46.64,
+          "end_time": 46.66
+        },
+        {
+          "text": "meu",
+          "start_time": 46.66,
+          "end_time": 46.74
+        },
+        {
+          "text": " ",
+          "start_time": 46.74,
+          "end_time": 46.76
+        },
+        {
+          "text": "consult\u00f3rio",
+          "start_time": 46.76,
+          "end_time": 47.1
+        },
+        {
+          "text": " ",
+          "start_time": 47.1,
+          "end_time": 47.12
+        },
+        {
+          "text": "t\u00e1",
+          "start_time": 47.12,
+          "end_time": 47.22
+        },
+        {
+          "text": " ",
+          "start_time": 47.22,
+          "end_time": 47.26
+        },
+        {
+          "text": "saindo",
+          "start_time": 47.26,
+          "end_time": 47.66
+        },
+        {
+          "text": " ",
+          "start_time": 47.66,
+          "end_time": 47.74
+        },
+        {
+          "text": "1.000",
+          "start_time": 47.76,
+          "end_time": 47.94
+        },
+        {
+          "text": " ",
+          "start_time": 47.94,
+          "end_time": 47.98
+        },
+        {
+          "text": "reais,",
+          "start_time": 47.98,
+          "end_time": 48.36
+        },
+        {
+          "text": " ",
+          "start_time": 48.36,
+          "end_time": 48.6
+        },
+        {
+          "text": "mas",
+          "start_time": 48.6,
+          "end_time": 48.7
+        },
+        {
+          "text": " ",
+          "start_time": 48.7,
+          "end_time": 48.74
+        },
+        {
+          "text": "na",
+          "start_time": 48.74,
+          "end_time": 48.84
+        },
+        {
+          "text": " ",
+          "start_time": 48.84,
+          "end_time": 48.86
+        },
+        {
+          "text": "telemedicina",
+          "start_time": 48.86,
+          "end_time": 49.4
+        },
+        {
+          "text": " ",
+          "start_time": 49.4,
+          "end_time": 49.46
+        },
+        {
+          "text": "da",
+          "start_time": 49.46,
+          "end_time": 49.52
+        },
+        {
+          "text": " ",
+          "start_time": 49.52,
+          "end_time": 49.56
+        },
+        {
+          "text": "AndroClinic,",
+          "start_time": 49.56,
+          "end_time": 50.06
+        },
+        {
+          "text": " ",
+          "start_time": 50.06,
+          "end_time": 50.28
+        },
+        {
+          "text": "veja",
+          "start_time": 50.28,
+          "end_time": 50.48
+        },
+        {
+          "text": " ",
+          "start_time": 50.48,
+          "end_time": 50.52
+        },
+        {
+          "text": "bem,",
+          "start_time": 50.52,
+          "end_time": 50.68
+        },
+        {
+          "text": " ",
+          "start_time": 50.68,
+          "end_time": 50.98
+        },
+        {
+          "text": "196.",
+          "start_time": 50.98,
+          "end_time": 52.48
+        },
+        {
+          "text": " ",
+          "start_time": 52.48,
+          "end_time": 52.7
+        },
+        {
+          "text": "Sigilo",
+          "start_time": 52.7,
+          "end_time": 53.0
+        },
+        {
+          "text": " ",
+          "start_time": 53.0,
+          "end_time": 53.08
+        },
+        {
+          "text": "total",
+          "start_time": 53.08,
+          "end_time": 53.4
+        },
+        {
+          "text": " ",
+          "start_time": 53.4,
+          "end_time": 53.46
+        },
+        {
+          "text": "de",
+          "start_time": 53.46,
+          "end_time": 53.54
+        },
+        {
+          "text": " ",
+          "start_time": 53.54,
+          "end_time": 53.64
+        },
+        {
+          "text": "onde",
+          "start_time": 53.64,
+          "end_time": 53.9
+        },
+        {
+          "text": " ",
+          "start_time": 53.9,
+          "end_time": 53.94
+        },
+        {
+          "text": "voc\u00ea",
+          "start_time": 53.94,
+          "end_time": 54.16
+        },
+        {
+          "text": " ",
+          "start_time": 54.16,
+          "end_time": 54.18
+        },
+        {
+          "text": "estiver.",
+          "start_time": 54.18,
+          "end_time": 54.52
+        },
+        {
+          "text": " ",
+          "start_time": 54.52,
+          "end_time": 54.76
+        },
+        {
+          "text": "Ela",
+          "start_time": 54.76,
+          "end_time": 55.0
+        },
+        {
+          "text": " ",
+          "start_time": 55.0,
+          "end_time": 55.3
+        },
+        {
+          "text": "cansou",
+          "start_time": 55.3,
+          "end_time": 55.78
+        },
+        {
+          "text": " ",
+          "start_time": 55.78,
+          "end_time": 55.84
+        },
+        {
+          "text": "de",
+          "start_time": 55.84,
+          "end_time": 55.88
+        },
+        {
+          "text": " ",
+          "start_time": 55.88,
+          "end_time": 55.92
+        },
+        {
+          "text": "esperar.",
+          "start_time": 55.92,
+          "end_time": 56.32
+        },
+        {
+          "text": " ",
+          "start_time": 56.32,
+          "end_time": 56.56
+        },
+        {
+          "text": "N\u00e3o",
+          "start_time": 56.56,
+          "end_time": 56.68
+        },
+        {
+          "text": " ",
+          "start_time": 56.68,
+          "end_time": 56.72
+        },
+        {
+          "text": "deixa",
+          "start_time": 56.72,
+          "end_time": 56.9
+        },
+        {
+          "text": " ",
+          "start_time": 56.9,
+          "end_time": 56.94
+        },
+        {
+          "text": "ela",
+          "start_time": 56.94,
+          "end_time": 57.0
+        },
+        {
+          "text": " ",
+          "start_time": 57.0,
+          "end_time": 57.02
+        },
+        {
+          "text": "esperar",
+          "start_time": 57.02,
+          "end_time": 57.32
+        },
+        {
+          "text": " ",
+          "start_time": 57.32,
+          "end_time": 57.4
+        },
+        {
+          "text": "mais.",
+          "start_time": 57.4,
+          "end_time": 57.74
+        },
+        {
+          "text": " ",
+          "start_time": 57.74,
+          "end_time": 57.92
+        },
+        {
+          "text": "Clica",
+          "start_time": 57.92,
+          "end_time": 58.1
+        },
+        {
+          "text": " ",
+          "start_time": 58.1,
+          "end_time": 58.12
+        },
+        {
+          "text": "no",
+          "start_time": 58.12,
+          "end_time": 58.2
+        },
+        {
+          "text": " ",
+          "start_time": 58.2,
+          "end_time": 58.24
+        },
+        {
+          "text": "link.",
+          "start_time": 58.24,
+          "end_time": 58.5
+        }
+      ]
+    }
+  ]
+}

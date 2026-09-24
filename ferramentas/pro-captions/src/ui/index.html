@@ -30,6 +30,24 @@
         </div>
       </section>
 
+      <section class="secao">
+        <div class="secao-cabeca">
+          <span class="cod">ASR</span>
+          <span class="secao-rotulo">Quem ouve o áudio</span>
+        </div>
+        <div class="secao-corpo">
+          <sp-checkbox id="usarEleven" checked>Ouvir o áudio com ElevenLabs (mais fiel)</sp-checkbox>
+          <div id="chaveEstado" class="dica">Verificando a chave…</div>
+          <div class="linha-chave">
+            <sp-textfield id="chave" class="campo-chave" placeholder="Colar a chave de API do ElevenLabs"></sp-textfield>
+            <sp-button id="salvarChave" variant="secondary">Salvar chave</sp-button>
+          </div>
+          <div class="dica">
+            Desmarcado, usa a transcrição do próprio Premiere, como antes.
+          </div>
+        </div>
+      </section>
+
       <div class="acao">
         <sp-button id="gerar" variant="cta">Gerar legendas</sp-button>
         <sp-button id="restaurar" variant="secondary" quiet>Restaurar original</sp-button>

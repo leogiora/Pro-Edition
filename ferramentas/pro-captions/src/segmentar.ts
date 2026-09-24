@@ -152,8 +152,11 @@ function montarBloco(palavras: readonly PalavraRevisada[], estilo: "normal" | "p
       .map((p) => p.text)
       .join(" ")
       .replace(/\s*\n\s*/g, " ")
-      .replace(/[,;.]+$/, "")
-      .replace(/^[,;.]+\s*/, "")
+      // Aspas: o ElevenLabs marca fala citada ("Se ele nao se cuida...");
+      // na legenda elas so ocupam caractere.
+      .replace(/["“”]/g, "")
+      .replace(/[,;:.]+$/, "")
+      .replace(/^[,;:.]+\s*/, "")
       .trim(),
     inicio: primeira.inicio,
     fim: ultima.fim,
@@ -190,6 +193,26 @@ function partirPorCorte(
       atual = [];
     }
     atual.push(palavra);
+  }
+  if (atual.length > 0) partes.push(atual);
+  return partes;
+}
+
+/**
+ * Parte nas pausas que a pontuacao marca: virgula, ponto e virgula, dois-pontos.
+ *
+ * Roda DEPOIS da deteccao de preco — "tá saindo 1.000 reais, mas ... 196" so
+ * e reconhecido como comparacao de preco com a frase inteira a vista.
+ */
+function partirPorPontuacao(frase: readonly PalavraRevisada[]): PalavraRevisada[][] {
+  const partes: PalavraRevisada[][] = [];
+  let atual: PalavraRevisada[] = [];
+  for (const palavra of frase) {
+    atual.push(palavra);
+    if (/[,;:]["'”’]*$/.test(palavra.text)) {
+      partes.push(atual);
+      atual = [];
+    }
   }
   if (atual.length > 0) partes.push(atual);
   return partes;
@@ -255,9 +278,12 @@ export function segmentar(
         });
         continue;
       }
-      for (const pedaco of partirPorCorte(fatia.palavras, cortes)) {
-        for (const parte of partir(pedaco, preset, cortes)) {
-          if (parte.length > 0) blocos.push(montarBloco(parte, "normal"));
+      const oracoes = preset.quebrarEmPontuacao ? partirPorPontuacao(fatia.palavras) : [fatia.palavras];
+      for (const oracao of oracoes) {
+        for (const pedaco of partirPorCorte(oracao, cortes)) {
+          for (const parte of partir(pedaco, preset, cortes)) {
+            if (parte.length > 0) blocos.push(montarBloco(parte, "normal"));
+          }
         }
       }
     }

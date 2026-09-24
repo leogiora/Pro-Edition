@@ -69,6 +69,16 @@ Nao rejeitam, nao lancam, nao voltam. Matam a execucao inteira sem deixar rastro
   `ComponentParam` as cegas. `displayName` e propriedade, use ela.
 - `importFiles` em certos estados.
 
+## 3b. Globais que o navegador tem e o UXP nao
+
+- **`TextEncoder` nao existe.** Um `new TextEncoder()` no topo de um modulo do
+  Pro Captions (2026-09-24) quebrou o bundle INTEIRO do Pro Edition ao
+  carregar: a aba "Pro Edition" aparecia, mas em branco, sem log. Para UTF-8,
+  usar `utf8()` de `ferramentas/pro-captions/src/elevenlabs.ts`.
+- **Regra:** nada de global do navegador no topo de modulo. Se precisar de um,
+  crie dentro da funcao que usa — ai a falha fica no clique, com erro no log,
+  e nao derruba o painel todo.
+
 **Regra:** toda chamada ao Premiere passa por `comLimite()`. Sem isso o painel
 fica preso em "carregando" para sempre, sem erro e sem log — e o diagnostico
 vira adivinhacao.

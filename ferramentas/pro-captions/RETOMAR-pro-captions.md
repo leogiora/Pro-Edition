@@ -1,5 +1,68 @@
 # RETOMAR — Pro Captions
 
+## 2026-09-24 — transcricao pelo ElevenLabs (LER PRIMEIRO)
+
+**Por que:** a transcricao do Premiere erra palavras que mudam o sentido, e as
+regras deste plugin so corrigem a forma do texto. Teste real (variacao 1 do
+Andro 19.09, 176 palavras, gabarito = legenda revisada a mao pelo Leo):
+
+| Fonte | Diferencas do gabarito | Observacao |
+|---|---|---|
+| Premiere | 7 | "Voce **faz**", "Eu **fui** medico", "ele nao **o** valoriza", "stress" |
+| ElevenLabs (Scribe) | 4 | em 2 delas o ElevenLabs estava certo e a legenda errada ("focado", "investigar a causa") |
+| **Pro Captions + ElevenLabs** (legenda final) | **3** | e inicio dos blocos a 60 ms (mediana) dos que o Leo ajustou a mao |
+
+**O que mudou no codigo (npm run verify: 97 testes):**
+
+- `src/elevenlabs.ts` (puro): monta o pedido (multipart a mao, `scribe_v2`,
+  `por`, tempo por palavra, termos-chave) e le a resposta — formato da API e
+  a exportacao JSON do site — como `PalavraEditada[]` em tempo de sequencia.
+- `src/elevenlabs-rede.ts`: o unico `fetch`. Se a API recusar os termos-chave,
+  tenta de novo sem eles.
+- `src/audio.ts` (puro): preset WAV, WAV completo, duracao, **audio mudo**
+  (bloqueia o envio: com a A1 silenciada o export sai mudo e o ElevenLabs
+  cobraria por nada — aconteceu no Andro 19.09).
+- `src/premiere.ts`: `exportarAudioDaSequencia()` (mesmo metodo provado no
+  Auto Pausas), chave em PluginData (`elevenlabs-chave.json`) e as 10 ultimas
+  respostas guardadas (`elevenlabs-transcricao-<assinatura>.json`): gerar de
+  novo com o mesmo audio nao paga de novo.
+- `src/preset.ts`: `termosChave`, `confiarNoAcento`, `quebrarEmPontuacao` e
+  `PRESET_ELEVENLABS`. O `PRESET_PADRAO` (caminho do Premiere) nao mudou.
+- `src/segmentar.ts`: com `quebrarEmPontuacao`, virgula/;/: fecham bloco
+  (depois da deteccao de preco); aspas saem do texto; ":" sai da ponta.
+- `src/preco.ts`: numero que FECHA a frase depois de um preco confirmado vira
+  preco com certeza "media" (vai para revisao) — "tá saindo 1.000 reais, mas
+  ..., veja bem, 196."
+- `src/ui/*`: secao "Quem ouve o áudio" (checkbox ElevenLabs + chave).
+- `manifest.json` (deste plugin E da raiz do Pro Edition):
+  `requiredPermissions.network.domains = ["https://api.elevenlabs.io"]`.
+- `tests/elevenlabs.test.ts` + `tests/fixtures/elevenlabs-andro1909-variacao1.json`.
+
+**Tropeco ja corrigido (2026-09-24):** a primeira versao criava `new
+TextEncoder()` no topo de `elevenlabs.ts`. O UXP nao tem TextEncoder, o bundle
+do Pro Edition quebrava ao carregar e o painel abria em branco. Trocado por
+`utf8()` a mao; `node scripts/fumaca-uxp.cjs` (raiz) pega esse tipo de erro
+sem reiniciar o Premiere — rodar depois de todo build.
+
+**Ajudante da timeline (2026-09-24):** `ferramentas/pro-captions-timeline/`
+e um plugin CEP separado com um botao, "Colocar legendas na timeline", que
+chama `Sequence.createCaptionTrack()` do ExtendScript para `legendas.srt` e
+`precos.srt`. Tira os 2 arrastos por video; o estilo de cada faixa continua
+manual (nao e scriptavel em nenhum formato). Instala com `INSTALAR.ps1`
+(copia para `%APPDATA%\Adobe\CEP\extensions` e liga o PlayerDebugMode do
+usuario). Medir T1–T3 em `docs/API_PROOFS.md`.
+
+**Primeira coisa a fazer:** medir L1–L5 em `docs/API_PROOFS.md`:
+
+1. `npm run verify` na raiz do Pro-Edition e reiniciar o Premiere.
+2. Pro Edition > Pro Captions > colar a chave do ElevenLabs > Salvar chave.
+3. Conferir que a faixa da fala (A1) nao esta silenciada.
+4. Gerar legendas numa sequencia curta primeiro (1 variacao).
+5. Ler `ultimo-log-captions.json` e importar `legendas.srt` / `precos.srt`.
+
+---
+
+
 **Última sessão:** 2026-08-11 (continuação)
 **Branch:** `fases-0-2` · último commit antes desta sessão `d8f9167` (working tree tinha mudanças não commitadas ao gravar este arquivo)
 **Gate:** `npm run verify` → 82 testes passando, tipos limpos, build ok

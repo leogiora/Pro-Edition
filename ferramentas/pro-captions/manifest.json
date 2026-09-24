@@ -18,7 +18,10 @@
     }
   ],
   "requiredPermissions": {
-    "localFileSystem": "fullAccess"
+    "localFileSystem": "fullAccess",
+    "network": {
+      "domains": ["https://api.elevenlabs.io"]
+    }
   },
   "icons": [
     {

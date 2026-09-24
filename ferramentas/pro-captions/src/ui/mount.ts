@@ -6,22 +6,38 @@
  * log some da area visivel.
  */
 
+import { audioMudo, duracaoDoWav } from "../audio.ts";
 import { relogio } from "../domain.ts";
+import { assinaturaDoAudio, palavrasDoElevenLabs, termosChave } from "../elevenlabs.ts";
+import { transcreverNoElevenLabs } from "../elevenlabs-rede.ts";
 import { blocosParaSrt, gerarBlocos } from "../pipeline.ts";
 import {
+  apagarArquivo,
   comLimite,
   escreverTranscricao,
+  exportarAudioDaSequencia,
   getSequenceInfo,
   gravarLog,
+  guardarTranscricao,
   importarArquivos,
   lerBackup,
+  lerChaveElevenLabs,
   lerClipes,
   lerCortes,
+  lerTranscricaoGuardada,
   lerTranscricoes,
+  salvarChaveElevenLabs,
   salvarSrt,
+  type SequenceInfo,
 } from "../premiere.ts";
+import { PRESET_ELEVENLABS, PRESET_PADRAO, type Preset } from "../preset.ts";
 import { validar } from "../segmentar.ts";
-import { parseTranscricao, reconstruirTranscricao, type TranscricaoOrigem } from "../transcript.ts";
+import {
+  parseTranscricao,
+  reconstruirTranscricao,
+  type PalavraEditada,
+  type TranscricaoOrigem,
+} from "../transcript.ts";
 
 const elemento = (id: string): HTMLElement => {
   const el = document.getElementById(id);
@@ -46,7 +62,7 @@ function estado(texto: string, tom: "" | "ativo" | "ok" | "aviso" | "erro" = "")
 }
 
 function ocupado(sim: boolean): void {
-  for (const id of ["gerar", "restaurar"]) {
+  for (const id of ["gerar", "restaurar", "salvarChave"]) {
     const b = elemento(id) as HTMLElement & { disabled?: boolean };
     b.disabled = sim;
   }
@@ -57,6 +73,7 @@ function ocupado(sim: boolean): void {
 const ROTULOS: Readonly<Record<string, string>> = {
   gerar: "Gerar legendas",
   restaurar: "Restaurar original",
+  salvarChave: "Salvar chave",
 };
 
 /**
@@ -93,12 +110,14 @@ async function comLog(
   }
 }
 
-/** Le a sequencia e devolve tudo que o nucleo precisa. */
-async function lerTudo(): Promise<{
-  clipes: Awaited<ReturnType<typeof lerClipes>>;
-  cortes: number[];
-  palavras: ReturnType<typeof reconstruirTranscricao>;
-}> {
+/** O que o nucleo precisa para montar as legendas, venha a fala de onde vier. */
+interface Entrada {
+  readonly cortes: number[];
+  readonly palavras: PalavraEditada[];
+  readonly preset: Preset;
+}
+
+async function mostrarSequencia(): Promise<SequenceInfo> {
   const info = await comLimite("sequencia", getSequenceInfo());
   const nome = elemento("seqNome");
   nome.textContent = info.name;
@@ -107,6 +126,12 @@ async function lerTudo(): Promise<{
   // instrucao que continua na tela depois de cumprida vira ruido.
   elemento("seqDica").style.display = "none";
   registrar(`${info.fps.toFixed(2)} fps · ${info.videoTracks} video · ${info.captionTracks} caption`);
+  return info;
+}
+
+/** Caminho antigo: a transcricao que o proprio Premiere fez de cada midia. */
+async function lerTudo(): Promise<Entrada> {
+  await mostrarSequencia();
 
   const clipes = await comLimite("clipes", lerClipes(0));
   const cortes = await comLimite("cortes", lerCortes(0));
@@ -128,20 +153,95 @@ async function lerTudo(): Promise<{
   }
 
   const palavras = reconstruirTranscricao(clipes, mapa);
-  registrar(`${palavras.length} palavras no corte final`);
-  return { clipes, cortes, palavras };
+  registrar(`${palavras.length} palavras no corte final (transcricao do Premiere)`);
+  return { cortes, palavras, preset: PRESET_PADRAO };
+}
+
+/**
+ * Caminho novo: o ElevenLabs ouve o audio da sequencia inteira.
+ *
+ * O plugin exporta o audio sozinho (mesmo metodo do Auto Pausas), manda para
+ * o ElevenLabs e guarda a resposta. Gerar de novo com o mesmo audio nao paga
+ * de novo: a resposta guardada e reaproveitada.
+ */
+async function lerComElevenLabs(): Promise<Entrada> {
+  const chave = await comLimite("chave", lerChaveElevenLabs());
+  if (!chave) {
+    throw new Error(
+      "Sem chave do ElevenLabs. Cole a chave em 'Quem ouve o áudio' e clique em Salvar chave — " +
+        "ou desmarque o ElevenLabs para usar a transcrição do Premiere."
+    );
+  }
+
+  await mostrarSequencia();
+  const cortes = await comLimite("cortes", lerCortes(0));
+  registrar(`V1: ${cortes.length} cortes`);
+
+  estado("exportando áudio", "ativo");
+  const audio = await comLimite("exportar o áudio", exportarAudioDaSequencia(), 10 * 60 * 1000);
+  let json: string | null;
+  try {
+    const duracao = duracaoDoWav(audio.bytes);
+    registrar(
+      `áudio: ${duracao === null ? "?" : relogio(duracao)} · ` +
+        `${(audio.bytes.byteLength / 1e6).toFixed(1)} MB · exportado em ${(audio.ms / 1000).toFixed(1)} s`
+    );
+
+    if (audioMudo(audio.bytes)) {
+      throw new Error(
+        "O áudio exportado da sequência está mudo — nada foi enviado ao ElevenLabs. " +
+          "Confira se a faixa de áudio da fala (A1) não está silenciada (M) ou com outra faixa em solo (S)."
+      );
+    }
+
+    const assinatura = assinaturaDoAudio(audio.bytes);
+    json = await comLimite("transcrição guardada", lerTranscricaoGuardada(assinatura));
+    if (json !== null) {
+      registrar("mesmo áudio de antes: transcrição reaproveitada, sem custo");
+    } else {
+      estado("ElevenLabs ouvindo", "ativo");
+      const termos = termosChave(PRESET_ELEVENLABS);
+      registrar(`enviando ao ElevenLabs (${termos.length} termos-chave)…`);
+      const t0 = Date.now();
+      json = await comLimite(
+        "ElevenLabs",
+        transcreverNoElevenLabs(audio.bytes, chave, termos, registrar),
+        15 * 60 * 1000
+      );
+      registrar(`ElevenLabs respondeu em ${((Date.now() - t0) / 1000).toFixed(0)} s`);
+      const guardado = await comLimite("guardar transcrição", guardarTranscricao(assinatura, json));
+      registrar(`resposta guardada em ${guardado}`);
+    }
+  } finally {
+    // O WAV so serviu para o envio; nao deixar 50 MB sobrando por video.
+    await apagarArquivo(audio.caminho).catch(() => undefined);
+  }
+
+  const palavras = palavrasDoElevenLabs(json);
+  if (palavras === null) throw new Error("A resposta do ElevenLabs não é JSON legível.");
+  registrar(`${palavras.length} palavras ouvidas pelo ElevenLabs`);
+  return { cortes, palavras, preset: PRESET_ELEVENLABS };
+}
+
+function marcado(id: string): boolean {
+  return (elemento(id) as HTMLElement & { checked?: boolean }).checked === true;
 }
 
 async function gerar(): Promise<void> {
   estado("lendo sequência", "ativo");
-  const { clipes, cortes, palavras } = await lerTudo();
+  const usarEleven = marcado("usarEleven");
+  const { cortes, palavras, preset } = usarEleven ? await lerComElevenLabs() : await lerTudo();
   if (palavras.length === 0) {
-    throw new Error("Nenhuma palavra encontrada. A camera principal da V1 tem transcricao?");
+    throw new Error(
+      usarEleven
+        ? "O ElevenLabs não ouviu nenhuma palavra. O áudio da sequência está mudo (faixa silenciada)?"
+        : "Nenhuma palavra encontrada. A camera principal da V1 tem transcricao?"
+    );
   }
 
   estado("montando legendas", "ativo");
-  const blocos = gerarBlocos(palavras, cortes);
-  const problemas = validar(blocos);
+  const blocos = gerarBlocos(palavras, cortes, preset);
+  const problemas = validar(blocos, preset);
   const precos = blocos.filter((b) => b.estilo === "preco");
   const revisar = blocos.filter((b) => b.precisaRevisao);
 
@@ -201,11 +301,11 @@ async function gerar(): Promise<void> {
 
   // Levar o .srt a timeline por codigo nao existe (E7c falhou; API_PROOFS).
   registrar("");
-  registrar("AGORA, NO PREMIERE (2 arrastos + 2 estilos, e o minimo que a API permite):");
-  registrar("  1. Arrastar legendas.srt do painel Projeto para a timeline");
-  registrar("  2. Arrastar precos.srt na area vazia ACIMA da faixa criada");
-  registrar("  3. Estilo Pro-Captions (96) na faixa de texto");
-  registrar("  4. Estilo Pro-Captions Preco (150) na faixa de preco");
+  registrar("AGORA, NO PREMIERE:");
+  registrar("  1. Window > Extensions > Pro Captions: Timeline > Colocar legendas na timeline");
+  registrar("     (sem o ajudante: arrastar legendas.srt e precos.srt do painel Projeto)");
+  registrar("  2. Estilo Pro-Captions (96) na faixa de texto");
+  registrar("  3. Estilo Pro-Captions Preco (150) na faixa de preco");
   estado(
     revisar.length > 0 ? `${revisar.length} para revisar` : "legendas geradas",
     revisar.length > 0 ? "aviso" : "ok"
@@ -232,6 +332,38 @@ async function restaurar(): Promise<void> {
   // Numero zero tambem se escreve: silencio e indistinguivel de coisa quebrada.
   registrar(`${feitas} de ${midias.length} midia(s) restaurada(s)`);
   estado(feitas > 0 ? "restaurado" : "nada a restaurar", feitas > 0 ? "ok" : "aviso");
+}
+
+/** Mostra se ha chave salva, sem nunca mostrar a chave. */
+async function atualizarChave(): Promise<void> {
+  const chave = await comLimite("chave", lerChaveElevenLabs());
+  elemento("chaveEstado").textContent =
+    chave === null
+      ? "Sem chave salva. Crie uma em elevenlabs.io > Developers > API Keys e cole abaixo."
+      : `Chave salva (termina em ${chave.slice(-4)}).`;
+  if (chave === null) (elemento("usarEleven") as HTMLElement & { checked?: boolean }).checked = false;
+}
+
+async function salvarChave(): Promise<void> {
+  const campo = elemento("chave") as HTMLElement & { value?: string };
+  const chave = (campo.value ?? "").trim();
+  if (chave.length < 10) {
+    registrar("Cole a chave inteira no campo antes de salvar.");
+    estado("sem chave", "aviso");
+    return;
+  }
+  if (!chave.startsWith("sk_")) {
+    // A API so aceita chave secreta, que comeca com sk_. O ID da chave (o que
+    // o site mostra depois) foi colado no primeiro teste e deu erro 400.
+    registrar("Atenção: chaves do ElevenLabs começam com sk_. Essa não começa — confira se não é o ID da chave.");
+  }
+  await comLimite("salvar chave", salvarChaveElevenLabs(chave));
+  // O campo esvazia: a chave nao fica exposta na tela depois de salva.
+  campo.value = "";
+  (elemento("usarEleven") as HTMLElement & { checked?: boolean }).checked = true;
+  await atualizarChave();
+  registrar("chave do ElevenLabs salva neste computador");
+  estado("chave salva", "ok");
 }
 
 /**
@@ -291,5 +423,13 @@ export function mount(root: HTMLElement): void {
   elemento("restaurar").addEventListener("click", () => {
     void comLog("restaurar original", restaurar, { id: "restaurar", enquanto: "Restaurando..." });
   });
+  elemento("salvarChave").addEventListener("click", () => {
+    void comLog("salvar chave", salvarChave, { id: "salvarChave", enquanto: "Salvando..." });
+  });
   ligarAcao(elemento("logToggle"), alternarLog);
+
+  // Depois de ligar os botoes: se a leitura pendurar, o painel continua vivo.
+  void atualizarChave().catch(() => {
+    elemento("chaveEstado").textContent = "Não consegui ler a chave salva.";
+  });
 }

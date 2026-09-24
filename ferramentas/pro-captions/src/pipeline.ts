@@ -34,7 +34,7 @@ export function gerarBlocos(
   let ps = deTranscricao(palavras);
   ps = protegerTermos(ps, preset);
   ps = normalizarColoquial(ps);
-  ps = corrigirEAcento(ps);
+  if (!preset.confiarNoAcento) ps = corrigirEAcento(ps);
   ps = corrigirPorques(ps);
   return segmentar(ps, cortes, preset);
 }

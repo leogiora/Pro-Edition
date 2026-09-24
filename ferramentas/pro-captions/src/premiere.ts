@@ -5,6 +5,7 @@
  * Tudo aqui vem de prova executada no auto-broll. Ver docs/API_PROOFS.md.
  */
 
+import { candidatosDoPreset, PRESET_WAV, wavCompleto } from "./audio.ts";
 import type { ClipeComOrigem } from "./transcript.ts";
 
 declare function require(id: string): unknown;
@@ -323,4 +324,170 @@ export async function escreverTranscricao(nomeDaMidia: string, json: string): Pr
       adicionar(ppro.Transcript.createImportTextSegmentsAction(segmentos, clip));
     }
   );
+}
+
+/* ---------------------------------------------- audio para o ElevenLabs */
+
+interface Entrada {
+  readonly name: string;
+  readonly nativePath: string;
+  readonly isFolder?: boolean;
+  read(opcoes?: unknown): Promise<unknown>;
+  delete(): Promise<unknown>;
+  getEntries?(): Promise<Entrada[]>;
+}
+
+/**
+ * `getEntryWithUrl` quer `file:/C:/...` com UMA barra e sem escapar nada — o
+ * UXP codifica sozinho (UXP_ARMADILHAS.md, secao 6).
+ */
+function paraUrl(caminho: string): string {
+  return `file:/${caminho.trim().replace(/\\/g, "/").replace(/^\/+/, "")}`;
+}
+
+/** Arquivo ou pasta num caminho absoluto, ou null se nao existir. */
+async function entrada(caminho: string): Promise<Entrada | null> {
+  try {
+    return ((await uxp.storage.localFileSystem.getEntryWithUrl(paraUrl(caminho))) as Entrada | null) ?? null;
+  } catch {
+    return null;
+  }
+}
+
+async function lerBytes(arquivo: Entrada): Promise<Uint8Array> {
+  return new Uint8Array((await arquivo.read({ format: uxp.storage.formats.binary })) as ArrayBuffer);
+}
+
+export async function apagarArquivo(caminho: string): Promise<void> {
+  const velho = await entrada(caminho);
+  if (velho) await velho.delete();
+}
+
+/** O preset de WAV mono 16 kHz que vem com o Premiere. Lanca dizendo onde procurou. */
+async function acharPreset(): Promise<string> {
+  const adobe = await entrada("C:\\Program Files\\Adobe");
+  const pastas = adobe?.getEntries ? (await adobe.getEntries()).filter((e) => e.isFolder).map((e) => e.name) : [];
+  const tentados = candidatosDoPreset(String(uxp.host?.version ?? ""), pastas);
+  for (const caminho of tentados) {
+    if (await entrada(caminho)) return caminho;
+  }
+  throw new Error(
+    `Não achei o preset de áudio do Premiere (${PRESET_WAV}). Procurei em: ${
+      tentados.join(" ; ") || "nenhuma pasta do Premiere em C:\\Program Files\\Adobe"
+    }.`
+  );
+}
+
+/**
+ * Exporta o audio da sequencia ativa inteira como WAV mono 16 kHz na pasta de
+ * dados do plugin. Mesmo metodo do Auto Pausas (provado no Premiere real):
+ * `exportSequence` com o preset que vem instalado, `exportFull = true`.
+ *
+ * O WAV comeca no zero da sequencia, entao o tempo que o ElevenLabs devolver
+ * ja e tempo de sequencia. 16 kHz mono basta para fala e deixa o arquivo
+ * pequeno: 23 min viram uns 45 MB.
+ */
+export async function exportarAudioDaSequencia(): Promise<{
+  readonly caminho: string;
+  readonly bytes: Uint8Array;
+  readonly ms: number;
+}> {
+  const preset = await acharPreset();
+  const pasta = (await uxp.storage.localFileSystem.getDataFolder()) as { nativePath: string };
+  const caminho = `${pasta.nativePath.replace(/[\\/]+$/, "")}\\captions-audio.wav`;
+  await apagarArquivo(caminho);
+
+  const { sequence } = await handles();
+  const encoder = ppro.EncoderManager.getManager();
+  const tipo = ppro.Constants?.ExportType?.IMMEDIATELY ?? ppro.EncoderManager.EXPORT_IMMEDIATELY;
+  const t0 = Date.now();
+  const aceitou = (await encoder.exportSequence(sequence, tipo, caminho, preset, true)) as boolean;
+  if (!aceitou) throw new Error("O Premiere recusou exportar o áudio da sequência.");
+  const ms = Date.now() - t0;
+
+  const arquivo = await entrada(caminho);
+  if (!arquivo) throw new Error(`O export terminou, mas o arquivo não apareceu em ${caminho}.`);
+  let bytes = await lerBytes(arquivo);
+  // Se a promessa voltar antes de o arquivo fechar, espera o RIFF fechar.
+  for (let tentativa = 0; !wavCompleto(bytes) && tentativa < 20; tentativa++) {
+    await new Promise((r) => setTimeout(r, 500));
+    bytes = await lerBytes(arquivo);
+  }
+  if (!wavCompleto(bytes)) throw new Error("O WAV exportado ficou incompleto. Clique de novo.");
+  return { caminho, bytes, ms };
+}
+
+/* ------------------------------------------------ chave e transcricoes */
+
+const ARQUIVO_CHAVE = "elevenlabs-chave.json";
+const PREFIXO_TRANSCRICAO = "elevenlabs-transcricao-";
+/** Quantas respostas do ElevenLabs ficam guardadas para reaproveitar. */
+const TRANSCRICOES_GUARDADAS = 10;
+
+async function lerDados(nome: string): Promise<string | null> {
+  const pasta = await uxp.storage.localFileSystem.getDataFolder();
+  try {
+    const arquivo = await pasta.getEntry(nome);
+    return (await arquivo.read()) as string;
+  } catch {
+    return null;
+  }
+}
+
+async function gravarDados(nome: string, conteudo: string): Promise<string> {
+  const pasta = await uxp.storage.localFileSystem.getDataFolder();
+  const arquivo = await pasta.createFile(nome, { overwrite: true });
+  await arquivo.write(conteudo);
+  return arquivo.nativePath as string;
+}
+
+/**
+ * A chave fica na pasta de dados do plugin, no computador do editor — nunca
+ * no codigo nem no repositorio.
+ */
+export async function lerChaveElevenLabs(): Promise<string | null> {
+  const bruto = await lerDados(ARQUIVO_CHAVE);
+  if (bruto === null) return null;
+  try {
+    const chave = (JSON.parse(bruto) as { chave?: unknown }).chave;
+    return typeof chave === "string" && chave.trim().length > 0 ? chave.trim() : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function salvarChaveElevenLabs(chave: string): Promise<void> {
+  await gravarDados(ARQUIVO_CHAVE, JSON.stringify({ chave: chave.trim() }));
+}
+
+/** A resposta ja paga para este mesmo audio, ou null. */
+export async function lerTranscricaoGuardada(assinatura: string): Promise<string | null> {
+  return lerDados(`${PREFIXO_TRANSCRICAO}${assinatura}.json`);
+}
+
+/**
+ * Guarda a resposta crua do ElevenLabs. Serve para reaproveitar (gerar de
+ * novo sem pagar de novo) e para depurar: da para abrir o arquivo e ver
+ * exatamente o que foi ouvido. Mantem so as mais recentes.
+ */
+export async function guardarTranscricao(assinatura: string, json: string): Promise<string> {
+  const nomeAtual = `${PREFIXO_TRANSCRICAO}${assinatura}.json`;
+  const caminho = await gravarDados(nomeAtual, json);
+  try {
+    // O UXP nao da data confiavel dos arquivos, entao a ordem mora num indice:
+    // a mais recente na frente, e o que cair fora das N primeiras e apagado.
+    const indice = JSON.parse((await lerDados("elevenlabs-indice.json")) ?? "[]") as string[];
+    const novoIndice = [nomeAtual, ...indice.filter((n) => n !== nomeAtual)].slice(0, TRANSCRICOES_GUARDADAS);
+    const manter = new Set(novoIndice);
+    const pasta = (await uxp.storage.localFileSystem.getDataFolder()) as {
+      getEntries: () => Promise<Array<{ name: string; delete: () => Promise<unknown> }>>;
+    };
+    for (const e of await pasta.getEntries()) {
+      if (e.name.startsWith(PREFIXO_TRANSCRICAO) && !manter.has(e.name)) await e.delete();
+    }
+    await gravarDados("elevenlabs-indice.json", JSON.stringify(novoIndice));
+  } catch {
+    // Limpar e conveniencia: nunca pode derrubar a transcricao que ja chegou.
+  }
+  return caminho;
 }
