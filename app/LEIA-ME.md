@@ -31,7 +31,7 @@ empacotar um build "essentials" em `extraResources` e apontar
 `PRO_EDITION_FFMPEG` para ele (já suportado em `src/motor/midia.ts`).
 
 A chave do ElevenLabs e as transcrições pagas ficam em
-`%APPDATA%\pro-edition-app\` de cada máquina (a chave é cifrada pelo Windows e
+`%APPDATA%\Pro Edition\` de cada máquina (a chave é cifrada pelo Windows e
 não abre em outro computador).
 
 ## Como é feito
