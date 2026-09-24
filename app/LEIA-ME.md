@@ -77,6 +77,17 @@ cortada no fim de cada variação, no volume escolhido (padrão −20 dB).
 **Crop/flop do doutor largado na cadeira** é decisão de olho: continua manual.
 Automatizar pede ver o quadro (modelo de visão), fase futura.
 
+### Podcast AutoCut
+
+Entra o XML do podcast já sincronizado no Premiere (V1/A1 = pessoa A, V2/A2 =
+pessoa B). O nível de cada microfone (ffmpeg + `wav.ts`, janela de 20 ms) vai
+para a regra do painel (`src/autocut.ts`: `falaPorNivel`, `decidir`,
+`segmentar`). As quatro trilhas são cortadas nos mesmos quadros; câmera e
+microfone de quem não fala ficam desligados. Nada vai para o ElevenLabs.
+
+Teste com áudio real montado em dois microfones com vazamento: 1 troca aos
+20,1 s, 20 s de tela para cada um.
+
 **Limite:** o XML de saída leva a V1/A1 como o leitor entendeu (sem Lumetri).
 Se o Premiere perder a cor, copiar só a V2 da sequência importada para a
 sequência original (mesmo tempo, cola no 00:00 com a V2 alvo).
@@ -98,7 +109,7 @@ Legenda (é o "Abrir com" do Windows).
 | 2 | Auto Pausas: XML exportado do Premiere (ou brutas) → XML sem pausas + legenda | feito (2026-09-24), falta rodar com a chave |
 | 3 | Auto B-roll: XML → B-roll pela fala na V2, com o aprendizado do painel | feito (2026-09-24); o Aprender ainda é do painel |
 | 4 | Acabamento: Split, trilha por variação, B-roll e trilha terminando com o doutor | feito (2026-09-24); crop/flop do doutor fica manual |
-| 5 | Podcast AutoCut (2 câmeras, 2 microfones) | a fazer |
+| 5 | Podcast AutoCut: XML sincronizado → 4 trilhas cortadas juntas, quem fala ligado | feito (2026-09-24) |
 | 6 | Instalador `.exe` (Leo e Felipe) com ffmpeg junto | a fazer |
 
 ### Fase 0 — o que a prova precisa mostrar

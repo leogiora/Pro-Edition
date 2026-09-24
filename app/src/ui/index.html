@@ -39,11 +39,10 @@
     <section class="grupo">
       <h2>Podcast</h2>
       <div class="cards">
-        <div class="card em-breve">
+        <button class="card" data-abre="podcast" style="--acento:#ff7d71">
           <span class="card-nome">Podcast AutoCut</span>
-          <span class="card-desc">Duas câmeras, dois microfones: corta para quem está falando.</span>
-          <span class="selo">em construção</span>
-        </div>
+          <span class="card-desc">Duas câmeras, dois microfones: corta as quatro trilhas juntas e liga só quem está falando.</span>
+        </button>
       </div>
     </section>
   </main>
@@ -114,6 +113,28 @@
       <p id="acabFeito" class="grande"></p>
       <ul id="acabLinhas" class="linhas"></ul>
       <p id="acabSalvos" class="salvos"></p>
+    </section>
+  </main>
+
+  <main id="podcast" class="tela" hidden>
+    <div class="soltar" tabindex="0" role="button" data-escolher="xml">
+      <strong>Arraste o podcast sincronizado, exportado do Premiere (.xml)</strong>
+      <span>V1 e A1 = câmera e microfone da pessoa A · V2 e A2 = da pessoa B · ou clique para escolher</span>
+    </div>
+    <div class="linha-estado">
+      <span class="arquivo"></span>
+      <span class="estado"></span>
+    </div>
+    <section id="podEntrada" class="painel" hidden>
+      <p id="podResumo" class="grande"></p>
+      <ul id="podPessoas" class="linhas"></ul>
+      <p class="dica">Só o nível dos microfones é lido: nada vai para o ElevenLabs.</p>
+      <button id="podRodar" class="primario">Cortar para quem fala</button>
+    </section>
+    <section id="podResultado" class="painel" hidden>
+      <p id="podFeito" class="grande"></p>
+      <ul id="podLinhas" class="linhas"></ul>
+      <p id="podSalvos" class="salvos"></p>
     </section>
   </main>
 

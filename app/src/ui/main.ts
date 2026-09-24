@@ -36,12 +36,13 @@ const duracao = (s: number): string => {
 
 /* ---------------------------------------------------------------- telas */
 
-type Tela = "hall" | "pausas" | "broll" | "acabamento" | "legendas";
+type Tela = "hall" | "pausas" | "broll" | "acabamento" | "podcast" | "legendas";
 const TITULOS: Record<Tela, string> = {
   hall: "",
   pausas: "Auto Pausas",
   broll: "Auto B-roll",
   acabamento: "Acabamento",
+  podcast: "Podcast AutoCut",
   legendas: "Legendas",
 };
 let tela: Tela = "hall";
@@ -274,6 +275,54 @@ $<HTMLButtonElement>("acabRodar").addEventListener("click", async () => {
   }
 });
 
+/* ------------------------------------------------------------ podcast */
+
+let podcast = "";
+
+async function abrirPodcast(caminho: string): Promise<void> {
+  abrir("podcast");
+  podcast = caminho;
+  $("podEntrada").hidden = true;
+  $("podResultado").hidden = true;
+  linha("podcast").arquivo.textContent = nomeDe(caminho);
+  $("podcast").querySelector(".soltar")?.classList.add("compacto");
+  estado("podcast", "lendo", "ativo");
+  try {
+    const e = await pro.abrirPodcast(caminho);
+    $("podResumo").replaceChildren(`${e.nome} · `, Object.assign(document.createElement("strong"), { textContent: duracao(e.duracaoS) }));
+    $("podPessoas").replaceChildren(
+      Object.assign(document.createElement("li"), { textContent: `Pessoa A (V1/A1): ${e.pessoaA}` }),
+      Object.assign(document.createElement("li"), { textContent: `Pessoa B (V2/A2): ${e.pessoaB}` })
+    );
+    $("podEntrada").hidden = false;
+    estado("podcast", e.avisos.length > 0 ? e.avisos.join(" · ") : "pronto", e.avisos.length > 0 ? "" : "ok");
+  } catch (erro) {
+    estado("podcast", mensagem(erro), "erro");
+  }
+}
+
+$<HTMLButtonElement>("podRodar").addEventListener("click", async () => {
+  const botao = $<HTMLButtonElement>("podRodar");
+  botao.disabled = true;
+  estado("podcast", "começando", "ativo");
+  try {
+    const r = await pro.rodarPodcast(podcast);
+    $("podFeito").textContent = `${r.trocas} troca(s) de câmera`;
+    $("podLinhas").replaceChildren(
+      ...[`Pessoa A na tela: ${duracao(r.tempoA)}`, `Pessoa B na tela: ${duracao(r.tempoB)}`, ...r.avisos].map((t) =>
+        Object.assign(document.createElement("li"), { textContent: t })
+      )
+    );
+    mostrarSalvos($("podSalvos"), r.salvos);
+    $("podResultado").hidden = false;
+    estado("podcast", "no Premiere: Arquivo > Importar o .xml", "ok");
+  } catch (erro) {
+    estado("podcast", mensagem(erro), "erro");
+  } finally {
+    botao.disabled = false;
+  }
+});
+
 /* ------------------------------------------------------------ legendas */
 
 const MAX_CARACTERES = 20;
@@ -363,6 +412,7 @@ function receber(caminhos: string[]): void {
   const xml = caminhos.find((c) => /\.xml$/i.test(c));
   if (tela === "broll" && xml !== undefined) void abrirBroll(xml);
   else if (tela === "acabamento" && xml !== undefined) void abrirAcabamento(xml);
+  else if (tela === "podcast" && xml !== undefined) void abrirPodcast(xml);
   else if (tela === "pausas" || xml !== undefined || caminhos.length > 1) void abrirPausas(caminhos);
   else void gerar(caminhos[0]!);
 }

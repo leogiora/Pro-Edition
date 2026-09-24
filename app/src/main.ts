@@ -13,6 +13,7 @@ import { gerarLegendas, salvarSrts, type BlocoLegenda } from "./motor/legendas.t
 import { abrirParaAcabamento, rodarAcabamento, type OpcoesAcabamentoTela } from "./motor/acabamento.ts";
 import { abrirParaBroll, rodarBroll } from "./motor/broll.ts";
 import { abrirParaPausas, rodarPausas } from "./motor/pausas.ts";
+import { abrirParaPodcast, rodarPodcast } from "./motor/podcast.ts";
 
 const cfg = new Config(app.getPath("userData"));
 
@@ -119,6 +120,12 @@ ipcMain.handle("preferencias", () => cfg.preferencias());
 ipcMain.handle("acabamento:abrir", (_e, caminho: string) => abrirParaAcabamento(caminho, cfg));
 
 ipcMain.handle("acabamento:rodar", (_e, caminho: string, opcoes: OpcoesAcabamentoTela) => rodarAcabamento(caminho, opcoes, cfg));
+
+ipcMain.handle("podcast:abrir", (_e, caminho: string) => abrirParaPodcast(caminho));
+
+ipcMain.handle("podcast:rodar", (evento, caminho: string) =>
+  rodarPodcast(caminho, (texto) => evento.sender.send("aviso", texto))
+);
 
 ipcMain.handle("broll:pasta", async (evento) => {
   const janela = BrowserWindow.fromWebContents(evento.sender);

@@ -8,6 +8,7 @@ import type { EntradaPausas, ResultadoPausasSalvo } from "./motor/pausas.ts";
 import type { EntradaBroll, ResultadoBrollSalvo } from "./motor/broll.ts";
 import type { Preferencias } from "./motor/config.ts";
 import type { EntradaAcabamento, OpcoesAcabamentoTela, ResultadoAcabamentoSalvo } from "./motor/acabamento.ts";
+import type { EntradaPodcast, ResultadoPodcastSalvo } from "./motor/podcast.ts";
 
 export type {
   Legendas,
@@ -20,6 +21,8 @@ export type {
   EntradaAcabamento,
   OpcoesAcabamentoTela,
   ResultadoAcabamentoSalvo,
+  EntradaPodcast,
+  ResultadoPodcastSalvo,
 };
 
 export interface ProApi {
@@ -40,6 +43,8 @@ export interface ProApi {
   preferencias(): Promise<Preferencias>;
   abrirAcabamento(caminho: string): Promise<EntradaAcabamento>;
   rodarAcabamento(caminho: string, opcoes: OpcoesAcabamentoTela): Promise<ResultadoAcabamentoSalvo>;
+  abrirPodcast(caminho: string): Promise<EntradaPodcast>;
+  rodarPodcast(caminho: string): Promise<ResultadoPodcastSalvo>;
   /** Abre o seletor de pasta e guarda a escolha. null = cancelou. */
   escolherPastaBroll(): Promise<string | null>;
   /** Progresso do motor ("extraindo o áudio", "transcrevendo..."). */
