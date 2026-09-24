@@ -11,6 +11,7 @@
 <ExtensionManifest Version="7.0" ExtensionBundleId="com.leogi.procaptions.timeline" ExtensionBundleVersion="1.0.0" ExtensionBundleName="Pro Captions Timeline" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <ExtensionList>
     <Extension Id="com.leogi.procaptions.timeline.panel" Version="1.0.0" />
+    <Extension Id="com.leogi.procaptions.timeline.ponte" Version="1.0.0" />
   </ExtensionList>
   <ExecutionEnvironment>
     <HostList>
@@ -45,6 +46,34 @@
               <Height>160</Height>
               <Width>220</Width>
             </MinSize>
+          </Geometry>
+        </UI>
+      </DispatchInfo>
+    </Extension>
+    <!--
+      A ponte: sem janela, abre sozinha quando o Premiere abre e atende o
+      pedido do botao Editar do Pro Edition (ver proCaptions_atenderPedido).
+    -->
+    <Extension Id="com.leogi.procaptions.timeline.ponte">
+      <DispatchInfo>
+        <Resources>
+          <MainPath>./ponte.html</MainPath>
+          <ScriptPath>./host.jsx</ScriptPath>
+        </Resources>
+        <Lifecycle>
+          <AutoVisible>false</AutoVisible>
+          <StartOn>
+            <Event>com.adobe.csxs.events.ApplicationActivate</Event>
+            <Event>applicationActivate</Event>
+          </StartOn>
+        </Lifecycle>
+        <UI>
+          <Type>Custom</Type>
+          <Geometry>
+            <Size>
+              <Height>1</Height>
+              <Width>1</Width>
+            </Size>
           </Geometry>
         </UI>
       </DispatchInfo>

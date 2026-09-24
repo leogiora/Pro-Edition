@@ -4,7 +4,7 @@
  * testar sem UXP.
  */
 
-export type Ferramenta = "seletor" | "pausas" | "broll" | "captions" | "autocut" | "autosplit";
+export type Ferramenta = "seletor" | "editar" | "pausas" | "broll" | "captions" | "autocut" | "autosplit";
 
 export interface Tela {
   readonly html: string;

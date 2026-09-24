@@ -1,0 +1,90 @@
+<!-- Fragmento: o shell injeta isto em document.body, depois da folha da
+     familia (ferramentas/auto-broll/src/ui/styles.css). Sem CSS Grid, sem gap,
+     sem var(); botoes sao sp-button (ver UXP_ARMADILHAS.md). -->
+<style>
+  .marca-nome::before {
+    background-color: #eceef2;
+  }
+
+  .cod-editar {
+    color: #eceef2;
+  }
+
+  .etapa {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    margin: 0 0 6px 0;
+  }
+
+  .etapa-nota {
+    margin: 0 0 0 28px;
+    font-size: 11px;
+    color: #5f6774;
+  }
+
+  .log {
+    height: 260px;
+    margin: 0;
+  }
+</style>
+
+<header class="topo">
+  <div class="marca">
+    <span class="marca-nome">Editar</span>
+  </div>
+  <div id="edEstado" class="badge">carregando</div>
+</header>
+
+<main class="conteudo">
+  <section class="secao">
+    <div class="secao-cabeca">
+      <span class="cod">SEQ</span>
+      <span class="secao-rotulo">Sequência aberta</span>
+    </div>
+    <div class="secao-corpo">
+      <div id="edSeqNome" class="seq-nome" data-vazio="sim">Lendo…</div>
+      <div id="edSeqInfo" class="dica">Abra a sequência com o doutor na V1.</div>
+    </div>
+  </section>
+
+  <section class="secao">
+    <div class="secao-cabeca">
+      <span class="cod cod-editar">1×</span>
+      <span class="secao-rotulo">O que fazer</span>
+    </div>
+    <div class="secao-corpo">
+      <div class="etapa">
+        <sp-checkbox id="edPausas" checked>Tirar as pausas</sp-checkbox>
+        <span class="etapa-nota">zoom e posição de cada clipe acompanham os pedaços</span>
+      </div>
+      <div class="etapa">
+        <sp-checkbox id="edBroll" checked>Colocar B-roll pela fala</sp-checkbox>
+        <span class="etapa-nota">termina junto com o doutor em cada variação</span>
+      </div>
+      <div class="etapa">
+        <sp-checkbox id="edSplit">Split: doutor em cima, B-roll embaixo</sp-checkbox>
+      </div>
+      <div class="etapa">
+        <sp-checkbox id="edLegendas" checked>Legendas na timeline</sp-checkbox>
+        <span class="etapa-nota">texto e preço em faixas separadas</span>
+      </div>
+      <div class="dica">O áudio vai para o ElevenLabs uma vez só; a mesma fala serve para tudo.</div>
+    </div>
+  </section>
+
+  <div class="acao">
+    <sp-button id="edEditar" variant="cta">Editar</sp-button>
+    <sp-button id="edRelir" variant="secondary" quiet>Ler de novo</sp-button>
+  </div>
+
+  <section class="secao secao-log">
+    <div class="secao-cabeca">
+      <span class="cod">LOG</span>
+      <span class="secao-rotulo">Registro</span>
+    </div>
+    <div class="secao-corpo">
+      <pre id="edLog" class="log">…</pre>
+    </div>
+  </section>
+</main>

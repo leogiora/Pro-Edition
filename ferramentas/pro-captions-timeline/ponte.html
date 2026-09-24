@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<title>Pro Captions: ponte</title>
+</head>
+<body>
+<script>
+  // Aberta escondida junto com o Premiere (manifest: AutoVisible false +
+  // StartOn). Atende o pedido que o botao Editar do Pro Edition grava na pasta
+  // de dados: o UXP nao cria faixa de legenda, o ExtendScript cria.
+  var ocupado = false;
+  setInterval(function () {
+    if (ocupado || !window.__adobe_cep__) return;
+    ocupado = true;
+    window.__adobe_cep__.evalScript("proCaptions_atenderPedido()", function () {
+      ocupado = false;
+    });
+  }, 1500);
+</script>
+</body>
+</html>

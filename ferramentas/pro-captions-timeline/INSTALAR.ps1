@@ -24,6 +24,7 @@ if (Test-Path $destino) {
 New-Item -ItemType Directory -Force $destino | Out-Null
 Copy-Item (Join-Path $origem 'CSXS') $destino -Recurse
 Copy-Item (Join-Path $origem 'index.html') $destino
+Copy-Item (Join-Path $origem 'ponte.html') $destino
 Copy-Item (Join-Path $origem 'host.jsx') $destino
 Write-Host "ajudante instalado em: $destino"
 

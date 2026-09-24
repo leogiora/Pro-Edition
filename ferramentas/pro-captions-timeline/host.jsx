@@ -130,35 +130,86 @@ function proCaptions_status() {
     }
 }
 
+/**
+ * Importa os .srt dados e cria as faixas de legenda no zero da sequencia ativa.
+ * `precos` pode ser null (video sem preco).
+ */
+function proCaptions_colocarArquivos(legendas, precos) {
+    var seq = app.project.activeSequence;
+    if (!seq) return "ERRO|Nenhuma sequência ativa. Abra a sequência na timeline.";
+    var bin = proCaptions_bin();
+    var formato = (typeof Sequence !== "undefined" && Sequence.CAPTION_FORMAT_SUBTITLE !== undefined)
+        ? Sequence.CAPTION_FORMAT_SUBTITLE : undefined;
+    var feitas = [];
+    var arquivos = [legendas];
+    if (precos) arquivos.push(precos);
+
+    for (var i = 0; i < arquivos.length; i++) {
+        var item = proCaptions_importar(bin, arquivos[i]);
+        if (!item) return "ERRO|Não consegui importar " + arquivos[i].fsName;
+        var ok = (formato === undefined)
+            ? seq.createCaptionTrack(item, 0)
+            : seq.createCaptionTrack(item, 0, formato);
+        if (!ok) return "ERRO|O Premiere recusou criar a faixa de " + arquivos[i].name;
+        feitas.push(arquivos[i].name);
+    }
+    return "OK|Faixas de legenda criadas em “" + seq.name + "”: " + feitas.join(" e ") + ".\n" +
+        "Falta só o estilo: Pro-Captions (96) na faixa do texto e Pro-Captions Preço (150) na do preço.";
+}
+
 /** O botao: importa os .srt e cria as faixas de legenda no zero da sequencia. */
 function proCaptions_colocarNaTimeline() {
     try {
-        var seq = app.project.activeSequence;
-        if (!seq) return "ERRO|Nenhuma sequ\u00eancia ativa. Abra a sequ\u00eancia na timeline.";
         var achados = proCaptions_acharSrts();
         if (!achados) return "ERRO|Nenhum legendas.srt encontrado. Gere as legendas no Pro Captions primeiro.";
-
-        var bin = proCaptions_bin();
-        var formato = (typeof Sequence !== "undefined" && Sequence.CAPTION_FORMAT_SUBTITLE !== undefined)
-            ? Sequence.CAPTION_FORMAT_SUBTITLE : undefined;
-        var feitas = [];
-        var arquivos = [achados.legendas];
-        if (achados.precos) arquivos.push(achados.precos);
-
-        for (var i = 0; i < arquivos.length; i++) {
-            var item = proCaptions_importar(bin, arquivos[i]);
-            if (!item) return "ERRO|N\u00e3o consegui importar " + arquivos[i].fsName;
-            var ok = (formato === undefined)
-                ? seq.createCaptionTrack(item, 0)
-                : seq.createCaptionTrack(item, 0, formato);
-            if (!ok) return "ERRO|O Premiere recusou criar a faixa de " + arquivos[i].name;
-            feitas.push(arquivos[i].name);
-        }
-
-        return "OK|Faixas criadas: " + feitas.join(" e ") + ".\n" +
-            "legendas.srt gerado h\u00e1 " + proCaptions_minutosDesde(achados.legendas) + " min.\n" +
-            "Falta s\u00f3 o estilo: Pro-Captions (96) na faixa do texto e Pro-Captions Pre\u00e7o (150) na do pre\u00e7o.";
+        var r = proCaptions_colocarArquivos(achados.legendas, achados.precos);
+        return r.indexOf("OK|") === 0
+            ? r + "\nlegendas.srt gerado há " + proCaptions_minutosDesde(achados.legendas) + " min."
+            : r;
     } catch (e) {
         return "ERRO|" + e.toString() + (e.line ? " (linha " + e.line + ")" : "");
     }
+}
+
+/**
+ * A ponte com o painel Pro Edition (UXP), que nao cria faixa de legenda.
+ *
+ * O botao Editar grava `timeline-pedido.txt` na pasta de dados do plugin:
+ * linha 1 = id, linha 2 = caminho do legendas.srt, linha 3 = caminho do
+ * precos.srt (ou vazia). A ponte (ponte.html, aberta escondida junto com o
+ * Premiere) chama isto a cada segundo e meio; a resposta vai em
+ * `timeline-resposta.txt`, comecando pelo mesmo id.
+ */
+function proCaptions_atenderPedido() {
+    var pastas = proCaptions_candidatas();
+    for (var i = 0; i < pastas.length; i++) {
+        var pedido = new File(pastas[i] + "\timeline-pedido.txt");
+        if (!pedido.exists) continue;
+        pedido.encoding = "UTF-8";
+        pedido.open("r");
+        var texto = pedido.read();
+        pedido.close();
+        pedido.remove();
+
+        var linhas = texto.replace(/\r/g, "").split("\n");
+        var id = linhas[0];
+        var r;
+        try {
+            var legendas = new File(linhas[1]);
+            var precos = linhas[2] ? new File(linhas[2]) : null;
+            r = legendas.exists
+                ? proCaptions_colocarArquivos(legendas, precos && precos.exists ? precos : null)
+                : "ERRO|legendas.srt não encontrado em " + linhas[1];
+        } catch (e) {
+            r = "ERRO|" + e.toString() + (e.line ? " (linha " + e.line + ")" : "");
+        }
+
+        var resposta = new File(pastas[i] + "\timeline-resposta.txt");
+        resposta.encoding = "UTF-8";
+        resposta.open("w");
+        resposta.write(id + "\n" + r);
+        resposta.close();
+        return "ATENDIDO|" + r;
+    }
+    return "NADA|";
 }

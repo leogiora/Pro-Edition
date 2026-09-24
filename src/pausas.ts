@@ -348,6 +348,8 @@ export interface Pedaco {
   readonly midiaDeQ: number;
   readonly midiaAteQ: number;
   readonly destinoQ: number;
+  /** Onde o pedaco estava na sequencia ANTES do corte: e por ele que a fala e o enquadramento acompanham. */
+  readonly origemQ: number;
 }
 
 /**
@@ -381,6 +383,7 @@ export function pedacosDoPlano(
         midiaDeQ: c.midiaQ + (de - c.inicioQ),
         midiaAteQ: c.midiaQ + (ate - c.inicioQ),
         destinoQ: destino,
+        origemQ: de,
       });
       destino += ate - de;
     }

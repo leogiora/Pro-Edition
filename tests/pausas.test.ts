@@ -373,8 +373,8 @@ const trecho = (inicioQ: number, fimQ: number, destinoQ = 0) => ({ inicioQ, fimQ
 test("um clipe so: cada trecho vira um pedaco, colados a partir do zero", () => {
   const r = pedacosDoPlano([trecho(10, 40), trecho(50, 90, 30)], [{ inicioQ: 0, fimQ: 100, midiaQ: 0, fonte: 0 }]);
   assert.deepEqual(r.pedacos, [
-    { fonte: 0, midiaDeQ: 10, midiaAteQ: 40, destinoQ: 0 },
-    { fonte: 0, midiaDeQ: 50, midiaAteQ: 90, destinoQ: 30 },
+    { fonte: 0, midiaDeQ: 10, midiaAteQ: 40, destinoQ: 0, origemQ: 10 },
+    { fonte: 0, midiaDeQ: 50, midiaAteQ: 90, destinoQ: 30, origemQ: 50 },
   ]);
   assert.equal(r.totalQ, 70);
 });
@@ -387,8 +387,8 @@ test("trecho que atravessa uma emenda do editor vira dois pedacos, cada um da su
   ];
   const r = pedacosDoPlano([trecho(40, 60)], clipes);
   assert.deepEqual(r.pedacos, [
-    { fonte: 0, midiaDeQ: 140, midiaAteQ: 150, destinoQ: 0 },
-    { fonte: 0, midiaDeQ: 500, midiaAteQ: 510, destinoQ: 10 },
+    { fonte: 0, midiaDeQ: 140, midiaAteQ: 150, destinoQ: 0, origemQ: 40 },
+    { fonte: 0, midiaDeQ: 500, midiaAteQ: 510, destinoQ: 10, origemQ: 50 },
   ]);
 });
 
@@ -411,8 +411,8 @@ test("o espaco que o editor deixou entre dois videos continua do mesmo tamanho",
   ];
   const r = pedacosDoPlano([trecho(45, 60)], clipes);
   assert.deepEqual(r.pedacos, [
-    { fonte: 0, midiaDeQ: 45, midiaAteQ: 50, destinoQ: 0 },
-    { fonte: 0, midiaDeQ: 200, midiaAteQ: 205, destinoQ: 10 },
+    { fonte: 0, midiaDeQ: 45, midiaAteQ: 50, destinoQ: 0, origemQ: 45 },
+    { fonte: 0, midiaDeQ: 200, midiaAteQ: 205, destinoQ: 10, origemQ: 55 },
   ]);
   assert.equal(r.totalQ, 15);
 });
@@ -424,17 +424,17 @@ test("cada video encolhe sozinho e o proximo comeca depois do mesmo espaco", () 
   ];
   const r = pedacosDoPlano([trecho(10, 40), trecho(50, 90), trecho(120, 150)], clipes);
   assert.deepEqual(r.pedacos, [
-    { fonte: 0, midiaDeQ: 10, midiaAteQ: 40, destinoQ: 0 },
-    { fonte: 0, midiaDeQ: 50, midiaAteQ: 90, destinoQ: 30 },
+    { fonte: 0, midiaDeQ: 10, midiaAteQ: 40, destinoQ: 0, origemQ: 10 },
+    { fonte: 0, midiaDeQ: 50, midiaAteQ: 90, destinoQ: 30, origemQ: 50 },
     // o primeiro video acabou em 70; o espaco de 10 que o editor deixou fica
-    { fonte: 0, midiaDeQ: 310, midiaAteQ: 340, destinoQ: 80 },
+    { fonte: 0, midiaDeQ: 310, midiaAteQ: 340, destinoQ: 80, origemQ: 120 },
   ]);
   assert.equal(r.totalQ, 110);
 });
 
 test("clipe que nao comeca no inicio da midia desloca a midia do pedaco", () => {
   const r = pedacosDoPlano([trecho(10, 20)], [{ inicioQ: 0, fimQ: 100, midiaQ: 300, fonte: 0 }]);
-  assert.deepEqual(r.pedacos, [{ fonte: 0, midiaDeQ: 310, midiaAteQ: 320, destinoQ: 0 }]);
+  assert.deepEqual(r.pedacos, [{ fonte: 0, midiaDeQ: 310, midiaAteQ: 320, destinoQ: 0, origemQ: 10 }]);
 });
 
 // ------------------------------------------------ audio em tempo de midia

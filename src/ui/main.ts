@@ -14,6 +14,9 @@ import htmlCaptionsBruto from "../../ferramentas/pro-captions/src/ui/index.html"
 import cssCaptions from "../../ferramentas/pro-captions/src/ui/styles.css";
 import { mount as mountCaptions } from "../../ferramentas/pro-captions/src/ui/mount.ts";
 
+import htmlEditar from "./editar.html";
+import { mount as mountEditar } from "./editar-mount.ts";
+
 import htmlPausas from "./pausas.html";
 import { mount as mountPausas } from "./pausas-mount.ts";
 
@@ -112,6 +115,7 @@ function ligarAcao(node: HTMLElement, acao: () => void): void {
 }
 
 function montarSeletor(root: HTMLElement): void {
+  ligarAcao(root.querySelector<HTMLElement>("#cardEditar")!, () => mostrar("editar"));
   ligarAcao(root.querySelector<HTMLElement>("#cardPausas")!, () => mostrar("pausas"));
   ligarAcao(root.querySelector<HTMLElement>("#cardBroll")!, () => mostrar("broll"));
   ligarAcao(root.querySelector<HTMLElement>("#cardCaptions")!, () => mostrar("captions"));
@@ -125,6 +129,7 @@ function montarSeletor(root: HTMLElement): void {
 
 const REGISTRO: Readonly<Record<Ferramenta, Tela>> = {
   seletor: { html: htmlSeletor, css: cssSeletor, montar: montarSeletor },
+  editar: { html: htmlEditar, css: cssBroll, montar: mountEditar },
   pausas: { html: htmlPausas, css: cssBroll, montar: mountPausas },
   broll: { html: extrairCorpo(htmlBrollBruto), css: cssBroll, montar: mountBroll },
   captions: { html: extrairCorpo(htmlCaptionsBruto), css: cssCaptions, montar: mountCaptions },

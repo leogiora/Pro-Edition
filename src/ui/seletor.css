@@ -249,6 +249,14 @@ body {
   background-color: #2c323c;
 }
 
+.card-editar {
+  border-color: #333b47;
+}
+
+.card-editar .seg-novo {
+  background-color: #eceef2;
+}
+
 .card-pausas .seg-novo {
   background-color: #67c7e2;
 }
