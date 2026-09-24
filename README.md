@@ -34,8 +34,13 @@ do Premiere é ativada. Sem ela o Editar avisa e as legendas entram pelo painel
 Pro Captions: Timeline.
 
 Provado no Premiere 25.6.6 (TESTE Editar 3 e 5, 3:00 → 2:27 em 11 s). Ainda
-falta: o estilo da legenda (Pro-Captions 96 / Preço 150) é aplicado à mão, e a
-trilha e o fim de variação só existem no programa `app/`.
+falta: a trilha e o fim de variação só existem no programa `app/`.
+
+O estilo da legenda (Pro-Captions 96 / Preço 150) fica à mão, por escolha do Leo
+(2026-09-24). Nenhuma API aplica estilo em faixa de legenda (D-02, reconferido
+na tipagem UXP 26.3, no ExtendScript e nas preferências, que só guardam a fonte).
+O único caminho automático seria texto gráfico (`insertMogrtFromPath`) em vez de
+faixa de legenda, e ele preferiu manter a faixa editável no painel Text.
 
 ## Estrutura
 

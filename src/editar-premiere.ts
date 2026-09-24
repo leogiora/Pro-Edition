@@ -461,7 +461,10 @@ async function colocarLegendas(palavras: readonly PalavraEditada[], cortes: read
       "aviso"
     );
   } else if (resposta.startsWith("OK|")) {
-    registrar(resposta.slice(3).split("\n")[0] ?? "legendas na timeline", "ok");
+    const [feito, ...lembretes] = resposta.slice(3).split("\n");
+    registrar(feito || "legendas na timeline", "ok");
+    // Estilo de legenda nao e scriptavel (D-02, reconferido na API 26.3): a ponte lembra qual escolher.
+    for (const l of lembretes) if (l.trim()) registrar(l, "aviso");
   } else {
     registrar(`o ajudante recusou: ${resposta.replace(/^ERRO\|/, "")}`, "erro");
   }
