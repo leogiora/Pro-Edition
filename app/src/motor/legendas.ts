@@ -6,9 +6,8 @@
  * o .srt vai para a pasta do video, em vez do PluginData.
  */
 
-import { writeFile } from "node:fs/promises";
+import { readFile, writeFile } from "node:fs/promises";
 import { basename, dirname, extname, join } from "node:path";
-import { readFile } from "node:fs/promises";
 
 import { audioMudo } from "../../../ferramentas/pro-captions/src/audio.ts";
 import { assinaturaDoAudio, palavrasDoElevenLabs, termosChave } from "../../../ferramentas/pro-captions/src/elevenlabs.ts";
@@ -16,6 +15,7 @@ import { transcreverNoElevenLabs } from "../../../ferramentas/pro-captions/src/e
 import { blocosParaSrt, gerarBlocos } from "../../../ferramentas/pro-captions/src/pipeline.ts";
 import { PRESET_ELEVENLABS } from "../../../ferramentas/pro-captions/src/preset.ts";
 import { validar, type BlocoLegenda } from "../../../ferramentas/pro-captions/src/segmentar.ts";
+import type { PalavraEditada } from "../../../ferramentas/pro-captions/src/transcript.ts";
 import type { Config } from "./config.ts";
 import { audioParaTranscrever } from "./midia.ts";
 
@@ -29,6 +29,30 @@ export interface Legendas {
   readonly origem: "arquivo json" | "guardada" | "elevenlabs";
 }
 
+/**
+ * WAV -> JSON do ElevenLabs. A resposta fica guardada pela assinatura do
+ * audio: o mesmo arquivo nunca e pago duas vezes (legenda e pausas dividem).
+ */
+export async function transcreverWav(
+  wav: Uint8Array,
+  cfg: Config,
+  avisar: (texto: string) => void
+): Promise<{ json: string; guardada: boolean }> {
+  if (audioMudo(wav)) throw new Error("O áudio está mudo. Nada foi enviado ao ElevenLabs.");
+
+  const assinatura = assinaturaDoAudio(wav);
+  const guardada = await cfg.transcricao(assinatura);
+  if (guardada !== null) return { json: guardada, guardada: true };
+
+  const chave = await cfg.chave();
+  if (chave === null) throw new Error("Falta a chave do ElevenLabs. Cole a chave (começa com sk_) em Configurações.");
+
+  avisar("transcrevendo no ElevenLabs");
+  const json = await transcreverNoElevenLabs(wav, chave, termosChave(PRESET_ELEVENLABS), avisar);
+  await cfg.guardarTranscricao(assinatura, json);
+  return { json, guardada: false };
+}
+
 async function transcricao(
   caminho: string,
   cfg: Config,
@@ -37,22 +61,9 @@ async function transcricao(
   if (extname(caminho).toLowerCase() === ".json") {
     return { json: await readFile(caminho, "utf8"), origem: "arquivo json" };
   }
-
   avisar("extraindo o áudio");
-  const wav = await audioParaTranscrever(caminho);
-  if (audioMudo(wav)) throw new Error("O áudio deste arquivo está mudo. Nada foi enviado ao ElevenLabs.");
-
-  const assinatura = assinaturaDoAudio(wav);
-  const guardada = await cfg.transcricao(assinatura);
-  if (guardada !== null) return { json: guardada, origem: "guardada" };
-
-  const chave = await cfg.chave();
-  if (chave === null) throw new Error("Falta a chave do ElevenLabs. Cole a chave (começa com sk_) em Configurações.");
-
-  avisar("transcrevendo no ElevenLabs");
-  const json = await transcreverNoElevenLabs(wav, chave, termosChave(PRESET_ELEVENLABS), avisar);
-  await cfg.guardarTranscricao(assinatura, json);
-  return { json, origem: "elevenlabs" };
+  const { json, guardada } = await transcreverWav(await audioParaTranscrever(caminho), cfg, avisar);
+  return { json, origem: guardada ? "guardada" : "elevenlabs" };
 }
 
 export async function gerarLegendas(caminho: string, cfg: Config, avisar: (texto: string) => void): Promise<Legendas> {
@@ -62,8 +73,16 @@ export async function gerarLegendas(caminho: string, cfg: Config, avisar: (texto
   if (palavras.length === 0) throw new Error("Nenhuma palavra reconhecida neste arquivo.");
 
   avisar("montando legendas");
-  const blocos = gerarBlocos(palavras, [], PRESET_ELEVENLABS);
-  return { blocos, problemas: validar(blocos, PRESET_ELEVENLABS), origem };
+  return { ...legendasDasPalavras(palavras, []), origem };
+}
+
+/** Palavras ja no tempo da sequencia -> blocos. `cortes` em segundos. */
+export function legendasDasPalavras(
+  palavras: readonly PalavraEditada[],
+  cortes: readonly number[]
+): Pick<Legendas, "blocos" | "problemas"> {
+  const blocos = gerarBlocos(palavras, cortes, PRESET_ELEVENLABS);
+  return { blocos, problemas: validar(blocos, PRESET_ELEVENLABS) };
 }
 
 /**

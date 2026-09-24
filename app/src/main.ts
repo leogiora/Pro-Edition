@@ -10,6 +10,7 @@ import { join } from "node:path";
 
 import { Config } from "./motor/config.ts";
 import { gerarLegendas, salvarSrts, type BlocoLegenda } from "./motor/legendas.ts";
+import { abrirParaPausas, rodarPausas } from "./motor/pausas.ts";
 
 const cfg = new Config(app.getPath("userData"));
 
@@ -48,18 +49,24 @@ function criarJanela(): void {
   });
 }
 
-ipcMain.handle("escolher:midia", async (evento) => {
-  const janela = BrowserWindow.fromWebContents(evento.sender);
-  const opcoes = {
+const FILTROS = {
+  midia: {
     title: "Vídeo ou áudio da sequência",
-    properties: ["openFile" as const],
-    filters: [
-      { name: "Vídeo, áudio ou transcrição", extensions: MIDIA },
-      { name: "Todos", extensions: ["*"] },
-    ],
-  };
+    properties: ["openFile"] as Array<"openFile" | "multiSelections">,
+    filters: [{ name: "Vídeo, áudio ou transcrição", extensions: MIDIA }],
+  },
+  sequencia: {
+    title: "Sequência exportada do Premiere (.xml) ou as brutas",
+    properties: ["openFile", "multiSelections"] as Array<"openFile" | "multiSelections">,
+    filters: [{ name: "Sequência XML ou brutas", extensions: ["xml", "mp4", "mov", "mxf", "m4v"] }],
+  },
+};
+
+ipcMain.handle("escolher", async (evento, tipo: keyof typeof FILTROS) => {
+  const janela = BrowserWindow.fromWebContents(evento.sender);
+  const opcoes = { ...FILTROS[tipo], filters: [...FILTROS[tipo].filters, { name: "Todos", extensions: ["*"] }] };
   const r = janela === null ? await dialog.showOpenDialog(opcoes) : await dialog.showOpenDialog(janela, opcoes);
-  return r.canceled ? null : (r.filePaths[0] ?? null);
+  return r.canceled ? [] : r.filePaths;
 });
 
 ipcMain.handle("chave:tem", async () => (await cfg.chave()) !== null);
@@ -80,6 +87,12 @@ ipcMain.handle("legendas:gerar", (evento, caminho: string) =>
 ipcMain.handle("legendas:salvar", (_e, caminho: string, blocos: BlocoLegenda[]) => salvarSrts(caminho, blocos));
 
 ipcMain.handle("mostrar", (_e, caminho: string) => shell.showItemInFolder(caminho));
+
+ipcMain.handle("pausas:abrir", (_e, caminhos: string[]) => abrirParaPausas(caminhos));
+
+ipcMain.handle("pausas:rodar", (evento, caminhos: string[], opcoes: { legendas: boolean }) =>
+  rodarPausas(caminhos, opcoes, cfg, (texto) => evento.sender.send("aviso", texto))
+);
 
 // Uma janela so: abrir outro arquivo pelo Windows manda para a que ja existe.
 if (!app.requestSingleInstanceLock()) {

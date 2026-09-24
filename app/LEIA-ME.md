@@ -26,7 +26,22 @@ src/preload.ts     ponte: a tela só enxerga window.pro (src/api.ts)
 src/ui/            a tela (HTML/CSS/TS, mesma família visual do painel)
 src/motor/         ffmpeg/ffprobe, ElevenLabs, configurações (Node)
 src/xml.ts         Sequencia -> XML do Premiere (puro, testado)
+src/xml-ler.ts     XML exportado do Premiere -> Sequencia (puro, testado)
+src/pausas.ts      Auto Pausas sobre a Sequencia (regra de src/pausas.ts da raiz)
 ```
+
+### Auto Pausas
+
+Entra o XML que o Premiere exporta da sequência separada (ou as brutas
+soltas, cada uma vira um clipe com 3 s de respiro). Para cada arquivo da V1:
+ffmpeg tira o WAV, `wav.ts` mede o nível por janela de 20 ms, o ElevenLabs
+transcreve (guardado pela assinatura). A regra do painel decide os cortes; o
+espaço entre vídeos fica; cada pedaço herda escala/posição/espelho do clipe;
+crossfade de 2 quadros onde dois pedaços se encostam. A fala já sai no tempo
+da sequência nova, então a legenda vem junto sem transcrever de novo.
+
+Teste com dado real (áudio da variação 1, já limpo pelo Leo): 58,5 s → 57,3 s,
+11 cortes, 174 de 174 palavras presentes.
 
 O núcleo de cada ferramenta **não é copiado**: o programa importa direto de
 `ferramentas/pro-captions/src`, `ferramentas/auto-broll/src` e `src/` da raiz.
@@ -42,7 +57,7 @@ Legenda (é o "Abrir com" do Windows).
 |---|---|---|
 | 0 | Prova do XML no Premiere (`scripts/prova-xml.ts`) | **esperando o Leo importar** |
 | 1 | Programa + Legendas (arrasta vídeo/áudio → revisa → `.srt`) | feito (2026-09-24) |
-| 2 | Auto Pausas: brutas → sequência sem pausas (zoom 90, enquadramento) | a fazer |
+| 2 | Auto Pausas: XML exportado do Premiere (ou brutas) → XML sem pausas + legenda | feito (2026-09-24), falta rodar com a chave |
 | 3 | Auto B-roll: B-roll pela fala, na V2 | a fazer |
 | 4 | Auto Split, trilha e fim de cada variação, crop/flop | a fazer |
 | 5 | Podcast AutoCut (2 câmeras, 2 microfones) | a fazer |

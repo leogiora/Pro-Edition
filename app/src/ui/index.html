@@ -18,15 +18,14 @@
     <section class="grupo">
       <h2>Pro Ads</h2>
       <div class="cards">
+        <button class="card" data-abre="pausas" style="--acento:#4ecb8d">
+          <span class="card-nome">Auto Pausas</span>
+          <span class="card-desc">Tira as pausas e os respiros da sequência que você separou e devolve um XML pronto para o Premiere, com a legenda junto.</span>
+        </button>
         <button class="card" data-abre="legendas" style="--acento:#eeab4c">
           <span class="card-nome">Legendas</span>
           <span class="card-desc">Transcreve com o ElevenLabs e gera o .srt no seu padrão, com os preços num arquivo separado.</span>
         </button>
-        <div class="card em-breve">
-          <span class="card-nome">Auto Pausas</span>
-          <span class="card-desc">Tira as pausas e os respiros das brutas e entrega a sequência pronta para o Premiere.</span>
-          <span class="selo">em construção</span>
-        </div>
         <div class="card em-breve">
           <span class="card-nome">Auto B-roll</span>
           <span class="card-desc">Escolhe o B-roll pelo que o doutor fala e coloca na V2.</span>
@@ -51,14 +50,36 @@
     </section>
   </main>
 
+  <main id="pausas" class="tela" hidden>
+    <div class="soltar" tabindex="0" role="button" data-escolher="sequencia">
+      <strong>Arraste a sequência exportada do Premiere (.xml) ou as brutas</strong>
+      <span>No Premiere: selecione a sequência › Arquivo › Exportar › Final Cut Pro XML · ou clique para escolher</span>
+    </div>
+    <div class="linha-estado">
+      <span class="arquivo"></span>
+      <span class="estado"></span>
+    </div>
+    <section id="pausasEntrada" class="painel" hidden>
+      <p id="pausasResumo" class="grande"></p>
+      <label class="opcao"><input type="checkbox" id="pausasLegendas" checked /> Gerar a legenda junto (.srt), sem transcrever de novo</label>
+      <p id="pausasCusto" class="dica"></p>
+      <button id="pausasRodar" class="primario">Tirar pausas</button>
+    </section>
+    <section id="pausasResultado" class="painel" hidden>
+      <p id="pausasFeito" class="grande"></p>
+      <ul id="pausasLinhas" class="linhas"></ul>
+      <p id="pausasSalvos" class="salvos"></p>
+    </section>
+  </main>
+
   <main id="legendas" class="tela" hidden>
-    <div id="soltar" class="soltar" tabindex="0" role="button">
+    <div class="soltar" tabindex="0" role="button" data-escolher="midia">
       <strong>Arraste o vídeo ou o áudio da sequência</strong>
       <span>exportado desde o começo da sequência, para o tempo da legenda bater · ou clique para escolher</span>
     </div>
     <div class="linha-estado">
-      <span id="arquivo" class="arquivo"></span>
-      <span id="estado" class="estado"></span>
+      <span class="arquivo"></span>
+      <span class="estado"></span>
     </div>
     <div id="resultado" hidden>
       <div class="resumo">

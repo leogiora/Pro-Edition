@@ -21,30 +21,121 @@ const $ = <T extends HTMLElement = HTMLElement>(id: string): T => {
 const mensagem = (erro: unknown): string =>
   (erro instanceof Error ? erro.message : String(erro)).replace(/^Error invoking remote method '[^']+': (Error: )?/, "");
 
-const MAX_CARACTERES = 20;
+const nomeDe = (caminho: string): string => caminho.split(/[\\/]/).pop() ?? caminho;
 
 const relogio = (s: number): string => {
   const m = Math.floor(s / 60);
   return `${String(m).padStart(2, "0")}:${(s - m * 60).toFixed(2).padStart(5, "0")}`;
 };
 
+/** 27:18 — para duracao, nao para posicao de legenda. */
+const duracao = (s: number): string => {
+  const t = Math.round(s);
+  return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, "0")}`;
+};
+
 /* ---------------------------------------------------------------- telas */
 
-const TITULOS: Record<string, string> = { legendas: "Legendas" };
+type Tela = "hall" | "pausas" | "legendas";
+const TITULOS: Record<Tela, string> = { hall: "", pausas: "Auto Pausas", legendas: "Legendas" };
+let tela: Tela = "hall";
 
-function abrir(tela: "hall" | "legendas"): void {
-  for (const id of ["hall", "legendas"]) $(id).hidden = id !== tela;
-  $("voltar").hidden = tela === "hall";
-  $("marca").hidden = tela !== "hall";
-  $("titulo").textContent = TITULOS[tela] ?? "";
+function abrir(nova: Tela): void {
+  tela = nova;
+  for (const id of Object.keys(TITULOS)) $(id).hidden = id !== nova;
+  $("voltar").hidden = nova === "hall";
+  $("marca").hidden = nova !== "hall";
+  $("titulo").textContent = TITULOS[nova];
 }
 
 for (const card of document.querySelectorAll<HTMLElement>("[data-abre]")) {
-  card.addEventListener("click", () => abrir(card.dataset.abre as "legendas"));
+  card.addEventListener("click", () => abrir(card.dataset.abre as Tela));
 }
 $("voltar").addEventListener("click", () => abrir("hall"));
 
+/** A linha de arquivo + estado da tela aberta. */
+function linha(t: Tela): { arquivo: HTMLElement; estado: HTMLElement } {
+  const raiz = $(t);
+  return { arquivo: raiz.querySelector(".arquivo") as HTMLElement, estado: raiz.querySelector(".estado") as HTMLElement };
+}
+
+function estado(t: Tela, texto: string, tom: "" | "ativo" | "ok" | "erro" = ""): void {
+  const el = linha(t).estado;
+  el.textContent = texto;
+  el.className = `estado ${tom}`;
+}
+
+pro.aoAvisar((texto) => estado(tela, texto, "ativo"));
+
+function mostrarSalvos(p: HTMLElement, caminhos: readonly string[]): void {
+  p.replaceChildren(`Salvo: ${caminhos.map(nomeDe).join(" · ")}`);
+  const botao = document.createElement("button");
+  botao.textContent = "Mostrar na pasta";
+  botao.addEventListener("click", () => void pro.mostrarNaPasta(caminhos[0] ?? ""));
+  p.append(botao);
+  p.hidden = false;
+}
+
+/* ---------------------------------------------------------- auto pausas */
+
+let pausas: string[] = [];
+
+async function abrirPausas(caminhos: string[]): Promise<void> {
+  abrir("pausas");
+  pausas = caminhos;
+  $("pausasEntrada").hidden = true;
+  $("pausasResultado").hidden = true;
+  linha("pausas").arquivo.textContent = caminhos.length === 1 ? nomeDe(caminhos[0]!) : `${caminhos.length} brutas`;
+  $("pausas").querySelector(".soltar")?.classList.add("compacto");
+  estado("pausas", "lendo", "ativo");
+  try {
+    const e = await pro.abrirPausas(caminhos);
+    $("pausasResumo").innerHTML = "";
+    $("pausasResumo").append(
+      `${e.nome} · ${e.clipes} clipe(s) de ${e.arquivos.length} arquivo(s) · `,
+      Object.assign(document.createElement("strong"), { textContent: duracao(e.duracaoS) })
+    );
+    $("pausasCusto").textContent =
+      `O áudio de cada arquivo inteiro vai para o ElevenLabs uma vez (o que já foi transcrito não é cobrado de novo).`;
+    $("pausasEntrada").hidden = false;
+    estado("pausas", e.avisos.length > 0 ? e.avisos.join(" · ") : "pronto para cortar", e.avisos.length > 0 ? "" : "ok");
+  } catch (erro) {
+    estado("pausas", mensagem(erro), "erro");
+  }
+}
+
+$<HTMLButtonElement>("pausasRodar").addEventListener("click", async () => {
+  const botao = $<HTMLButtonElement>("pausasRodar");
+  botao.disabled = true;
+  $("pausasResultado").hidden = true;
+  estado("pausas", "começando", "ativo");
+  try {
+    const r = await pro.rodarPausas(pausas, { legendas: $<HTMLInputElement>("pausasLegendas").checked });
+    $("pausasFeito").replaceChildren(
+      Object.assign(document.createElement("strong"), { textContent: `${duracao(r.antesS)} → ${duracao(r.depoisS)}` }),
+      ` · ${r.cortes} pausas cortadas`
+    );
+    $("pausasLinhas").replaceChildren(
+      ...r.conferencia.linhas.map((t) => Object.assign(document.createElement("li"), { textContent: t, className: r.conferencia.ok ? "ok" : "erro" })),
+      ...r.avisos.map((t) => Object.assign(document.createElement("li"), { textContent: t }))
+    );
+    mostrarSalvos($("pausasSalvos"), r.salvos);
+    $("pausasResultado").hidden = false;
+    estado(
+      "pausas",
+      r.conferencia.ok ? "no Premiere: Arquivo > Importar o .xml (e os .srt, se gerou)" : "confira as palavras que sumiram antes de usar",
+      r.conferencia.ok ? "ok" : "erro"
+    );
+  } catch (erro) {
+    estado("pausas", mensagem(erro), "erro");
+  } finally {
+    botao.disabled = false;
+  }
+});
+
 /* ------------------------------------------------------------ legendas */
+
+const MAX_CARACTERES = 20;
 
 let atual: { caminho: string; legendas: Legendas } | null = null;
 
@@ -54,28 +145,20 @@ const ORIGEM: Record<Legendas["origem"], string> = {
   elevenlabs: "transcrito agora no ElevenLabs",
 };
 
-function estado(texto: string, tom: "" | "ativo" | "ok" | "erro" = ""): void {
-  const el = $("estado");
-  el.textContent = texto;
-  el.className = `estado ${tom}`;
-}
-
-pro.aoAvisar((texto) => estado(texto, "ativo"));
-
 async function gerar(caminho: string): Promise<void> {
   abrir("legendas");
   atual = null;
   $("resultado").hidden = true;
-  $("arquivo").textContent = caminho.split(/[\\/]/).pop() ?? caminho;
-  $("soltar").classList.add("compacto");
-  estado("começando", "ativo");
+  linha("legendas").arquivo.textContent = nomeDe(caminho);
+  $("legendas").querySelector(".soltar")?.classList.add("compacto");
+  estado("legendas", "começando", "ativo");
   try {
     const legendas = await pro.gerarLegendas(caminho);
     atual = { caminho, legendas };
     mostrar(legendas);
-    estado(ORIGEM[legendas.origem], "ok");
+    estado("legendas", ORIGEM[legendas.origem], "ok");
   } catch (erro) {
-    estado(mensagem(erro), "erro");
+    estado("legendas", mensagem(erro), "erro");
   }
 }
 
@@ -86,8 +169,7 @@ function mostrar(l: Legendas): void {
     `${l.blocos.length} blocos · ${precos} preço(s)` + (revisar > 0 ? ` · ${revisar} para revisar` : "");
   $("salvos").hidden = true;
 
-  const lista = $("blocos");
-  lista.replaceChildren(
+  $("blocos").replaceChildren(
     ...l.blocos.map((b, i) => {
       const li = document.createElement("li");
       li.className = `bloco${b.estilo === "preco" ? " preco" : ""}${b.precisaRevisao ? " revisar" : ""}`;
@@ -112,59 +194,58 @@ function mostrar(l: Legendas): void {
 
       li.append(tempo, texto, conta);
       if (b.motivos.length > 0) {
-        const motivo = document.createElement("span");
-        motivo.className = "motivo";
-        motivo.textContent = b.motivos.join(" · ");
-        li.append(motivo);
+        li.append(Object.assign(document.createElement("span"), { className: "motivo", textContent: b.motivos.join(" · ") }));
       }
       return li;
     })
   );
   $("resultado").hidden = false;
-  if (l.problemas.length > 0) estado(`corrija antes de salvar: ${l.problemas[0]}`, "erro");
+  if (l.problemas.length > 0) estado("legendas", `corrija antes de salvar: ${l.problemas[0]}`, "erro");
 }
 
 $<HTMLButtonElement>("salvar").addEventListener("click", async () => {
   if (atual === null) return;
   const blocos: BlocoLegenda[] = atual.legendas.blocos;
   try {
-    const caminhos = await pro.salvarLegendas(atual.caminho, blocos);
-    const p = $("salvos");
-    p.replaceChildren(`Salvo: ${caminhos.map((c) => c.split(/[\\/]/).pop()).join(" e ")}`);
-    const botao = document.createElement("button");
-    botao.textContent = "Mostrar na pasta";
-    botao.addEventListener("click", () => void pro.mostrarNaPasta(caminhos[0] ?? atual?.caminho ?? ""));
-    p.append(botao);
-    p.hidden = false;
-    estado("no Premiere: Arquivo > Importar os .srt e arrastar para a timeline", "ok");
+    mostrarSalvos($("salvos"), await pro.salvarLegendas(atual.caminho, blocos));
+    estado("legendas", "no Premiere: Arquivo > Importar os .srt e arrastar para a timeline", "ok");
   } catch (erro) {
-    estado(mensagem(erro), "erro");
+    estado("legendas", mensagem(erro), "erro");
   }
 });
 
-const soltar = $("soltar");
-const escolher = async (): Promise<void> => {
-  const caminho = await pro.escolherMidia();
-  if (caminho !== null) void gerar(caminho);
-};
-soltar.addEventListener("click", () => void escolher());
-soltar.addEventListener("keydown", (e) => {
-  if (e.key === "Enter" || e.key === " ") void escolher();
-});
+/* ------------------------------------------------- arquivos que chegam */
+
+/** .xml e brutas vao para o Auto Pausas; audio, video solto e .json para a Legenda. */
+function receber(caminhos: string[]): void {
+  if (caminhos.length === 0) return;
+  const xml = caminhos.some((c) => /\.xml$/i.test(c));
+  if (tela === "pausas" || xml || caminhos.length > 1) void abrirPausas(caminhos);
+  else void gerar(caminhos[0]!);
+}
+
+for (const zona of document.querySelectorAll<HTMLElement>("[data-escolher]")) {
+  const escolher = async (): Promise<void> => receber(await pro.escolher(zona.dataset.escolher as "midia" | "sequencia"));
+  zona.addEventListener("click", () => void escolher());
+  zona.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") void escolher();
+  });
+}
+
 // Soltar em qualquer lugar da janela: mirar na caixa nao deveria importar.
+const zonaAtiva = (): HTMLElement | null => $(tela).querySelector(".soltar");
 document.addEventListener("dragover", (e) => {
   e.preventDefault();
-  soltar.classList.add("sobre");
+  zonaAtiva()?.classList.add("sobre");
 });
-document.addEventListener("dragleave", () => soltar.classList.remove("sobre"));
+document.addEventListener("dragleave", () => zonaAtiva()?.classList.remove("sobre"));
 document.addEventListener("drop", (e) => {
   e.preventDefault();
-  soltar.classList.remove("sobre");
-  const arquivo = e.dataTransfer?.files[0];
-  if (arquivo !== undefined) void gerar(pro.caminhoDe(arquivo));
+  zonaAtiva()?.classList.remove("sobre");
+  receber([...(e.dataTransfer?.files ?? [])].map((f) => pro.caminhoDe(f)));
 });
 
-pro.aoAbrir((caminho) => void gerar(caminho));
+pro.aoAbrir((caminho) => receber([caminho]));
 
 /* -------------------------------------------------------------- config */
 
