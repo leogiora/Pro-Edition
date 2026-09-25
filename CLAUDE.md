@@ -5,6 +5,7 @@
 - `HANDOFF-cowork-2026-09-24.md` — contexto da última sessão (legendas com
   ElevenLabs, ajudante da timeline, testes pendentes). **Ler primeiro.**
 - `README.md` — estrutura do repositório e comandos.
+- `docs/PERFIS_DE_EDICAO.md` — os 6 perfis (3 empresas × Ads/Instagram): legenda, layout, música e o que dá para automatizar. **Todo ajuste de edição pertence a um perfil.**
 - `app/LEIA-ME.md` — o **programa** Pro Edition (fora do Premiere): fases,
   como cada ferramenta vira XML, o que falta provar no Premiere.
 - `ferramentas/pro-captions/RETOMAR-pro-captions.md` — estado do Pro Captions.
