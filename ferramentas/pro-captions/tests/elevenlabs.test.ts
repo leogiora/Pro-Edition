@@ -230,6 +230,18 @@ test("assinatura: igual para o mesmo audio, muda quando o audio muda", () => {
   assert.equal(assinaturaDoAudio(a), assinaturaDoAudio(wav(1)));
   assert.notEqual(assinaturaDoAudio(a), assinaturaDoAudio(b));
   assert.notEqual(assinaturaDoAudio(a), assinaturaDoAudio(wav(2)));
+
+  // O Premiere poe data e ID do export depois do `data`: nao pode mudar a assinatura.
+  const comMeta = (id: string): Uint8Array => {
+    const m = new Uint8Array(a.length + 16);
+    m.set(a);
+    m.set([..."LIST"].map((c) => c.charCodeAt(0)), a.length);
+    new DataView(m.buffer).setUint32(a.length + 4, 8, true);
+    m.set([...id].map((c) => c.charCodeAt(0)), a.length + 8);
+    return m;
+  };
+  assert.equal(assinaturaDoAudio(comMeta("21:02:20")), assinaturaDoAudio(comMeta("21:03:39")));
+  assert.equal(assinaturaDoAudio(comMeta("21:02:20")), assinaturaDoAudio(a));
 });
 
 test("audio mudo e detectado antes de pagar o envio", () => {

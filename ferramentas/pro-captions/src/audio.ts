@@ -76,6 +76,12 @@ function lerPcm(bytes: Uint8Array): Pcm | null {
   return null;
 }
 
+/** So as amostras do WAV (o chunk `data`); o arquivo inteiro se nao for WAV legivel. */
+export function somDoWav(bytes: Uint8Array): Uint8Array {
+  const pcm = lerPcm(bytes);
+  return pcm === null ? bytes : bytes.subarray(pcm.inicio, pcm.inicio + pcm.tamanho);
+}
+
 /** Duracao de um WAV PCM em segundos, lida do cabecalho. `null` se nao for WAV legivel. */
 export function duracaoDoWav(bytes: Uint8Array): number | null {
   const pcm = lerPcm(bytes);

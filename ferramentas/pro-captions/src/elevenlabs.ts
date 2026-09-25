@@ -17,6 +17,7 @@
  * Puro: nao conhece o Premiere, nao faz I/O.
  */
 
+import { somDoWav } from "./audio.ts";
 import type { Preset } from "./preset.ts";
 import type { PalavraEditada } from "./transcript.ts";
 
@@ -260,8 +261,13 @@ export function recusouTermos(status: number, corpo: string): boolean {
  * FNV-1a de 32 bits sobre o tamanho e uma amostra espalhada pelo arquivo:
  * ler 50 MB byte a byte no painel custaria segundos, e qualquer mudanca de
  * corte ou de volume muda muitas amostras.
+ *
+ * So o som entra na conta: o Premiere grava a data do export e um ID novo
+ * (chunks LIST, bext e _PMX) em todo WAV, e com eles a mesma fala pagava de
+ * novo a cada clique (3 transcricoes do mesmo audio em 2026-09-24).
  */
-export function assinaturaDoAudio(bytes: Uint8Array): string {
+export function assinaturaDoAudio(arquivo: Uint8Array): string {
+  const bytes = somDoWav(arquivo);
   let h = 0x811c9dc5;
   const misturar = (b: number): void => {
     h ^= b & 0xff;
