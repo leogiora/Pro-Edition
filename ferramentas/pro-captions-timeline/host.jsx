@@ -1,8 +1,8 @@
 /*
  * Pro Captions: Timeline \u2014 lado ExtendScript.
  *
- * Pega o legendas.srt e o precos.srt que o Pro Captions acabou de gerar e
- * cria as faixas de legenda na sequencia ativa, com Sequence.createCaptionTrack().
+ * A ponte recebe do Pro Edition (UXP) o caminho do legendas.srt e do precos.srt
+ * e cria as faixas de legenda na sequencia ativa, com Sequence.createCaptionTrack().
  *
  * ExtendScript e ES3: nada de let/const, arrow function, template string nem
  * JSON (nao existe aqui). Cada funcao devolve texto simples para o painel.
@@ -10,48 +10,21 @@
 
 var PROCAPTIONS_PASTA_BIN = "Pro Captions";
 
-/** Onde o Pro Captions grava os .srt: a pasta de dados do plugin UXP. */
+/**
+ * A pasta de dados do plugin UXP DESTE Premiere, onde chega o pedido. So a da
+ * propria versao: com o 2025 e o 2026 abertos juntos, a ponte do outro
+ * pegaria o pedido e criaria as legendas na sequencia errada.
+ */
 function proCaptions_candidatas() {
     var appData = Folder.userData.fsName; // C:\Users\<voce>\AppData\Roaming
     var versao = String(app.version).split(".")[0];
-    var versoes = [versao, "27", "26", "25"];
     var ids = ["com.leogi.proedition", "com.leogi.procaptions"];
     var pastas = [];
-    var vistas = {};
-    for (var v = 0; v < versoes.length; v++) {
-        if (vistas[versoes[v]]) continue;
-        vistas[versoes[v]] = true;
-        for (var i = 0; i < ids.length; i++) {
-            pastas.push(appData + "\\Adobe\\UXP\\PluginsStorage\\PPRO\\" + versoes[v] +
-                "\\External\\" + ids[i] + "\\PluginData");
-        }
+    for (var i = 0; i < ids.length; i++) {
+        pastas.push(appData + "\\Adobe\\UXP\\PluginsStorage\\PPRO\\" + versao +
+            "\\External\\" + ids[i] + "\\PluginData");
     }
     return pastas;
-}
-
-/** O legendas.srt mais recente entre as pastas candidatas, com o precos.srt da mesma pasta. */
-function proCaptions_acharSrts() {
-    var pastas = proCaptions_candidatas();
-    var melhor = null;
-    for (var i = 0; i < pastas.length; i++) {
-        var legendas = new File(pastas[i] + "\\legendas.srt");
-        if (!legendas.exists) continue;
-        if (melhor === null || legendas.modified.getTime() > melhor.legendas.modified.getTime()) {
-            var precos = new File(pastas[i] + "\\precos.srt");
-            // O Pro Captions so grava precos.srt quando o video tem preco. Um
-            // precos.srt de uma geracao ANTERIOR ficaria na pasta e entraria no
-            // video errado \u2014 so vale o que nasceu junto com o legendas.srt.
-            var mesmaGeracao = precos.exists &&
-                Math.abs(precos.modified.getTime() - legendas.modified.getTime()) <= 120000;
-            melhor = {
-                pasta: pastas[i],
-                legendas: legendas,
-                precos: mesmaGeracao ? precos : null,
-                precosAntigo: precos.exists && !mesmaGeracao
-            };
-        }
-    }
-    return melhor;
 }
 
 function proCaptions_ehBin(item) {
@@ -105,31 +78,6 @@ function proCaptions_importar(bin, arquivo) {
     return novo;
 }
 
-function proCaptions_minutosDesde(arquivo) {
-    return Math.round((new Date().getTime() - arquivo.modified.getTime()) / 60000);
-}
-
-/** Consulta sem mexer em nada: o que o botao vai usar. */
-function proCaptions_status() {
-    try {
-        var seq = app.project.activeSequence;
-        var achados = proCaptions_acharSrts();
-        var linhas = [];
-        linhas.push(seq ? "Sequ\u00eancia ativa: " + seq.name : "Nenhuma sequ\u00eancia ativa.");
-        if (!achados) {
-            linhas.push("Nenhum legendas.srt encontrado. Gere as legendas no Pro Captions primeiro.");
-        } else {
-            linhas.push("legendas.srt gerado h\u00e1 " + proCaptions_minutosDesde(achados.legendas) + " min.");
-            linhas.push(achados.precos ? "precos.srt encontrado." :
-                achados.precosAntigo ? "precos.srt antigo ignorado (\u00e9 de outra gera\u00e7\u00e3o)." :
-                "Sem precos.srt (v\u00eddeo sem pre\u00e7o?).");
-        }
-        return "OK|" + linhas.join("\n");
-    } catch (e) {
-        return "ERRO|" + e.toString();
-    }
-}
-
 /**
  * Importa os .srt dados e cria as faixas de legenda no zero da sequencia ativa.
  * `precos` pode ser null (video sem preco).
@@ -155,20 +103,6 @@ function proCaptions_colocarArquivos(legendas, precos) {
     }
     return "OK|Faixas de legenda criadas em \u201c" + seq.name + "\u201d: " + feitas.join(" e ") + ".\n" +
         "Falta s\u00f3 o estilo: Pro-Captions (96) na faixa do texto e Pro-Captions Pre\u00e7o (150) na do pre\u00e7o.";
-}
-
-/** O botao: importa os .srt e cria as faixas de legenda no zero da sequencia. */
-function proCaptions_colocarNaTimeline() {
-    try {
-        var achados = proCaptions_acharSrts();
-        if (!achados) return "ERRO|Nenhum legendas.srt encontrado. Gere as legendas no Pro Captions primeiro.";
-        var r = proCaptions_colocarArquivos(achados.legendas, achados.precos);
-        return r.indexOf("OK|") === 0
-            ? r + "\nlegendas.srt gerado h\u00e1 " + proCaptions_minutosDesde(achados.legendas) + " min."
-            : r;
-    } catch (e) {
-        return "ERRO|" + e.toString() + (e.line ? " (linha " + e.line + ")" : "");
-    }
 }
 
 /**

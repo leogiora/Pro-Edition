@@ -1,50 +1,49 @@
-# Pro Captions: Timeline
+# Pro Captions: Timeline (a ponte)
 
-Um botão que coloca na timeline as legendas que o Pro Captions gerou:
-**legendas.srt** e **precos.srt** viram duas faixas de legenda na sequência
-ativa, começando no zero. Acaba com os 2 arrastos por vídeo.
+Um ajudante **sem janela** que cria as faixas de legenda na sequência ativa:
+**legendas.srt** e **precos.srt** viram duas faixas, começando no zero. Quem
+pede é o Pro Edition — o botão **Editar** e o cartão **Pro Captions** — sozinho,
+no fim de cada geração. Não aparece em Window > Extensions (o painel com botão
+saiu em 2026-09-24).
 
 ## Por que é um plugin separado
 
 O Pro Edition é um plugin UXP (o formato novo da Adobe), e o UXP ainda não
 cria faixa de legenda — conferido até a tipagem `27.0.0-beta.57`, de
 2026-09-23. O formato antigo (CEP + ExtendScript) tem
-`Sequence.createCaptionTrack()`, e é só isso que este ajudante usa.
+`Sequence.createCaptionTrack()`, e é só isso que a ponte usa.
 
-Quando a Adobe liberar isso no UXP, o botão passa para o Pro Captions e este
-ajudante pode ser apagado. A Adobe vai aposentar o CEP, mas não deu data;
-funciona no Premiere 2025 e 2026.
+Quando a Adobe liberar isso no UXP, a ponte pode ser apagada. A Adobe vai
+aposentar o CEP; funciona no Premiere 2025 e 2026.
 
-## Instalar (uma vez)
+## Instalar (uma vez, e de novo quando este código mudar)
 
 1. Feche o Premiere.
 2. Botão direito em `INSTALAR.ps1` > **Executar com o PowerShell**.
-3. Abra o Premiere > **Window > Extensions > Pro Captions: Timeline**.
 
-## Usar (por vídeo)
+## Como funciona
 
-1. Pro Edition > Pro Captions > **Gerar legendas**.
-2. Pro Captions: Timeline > **Colocar legendas na timeline**.
-3. Escolher o estilo de cada faixa: **Pro-Captions** (96) na do texto e
-   **Pro-Captions Preço** (150) na do preço. Estilo de legenda não é
-   scriptável em nenhum dos dois formatos de plugin.
+A ponte (`ponte.html`) abre escondida quando a janela do Premiere é ativada e,
+a cada 1,5 s, chama `proCaptions_atenderPedido()`. O Pro Edition grava
+`timeline-pedido.txt` na pasta de dados do plugin
+(`%APPDATA%\Adobe\UXP\PluginsStorage\PPRO\<versão>\External\...\PluginData`):
+id, caminho do legendas.srt, caminho do precos.srt. A ponte importa os .srt na
+pasta **Pro Captions** do painel Projeto, cria as faixas e responde em
+`timeline-resposta.txt`. Só olha a pasta da própria versão do Premiere: com o
+2025 e o 2026 abertos juntos, cada um atende o seu.
 
-Clicar duas vezes cria as faixas duas vezes — Ctrl+Z desfaz.
+Sem resposta em 20 s, o Pro Edition importa os .srt no painel Projeto e avisa
+para arrastar na mão.
 
-## Como ele acha os arquivos
-
-Procura `legendas.srt` na pasta de dados do Pro Edition e do Pro Captions
-(`%APPDATA%\Adobe\UXP\PluginsStorage\PPRO\<versão>\External\...\PluginData`) e
-usa o mais recente. O `precos.srt` só entra se foi gerado junto (até 2 min de
-diferença): um `precos.srt` de outro vídeo é ignorado e o painel avisa.
-
-Os .srt são importados de novo a cada clique, dentro da pasta **Pro Captions**
-do painel Projeto, para pegar sempre o conteúdo atual.
+O estilo de cada faixa continua manual: **Pro-Captions** (96) na do texto e
+**Pro-Captions Preço** (150) na do preço. Estilo de legenda não é scriptável
+(D-02, reconferido na UXP 26.3).
 
 ## Arquivos
 
-- `CSXS/manifest.xml` — registro do painel no Premiere
-- `index.html` — o painel (um botão)
-- `host.jsx` — o ExtendScript que importa e cria as faixas
+- `CSXS/manifest.xml` — registro da ponte no Premiere
+- `ponte.html` — o laço escondido
+- `host.jsx` — o ExtendScript que importa e cria as faixas (só ASCII: o
+  ExtendScript lê o arquivo sem saber que é UTF-8)
 - `INSTALAR.ps1` — copia para `%APPDATA%\Adobe\CEP\extensions` e liga o
   `PlayerDebugMode` (necessário para plugin CEP não assinado)

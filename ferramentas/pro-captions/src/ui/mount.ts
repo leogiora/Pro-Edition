@@ -19,7 +19,7 @@ import {
   getSequenceInfo,
   gravarLog,
   guardarTranscricao,
-  importarArquivos,
+  legendasNaTimeline,
   lerBackup,
   lerChaveElevenLabs,
   lerClipes,
@@ -289,23 +289,10 @@ async function gerar(): Promise<void> {
   registrar("");
   for (const c of caminhos) registrar(`gerado: ${c}`);
 
-  try {
-    await comLimite("importar", importarArquivos(caminhos));
-    registrar("");
-    registrar("importados no painel Projeto");
-  } catch (erro) {
-    const msg = erro instanceof Error ? erro.message : String(erro);
-    registrar(`importacao automatica falhou (${msg})`);
-    registrar("Importar na mao: Arquivo > Importar, escolher os arquivos acima");
-  }
-
-  // Levar o .srt a timeline por codigo nao existe (E7c falhou; API_PROOFS).
+  // O UXP nao cria faixa de legenda (E7c); a ponte CEP cria, e sem ela os
+  // .srt vao para o painel Projeto para o arrasto manual.
   registrar("");
-  registrar("AGORA, NO PREMIERE:");
-  registrar("  1. Window > Extensions > Pro Captions: Timeline > Colocar legendas na timeline");
-  registrar("     (sem o ajudante: arrastar legendas.srt e precos.srt do painel Projeto)");
-  registrar("  2. Estilo Pro-Captions (96) na faixa de texto");
-  registrar("  3. Estilo Pro-Captions Preco (150) na faixa de preco");
+  for (const l of await legendasNaTimeline(caminhos[0]!, caminhos[1] ?? null)) registrar(l.texto);
   estado(
     revisar.length > 0 ? `${revisar.length} para revisar` : "legendas geradas",
     revisar.length > 0 ? "aviso" : "ok"

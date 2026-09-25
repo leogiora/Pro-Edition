@@ -305,6 +305,69 @@ export async function importarArquivos(caminhos: readonly string[]): Promise<boo
 // silencio: createInsertProjectItemAction executa sem erro e nada aparece —
 // a acao nao roteia item de legenda para caption track. Veredito em
 // docs/API_PROOFS.md; nao reimplementar sem API nova de caption track.
+// Quem cria a faixa e a ponte CEP (ferramentas/pro-captions-timeline).
+
+async function arquivoDeDados(nome: string): Promise<{ read: () => Promise<string>; delete: () => Promise<unknown> } | null> {
+  const pasta = await uxp.storage.localFileSystem.getDataFolder();
+  try {
+    return await pasta.getEntry(nome);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Pede a ponte CEP (abre escondida junto com o Premiere) para criar as faixas
+ * de legenda na sequencia ativa. O pedido e um arquivo na pasta de dados; a
+ * resposta volta noutro. Sem resposta em 20 s, a ponte nao esta rodando.
+ */
+async function pedirAPonte(legendas: string, precos: string | null): Promise<string | null> {
+  const velha = await arquivoDeDados("timeline-resposta.txt");
+  if (velha) await velha.delete();
+  const id = String(Date.now());
+  await salvarSrt("timeline-pedido.txt", [id, legendas, precos ?? ""].join("\n"));
+  for (let t = 0; t < 40; t++) {
+    await new Promise((r) => setTimeout(r, 500));
+    const resposta = await arquivoDeDados("timeline-resposta.txt");
+    if (!resposta) continue;
+    const [quem, ...resto] = (await resposta.read()).split("\n");
+    if (quem?.trim() !== id) continue;
+    await resposta.delete();
+    return resto.join("\n");
+  }
+  const pedido = await arquivoDeDados("timeline-pedido.txt");
+  if (pedido) await pedido.delete();
+  return null;
+}
+
+export interface LinhaTimeline {
+  readonly texto: string;
+  readonly tipo: "ok" | "aviso" | "erro";
+}
+
+/**
+ * Poe legendas.srt (e precos.srt) na timeline pela ponte. Sem ponte, importa
+ * os .srt no painel Projeto para o arrasto manual. Devolve as linhas do log.
+ */
+export async function legendasNaTimeline(legendas: string, precos: string | null): Promise<LinhaTimeline[]> {
+  const resposta = await pedirAPonte(legendas, precos);
+  if (resposta === null) {
+    const importou = await importarArquivos(precos ? [legendas, precos] : [legendas]).catch(() => false);
+    return [
+      { texto: "a ponte da timeline não respondeu (ela liga junto com o Premiere; se persistir, rode o INSTALAR.ps1 do pro-captions-timeline)", tipo: "aviso" },
+      importou
+        ? { texto: "os .srt foram importados no painel Projeto: arraste cada um para a timeline", tipo: "aviso" }
+        : { texto: `importe e arraste na mão: ${legendas}${precos ? ` e ${precos}` : ""}`, tipo: "aviso" },
+    ];
+  }
+  if (!resposta.startsWith("OK|")) return [{ texto: `a ponte recusou: ${resposta.replace(/^ERRO\|/, "")}`, tipo: "erro" }];
+  // Estilo de legenda nao e scriptavel (D-02, reconferido na API 26.3): a ponte lembra qual escolher.
+  const [feito, ...lembretes] = resposta.slice(3).split("\n");
+  return [
+    { texto: feito || "legendas na timeline", tipo: "ok" },
+    ...lembretes.filter((l) => l.trim()).map((texto) => ({ texto, tipo: "aviso" as const })),
+  ];
+}
 
 /** Escreve o transcript de volta no ClipProjectItem da midia. */
 export async function escreverTranscricao(nomeDaMidia: string, json: string): Promise<void> {

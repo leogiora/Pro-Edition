@@ -42,6 +42,7 @@ import { transcreverNoElevenLabs } from "../ferramentas/pro-captions/src/elevenl
 import { blocosParaSrt, gerarBlocos } from "../ferramentas/pro-captions/src/pipeline.ts";
 import {
   guardarTranscricao,
+  legendasNaTimeline,
   lerChaveElevenLabs,
   lerTranscricaoGuardada,
   salvarSrt,
@@ -403,42 +404,6 @@ async function colocarBroll(
 
 // ---------------------------------------------------------------- legendas
 
-const PEDIDO = "timeline-pedido.txt";
-const RESPOSTA = "timeline-resposta.txt";
-
-async function arquivoDeDados(nome: string): Promise<{ read: () => Promise<string>; delete: () => Promise<unknown> } | null> {
-  const pasta = (await uxp.storage.localFileSystem.getDataFolder()) as { getEntry: (n: string) => Promise<unknown> };
-  try {
-    return (await pasta.getEntry(nome)) as { read: () => Promise<string>; delete: () => Promise<unknown> };
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Pede ao ajudante CEP (que abre escondido junto com o Premiere) para criar as
- * faixas de legenda. O pedido e um arquivo na pasta de dados; a resposta
- * volta outro. Sem resposta em 20 s, o ajudante nao esta rodando.
- */
-async function pedirLegendasNaTimeline(legendas: string, precos: string | null): Promise<string | null> {
-  const velha = await arquivoDeDados(RESPOSTA);
-  if (velha) await velha.delete();
-  const id = String(Date.now());
-  await salvarSrt(PEDIDO, [id, legendas, precos ?? ""].join("\n"));
-  for (let t = 0; t < 40; t++) {
-    await new Promise((r) => setTimeout(r, 500));
-    const resposta = await arquivoDeDados(RESPOSTA);
-    if (!resposta) continue;
-    const [quem, ...resto] = (await resposta.read()).split("\n");
-    if (quem?.trim() !== id) continue;
-    await resposta.delete();
-    return resto.join("\n");
-  }
-  const pedido = await arquivoDeDados(PEDIDO);
-  if (pedido) await pedido.delete();
-  return null;
-}
-
 async function colocarLegendas(palavras: readonly PalavraEditada[], cortes: readonly number[], registrar: Registrar): Promise<void> {
   const blocos = gerarBlocos(palavras, cortes, PRESET_ELEVENLABS);
   const problemas = validar(blocos, PRESET_ELEVENLABS);
@@ -454,20 +419,7 @@ async function colocarLegendas(palavras: readonly PalavraEditada[], cortes: read
   registrar(`${blocos.length} legendas · ${precos.length} preço(s) · ${revisar.length} para revisar`, "passo");
   for (const b of revisar.slice(0, 6)) registrar(`  revisar ${relogio(b.inicio)}: ${b.motivos.join("; ")}`, "aviso");
 
-  const resposta = await pedirLegendasNaTimeline(caminhoLegendas, caminhoPrecos);
-  if (resposta === null) {
-    registrar(
-      "o ajudante da timeline não respondeu. Abra Window > Extensions > Pro Captions: Timeline e clique em Colocar legendas.",
-      "aviso"
-    );
-  } else if (resposta.startsWith("OK|")) {
-    const [feito, ...lembretes] = resposta.slice(3).split("\n");
-    registrar(feito || "legendas na timeline", "ok");
-    // Estilo de legenda nao e scriptavel (D-02, reconferido na API 26.3): a ponte lembra qual escolher.
-    for (const l of lembretes) if (l.trim()) registrar(l, "aviso");
-  } else {
-    registrar(`o ajudante recusou: ${resposta.replace(/^ERRO\|/, "")}`, "erro");
-  }
+  for (const l of await legendasNaTimeline(caminhoLegendas, caminhoPrecos)) registrar(l.texto, l.tipo);
 }
 
 // ------------------------------------------------------------------- tudo

@@ -9,7 +9,7 @@ O **programa** `app/` é o Pro Edition fora do Premiere (ver `app/LEIA-ME.md`).
 | Pro Ads | **Editar** (tudo de uma vez) | `src/editar*.ts`   |
 | Pro Ads | Auto B-roll     | `ferramentas/auto-broll/`   |
 | Pro Ads | Pro Captions    | `ferramentas/pro-captions/` |
-| Pro Ads | Pro Captions: Timeline (ajudante CEP, painel separado) | `ferramentas/pro-captions-timeline/` |
+| Pro Ads | ponte das legendas (CEP escondido, sem menu) | `ferramentas/pro-captions-timeline/` |
 | Pro Ads | Auto Split      | `src/autosplit*.ts`         |
 | Podcast | Podcast AutoCut | `src/autocut*.ts`           |
 
@@ -30,8 +30,8 @@ cria as faixas de legenda e de preço. O registro de cada execução fica em
 UXP não cria faixa de legenda. Quem cria é a **ponte**: uma extensão CEP escondida
 (`ferramentas/pro-captions-timeline/ponte.html`) que abre com o Premiere e atende
 o pedido que o Editar grava em `timeline-pedido.txt`. Ela só liga quando a janela
-do Premiere é ativada. Sem ela o Editar avisa e as legendas entram pelo painel
-Pro Captions: Timeline.
+do Premiere é ativada. O cartão Pro Captions usa a mesma ponte. Sem ela, os .srt vão para o painel
+Projeto e o registro manda arrastar.
 
 Provado no Premiere 25.6.6 (TESTE Editar 3 e 5, 3:00 → 2:27 em 11 s). Ainda
 falta: a trilha e o fim de variação só existem no programa `app/`.

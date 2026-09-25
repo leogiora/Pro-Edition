@@ -5,13 +5,14 @@
   Existe por um motivo so: o UXP (formato do Pro Edition) nao cria faixa de
   legenda nem poe um .srt na timeline — conferido ate a tipagem 27.0.0-beta.57
   (2026-09-23). O ExtendScript tem Sequence.createCaptionTrack(), e e isso
-  que este painel chama. Quando a Adobe liberar isso no UXP, este ajudante
-  morre e o botao vai para o Pro Captions.
+  que a ponte chama. Quando a Adobe liberar isso no UXP, este ajudante morre.
+
+  Nao aparece em Window > Extensions (sem <Menu>): o painel visivel saiu em
+  2026-09-24, o Editar e o Pro Captions pedem direto a ponte.
 -->
-<ExtensionManifest Version="7.0" ExtensionBundleId="com.leogi.procaptions.timeline" ExtensionBundleVersion="1.0.0" ExtensionBundleName="Pro Captions Timeline" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+<ExtensionManifest Version="7.0" ExtensionBundleId="com.leogi.procaptions.timeline" ExtensionBundleVersion="1.1.0" ExtensionBundleName="Pro Captions Timeline" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <ExtensionList>
-    <Extension Id="com.leogi.procaptions.timeline.panel" Version="1.0.0" />
-    <Extension Id="com.leogi.procaptions.timeline.ponte" Version="1.0.0" />
+    <Extension Id="com.leogi.procaptions.timeline.ponte" Version="1.1.0" />
   </ExtensionList>
   <ExecutionEnvironment>
     <HostList>
@@ -25,34 +26,9 @@
     </RequiredRuntimeList>
   </ExecutionEnvironment>
   <DispatchInfoList>
-    <Extension Id="com.leogi.procaptions.timeline.panel">
-      <DispatchInfo>
-        <Resources>
-          <MainPath>./index.html</MainPath>
-          <ScriptPath>./host.jsx</ScriptPath>
-        </Resources>
-        <Lifecycle>
-          <AutoVisible>true</AutoVisible>
-        </Lifecycle>
-        <UI>
-          <Type>Panel</Type>
-          <Menu>Pro Captions: Timeline</Menu>
-          <Geometry>
-            <Size>
-              <Height>260</Height>
-              <Width>320</Width>
-            </Size>
-            <MinSize>
-              <Height>160</Height>
-              <Width>220</Width>
-            </MinSize>
-          </Geometry>
-        </UI>
-      </DispatchInfo>
-    </Extension>
     <!--
       A ponte: sem janela, abre sozinha quando o Premiere abre e atende o
-      pedido do botao Editar do Pro Edition (ver proCaptions_atenderPedido).
+      pedido do Pro Edition (ver proCaptions_atenderPedido).
     -->
     <Extension Id="com.leogi.procaptions.timeline.ponte">
       <DispatchInfo>

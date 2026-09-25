@@ -23,7 +23,6 @@ if (Test-Path $destino) {
 }
 New-Item -ItemType Directory -Force $destino | Out-Null
 Copy-Item (Join-Path $origem 'CSXS') $destino -Recurse
-Copy-Item (Join-Path $origem 'index.html') $destino
 Copy-Item (Join-Path $origem 'ponte.html') $destino
 Copy-Item (Join-Path $origem 'host.jsx') $destino
 Write-Host "ajudante instalado em: $destino"
@@ -36,5 +35,5 @@ foreach ($v in 9..13) {
 Write-Host "PlayerDebugMode ligado (CSXS.9 a CSXS.13)"
 
 Write-Host ""
-Write-Host "PRONTO. Abra o Premiere e va em Window > Extensions > Pro Captions: Timeline."
+Write-Host "PRONTO. A ponte abre escondida junto com o Premiere; o Pro Edition usa sozinho."
 Read-Host "Aperte Enter para fechar"
