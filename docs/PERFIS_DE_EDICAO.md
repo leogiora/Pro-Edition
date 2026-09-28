@@ -77,7 +77,13 @@ com o código** (Auto B-roll e Acabamento em `app/LEIA-ME.md`):
   link". Contra o planejador (`ferramentas/auto-broll/src/plano.ts`): o
   programa deu 6 na variação 1, e mesmo o `REGRAS_DENSAS` (1,2 a 3 s, sem
   passar do fim da frase) deixaria de fora 16 dos 37 clipes só pela
-  duração.
+  duração. **Variações 4–6 (save das 15:15):** 9, 12 e 12 brolls, cobrindo
+  45%, 71% e 52%; o padrão se repete. **Desde 28/09 a densidade máxima monta
+  como ele:** o broll vai até o próximo (ou até o fim da fala), atravessando
+  a frase. Nas 6 variações, 61 brolls contra 70 dele (antes 49), 55 no mesmo
+  ponto e 61% do tempo de broll dele coberto (antes 51%). Item de lista
+  abaixo de 1,2 s continua de fora: com piso menor, o planejador picotava
+  frase normal (`plano.ts`, `ateOProximo`).
 - **O que ele fez com a sugestão do painel.** Nas variações 2 e 3 o que
   estava na V2 antes dele (tela cheia, sem crop — o jeito do painel) dá
   o antes e depois. Das 14 colocações, 10 ficaram no mesmo ponto com o

@@ -48,7 +48,10 @@ o Leo antes de mexer):
    faladas e clipes longos. Extrator e JSON em
    `C:\Edição\...\Andro 19.09\teste-broll\` (`gabarito_broll.py`). Rodar de
    novo quando o Leo acabar mais variações; as que têm light leak são as
-   acabadas.
+   acabadas. **Rodado de novo às 15:15 (variações 1–6):** a densidade máxima
+   agora deixa o broll ir até o próximo, atravessando a frase (49 → 61
+   brolls contra 70 do Leo; `simular.ts` na mesma pasta mede). Falta ver no
+   Premiere, com Analisar numa variação sem broll.
 3. **Split do Andro no Acabamento.** O broll é constante e dá pra
    automatizar: preenche a largura, borda de cima em ~1120 px, Feather 7%.
    O doutor não tem número fixo. O 540/580 com Escala 57 do Andro 19.09 é

@@ -40,7 +40,7 @@ dicionário de sinônimos) contra o texto da fala.
 |---|---|
 | **Pasta de B-rolls** | Onde ficam os arquivos `.mp4` que ele pode inserir. Fica salvo depois da primeira vez. |
 | **Preencher a tela** | Escala o B-roll pra cobrir o quadro inteiro, mesmo que a proporção não bata exatamente. |
-| **Densidade máxima** | Afrouxa as regras de *espaçamento* entre B-rolls (não a qualidade do match) pra caber mais na timeline. Ligue quando achar que ficou "espaçado demais". |
+| **Densidade máxima** | Afrouxa as regras de *espaçamento* entre B-rolls (não a qualidade do match) pra caber mais na timeline. Ligue quando achar que ficou "espaçado demais". Ligado, cada B-roll vai até o próximo começar (no máximo 3 s), atravessando a frase como o Leo monta, e nunca passa do fim da fala. |
 | **Remover o áudio** | Tira o som original do clipe de B-roll ao inserir (a trilha/voz principal nunca é tocada, isso é só o áudio que vem junto do arquivo de vídeo). |
 | **Analisar e inserir** | O botão principal: faz tudo — lê, casa, planeja e insere. |
 | **Aprender** | Só ensina, não insere nada. Use depois de editar a timeline na mão (apagar o que não serviu, adicionar B-roll seu) sem rodar uma análise nova. |
@@ -136,7 +136,8 @@ Mensagens mais comuns e o que significam:
 | `nenhuma sugestao passou (melhor: 50%)` | Achou algo parecido, mas não o bastante (limite é 60%). Não é erro — é o filtro de qualidade funcionando. |
 | `nenhuma sugestao passou (melhor: 100%, caiu para 50% pelo aprendizado)` | O casamento era bom, mas você já apagou esse par vezes demais e ele não entra mais sozinho. Se foi engano, coloque um B-roll desse conceito na mão — o crédito reabilita. |
 | `já há B-roll aí, deixei como está` | Tem alguma coisa em cima daquele instante em **qualquer** faixa de vídeo acima da V1 (não só a que ele usa). Nunca insere por cima. |
-| `muito perto do B-roll anterior` / `conceito repetido há menos de 8s` | Regra de espaçamento — ative "Densidade máxima" se quiser afrouxar isso. |
+| `muito perto do B-roll anterior` / `conceito repetido há menos de 8s` | Regra de espaçamento — ative "Densidade máxima" se quiser afrouxar isso. Com ela ligada, "muito perto" só sobra quando o anterior ficaria com menos de 1,2 s. |
+| `sobra só 0.6s até o fim da frase` (ou `da fala`) | Não cabe 1,2 s de B-roll antes de a frase acabar (sem densidade) ou antes de a fala acabar (com densidade: fim da variação). |
 | `todas as variações apareceram há menos de 180s` | O ciclo mandaria repetir um take, mas todos os do conceito apareceram há menos de 3 minutos. Conceito com um único arquivo na pasta bate nisso o tempo todo — a saída é gravar mais variações dele. |
 | `take repetido, ciclo 2` (ou 3, 4...) | Não é descarte — o B-roll entrou. Todos os takes daquele conceito já rodaram uma vez (ciclo 1), então começou de novo. O número diz em qual volta está. |
 | `Trecho incerto (confiança X)` | Aviso da própria transcrição do Premiere, não do plugin — a fala reconhecida ali tem baixa confiança. |

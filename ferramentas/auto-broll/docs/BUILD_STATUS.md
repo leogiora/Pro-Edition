@@ -1,5 +1,24 @@
 # BUILD_STATUS
 
+## 2026-09-28 — Densidade maxima: B-roll vai ate o proximo
+
+**Feito.** `REGRAS_DENSAS.ateOProximo` (`plano.ts`): o B-roll atravessa a frase
+ate o fim da fala continua (`Frase.fimDaFala`, ate a pausa longa em
+`agruparEmFrases`), no maximo 3 s, e o seguinte corta o anterior desde que
+sobre `duracaoMinima` (1,2 s). `REGRAS_PADRAO` nao muda.
+
+Medido contra o gabarito do Leo (Andro 19.09, variacoes 1-6, autosave 15:15,
+fala tirada das legendas dele): 49 -> 61 B-rolls (ele pos 70), 46 -> 55 onde
+ele tambem pos, 51% -> 61% do tempo de broll dele coberto, conceito igual 26
+nas duas. Atravessar sem cortar piorava o conceito (22); piso de 0,5 s (item
+de lista dele) picotava frase normal em 7 de 8 cortes curtos, por isso o piso
+e a `duracaoMinima`. Script: `teste-broll\simular.ts` (fora do repo).
+
+**Testes.** `npm run verify` verde (254 aqui, +2) e fumaca ok.
+
+**Falta ao vivo:** reiniciar o Premiere e rodar o Analisar numa variacao sem
+broll; conferir se os clipes atravessando frase ficam como o Leo faria.
+
 ## 2026-09-28 — Aprender leva o clipe baixado para a pasta
 
 **Feito.** No Aprender, clipe acima da V1 cujo arquivo nao esta na pasta de

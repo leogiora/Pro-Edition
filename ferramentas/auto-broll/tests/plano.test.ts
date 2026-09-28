@@ -498,6 +498,19 @@ test("REGRAS_DENSAS: o mesmo conceito volta mais cedo, mas com outro take", () =
   assert.notEqual(p.colocacoes[0]?.arquivo, p.colocacoes[1]?.arquivo);
 });
 
+test("REGRAS_DENSAS: B-roll atravessa a frase ate o proximo, sem passar do fim da fala", () => {
+  // Frases de 1,5 s numa fala que acaba em 14: o 1o iria ate 13, o 2o o corta em 12.
+  const naFala = (o: Oportunidade): Oportunidade => ({ ...o, frase: { ...o.frase, fimDaFala: 14 } });
+  const opps = [
+    naFala(oportunidade(10, 1.5, [{ c: FRUSTRADO, score: 1 }])),
+    naFala(oportunidade(12, 1.5, [{ c: VIAGRA, score: 1 }])),
+  ];
+  const denso = planejar(opps, BIBLIOTECA, REGRAS_DENSAS).colocacoes;
+  assert.deepEqual(denso.map((c) => [c.inicio, c.duracao]), [[10, 2], [12, 2]]);
+  // O padrao continua preso a frase.
+  assert.deepEqual(planejar(opps, BIBLIOTECA, { ...REGRAS_PADRAO, intervaloMinimo: 0 }).colocacoes.map((c) => c.duracao), [1.5, 1.5]);
+});
+
 test("REGRAS_DENSAS: densidade NAO afrouxa o corte de qualidade", () => {
   // Score 0,5 continua fora: mais B-roll nao pode significar B-roll pior.
   const fraca = [oportunidade(10, 3, [{ c: FRUSTRADO, score: 0.5 }])];
