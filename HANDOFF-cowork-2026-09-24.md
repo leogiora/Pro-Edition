@@ -75,9 +75,21 @@ o Leo antes de mexer):
      cópia (API nova) precisa funcionar.
    - O "stressed-middle-aged-man" da variação 4, ainda em montagem, fica
      pra próxima leitura do gabarito.
-5. Continuam de pé: ajudante CEP (T1–T3), provas L3–L5 e a Fase 0 do XML
-   (`app/LEIA-ME.md`) se ainda não foi importada. Light leak fica pra fase de
-   animação (item 3 do Plano no `PERFIS_DE_EDICAO.md`).
+5. **Provas (conferidas nos logs do painel em 28/09).** Já tinham rodado ao
+   vivo em 24/09, pelo botão Editar, e os docs não registravam: L1–L4 e o
+   ajudante CEP T1–T3 **OK** (evidência em
+   `ferramentas/pro-captions/docs/API_PROOFS.md`). A chave `sk_` certa
+   funcionou naquele dia. O Aprender de hoje (13:59) provou ao vivo a leitura
+   do arquivo por trás do clipe e o `trazidos.json`. Continuam de pé:
+   - **L5:** conferir no olho se a legenda cai em cima da fala.
+   - **Fase 0 do XML:** nunca foi importada. A prova foi regerada com uma
+     trilha que existe (`Confident.wav`; a antiga saiu do Downloads):
+     importar `app/prova/PROVA-Pro-Edition.xml` e conferir os 8 itens de
+     `app/LEIA-ME.md`.
+   - **Cópia do Aprender:** renomear um clipe do Envato no Projeto e clicar
+     em Aprender.
+   - Light leak fica pra fase de animação (item 3 do Plano no
+     `PERFIS_DE_EDICAO.md`).
 
 ## O padrão de legenda que ele segue (visto em duas gravações de tela)
 
@@ -119,9 +131,12 @@ o Leo antes de mexer):
 | Painel Pro Edition carrega depois da correção do TextEncoder | OK (24/09) |
 | Export do áudio da sequência pelo Pro Captions | OK — 27:18 em 6,4 s, 52 MB |
 | `fetch` sai do UXP e chega no ElevenLabs | OK — a API respondeu |
-| Chave do ElevenLabs | **FALHOU por uso errado:** o Leo colou o ID da chave; a chave secreta começa com `sk_`. O painel agora avisa. Refazer com a chave certa |
-| Multipart a mão, keyterms, tempo alinhado com a sequência | a medir (L3–L5 em `docs/API_PROOFS.md`) |
-| Ajudante CEP (T1–T3) | a instalar e medir (`INSTALAR.ps1`) |
+| Chave do ElevenLabs | Primeiro FALHOU (colou o ID da chave), depois **OK** no mesmo dia: "ElevenLabs respondeu em 6 s" no botão Editar (24/09) |
+| Multipart a mão, keyterms, tempo alinhado com a sequência | L3–L4 **OK** (24/09); L5 indireto, falta o olho (`docs/API_PROOFS.md`) |
+| Ajudante CEP (T1–T3) | **OK** (24/09): instalado, e criou as faixas legendas.srt e precos.srt numa chamada |
+| Aprender pelo nome do arquivo + `trazidos.json` | **OK** (28/09 13:59): os 8 clipes copiados creditados pelo nome da pasta |
+| Cópia do clipe baixado pelo Aprender | a medir |
+| Fase 0 do XML | a importar (prova regerada em 28/09) |
 
 ## Arquivos de teste fora do repositório
 

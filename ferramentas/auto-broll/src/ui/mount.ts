@@ -361,6 +361,9 @@ async function julgarFaixa(
     // plugin ja usou era engolida como trabalho dele e nunca creditada.
     const presentes = new Set(naTimeline.map((c) => c.sourceName));
     const manuais = naTimeline
+      // Light leak (.aegraphic) e grafico nao sao B-roll: no Andro 19.09 eram a
+      // maior parte dos 133 "fora da pasta" do log, escondendo o que importa.
+      .filter((c) => ehVideo(c.sourceName))
       .filter((c) => !foiOPlugin({ arquivo: c.sourceName, inicio: c.startSeconds }, pendente))
       .map((c) => ({ arquivo: nomeNaPasta(c), inicio: c.startSeconds, fim: c.endSeconds }));
 

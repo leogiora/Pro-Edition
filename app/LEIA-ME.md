@@ -152,7 +152,8 @@ Legenda (é o "Abrir com" do Windows).
 ### Fase 0 — o que a prova precisa mostrar
 
 `node scripts/prova-xml.ts` gera `prova/PROVA-Pro-Edition.xml` com arquivos
-reais (bruta C1639, B-roll "Consulta médica (1)", trilha "The Horror Piano").
+reais (bruta C1639, B-roll "Consulta médica (1)", trilha "Confident" da
+GrandCare — a "The Horror Piano" saiu do Downloads; regerada em 28/09).
 Importar no Premiere 2025 e conferir:
 
 1. sequência 1080×1920, 25 fps, 8,7 s, sem pedir para localizar mídia;
@@ -163,7 +164,7 @@ Importar no Premiere 2025 e conferir:
 5. V2: B-roll com Escala 150 e Cortar Superior 50%;
 6. V3: clipe desativado;
 7. A1 vinculado ao V1, com crossfade nos cortes;
-8. A2: trilha a −12 dB.
+8. A2: trilha (Confident) a −12 dB.
 
 Referência de como o Premiere escreve o mesmo formato: exportar a sequência
 "Reels" do Andro 19.09 por `Arquivo > Exportar > Final Cut Pro XML` para

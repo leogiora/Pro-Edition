@@ -25,9 +25,17 @@ fumaca ok.
 1. `copyTo`/`moveTo` funcionam no Premiere 25 (registrar em `API_PROOFS.md`).
 2. Renomear um clipe do Envato no Projeto, clicar em Aprender e ver no log
    "Levei ... como ..." e o arquivo na pasta.
-3. Os 8 de hoje nao devem aparecer como "sem nome de conceito". Se aparecerem,
-   o `getMediaFilePath` devolve o caminho em outro formato que o do
-   `trazidos.json` (barra, maiuscula).
+3. ~~Os 8 de hoje nao devem aparecer como "sem nome de conceito".~~ **OK ao
+   vivo** (`ultimo-aprendizado.json`, 28/09 13:59): nenhum dos 8 no aviso, e
+   Separacao, Mulher triste, Desanimado, Medicamento, Celular e Sono
+   creditados pelo nome da pasta. Antes/depois do mesmo Aprender: 0 -> 4
+   aprendidos, 142 -> 133 fora da pasta. O caminho do `getMediaFilePath`
+   bate com o formato gravado. O aviso listou 5 clipes novos do Envato
+   (variacao 4 em diante), nenhum renomeado — a copia ainda nao rodou.
+
+**Depois (mesmo dia):** light leak (`.aegraphic`) saiu das colocacoes
+manuais. Eram 158 acima da V1 no Andro 19.09, contra 68 brolls da pasta e 14
+de fora, e inflavam o "fora da pasta" do log.
 
 ## 2026-09-28 — B-roll lido pelo nome do arquivo, nao do item do projeto
 

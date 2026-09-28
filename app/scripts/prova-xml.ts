@@ -10,7 +10,9 @@ import { sequenciaParaXml, type Midia } from "../src/xml.ts";
 const FPS = 25;
 const BRUTA = "C:\\Edição\\2. Androclinic\\1. AndroClinic\\Andro 19.09\\Brutas\\C1639.mp4";
 const BROLL = "C:\\Users\\leogi\\Downloads\\Brolls - 2026\\Consulta médica (1).mp4";
-const TRILHA = "C:\\Users\\leogi\\Downloads\\The Horror Piano (wav).wav";
+// Numa pasta de Assets, nao no Downloads: a trilha anterior (The Horror Piano)
+// sumiu do Downloads antes da prova ser importada.
+const TRILHA = "C:\\Edição\\3. GrandCare\\Assets\\Confident.wav";
 
 async function midia(caminho: string): Promise<Midia> {
   const i = await sondar(caminho);

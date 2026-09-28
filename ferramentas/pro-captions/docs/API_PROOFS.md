@@ -148,11 +148,11 @@ ElevenLabs para a variacao 1 do Andro 19.09). Falta provar dentro do painel:
 
 | # | Requisito | Resultado | Como medir |
 |---|---|---|---|
-| L1 | `exportSequence` com `WAV_Mono_16bit_16kHz.epr` no Pro Captions | ja provado no Auto Pausas (865 s em 5,8 s); falta ver no log do Pro Captions | log: linha "áudio: mm:ss · N MB" |
-| L2 | `fetch` sai do UXP com `network.domains` no manifest | **a medir** | log: "ElevenLabs respondeu em N s" |
-| L3 | Corpo multipart montado a mao (sem FormData) aceito pela API | **a medir** — conferido com parser padrao de multipart no Node/Python | idem |
-| L4 | `keyterms` repetido por campo aceito | **a medir** — se recusar, o painel tenta sem termos e registra | log: "recusou os termos-chave" |
-| L5 | Tempo da resposta == tempo da sequencia (audio exportado desde o zero) | **a medir** | legenda importada cai em cima da fala |
+| L1 | `exportSequence` com `WAV_Mono_16bit_16kHz.epr` no Pro Captions | **OK** (2026-09-24, botao Editar, `editar-log.json`): "áudio da sequência: 5.8 MB em 4.7 s" | log: linha "áudio: mm:ss · N MB" |
+| L2 | `fetch` sai do UXP com `network.domains` no manifest | **OK** (2026-09-24, tres rodadas "TESTE Editar"): "ElevenLabs respondeu em 6 s" | log: "ElevenLabs respondeu em N s" |
+| L3 | Corpo multipart montado a mao (sem FormData) aceito pela API | **OK** (mesmas rodadas): "384 palavras ouvidas" | idem |
+| L4 | `keyterms` repetido por campo aceito | **OK** (mesmas rodadas): nenhuma linha "recusou os termos-chave" | log: "recusou os termos-chave" |
+| L5 | Tempo da resposta == tempo da sequencia (audio exportado desde o zero) | **indireto** — as 82 pausas cortadas pelo tempo do ElevenLabs bateram ("V1 e A1 em sincronia", "Duração confere"); a legenda em cima da fala falta conferir no olho | legenda importada cai em cima da fala |
 
 ## Colocar o .srt na timeline pelo ajudante CEP (2026-09-24) — a medir
 
@@ -164,6 +164,6 @@ acorn); falta a prova real:
 
 | # | Requisito | Resultado |
 |---|---|---|
-| T1 | O painel CEP carrega com PlayerDebugMode (Premiere 25 e 26) | **a medir** |
-| T2 | `importFiles` + `createCaptionTrack` cria a faixa com os cues do .srt, sem re-segmentar | **a medir** (o E5b ja provou que importar .srt preserva os cues) |
-| T3 | Duas faixas (texto e preco) na mesma chamada | **a medir** |
+| T1 | O painel CEP carrega com PlayerDebugMode (Premiere 25 e 26) | **OK no 25** (2026-09-24): ajudante em `%APPDATA%\Adobe\CEP\extensions\com.leogi.procaptions.timeline`, PlayerDebugMode=1 do CSXS.5 ao 20. O 26 nao foi rodado |
+| T2 | `importFiles` + `createCaptionTrack` cria a faixa com os cues do .srt, sem re-segmentar | **OK** (2026-09-24, `editar-log.json`, "TESTE Editar 2"): "Faixas de legenda criadas ... legendas.srt e precos.srt". Na primeira rodada o ajudante nao respondeu porque estava fechado; a "ponte sem menu" (commit 8c338b5) resolveu |
+| T3 | Duas faixas (texto e preco) na mesma chamada | **OK** (mesma linha: as duas na mesma chamada) |
