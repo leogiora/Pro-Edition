@@ -42,11 +42,14 @@ o Leo antes de mexer):
    `C:\Edição\...\Andro 19.09\teste-broll\` (`gabarito_broll.py`). Rodar de
    novo quando o Leo acabar mais variações; as que têm light leak são as
    acabadas.
-3. **Subir o doutor no split do Andro:** o projeto já responde. Nas três
-   variações é Posição 540/580 com Escala 57 só por baixo do broll, e
-   540/960 com Escala 90 fora dele. A borda de cima do broll fica em
-   ~1120 px, com Feather 7%. O Leo confirma, e aí levar pro Acabamento
-   (`src/autosplit.ts` e `app/`).
+3. **Split do Andro no Acabamento.** O broll é constante e dá pra
+   automatizar: preenche a largura, borda de cima em ~1120 px, Feather 7%.
+   O doutor não tem número fixo. O 540/580 com Escala 57 do Andro 19.09 é
+   de bruta deitada, que muda por trecho; a do Andro costuma vir em pé
+   (Leo, 28/09). Em pé: levar pro `app/` o "subir o doutor" do painel
+   (`nudgeDoutorPosY`), hoje de fora. Deitada: fica manual, é decisão de
+   olho como o crop/flop. Na próxima bruta em pé, medir o split que o Leo
+   fizer à mão (`gabarito_broll.py`) antes de confiar no 15% do painel.
 4. **Biblioteca:** levar pra `Brolls - 2026`, com nome de conceito, o que ele
    foi buscar no Envato (mulher triste, homem dormindo), e conferir como o
    aprendizado do Auto B-roll lida com arquivo renomeado.
