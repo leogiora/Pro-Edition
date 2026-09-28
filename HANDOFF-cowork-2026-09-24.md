@@ -1,4 +1,4 @@
-# Handoff — sessão do Cowork de 23 e 24/09/2026
+# Handoff — sessões do Cowork de 23 a 28/09/2026
 
 Contexto para continuar no Claude Code o que foi feito numa conversa do Claude
 (Cowork). Escrito para o Claude Code ler antes de mexer no repositório.
@@ -11,6 +11,48 @@ Contexto para continuar no Claude Code o que foi feito numa conversa do Claude
 - Objetivo final: um **sistema de edição completo** que entregue o vídeo quase
   no padrão, só para ele revisar. Começamos pela legenda, que é onde ele perde
   mais tempo corrigindo a transcrição do Premiere na mão.
+
+## Estado em 28/09/2026 — por onde continuar
+
+Ler isto antes do resto; as seções "Atualização" no fim são o histórico.
+
+- **Legenda (Pro Captions + ElevenLabs):** pronta no código, inclusive a
+  segmentação no estilo do Leo (`segmentar.ts` + `maxPalavras: 3` no
+  `PRESET_ELEVENLABS`). Sete gravações de tela dele editando o Andro 19.09
+  confirmaram o estilo sem contradizer nada; achados em
+  `docs/PERFIS_DE_EDICAO.md`, bloco "AndroClinic Ads — confirmado ao vivo".
+  Falta rodar ao vivo com a chave certa do ElevenLabs (a que começa com `sk_`).
+- **Auto B-roll e Acabamento:** já existem (painel e programa, ver
+  `app/LEIA-ME.md`). Nas três últimas gravações o Leo monta à mão o broll
+  das variações 1 e 2; o que ele faz diferente do código está no mesmo bloco
+  do `PERFIS_DE_EDICAO.md`, em "Montagem do broll".
+
+Próximos passos, em ordem (recomendação da sessão do Cowork — combinar com
+o Leo antes de mexer):
+1. **Legenda ao vivo.** Tirar "stress" do `termosChave` em `preset.ts` (entrou
+   por uma leitura errada de gravação; a grafia dele é "estresse") e rodar
+   `npm run verify`. Depois, "Gerar legendas" com a chave `sk_` na variação 1
+   e comparar com o gabarito usando `comparar.py`.
+2. ~~**Gabarito de broll.**~~ Feito no Claude Code (28/09): lido do
+   `.prproj` (variações 1–3, save das 11:05). Resultado em
+   `docs/PERFIS_DE_EDICAO.md`, "Montagem do broll". Resumo: o painel acerta
+   onde põe (10 de 14 colocações mantidas), mas põe de menos (6–8 contra
+   8–15 do Leo), e as regras de duração do `plano.ts` cortam listas
+   faladas e clipes longos. Extrator e JSON em
+   `C:\Edição\...\Andro 19.09\teste-broll\` (`gabarito_broll.py`). Rodar de
+   novo quando o Leo acabar mais variações; as que têm light leak são as
+   acabadas.
+3. **Subir o doutor no split do Andro:** o projeto já responde. Nas três
+   variações é Posição 540/580 com Escala 57 só por baixo do broll, e
+   540/960 com Escala 90 fora dele. A borda de cima do broll fica em
+   ~1120 px, com Feather 7%. O Leo confirma, e aí levar pro Acabamento
+   (`src/autosplit.ts` e `app/`).
+4. **Biblioteca:** levar pra `Brolls - 2026`, com nome de conceito, o que ele
+   foi buscar no Envato (mulher triste, homem dormindo), e conferir como o
+   aprendizado do Auto B-roll lida com arquivo renomeado.
+5. Continuam de pé: ajudante CEP (T1–T3), provas L3–L5 e a Fase 0 do XML
+   (`app/LEIA-ME.md`) se ainda não foi importada. Light leak fica pra fase de
+   animação (item 3 do Plano no `PERFIS_DE_EDICAO.md`).
 
 ## O padrão de legenda que ele segue (visto em duas gravações de tela)
 
@@ -74,9 +116,73 @@ dos 39 preços fora do padrão); "focada" aparece em 6 legendas e "focado" em 13
 
 1. Leo testa com a chave `sk_` certa e instala o ajudante CEP.
 2. Medir L3–L5 e T1–T3 e registrar em `docs/API_PROOFS.md`.
-3. Ajustar a segmentação para ficar mais perto do estilo dele (blocos de 1 a 3
-   palavras, quebrando nas pausas da fala: o ElevenLabs dá o tempo de cada palavra).
-4. Depois: Auto B-roll escolhendo o clipe pelo que o doutor fala (os nomes
-   da pasta `Downloads\Brolls - 2026` já batem com os temas: Consulta médica,
-   Teleconsulta, Viagra, Vasos sanguíneos, Frustrado, Doutor, Corpo do homem),
-   crop/flop, trilha e fim de cada variação — rumo ao sistema completo.
+3. ~~Ajustar a segmentação ao estilo dele~~ — já estava no código
+   (`segmentar.ts`, `maxPalavras: 3`); falta só rodar ao vivo.
+4. ~~Auto B-roll pelo que o doutor fala, trilha e fim de cada variação~~ — já
+   existem (painel e `app/`); crop/flop do doutor continua manual. Ver
+   "Estado em 28/09/2026" no topo.
+
+## Atualização — 25/09/2026 (sessão do Cowork)
+
+Sessão do Cowork retomada depois deste handoff. O Leo gravou **uma nova
+demonstração de tela** (4m30, Premiere em tela cheia) revisando a legenda de
+um trecho mais à frente do Andro 19.09 (por volta de 00:12:47–00:14:10 da
+sequência, blocos de legenda ~950–1048) — provavelmente outra variação, não
+a variação 1 já usada nos testes.
+
+O que dá pra confirmar olhando os blocos antes/depois na gravação:
+- Segmentação real dele: quase todo bloco tem 1 a 4 palavras, cortando nas
+  pausas da fala ("Você" / "tá com medo" / "do quarto" / "do hotel?" —
+  "Porque viagem" / "romântica"). Bate com o pendente #3 abaixo — é ground
+  truth a mais pra calibrar a segmentação por pausa do ElevenLabs.
+- Ele ajusta o limite do bloco arrastando a ponta na faixa de legenda (afinar
+  o tempo) E edita o texto direto em cima do vídeo no Program Monitor, além
+  do painel Captions — os dois editam o mesmo dado, não é um jeito "certo".
+- Uma correção visível: juntou uma palavra do bloco seguinte no anterior
+  ("E se falhar" + "lá" → "E se falhar lá"), com Ctrl+Z no meio — ajuste de
+  julgamento de onde cortar, não erro de transcrição.
+- Tema do trecho (pelo texto legível nos blocos, não é transcrição literal):
+  medo de falhar numa viagem romântica/pousada, ligando com "cuida do plano
+  de saúde, do carro, mas e a sua última consulta?" — candidatas novas pro
+  mapa do Auto B-roll: viagem/pousada/quarto de hotel, plano de saúde, carro.
+
+Limite desta gravação: ela não guarda as teclas digitadas (aparecem como
+"[secure input]" no log), só o estado do bloco antes/depois — dá pra
+confirmar OS PADRÕES (tamanho de bloco, onde corta, fusão de bloco), mas não
+dá pra montar um diff palavra-por-palavra tipo o WER da variação 1. Pra isso,
+precisa exportar áudio + legenda revisada desse trecho como da vez passada.
+
+Os pendentes de "Estado dos testes no Premiere real" continuam de pé (chave
+`sk_` certa no ElevenLabs, instalar e testar o ajudante CEP em
+`ferramentas/pro-captions-timeline/`).
+
+Não existe elo automático entre uma conversa do Cowork e uma sessão do Claude
+Code — cada uma começa sem saber da outra. Este arquivo (lido pelo
+`CLAUDE.md` na raiz) é o elo: qualquer sessão nova que for continuar este
+projeto — Cowork ou Claude Code — deve ler este arquivo primeiro para pegar
+o contexto todo.
+
+## Atualização — 28/09/2026 (mais uma gravação)
+
+Gravação nova (28/09), seguindo direto de onde a de 25/09 parou — mesma
+variação, agora 00:14:37 a 00:18:19 da sequência. Nada novo no padrão de
+segmentação/estilo (mesma coisa: bloco de 1 a 4 palavras, arrasta a borda
+pra ajustar tempo, edita pelo painel Captions ou direto em cima do vídeo).
+O que rendeu de novo:
+
+- O roteiro tem uma estrutura de **5 etapas numeradas** ("Etapa um" a
+  "Etapa cinco"): Consulta (investigação de verdade) → [etapa dois não
+  capturada na gravação] → Diagnóstico (eu leio tudo com você) → Protocolo
+  (do zero, pro seu corpo) → Acompanhamento (equipe médica e de
+  enfermagem do início ao fim). Se um dia o Auto B-roll escolher clipe
+  pelo trecho do roteiro, cada etapa provavelmente pede um broll diferente
+  (consultório, exame, entrega de diagnóstico, remédio/protocolo, ligação
+  de acompanhamento).
+- "Disfunção erétil" aparece escrita por extenso como legenda própria, não
+  só sugerida.
+- "196 reais" / "1.000 reais" / "de 15.000" continuam voltando como âncora
+  de preço em vários pontos do vídeo — não é preço único da variação 1,
+  é recorrente ao longo do roteiro todo.
+- "focada" (não "focado") nesse trecho concorda com "consulta", não com
+  "médico" — não é inconsistência pra corrigir; os dois já apareceram
+  certos dependendo do substantivo que seguem.
