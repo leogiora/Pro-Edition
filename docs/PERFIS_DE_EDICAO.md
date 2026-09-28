@@ -92,10 +92,13 @@ com o código** (Auto B-roll e Acabamento em `app/LEIA-ME.md`):
   acerta onde põe, mas põe de menos.
 - **Escolha do clipe.** Ele percorre `Brolls - 2026` no Explorer pelas
   miniaturas, pulando pela inicial do conceito. Quando o clipe serve mas o
-  nome não diz isso, **renomeia o arquivo** com o que a legenda fala: dois
-  "14.000 mil homens" viraram "homens tratados (1)" e "(2)" pra cobrir
-  "...15.000 homens tratados". O nome do arquivo é a etiqueta do Auto
-  B-roll, e ele cuida dessas etiquetas à mão.
+  nome não diz isso, renomeia com o que a legenda fala: "14.000 mil homens
+  (1)" virou "homens tratados (1)" pra cobrir "...15.000 homens tratados".
+  O renome foi **no painel Projeto**, não no disco: o arquivo continua
+  "14.000 mil homens (1).mp4" (conferido em 28/09). O Aprender lia o nome
+  do projeto, não achava o take na pasta e jogava o crédito fora; desde
+  28/09 lê o nome do arquivo (`nomeDoArquivo` em
+  `ferramentas/auto-broll/src/premiere.ts`).
 - **Buraco na biblioteca.** Sem o conceito na pasta, ele busca no Envato
   Elements em português, com o filtro Vertical, e arrasta do navegador pra
   timeline. A maior parte das buscas é pela parceira: "mulher triste"
@@ -106,9 +109,15 @@ com o código** (Auto B-roll e Acabamento em `app/LEIA-ME.md`):
   O arquivo do Envato vem com nome em inglês
   ("man-sleeping-peacefully-in-bed-at-night-…"): o Auto B-roll só acha de
   novo se for pra `Brolls - 2026` com nome de conceito. No gabarito, 8
-  dos 37 vieram de fora da pasta, todos ainda em `Downloads`: mulher
-  triste ou casal distante (3), homem dormindo (2), homem com a mão na
-  cabeça, comprimidos na cartela e homem no celular. Download não gasta
+  dos 37 vieram de fora da pasta, todos em `Downloads`. Em 28/09 foram
+  **copiados** (o projeto continua apontando pro `Downloads`) com estes
+  nomes: casal afastado na cama → `Separação (5)`; as duas mulheres tristes
+  → `Mulher triste (1)` e `(2)`; os dois homens dormindo → `Sono (1)` e
+  `(2)` (é a palavra da legenda); comprimidos → `Medicamento (2)`; homem
+  com a mão na cabeça → `Desanimado (9)`; homem no celular → `Celular (1)`.
+  O Leo renomeia se quiser outro nome. Como a timeline do Andro 19.09 usa
+  os originais do `Downloads`, essas colocações não ensinam o Aprender. Só
+  as próximas, feitas já com a cópia da pasta. Download não gasta
   crédito: os "5 créditos" que aparecem no Envato são de IA, e a licença
   sai sozinha quando ele arrasta o clipe.
 - **Light leak.** Clipe "Generated Light Leak" do Premiere Composer (plugin

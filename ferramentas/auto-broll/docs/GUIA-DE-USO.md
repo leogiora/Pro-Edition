@@ -89,6 +89,10 @@ O plugin **não tem modelo, não tem IA** — ele só conta o que sobreviveu.
   algumas vezes seguidas. Vale mesmo quando a fala não tem nada a ver com o
   nome do arquivo: se você colocou, fez sentido — o take ganha crédito e o
   painel diz "o take ganhou crédito e contei as palavras cobertas".
+- Renomear o clipe no painel **Projeto** não atrapalha: o plugin olha o nome
+  do **arquivo** no disco. Já clipe que **não está na pasta de B-roll** (o que
+  vem do Envato cai em `Downloads`) não conta. Para ele valer, copie para a
+  pasta com nome de conceito (`Mulher triste (1).mov`) e use a cópia.
 
 Ou seja: **editar a timeline normalmente já ensina o plugin.** Não precisa de
 botão de "nota" nem configuração.

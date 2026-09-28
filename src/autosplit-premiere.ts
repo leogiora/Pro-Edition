@@ -11,6 +11,7 @@ import {
   comTransacao,
   getSequenceInfo,
   lerBrollsAcimaDeV1,
+  nomeDoArquivo,
   readJson,
   writeJson,
 } from "../ferramentas/auto-broll/src/premiere.ts";
@@ -206,8 +207,10 @@ async function itensDaFaixa(sequence: unknown, videoTrackIndex: number): Promise
   return faixa.getTrackItems(CLIP, false);
 }
 
+/** O mesmo nome que `lerBrollsAcimaDeV1` devolve: o do arquivo, nao o do item renomeado no projeto. */
 async function nomeDe(it: TrackItemLike): Promise<string | undefined> {
-  return it.name ?? (await it.getProjectItem?.())?.name;
+  const origem = await it.getProjectItem?.();
+  return origem ? nomeDoArquivo(origem) : it.name;
 }
 
 /** O clipe certo: mesmo nome de origem E comecando no tempo planejado. */
@@ -521,8 +524,7 @@ export async function diagnostico(): Promise<string[]> {
   const itens = await faixa.getTrackItems(CLIP, false);
   let item: TrackItemLike | undefined;
   for (const it of itens) {
-    const nome = it.name ?? (await it.getProjectItem?.())?.name;
-    if (nome === alvo.sourceName) {
+    if ((await nomeDe(it)) === alvo.sourceName) {
       item = it;
       break;
     }

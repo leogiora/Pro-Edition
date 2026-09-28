@@ -52,9 +52,18 @@ o Leo antes de mexer):
    crop/flop. Na próxima bruta em pé, medir o split que o Leo fizer à mão
    (`gabarito_broll.py`) e afinar o `DOCTOR_UP` (0,85) de
    `src/autosplit.ts`.
-4. **Biblioteca:** levar pra `Brolls - 2026`, com nome de conceito, o que ele
-   foi buscar no Envato (mulher triste, homem dormindo), e conferir como o
-   aprendizado do Auto B-roll lida com arquivo renomeado.
+4. ~~**Biblioteca.**~~ Feito em 28/09:
+   - Os 8 clipes do Envato foram copiados pra `Brolls - 2026` com nome de
+     conceito (259 arquivos agora; nomes em `docs/PERFIS_DE_EDICAO.md`,
+     "Buraco na biblioteca") e entraram no `src/autosplit-perfil.json`. O
+     Auto Split do painel pula arquivo que não está lá.
+   - Renome: o Leo renomeia no painel Projeto, não no disco, e o Aprender
+     perdia o crédito desses clipes (`foraDaBiblioteca`). Agora as faixas
+     de broll são lidas pelo nome do arquivo (`nomeDoArquivo`).
+   - Falta provar no Premiere: clicar em Aprender no Andro 19.09. O
+     "homens tratados (1)" deve contar como "14.000 mil homens (1)".
+   - O "stressed-middle-aged-man" da variação 4, ainda em montagem, fica
+     pra próxima leitura do gabarito.
 5. Continuam de pé: ajudante CEP (T1–T3), provas L3–L5 e a Fase 0 do XML
    (`app/LEIA-ME.md`) se ainda não foi importada. Light leak fica pra fase de
    animação (item 3 do Plano no `PERFIS_DE_EDICAO.md`).

@@ -325,6 +325,13 @@
       "w": 464,
       "h": 832
     },
+    "Celular (1).mov": {
+      "assunto": "pessoa",
+      "ancoraY": 0.35,
+      "cropTopoExtra": 0,
+      "w": 1080,
+      "h": 1920
+    },
     "Consulta médica (1).mp4": {
       "assunto": "dupla",
       "ancoraY": 0.24,
@@ -513,6 +520,13 @@
       "cropTopoExtra": 0,
       "w": 720,
       "h": 1280
+    },
+    "Desanimado (9).mov": {
+      "assunto": "pessoa",
+      "ancoraY": 0.28,
+      "cropTopoExtra": 0,
+      "w": 1080,
+      "h": 1920
     },
     "Diabetes.mp4": {
       "assunto": "pessoa",
@@ -1228,6 +1242,13 @@
       "w": 464,
       "h": 832
     },
+    "Medicamento (2).mp4": {
+      "assunto": "aberto",
+      "ancoraY": 0.5,
+      "cropTopoExtra": 0,
+      "w": 1080,
+      "h": 1920
+    },
     "Medicamento.mp4": {
       "assunto": "aberto",
       "ancoraY": 0.5,
@@ -1298,6 +1319,20 @@
       "w": 464,
       "h": 832
     },
+    "Mulher triste (1).mov": {
+      "assunto": "pessoa",
+      "ancoraY": 0.45,
+      "cropTopoExtra": 0,
+      "w": 1920,
+      "h": 1080
+    },
+    "Mulher triste (2).mov": {
+      "assunto": "pessoa",
+      "ancoraY": 0.35,
+      "cropTopoExtra": 0,
+      "w": 2160,
+      "h": 4096
+    },
     "Risco de infarto (1).mp4": {
       "assunto": "pessoa",
       "ancoraY": 0.3,
@@ -1353,6 +1388,27 @@
       "cropTopoExtra": 0,
       "w": 720,
       "h": 1280
+    },
+    "Separação (5).mov": {
+      "assunto": "pessoa",
+      "ancoraY": 0.3,
+      "cropTopoExtra": 0,
+      "w": 1920,
+      "h": 1080
+    },
+    "Sono (1).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.45,
+      "cropTopoExtra": 0,
+      "w": 1920,
+      "h": 1080
+    },
+    "Sono (2).mp4": {
+      "assunto": "pessoa",
+      "ancoraY": 0.35,
+      "cropTopoExtra": 0,
+      "w": 1080,
+      "h": 1920
     },
     "Teleconsulta (1).mp4": {
       "assunto": "pessoa",

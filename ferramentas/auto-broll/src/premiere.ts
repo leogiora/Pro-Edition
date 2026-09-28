@@ -240,10 +240,32 @@ export async function listarPastaBrolls(caminho: string): Promise<ArquivoBroll[]
 }
 
 /**
- * Clipes de uma faixa de video, com o nome da midia de origem.
- * V1 (indice 0) e a camera principal: e dela que sai a transcricao.
+ * Nome do ARQUIVO por tras do item do projeto, e nao o nome do item.
+ *
+ * O Leo renomeia o clipe no painel Projeto para etiquetar: no Andro 19.09,
+ * "14.000 mil homens (1).mp4" virou "homens tratados (1).mp4" e o arquivo
+ * ficou como estava. Pelo nome do projeto, o Aprender nao achava o take na
+ * biblioteca e jogava o credito fora (`foraDaBiblioteca`). Mesmo cast do Auto
+ * Pausas (`src/pausas-premiere.ts`, provado ao vivo). Sem caminho (grafico,
+ * sequencia aninhada), fica o nome do projeto.
  */
-export async function lerClipes(videoTrackIndex = 0): Promise<
+export async function nomeDoArquivo(projectItem: { name?: string }): Promise<string> {
+  try {
+    const caminho = String((await ppro.ClipProjectItem.cast(projectItem)?.getMediaFilePath()) ?? "");
+    const nome = caminho.split(/[\\/]/).pop();
+    if (nome) return nome;
+  } catch {
+    // Item sem arquivo: o nome do projeto e o que ha.
+  }
+  return projectItem.name ?? "";
+}
+
+/**
+ * Clipes de uma faixa de video, com o nome da midia de origem.
+ * V1 (indice 0) e a camera principal: e dela que sai a transcricao, casada pelo
+ * nome do item do projeto — por isso `peloArquivo` so liga nas faixas de B-roll.
+ */
+export async function lerClipes(videoTrackIndex = 0, peloArquivo = false): Promise<
   Array<{
     sourceName: string;
     startSeconds: number;
@@ -271,12 +293,16 @@ export async function lerClipes(videoTrackIndex = 0): Promise<
 
   const faixa = await seq.getVideoTrack(videoTrackIndex);
   const saida = [];
+  // Chamada UXP em volume pendura o painel (docs/DECISIONS.md): o mesmo item
+  // repetido na faixa (56 light leaks no Andro 19.09) pergunta o caminho uma vez.
+  const arquivoDe = new Map<string, string>();
   for (const it of await faixa.getTrackItems(CLIP, false)) {
     const origem = await it.getProjectItem();
     if (!origem?.name) continue;
     const velocidade = await it.getSpeed();
+    if (peloArquivo && !arquivoDe.has(origem.name)) arquivoDe.set(origem.name, await nomeDoArquivo(origem));
     saida.push({
-      sourceName: origem.name,
+      sourceName: peloArquivo ? (arquivoDe.get(origem.name) ?? origem.name) : origem.name,
       startSeconds: (await it.getStartTime()).seconds,
       endSeconds: (await it.getEndTime()).seconds,
       inPointSeconds: (await it.getInPoint()).seconds,
@@ -312,7 +338,7 @@ export async function lerBrollsAcimaDeV1(): Promise<
   }> = [];
   for (let i = 1; i < total; i++) {
     try {
-      for (const clipe of await lerClipes(i)) {
+      for (const clipe of await lerClipes(i, true)) {
         saida.push({
           sourceName: clipe.sourceName,
           startSeconds: clipe.startSeconds,

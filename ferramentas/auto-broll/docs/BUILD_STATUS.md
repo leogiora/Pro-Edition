@@ -1,5 +1,25 @@
 # BUILD_STATUS
 
+## 2026-09-28 — B-roll lido pelo nome do arquivo, nao do item do projeto
+
+**Feito.** O Leo renomeia o clipe no painel Projeto para etiquetar ("14.000 mil
+homens (1)" virou "homens tratados (1)" no Andro 19.09; o arquivo nao mudou). O
+Aprender casava pelo nome do projeto, nao achava o take na biblioteca e contava
+`foraDaBiblioteca`. `lerBrollsAcimaDeV1` agora le o nome do arquivo
+(`nomeDoArquivo`: `ClipProjectItem.cast(...).getMediaFilePath()`, o mesmo do
+Auto Pausas, com o nome do projeto de reserva). A V1 continua pelo nome do
+projeto, que e a chave da transcricao. O Auto Split usa o mesmo nome para achar
+o clipe na timeline. Biblioteca: +8 clipes do Envato (259) e entradas no
+`src/autosplit-perfil.json`.
+
+**Testes.** `npm run verify` verde (248 aqui) e fumaca ok. `premiere.ts` nao tem
+teste unitario (depende do Premiere).
+
+**Falta ao vivo:** reiniciar o Premiere, clicar em Aprender no Andro 19.09 e ver
+no `ultimo-aprendizado.json` o "14.000 mil homens (1)" creditado no lugar do
+"homens tratados (1)". Conferir tambem que a leitura dos B-rolls nao ficou lenta
+(~210 clipes acima da V1).
+
 ## 2026-08-28 — o planejador enxerga os reels vizinhos (D-035)
 
 **Feito.** Analisando a sequencia trecho por trecho com in/out, o mesmo take
