@@ -1,5 +1,34 @@
 # BUILD_STATUS
 
+## 2026-09-28 — Aprender leva o clipe baixado para a pasta
+
+**Feito.** No Aprender, clipe acima da V1 cujo arquivo nao esta na pasta de
+B-rolls e que o Leo renomeou no painel Projeto e **copiado** para a pasta como
+`<nome no Projeto> (n).<ext>`, com o proximo numero livre (`planejarTrazer` em
+`aprendizado.ts`, puro). A colocacao e creditada na mesma rodada. Sem renome,
+vira aviso no log, sem copia. O que foi levado fica em `trazidos.json`
+(caminho de origem -> nome na pasta + tamanho lido do video) e nunca e copiado
+de novo. O Analisar usa o mapa, mas nao copia. O Auto Split le o tamanho do
+`trazidos.json` para arquivo que o perfil empacotado nao conhece.
+
+Copia: `Entry.copyTo(dataFolder)` + `Entry.moveTo(pasta, { newName })`
+(documentacao UXP, Persistent File Storage). Passa pela pasta de dados para
+nunca deixar o nome do Envato na biblioteca se o renome falhar.
+
+`trazidos.json` do PPRO 25 semeado com os 8 clipes copiados a mao hoje, para o
+Aprender creditar as variacoes 1-3 do Andro 19.09.
+
+**Testes.** `npm run verify` verde (252 aqui, +4 em `aprendizado.test.ts`) e
+fumaca ok.
+
+**Falta ao vivo (API nova, nunca rodada no Premiere):**
+1. `copyTo`/`moveTo` funcionam no Premiere 25 (registrar em `API_PROOFS.md`).
+2. Renomear um clipe do Envato no Projeto, clicar em Aprender e ver no log
+   "Levei ... como ..." e o arquivo na pasta.
+3. Os 8 de hoje nao devem aparecer como "sem nome de conceito". Se aparecerem,
+   o `getMediaFilePath` devolve o caminho em outro formato que o do
+   `trazidos.json` (barra, maiuscula).
+
 ## 2026-09-28 — B-roll lido pelo nome do arquivo, nao do item do projeto
 
 **Feito.** O Leo renomeia o clipe no painel Projeto para etiquetar ("14.000 mil

@@ -12,7 +12,7 @@
  */
 
 import { relogio } from "./domain.ts";
-import { estaNaFrase, termos, type Conceito } from "./match.ts";
+import { estaNaFrase, rotuloDoArquivo, termos, type Conceito } from "./match.ts";
 import type { Frase } from "./transcript.ts";
 
 /** Quanto cada acerto ou erro move o peso do par. */
@@ -652,4 +652,115 @@ function entradas(raw: unknown, campo: string): Array<[string, Record<string, un
 
 function naoNegativo(v: unknown): number | null {
   return typeof v === "number" && Number.isFinite(v) && v >= 0 ? Math.floor(v) : null;
+}
+
+// ------------------------------------------ clipe baixado -> pasta de B-rolls
+
+/**
+ * O que o Aprender ja levou para a pasta: caminho de origem -> nome na pasta,
+ * com o tamanho lido do video (o Auto Split precisa dele, e o perfil empacotado
+ * nao conhece arquivo novo).
+ *
+ * Gravado so depois da copia dar certo, e nunca copiado de novo: se o Leo apagar
+ * ou renomear a copia na pasta, a decisao e dele.
+ */
+export interface Trazido {
+  readonly nome: string;
+  readonly w?: number;
+  readonly h?: number;
+}
+
+export interface Trazidos {
+  readonly schema: 1;
+  readonly porCaminho: Readonly<Record<string, Trazido>>;
+}
+
+export const TRAZIDOS_VAZIO: Trazidos = { schema: 1, porCaminho: {} };
+
+export function parseTrazidos(raw: unknown): Trazidos {
+  const porCaminho: Record<string, Trazido> = {};
+  for (const [k, v] of entradas(raw, "porCaminho")) {
+    if (typeof v.nome !== "string" || v.nome.length === 0) continue;
+    const w = naoNegativo(v.w);
+    const h = naoNegativo(v.h);
+    porCaminho[k] = { nome: v.nome, ...(w && h ? { w, h } : {}) };
+  }
+  return { schema: 1, porCaminho };
+}
+
+export function comTrazido(atual: Trazidos, caminho: string, trazido: Trazido): Trazidos {
+  return { schema: 1, porCaminho: { ...atual.porCaminho, [caminho]: trazido } };
+}
+
+/** Clipe da timeline cujo arquivo nao esta na pasta de B-rolls. */
+export interface ClipeDeFora {
+  readonly caminho: string;
+  /** Como o clipe se chama no painel Projeto — e ai que o Leo etiqueta. */
+  readonly nomeNoProjeto: string;
+}
+
+export interface PlanoTrazer {
+  /** Copiar `caminho` para a pasta como `nome`. */
+  readonly copiar: readonly { readonly caminho: string; readonly nome: string }[];
+  /** Arquivos de fora sem nome de conceito: o Leo nao renomeou no Projeto. */
+  readonly semNome: readonly string[];
+  /** Os trazidos em rodadas anteriores que continuam na pasta: caminho -> nome. */
+  readonly jaNaPasta: ReadonlyMap<string, string>;
+}
+
+const nomeDoCaminho = (caminho: string): string => caminho.split(/[\\/]/).pop() ?? caminho;
+const extensao = (nome: string): string => /\.[^.\\/]+$/.exec(nome)?.[0] ?? "";
+
+/** O proximo "(n)" do conceito na pasta. Arquivo sem numero conta como o 1. */
+function proximoNumero(nomes: readonly string[], rotulo: string): number {
+  let maior = 0;
+  for (const nome of nomes) {
+    if (rotuloDoArquivo(nome) !== rotulo) continue;
+    const n = /\((\d+)\)\s*\.[^.]+$/.exec(nome)?.[1];
+    maior = Math.max(maior, n === undefined ? 1 : Number(n));
+  }
+  return maior + 1;
+}
+
+/**
+ * O que levar para a pasta de B-rolls.
+ *
+ * O nome e o que o Leo deu ao clipe no painel Projeto: ele ja etiqueta ali, e
+ * adivinhar pela fala erra ("ele nao me valoriza" nao diz "Mulher triste").
+ * Clipe que ainda tem o nome do arquivo nao foi etiquetado — vira aviso, nao
+ * copia. Copia e nunca move: projeto que usa o original nao pode ficar offline.
+ */
+export function planejarTrazer(
+  deFora: readonly ClipeDeFora[],
+  biblioteca: readonly string[],
+  trazidos: Trazidos
+): PlanoTrazer {
+  const nomes = [...biblioteca];
+  const copiar: { caminho: string; nome: string }[] = [];
+  const semNome: string[] = [];
+  const jaNaPasta = new Map<string, string>();
+  const vistos = new Set<string>();
+
+  for (const c of deFora) {
+    if (vistos.has(c.caminho)) continue;
+    vistos.add(c.caminho);
+    const arquivo = nomeDoCaminho(c.caminho);
+
+    const antes = trazidos.porCaminho[c.caminho];
+    if (antes !== undefined) {
+      if (nomes.includes(antes.nome)) jaNaPasta.set(c.caminho, antes.nome);
+      continue;
+    }
+
+    const rotulo = rotuloDoArquivo(c.nomeNoProjeto);
+    // Caractere que o Windows recusa em nome de arquivo: nao da para copiar com ele.
+    if (rotulo.length === 0 || rotulo === rotuloDoArquivo(arquivo) || /[\\/:*?"<>|]/.test(rotulo)) {
+      semNome.push(arquivo);
+      continue;
+    }
+    const nome = `${rotulo} (${proximoNumero(nomes, rotulo)})${extensao(arquivo)}`;
+    nomes.push(nome);
+    copiar.push({ caminho: c.caminho, nome });
+  }
+  return { copiar, semNome, jaNaPasta };
 }

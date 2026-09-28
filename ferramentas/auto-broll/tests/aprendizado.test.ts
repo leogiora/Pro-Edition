@@ -22,6 +22,10 @@ import {
   type Memoria,
   type PlanoPendente,
   aplicarTeto,
+  comTrazido,
+  parseTrazidos,
+  planejarTrazer,
+  TRAZIDOS_VAZIO,
 } from "../src/aprendizado.ts";
 import { conceitosDeArquivos, type Conceito } from "../src/match.ts";
 import type { Frase } from "../src/transcript.ts";
@@ -637,4 +641,79 @@ test("aplicarTeto: acima do teto divide os dois lados ate caber", () => {
 test("aplicarTeto: divide mais de uma vez se precisar", () => {
   // 100+0 -> 50 -> 25 -> 13 (Math.round(25/2)=13); 13 <= 20
   assert.deepEqual(aplicarTeto({ acertos: 100, erros: 0 }), { acertos: 13, erros: 0 });
+});
+
+// ------------------------------------------ clipe baixado -> pasta de B-rolls
+
+const DL = "C:\\Users\\leogi\\Downloads\\";
+const BIBLIOTECA = ["Mulher triste (1).mov", "Mulher triste (2).mov", "Medicamento.mp4", "Sono (1).mp4"];
+
+test("trazer: renomeado no Projeto vai para a pasta com o proximo numero do conceito", () => {
+  const p = planejarTrazer(
+    [
+      { caminho: `${DL}sad-woman-on-bed-utc.mov`, nomeNoProjeto: "Mulher triste" },
+      { caminho: `${DL}pills-utc.mp4`, nomeNoProjeto: "Medicamento (7).mp4" },
+      { caminho: `${DL}other-sad-woman-utc.mov`, nomeNoProjeto: "Mulher triste" },
+      { caminho: `${DL}new-concept-utc.mp4`, nomeNoProjeto: "Homem no celular" },
+    ],
+    BIBLIOTECA,
+    TRAZIDOS_VAZIO
+  );
+  assert.deepEqual(p.copiar, [
+    { caminho: `${DL}sad-woman-on-bed-utc.mov`, nome: "Mulher triste (3).mov" },
+    // "Medicamento.mp4" sem numero conta como o 1; o numero que o Leo digitou nao vale.
+    { caminho: `${DL}pills-utc.mp4`, nome: "Medicamento (2).mp4" },
+    { caminho: `${DL}other-sad-woman-utc.mov`, nome: "Mulher triste (4).mov" },
+    { caminho: `${DL}new-concept-utc.mp4`, nome: "Homem no celular (1).mp4" },
+  ]);
+  assert.deepEqual(p.semNome, []);
+});
+
+test("trazer: sem nome de conceito vira aviso; o mesmo arquivo usado duas vezes e copiado uma", () => {
+  const p = planejarTrazer(
+    [
+      { caminho: `${DL}man-sleeping-utc.mp4`, nomeNoProjeto: "man-sleeping-utc.mp4" },
+      { caminho: `${DL}man-sleeping-utc.mp4`, nomeNoProjeto: "man-sleeping-utc.mp4" },
+      { caminho: `${DL}couple-utc.mov`, nomeNoProjeto: "couple-utc" },
+      { caminho: `${DL}bad-utc.mov`, nomeNoProjeto: "Casal: distante" },
+      { caminho: `${DL}sleep-utc.mp4`, nomeNoProjeto: "Sono" },
+      { caminho: `${DL}sleep-utc.mp4`, nomeNoProjeto: "Sono" },
+    ],
+    BIBLIOTECA,
+    TRAZIDOS_VAZIO
+  );
+  assert.deepEqual(p.semNome, ["man-sleeping-utc.mp4", "couple-utc.mov", "bad-utc.mov"]);
+  assert.deepEqual(p.copiar, [{ caminho: `${DL}sleep-utc.mp4`, nome: "Sono (2).mp4" }]);
+});
+
+test("trazer: o que ja foi levado nao e copiado de novo, e so conta se continua na pasta", () => {
+  let t = comTrazido(TRAZIDOS_VAZIO, `${DL}a-utc.mov`, { nome: "Mulher triste (1).mov", w: 1920, h: 1080 });
+  t = comTrazido(t, `${DL}b-utc.mov`, { nome: "Mulher triste (9).mov" }); // o Leo apagou da pasta
+  const p = planejarTrazer(
+    [
+      { caminho: `${DL}a-utc.mov`, nomeNoProjeto: "Mulher triste" },
+      { caminho: `${DL}b-utc.mov`, nomeNoProjeto: "Mulher triste" },
+    ],
+    BIBLIOTECA,
+    t
+  );
+  assert.deepEqual(p.copiar, []);
+  assert.deepEqual([...p.jaNaPasta], [[`${DL}a-utc.mov`, "Mulher triste (1).mov"]]);
+});
+
+test("trazer: parse guarda nome e tamanho, e descarta o que veio quebrado", () => {
+  const t = parseTrazidos({
+    schema: 1,
+    porCaminho: {
+      "C:\\a.mov": { nome: "Sono (1).mp4", w: 1080, h: 1920 },
+      "C:\\b.mov": { nome: "Sono (2).mp4", w: "largo" },
+      "C:\\c.mov": { nome: "" },
+      "C:\\d.mov": "Sono (3).mp4",
+    },
+  });
+  assert.deepEqual(t.porCaminho, {
+    "C:\\a.mov": { nome: "Sono (1).mp4", w: 1080, h: 1920 },
+    "C:\\b.mov": { nome: "Sono (2).mp4" },
+  });
+  assert.deepEqual(parseTrazidos(null), TRAZIDOS_VAZIO);
 });

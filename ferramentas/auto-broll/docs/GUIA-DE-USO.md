@@ -90,9 +90,15 @@ O plugin **não tem modelo, não tem IA** — ele só conta o que sobreviveu.
   nome do arquivo: se você colocou, fez sentido — o take ganha crédito e o
   painel diz "o take ganhou crédito e contei as palavras cobertas".
 - Renomear o clipe no painel **Projeto** não atrapalha: o plugin olha o nome
-  do **arquivo** no disco. Já clipe que **não está na pasta de B-roll** (o que
-  vem do Envato cai em `Downloads`) não conta. Para ele valer, copie para a
-  pasta com nome de conceito (`Mulher triste (1).mov`) e use a cópia.
+  do **arquivo** no disco.
+- **Clipe baixado (fora da pasta de B-roll, como o do Envato no `Downloads`):**
+  renomeie no painel Projeto com o nome do conceito ("Mulher triste") e clique
+  em **Aprender**. O plugin **copia** o arquivo para a pasta como
+  `Mulher triste (3).mov` (próximo número livre) e já credita a colocação. O
+  original fica onde está, e o projeto não fica offline. Clipe baixado sem
+  renomear só aparece no log: "clipe(s) de fora da pasta sem nome de
+  conceito". O que já foi levado não é copiado de novo; se você apagar ou
+  renomear a cópia na pasta, o plugin respeita.
 
 Ou seja: **editar a timeline normalmente já ensina o plugin.** Não precisa de
 botão de "nota" nem configuração.

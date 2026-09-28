@@ -115,9 +115,12 @@ com o código** (Auto B-roll e Acabamento em `app/LEIA-ME.md`):
   → `Mulher triste (1)` e `(2)`; os dois homens dormindo → `Sono (1)` e
   `(2)` (é a palavra da legenda); comprimidos → `Medicamento (2)`; homem
   com a mão na cabeça → `Desanimado (9)`; homem no celular → `Celular (1)`.
-  O Leo renomeia se quiser outro nome. Como a timeline do Andro 19.09 usa
-  os originais do `Downloads`, essas colocações não ensinam o Aprender. Só
-  as próximas, feitas já com a cópia da pasta. Download não gasta
+  O Leo renomeia se quiser outro nome. Ficaram registrados no
+  `trazidos.json` do painel, então o Aprender do Andro 19.09 credita essas
+  colocações pelo nome da pasta, mesmo com a timeline usando os originais.
+  Daqui pra frente o Aprender faz isso sozinho: clipe baixado e renomeado
+  no painel Projeto é copiado pra pasta com esse nome
+  (`ferramentas/auto-broll/docs/GUIA-DE-USO.md`). Download não gasta
   crédito: os "5 créditos" que aparecem no Envato são de IA, e a licença
   sai sozinha quando ele arrasta o clipe.
 - **Light leak.** Clipe "Generated Light Leak" do Premiere Composer (plugin

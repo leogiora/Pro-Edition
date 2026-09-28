@@ -60,8 +60,12 @@ o Leo antes de mexer):
    - Renome: o Leo renomeia no painel Projeto, não no disco, e o Aprender
      perdia o crédito desses clipes (`foraDaBiblioteca`). Agora as faixas
      de broll são lidas pelo nome do arquivo (`nomeDoArquivo`).
+   - Depois, a pedido do Leo: no Aprender, clipe baixado e renomeado no
+     painel Projeto é **copiado** pra pasta com esse nome. Detalhe em
+     `ferramentas/auto-broll/docs/BUILD_STATUS.md`.
    - Falta provar no Premiere: clicar em Aprender no Andro 19.09. O
-     "homens tratados (1)" deve contar como "14.000 mil homens (1)".
+     "homens tratados (1)" deve contar como "14.000 mil homens (1)", e a
+     cópia (API nova) precisa funcionar.
    - O "stressed-middle-aged-man" da variação 4, ainda em montagem, fica
      pra próxima leitura do gabarito.
 5. Continuam de pé: ajudante CEP (T1–T3), provas L3–L5 e a Fase 0 do XML

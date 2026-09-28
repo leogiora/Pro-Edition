@@ -15,6 +15,7 @@ import {
   readJson,
   writeJson,
 } from "../ferramentas/auto-broll/src/premiere.ts";
+import { parseTrazidos, type Trazido } from "../ferramentas/auto-broll/src/aprendizado.ts";
 import {
   calcularEnquadramento,
   fracaoDivisao,
@@ -130,6 +131,21 @@ async function lerOverride(): Promise<OverridePerfil> {
 }
 
 /**
+ * Tamanho dos clipes que o Aprender levou para a pasta (`trazidos.json`): o
+ * perfil empacotado nao conhece arquivo novo. Achado pelo caminho do original
+ * (o projeto ainda usa o do Downloads) ou pelo nome da copia na pasta.
+ */
+async function lerTrazidos(): Promise<Map<string, Trazido>> {
+  const mapa = new Map<string, Trazido>();
+  for (const [caminho, t] of Object.entries(parseTrazidos(await readJson("trazidos.json")).porCaminho)) {
+    if (!t.w || !t.h) continue;
+    mapa.set(caminho, t);
+    mapa.set(t.nome, t);
+  }
+  return mapa;
+}
+
+/**
  * Le tudo que esta acima da V1, fica so com o que a biblioteca conhece, e
  * calcula o enquadramento de cada um. Nao toca a timeline.
  *
@@ -147,6 +163,7 @@ export async function montarPlano(opcoes: OpcoesSplit): Promise<PlanoSplit> {
     throw new Error("Nao deu pra ler o quadro da sequencia.");
   }
   const override = await lerOverride();
+  const trazidos = await lerTrazidos();
   const brollTopoFrac = fracaoDivisao(opcoes.divisao);
 
   const todos = await lerBrollsAcimaDeV1();
@@ -158,19 +175,22 @@ export async function montarPlano(opcoes: OpcoesSplit): Promise<PlanoSplit> {
 
   for (const b of alvo) {
     const doArquivo = perfil.porArquivo[b.sourceName];
-    if (!doArquivo?.w || !doArquivo?.h) {
+    const trazido = trazidos.get(b.caminho) ?? trazidos.get(b.sourceName);
+    const tam = doArquivo?.w && doArquivo?.h ? { w: doArquivo.w, h: doArquivo.h } : trazido;
+    if (!tam?.w || !tam?.h) {
       ignorados.set(b.sourceName, (ignorados.get(b.sourceName) ?? 0) + 1);
       continue;
     }
-    const orientacao: "retrato" | "paisagem" = doArquivo.h >= doArquivo.w ? "retrato" : "paisagem";
-    const resolvido = resolverPerfil(perfil, override, b.sourceName, orientacao);
+    const orientacao: "retrato" | "paisagem" = tam.h >= tam.w ? "retrato" : "paisagem";
+    // Original do Downloads enquadra pelo conceito da copia ("Mulher triste"), nao pelo nome do Envato.
+    const resolvido = resolverPerfil(perfil, override, doArquivo ? b.sourceName : (trazido?.nome ?? b.sourceName), orientacao);
 
     const geom: EntradaGeom = {
       W: info.width,
       H: info.height,
       brollTopoFrac,
-      w: doArquivo.w,
-      h: doArquivo.h,
+      w: tam.w,
+      h: tam.h,
       ancoraY: resolvido.ancoraY,
       assunto: resolvido.assunto,
       cropTopoExtra: resolvido.cropTopoExtra,
