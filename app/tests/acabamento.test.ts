@@ -57,6 +57,42 @@ test("Split: B-roll na caixa de baixo, com corte do topo e feather, abaixo do me
     assert.equal(c.recorte?.suavizar, 5);
     assert.notEqual(c.escala, 150);
   }
+  assert.equal(r.subidos, 0, "bruta deitada: o doutor fica como o Leo deixou");
+  assert.deepEqual(r.sequencia.video[0], seq.video[0]);
+});
+
+test("Split: doutor em pe sobe so por baixo do B-roll, e o audio vinculado e cortado junto", () => {
+  const emPe: Midia = { caminho: "C:\\brutas\\vertical.mp4", duracaoQ: 1000, largura: 1080, altura: 1920, canais: 2 };
+  const s: Sequencia = {
+    ...seq,
+    video: [
+      [{ midia: emPe, inicioQ: 0, fimQ: 300, entradaQ: 10, grupo: "p0", deslocamento: { x: 20, y: 0 } }],
+      [
+        { midia: broll, inicioQ: 100, fimQ: 150, entradaQ: 0 },
+        { midia: broll, inicioQ: 150, fimQ: 200, entradaQ: 0 },
+      ],
+    ],
+    audio: [[{ midia: emPe, inicioQ: 0, fimQ: 300, entradaQ: 10, grupo: "p0" }]],
+  };
+  const r = acabar(s, { split: { divisao: 50, perfil, override: {} } });
+  assert.equal(r.subidos, 1, "dois B-rolls colados sao um trecho so");
+  assert.deepEqual(
+    r.sequencia.video[0]!.map((c) => [c.inicioQ, c.fimQ, c.entradaQ, c.grupo, c.deslocamento]),
+    [
+      [0, 100, 10, "p0.0", { x: 20, y: 0 }],
+      [100, 200, 110, "p0.1", { x: 20, y: -144 }], // 960 * 0,85 = 816
+      [200, 300, 210, "p0.2", { x: 20, y: 0 }],
+    ]
+  );
+  assert.deepEqual(
+    r.sequencia.audio[0]!.map((c) => [c.inicioQ, c.fimQ, c.entradaQ, c.grupo]),
+    [
+      [0, 100, 10, "p0.0"],
+      [100, 200, 110, "p0.1"],
+      [200, 300, 210, "p0.2"],
+    ]
+  );
+  assert.deepEqual(validarSequencia(r.sequencia), []);
 });
 
 test("Trilha: uma por variacao, repetindo a musica curta, terminando com o doutor", () => {

@@ -3,7 +3,8 @@
  *
  *   - fim de cada variacao: B-roll que passa do fim do doutor e aparado;
  *   - Auto Split (opcional): cada B-roll na caixa de baixo, com o enquadramento
- *     do perfil de cada arquivo (regra de src/autosplit.ts da raiz);
+ *     do perfil de cada arquivo (regra de src/autosplit.ts da raiz), e o
+ *     doutor em pe subindo enquanto o B-roll esta na tela;
  *   - trilha (opcional): a musica embaixo de cada variacao, terminando junto
  *     com o doutor.
  *
@@ -17,6 +18,7 @@ import {
   calcularEnquadramento,
   FEATHER_PCT,
   fracaoDivisao,
+  nudgeDoutorPosY,
   resolverPerfil,
   type OverridePerfil,
   type Perfil,
@@ -55,10 +57,45 @@ export interface ResultadoAcabamento {
   readonly variacoes: number;
   readonly aparados: number;
   readonly enquadrados: number;
+  /** Trechos do doutor em pe que subiram por baixo do B-roll. */
+  readonly subidos: number;
   readonly avisos: string[];
 }
 
 const nomeDe = (c: string): string => c.split(/[\\/]/).pop() ?? c;
+
+/** Trechos de [ini, fim) com B-roll na tela; B-rolls colados viram um trecho so. */
+function cobertura(brolls: readonly Clipe[], ini: number, fim: number): Array<[number, number]> {
+  const saida: Array<[number, number]> = [];
+  for (const b of [...brolls].sort((x, y) => x.inicioQ - y.inicioQ)) {
+    const a = Math.max(b.inicioQ, ini);
+    const z = Math.min(b.fimQ, fim);
+    if (a >= z) continue;
+    const ultimo = saida[saida.length - 1];
+    if (ultimo !== undefined && a <= ultimo[1]) ultimo[1] = Math.max(ultimo[1], z);
+    else saida.push([a, z]);
+  }
+  return saida;
+}
+
+/**
+ * Corta o clipe nos quadros de `cortes` que caem dentro dele. Cada pedaco ganha
+ * grupo proprio, numerado pelos cortes da lista inteira: o video e o audio do
+ * mesmo par caem no mesmo numero e continuam vinculados.
+ */
+function picotar(c: Clipe, cortes: readonly number[]): Clipe[] {
+  const bordas = [c.inicioQ, ...cortes.filter((q) => q > c.inicioQ && q < c.fimQ), c.fimQ];
+  return bordas.slice(1).map((fimQ, i) => {
+    const inicioQ = bordas[i]!;
+    return {
+      ...c,
+      inicioQ,
+      fimQ,
+      entradaQ: c.entradaQ + (inicioQ - c.inicioQ),
+      ...(c.grupo !== undefined ? { grupo: `${c.grupo}.${cortes.filter((q) => q <= inicioQ).length}` } : {}),
+    };
+  });
+}
 
 export function acabar(entrada: Sequencia, opcoes: OpcoesAcabamento): ResultadoAcabamento {
   const { fps } = entrada;
@@ -114,7 +151,39 @@ export function acabar(entrada: Sequencia, opcoes: OpcoesAcabamento): ResultadoA
         };
       });
 
-  // 3. Trilha: uma por variacao, do comeco do arquivo, repetindo se a musica
+  // 3. Doutor em pe sobe enquanto o B-roll esta na tela (nudgeDoutorPosY).
+  // So o trecho coberto: a tela cheia subida abre tarja preta embaixo, e so o
+  // B-roll esconde. Por isso a V1 e cortada nas bordas do B-roll, com o audio
+  // vinculado junto. Deitada fica como esta: la a posicao muda com o trecho e
+  // continua na mao do Leo (docs/PERFIS_DE_EDICAO.md).
+  let subidos = 0;
+  let v1Final: readonly Clipe[] = v1;
+  let audio = entrada.audio;
+  if (opcoes.split) {
+    const cortesDoGrupo = new Map<string, number[]>();
+    v1Final = v1.flatMap((c) => {
+      const { largura: w, altura: h } = c.midia;
+      if (w === undefined || h === undefined || h < w) return [c];
+      const cobertos = cobertura(v2, c.inicioQ, c.fimQ);
+      if (cobertos.length === 0) return [c];
+      const cortes = [...new Set(cobertos.flat())].filter((q) => q > c.inicioQ && q < c.fimQ).sort((a, b) => a - b);
+      if (c.grupo !== undefined) cortesDoGrupo.set(c.grupo, cortes);
+      const y = Math.round(nudgeDoutorPosY({ H: entrada.altura, hDoc: h, escalaDocPct: c.escala ?? 100 }) - entrada.altura / 2);
+      return picotar(c, cortes).map((p) => {
+        if (!cobertos.some(([a, z]) => p.inicioQ >= a && p.fimQ <= z)) return p;
+        subidos++;
+        return { ...p, deslocamento: { x: c.deslocamento?.x ?? 0, y } };
+      });
+    });
+    audio = entrada.audio.map((t) =>
+      t.flatMap((c) => {
+        const cortes = c.grupo === undefined ? undefined : cortesDoGrupo.get(c.grupo);
+        return cortes === undefined ? [c] : picotar(c, cortes);
+      })
+    );
+  }
+
+  // 4. Trilha: uma por variacao, do comeco do arquivo, repetindo se a musica
   // for mais curta que o video, cortada no fim do doutor.
   const trilha: Clipe[] = [];
   if (opcoes.trilha) {
@@ -131,12 +200,13 @@ export function acabar(entrada: Sequencia, opcoes: OpcoesAcabamento): ResultadoA
     sequencia: {
       ...entrada,
       nome: `${entrada.nome} final`,
-      video: [v1, v2, ...entrada.video.slice(2)],
-      audio: opcoes.trilha ? [...entrada.audio, trilha] : entrada.audio,
+      video: [v1Final, v2, ...entrada.video.slice(2)],
+      audio: opcoes.trilha ? [...audio, trilha] : audio,
     },
     variacoes: vars.length,
     aparados,
     enquadrados,
+    subidos,
     avisos,
   };
 }

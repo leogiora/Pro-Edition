@@ -85,9 +85,12 @@ B-roll que passa do fim do doutor é aparado; o que começa num espaço sai.
 Split (opcional): a geometria do painel (`src/autosplit.ts`,
 `calcularEnquadramento`) com o perfil empacotado (`src/autosplit-perfil.json`)
 e os ajustes que o Leo ensinou (`autosplit-perfil-override.json` do PluginData)
-→ escala, posição e Cortar (topo + feather 5%) no XML. O "subir o doutor" do
-painel só vale para bruta em pé e ficou de fora (as brutas do Andro são
-deitadas). Trilha (opcional): a música do começo, repetindo se for curta,
+→ escala, posição e Cortar (topo + feather 5%) no XML. Doutor **em pé**: sobe
+enquanto o B-roll está na tela (`nudgeDoutorPosY`, Y 960 → 816 em tela cheia,
+sem mudar a escala). Só o trecho coberto sobe, porque a tela cheia subida abre
+tarja preta embaixo; a V1 é cortada nas bordas do B-roll, com o áudio vinculado
+junto. Doutor **deitado** fica como está: lá a posição muda com o trecho e é o
+Leo quem ajusta. Trilha (opcional): a música do começo, repetindo se for curta,
 cortada no fim de cada variação, no volume escolhido (padrão −20 dB).
 
 **Crop/flop do doutor largado na cadeira** é decisão de olho: continua manual.

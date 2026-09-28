@@ -35,6 +35,7 @@ export interface ResultadoAcabamentoSalvo {
   readonly variacoes: number;
   readonly aparados: number;
   readonly enquadrados: number;
+  readonly subidos: number;
   readonly salvos: string[];
   readonly avisos: string[];
 }
@@ -79,6 +80,7 @@ export async function rodarAcabamento(caminho: string, opcoes: OpcoesAcabamentoT
     variacoes: r.variacoes,
     aparados: r.aparados,
     enquadrados: r.enquadrados,
+    subidos: r.subidos,
     salvos: [saida],
     avisos: [...avisos, ...r.avisos, ...(trilha ? [`Trilha: ${basename(trilha.midia.caminho)} a ${opcoes.volumeTrilhaDb} dB`] : [])],
   };

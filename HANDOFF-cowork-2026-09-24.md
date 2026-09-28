@@ -46,10 +46,12 @@ o Leo antes de mexer):
    automatizar: preenche a largura, borda de cima em ~1120 px, Feather 7%.
    O doutor não tem número fixo. O 540/580 com Escala 57 do Andro 19.09 é
    de bruta deitada, que muda por trecho; a do Andro costuma vir em pé
-   (Leo, 28/09). Em pé: levar pro `app/` o "subir o doutor" do painel
-   (`nudgeDoutorPosY`), hoje de fora. Deitada: fica manual, é decisão de
-   olho como o crop/flop. Na próxima bruta em pé, medir o split que o Leo
-   fizer à mão (`gabarito_broll.py`) antes de confiar no 15% do painel.
+   (Leo, 28/09). Em pé: feito no `app/` em 28/09 (`acabamento.ts`: sobe
+   15% só por baixo do broll, cortando V1 e áudio vinculado nas bordas).
+   Falta provar no Premiere. Deitada: fica manual, é decisão de olho como o
+   crop/flop. Na próxima bruta em pé, medir o split que o Leo fizer à mão
+   (`gabarito_broll.py`) e afinar o `DOCTOR_UP` (0,85) de
+   `src/autosplit.ts`.
 4. **Biblioteca:** levar pra `Brolls - 2026`, com nome de conceito, o que ele
    foi buscar no Envato (mulher triste, homem dormindo), e conferir como o
    aprendizado do Auto B-roll lida com arquivo renomeado.

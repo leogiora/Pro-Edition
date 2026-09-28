@@ -262,6 +262,7 @@ $<HTMLButtonElement>("acabRodar").addEventListener("click", async () => {
       ...[
         `${r.aparados} B-roll(s) aparados no fim do doutor`,
         ...(r.enquadrados > 0 ? [`${r.enquadrados} B-roll(s) no Split`] : []),
+        ...(r.subidos > 0 ? [`${r.subidos} trecho(s) do doutor em pé subiram por baixo do B-roll`] : []),
         ...r.avisos,
       ].map((t) => Object.assign(document.createElement("li"), { textContent: t }))
     );

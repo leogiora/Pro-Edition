@@ -54,9 +54,10 @@ com o código** (Auto B-roll e Acabamento em `app/LEIA-ME.md`):
   que veio deitada — a do Andro costuma vir em pé (Leo, 28/09). Na bruta
   deitada a posição muda com o trecho: no "Gravação Cristiano 31.07", também
   deitado, o doutor por baixo do broll vai de Y 715 a 835 com Escala 78 a
-  100. Em pé, não há gabarito no disco; o painel sobe o doutor 15% (Y 960 →
-  816) sem mudar a escala (`nudgeDoutorPosY`, calibrado no desenho, não
-  medido). O broll
+  100. Em pé, não há gabarito no disco. Desde 28/09 o Acabamento do `app/`
+  sobe o doutor 15% (Y 960 → 816) sem mudar a escala, só por baixo do broll
+  (`nudgeDoutorPosY`, calibrado no desenho, não medido; o painel tinha a
+  regra mas nunca aplicou). O broll
   preenche a largura sem sobra (escala = 1080 ÷ largura: 232,8 no
   464×832, 150 no 720×1280) e a borda de cima visível fica em 1000–1145 px
   (mediana ~1120; na variação 3, 1123–1128), por baixo da borda do doutor.
