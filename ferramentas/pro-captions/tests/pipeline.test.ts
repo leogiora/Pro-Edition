@@ -1,8 +1,11 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { blocosParaSrt, gerarBlocos } from "../src/pipeline.ts";
-import { PRESET_PADRAO } from "../src/preset.ts";
+import { readFileSync } from "node:fs";
+
+import { palavrasDoElevenLabs } from "../src/elevenlabs.ts";
+import { blocosNosCortes, blocosParaSrt, gerarBlocos, lerSrt } from "../src/pipeline.ts";
+import { PRESET_ELEVENLABS, PRESET_PADRAO } from "../src/preset.ts";
 import type { PalavraEditada } from "../src/transcript.ts";
 
 // Os testes de blocosParaTranscricao e sequenceToSource morreram com a rota
@@ -50,4 +53,72 @@ test("blocosParaSrt gera um cue por bloco no formato srt", () => {
   // Sem ponto final no texto: D-15.
   assert.match(cues[0] ?? "", /^1\n00:00:00,000 --> 00:00:02,000\nBOMBA RELOGIO$/);
   assert.match(cues[1] ?? "", /^2\n00:00:0/);
+});
+
+/* ------------------------------------------ blocos do Premiere (hibrido) */
+
+test("lerSrt: tempo, texto em duas linhas, BOM e CRLF", () => {
+  const srt = "﻿1\r\n00:00:01,000 --> 00:00:02,500\r\nVocê\r\nfalha\r\n\r\n2\r\n00:01:00,040 --> 00:01:01,000\r\ninventa\r\n";
+  assert.deepEqual(lerSrt(srt), [
+    { inicio: 1, fim: 2.5, texto: "Você falha" },
+    { inicio: 60.04, fim: 61, texto: "inventa" },
+  ]);
+});
+
+test("hibrido: o bloco e o tempo sao do Premiere, a palavra e a do ElevenLabs", () => {
+  // Palavras de 1 s cada: "Você" 0-1, "falha," 1-2, "inventa" 2-3, "desculpa" 3-4.
+  const r = blocosNosCortes(palavras("Você falha, inventa desculpa|"), [
+    { inicio: 0, fim: 1.5, texto: "Você faz" },
+    { inicio: 1.5, fim: 4, texto: "inventa desculpa" },
+  ]);
+  // "falha," comeca em 1 s, antes do corte do Premiere em 1,5: fica no primeiro bloco.
+  assert.deepEqual(r.map((b) => b.texto), ["Você falha", "inventa desculpa"]);
+  assert.deepEqual(r.map((b) => [b.inicio, b.fim]), [[0, 1.5], [1.5, 4]]);
+});
+
+test("hibrido: palavra no buraco vai para o bloco seguinte; bloco sem palavra fica, para revisar", () => {
+  const r = blocosNosCortes(palavras("um dois tres|"), [
+    { inicio: 0, fim: 0.5, texto: "um" },
+    { inicio: 1.2, fim: 3, texto: "dois tres" },
+    { inicio: 5, fim: 6, texto: "silencio" },
+  ]);
+  // "dois" comeca em 1 s: buraco entre 0,5 e 1,2 -> segundo bloco.
+  assert.deepEqual(r.map((b) => b.texto), ["um", "dois tres", "silencio"]);
+  assert.equal(r[2]?.precisaRevisao, true);
+});
+
+test("hibrido: preco sai em bloco proprio, mesmo partido entre dois blocos do Premiere", () => {
+  // "tá saindo por mil reais" com o Premiere cortando entre "mil" e "reais".
+  const r = blocosNosCortes(palavras("tá saindo por mil reais|"), [
+    { inicio: 0, fim: 3.5, texto: "tá saindo por mil" },
+    { inicio: 3.5, fim: 5, texto: "reais" },
+  ], PRESET_ELEVENLABS);
+  assert.deepEqual(r.map((b) => [b.texto, b.estilo]), [
+    ["tá saindo por", "normal"],
+    ["1.000 REAIS", "preco"],
+  ]);
+  assert.equal(r[1]?.inicio, 3); // comeca na palavra "mil"
+  assert.equal(r[1]?.fim, 5); // e vai ate o fim do bloco que ele esvaziou
+});
+
+test("hibrido com dado real: variacao 1 do Andro 19.09", () => {
+  const eleven = readFileSync(new URL("./fixtures/elevenlabs-andro1909-variacao1.json", import.meta.url), "utf8");
+  const premiere = lerSrt(readFileSync(new URL("./fixtures/premiere-andro1909-variacao1.srt", import.meta.url), "utf8"));
+  const r = blocosNosCortes(palavrasDoElevenLabs(eleven) ?? [], premiere, PRESET_ELEVENLABS);
+  const texto = r.map((b) => b.texto).join(" | ");
+  // Os erros do Premiere que o Leo corrigia a mao saem certos, no corte do Premiere.
+  assert.match(texto, /Você falha \|/);
+  // Ponto no meio do bloco vira virgula, como na legenda revisada.
+  assert.match(texto, /hora H, E ela\?/);
+  // "super-homem" numa palavra so, no Premiere em dois blocos: nao repete "homem".
+  assert.doesNotMatch(texto, /\| homem \|/);
+  assert.match(texto, /sou médico/);
+  assert.match(texto, /me valoriza/);
+  assert.match(texto, /estresse/);
+  assert.doesNotMatch(texto, /Você faz|fui médico|stress\b/);
+  assert.deepEqual(r.filter((b) => b.estilo === "preco").map((b) => b.texto), ["1.000 REAIS", "196 REAIS"]);
+  // Nenhum bloco do Premiere some e nenhum fica sem palavra.
+  assert.ok(r.length >= premiere.length - 1, `${r.length} blocos para ${premiere.length} do Premiere`);
+  assert.ok(r.every((b) => !b.motivos.includes("o ElevenLabs nao ouviu nada aqui: texto do Premiere")));
+  assert.equal(r[0]?.inicio, premiere[0]?.inicio);
 });

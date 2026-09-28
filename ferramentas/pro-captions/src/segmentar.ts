@@ -27,7 +27,7 @@ export interface BlocoLegenda {
 const CONFIANCA_MINIMA = 0.5;
 
 /** Corta o array de palavras em frases, por `eos` ou por pausa. */
-function emFrases(palavras: readonly PalavraRevisada[], preset: Preset): PalavraRevisada[][] {
+export function emFrases(palavras: readonly PalavraRevisada[], preset: Preset): PalavraRevisada[][] {
   const frases: PalavraRevisada[][] = [];
   let atual: PalavraRevisada[] = [];
 
@@ -142,7 +142,7 @@ function partir(
   return partes;
 }
 
-function montarBloco(palavras: readonly PalavraRevisada[], estilo: "normal" | "preco"): BlocoLegenda {
+export function montarBloco(palavras: readonly PalavraRevisada[], estilo: "normal" | "preco"): BlocoLegenda {
   const primeira = palavras[0];
   const ultima = palavras[palavras.length - 1];
   if (primeira === undefined || ultima === undefined) {

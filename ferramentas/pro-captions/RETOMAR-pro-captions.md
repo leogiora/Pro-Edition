@@ -1,5 +1,42 @@
 # RETOMAR — Pro Captions
 
+## 2026-09-28 (Claude Code) — medido sem Premiere: o corte do Premiere ganha
+
+A resposta do ElevenLabs salva (`teste-legendas/elevenlabs.json.json`)
+passou pela cadeia atual (`gerarBlocos` + `PRESET_ELEVENLABS`, script
+`teste-legendas/legenda_offline.mjs`) e foi comparada com a legenda revisada
+da variacao 1. `cortes.py` mede quantos cortes do Leo cada versao repete:
+
+| | palavras erradas | cortes do Leo repetidos | cortes a mais |
+|---|---|---|---|
+| Premiere antes da revisao | 7 | 80/84 (95%) | 3 |
+| Pro Captions atual | 3 | 62/84 (74%) | 15 |
+| Hibrido: bloco do Premiere, palavra do ElevenLabs (`hibrido.py`) | 4* | 80/84 (95%) | 2 |
+
+\* O que falta e o "reais" do "196": o ElevenLabs escreveu so "196.", e a
+cadeia de texto daqui poe de volta. Com ela, o hibrido fica nas mesmas 3 do
+Pro Captions, e duas delas nem sao erro ("focada" e do gabarito de 24/09; o
+projeto de hoje ja diz "focado").
+
+Pausa nao explica o corte (`pausas.py`: metade dos cortes do Leo cai em
+0,02 s), como a sessao de 24/09 ja tinha visto. Imitar a regra do Premiere
+seria chute. **Recomendacao:** nao segmentar, reaproveitar os blocos do
+Premiere. O painel nao le a faixa de legenda (P3.1), entao o hibrido mora no
+programa (`app/`): entra o `.srt` que o Premiere exporta (Arquivo > Exportar >
+Legendas) mais o audio, e sai o `.srt` com as palavras do ElevenLabs e as
+regras de texto daqui, com o preco em faixa propria.
+
+**Feito (ok do Leo, 28/09):** `lerSrt` e `blocosNosCortes` em `pipeline.ts`.
+A palavra vai para o bloco onde comeca. O preco e achado na frase inteira e
+sai em bloco proprio; preco partido entre dois blocos vai para o primeiro.
+Bloco esvaziado pelo vizinho (preco puxado, ou "super-homem" cobrindo "um
+super" / "homem") e absorvido pelo anterior. Bloco onde o ElevenLabs nao
+ouviu nada fica com o texto do Premiere, marcado para revisao. Ponto no meio
+do bloco vira virgula ("hora H, E ela?", como na legenda revisada). No
+programa, a tela Legendas aceita o `.srt` junto com o audio. Pelo caminho
+real: 3 palavras diferentes, 80/84 cortes, 2 a mais, tempo mediano 0 ms.
+Falta rodar com uma sequencia inteira exportada do Premiere.
+
 ## 2026-09-24 (Claude Code) — segmentacao no estilo do Leo
 
 **Achado que muda a meta:** a segmentacao da legenda revisada e quase toda a

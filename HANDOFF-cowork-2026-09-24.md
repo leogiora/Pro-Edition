@@ -29,10 +29,17 @@ Ler isto antes do resto; as seções "Atualização" no fim são o histórico.
 
 Próximos passos, em ordem (recomendação da sessão do Cowork — combinar com
 o Leo antes de mexer):
-1. **Legenda ao vivo.** Tirar "stress" do `termosChave` em `preset.ts` (entrou
-   por uma leitura errada de gravação; a grafia dele é "estresse") e rodar
-   `npm run verify`. Depois, "Gerar legendas" com a chave `sk_` na variação 1
-   e comparar com o gabarito usando `comparar.py`.
+1. **Legenda ao vivo.** ~~Tirar "stress" e rodar o verify~~ (feito 28/09).
+   A comparação com o gabarito foi feita **sem Premiere**, com a resposta
+   do ElevenLabs já salva. O texto do Pro Captions é melhor (3 erros contra
+   7), mas a divisão em blocos repete só 74% dos cortes do Leo; a do
+   Premiere repete 95%. **Feito (28/09):** o programa usa o bloco do Premiere
+   com a palavra do ElevenLabs, a partir do `.srt` exportado (tela Legendas:
+   arrastar o `.srt` e o áudio juntos). Pelo caminho real, 3 palavras
+   diferentes e 95% dos cortes. Detalhe em
+   `ferramentas/pro-captions/RETOMAR-pro-captions.md` e `app/LEIA-ME.md`.
+   Falta rodar com uma sequência inteira: exportar o `.srt` e o áudio do
+   Premiere e passar no programa com a chave `sk_`.
 2. ~~**Gabarito de broll.**~~ Feito no Claude Code (28/09): lido do
    `.prproj` (variações 1–3, save das 11:05). Resultado em
    `docs/PERFIS_DE_EDICAO.md`, "Montagem do broll". Resumo: o painel acerta

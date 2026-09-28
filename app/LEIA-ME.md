@@ -46,6 +46,24 @@ src/xml-ler.ts     XML exportado do Premiere -> Sequencia (puro, testado)
 src/pausas.ts      Auto Pausas sobre a Sequencia (regra de src/pausas.ts da raiz)
 ```
 
+### Legendas
+
+Entra o áudio (ou vídeo, ou o `.json` do ElevenLabs) da sequência, exportado
+desde o começo. Sai `legendas.srt` e `precos.srt`.
+
+**Com a legenda do Premiere junto (recomendado, 28/09):** no Premiere,
+"Criar legendas" como sempre e **Arquivo › Exportar › Legendas** em `.srt`.
+Depois é arrastar o `.srt` e o áudio juntos. O bloco e o tempo são os do
+Premiere, e o texto vem do ElevenLabs com as regras do Pro Captions, com o
+preço em bloco e arquivo próprios (`blocosNosCortes` em
+`ferramentas/pro-captions/src/pipeline.ts`).
+
+Motivo, medido na variação 1 do Andro 19.09 contra a legenda revisada do
+Leo: ele quase não mexe no corte do Premiere (95% ficam), e a segmentação
+daqui repete 74%. Com o corte do Premiere, ficam 3 palavras diferentes (o
+Premiere tem 7), 95% dos cortes e tempo com erro mediano de 0 ms. Sem o `.srt`,
+segue a segmentação própria (blocos de até 20 caracteres).
+
 ### Auto Pausas
 
 Entra o XML que o Premiere exporta da sequência separada (ou as brutas

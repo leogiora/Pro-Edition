@@ -12,7 +12,7 @@ import { basename, dirname, extname, join } from "node:path";
 import { audioMudo } from "../../../ferramentas/pro-captions/src/audio.ts";
 import { assinaturaDoAudio, palavrasDoElevenLabs, termosChave } from "../../../ferramentas/pro-captions/src/elevenlabs.ts";
 import { transcreverNoElevenLabs } from "../../../ferramentas/pro-captions/src/elevenlabs-rede.ts";
-import { blocosParaSrt, gerarBlocos } from "../../../ferramentas/pro-captions/src/pipeline.ts";
+import { blocosNosCortes, blocosParaSrt, gerarBlocos, lerSrt } from "../../../ferramentas/pro-captions/src/pipeline.ts";
 import { PRESET_ELEVENLABS } from "../../../ferramentas/pro-captions/src/preset.ts";
 import { validar, type BlocoLegenda } from "../../../ferramentas/pro-captions/src/segmentar.ts";
 import type { PalavraEditada } from "../../../ferramentas/pro-captions/src/transcript.ts";
@@ -27,7 +27,15 @@ export interface Legendas {
   readonly problemas: string[];
   /** De onde veio a fala, para o editor saber se pagou. */
   readonly origem: "arquivo json" | "guardada" | "elevenlabs";
+  /** "premiere": blocos e tempo do .srt que o Premiere exportou, texto do ElevenLabs. */
+  readonly cortes: "premiere" | "proprios";
 }
+
+/**
+ * O bloco do Premiere ja passou pelo olho do Leo e pode ter mais de 20
+ * caracteres ("aqui no meu consultório"): o orcamento e da segmentacao daqui.
+ */
+const SEM_ORCAMENTO = { ...PRESET_ELEVENLABS, maxCaracteres: Infinity };
 
 /**
  * WAV -> JSON do ElevenLabs. A resposta fica guardada pela assinatura do
@@ -66,14 +74,30 @@ async function transcricao(
   return { json, origem: guardada ? "guardada" : "elevenlabs" };
 }
 
-export async function gerarLegendas(caminho: string, cfg: Config, avisar: (texto: string) => void): Promise<Legendas> {
+/**
+ * `srtPremiere`: a legenda que o Premiere criou, exportada em .srt. Com ela,
+ * o corte e o tempo sao os do Premiere (que o Leo quase nao mexe) e so o texto
+ * vem do ElevenLabs — ver `blocosNosCortes`.
+ */
+export async function gerarLegendas(
+  caminho: string,
+  cfg: Config,
+  avisar: (texto: string) => void,
+  srtPremiere: string | null = null
+): Promise<Legendas> {
+  // O .srt primeiro: arquivo errado tem de falhar antes de pagar a transcricao.
+  const cues = srtPremiere === null ? null : lerSrt(await readFile(srtPremiere, "utf8"));
+  if (cues !== null && cues.length === 0) throw new Error(`${basename(srtPremiere ?? "")} não tem legenda legível.`);
+
   const { json, origem } = await transcricao(caminho, cfg, avisar);
   const palavras = palavrasDoElevenLabs(json);
   if (palavras === null) throw new Error("A resposta do ElevenLabs não é um JSON válido.");
   if (palavras.length === 0) throw new Error("Nenhuma palavra reconhecida neste arquivo.");
 
   avisar("montando legendas");
-  return { ...legendasDasPalavras(palavras, []), origem };
+  if (cues === null) return { ...legendasDasPalavras(palavras, []), origem, cortes: "proprios" };
+  const blocos = blocosNosCortes(palavras, cues, PRESET_ELEVENLABS);
+  return { blocos, problemas: validar(blocos, SEM_ORCAMENTO), origem, cortes: "premiere" };
 }
 
 /** Palavras ja no tempo da sequencia -> blocos. `cortes` em segundos. */
@@ -89,8 +113,12 @@ export function legendasDasPalavras(
  * Texto e preco em arquivos separados, cada um na sua faixa de legenda: o
  * estilo da faixa resolve o tamanho (96 no texto, 150 no preco) — D-16.
  */
-export async function salvarSrts(caminho: string, blocos: readonly BlocoLegenda[]): Promise<string[]> {
-  const problemas = validar(blocos, PRESET_ELEVENLABS);
+export async function salvarSrts(
+  caminho: string,
+  blocos: readonly BlocoLegenda[],
+  cortes: Legendas["cortes"] = "proprios"
+): Promise<string[]> {
+  const problemas = validar(blocos, cortes === "premiere" ? SEM_ORCAMENTO : PRESET_ELEVENLABS);
   if (problemas.length > 0) throw new Error(`Legenda reprovada na validação: ${problemas.slice(0, 3).join("; ")}`);
 
   const base = join(dirname(caminho), basename(caminho, extname(caminho)));
