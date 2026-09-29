@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { cortesDosPedacos, dentroDasVariacoes, inicioDosLeaks, moverPalavras, variacoes } from "../src/editar.ts";
+import { cortesDosPedacos, dentroDasVariacoes, inicioDosLeaks, moverPalavras, trilhaFaltando, variacoes } from "../src/editar.ts";
 import type { Pedaco } from "../src/pausas.ts";
 
 const FPS = 25;
@@ -69,4 +69,17 @@ test("inicioDosLeaks: 0,36 s antes de cada troca doutor/B-roll; nada entre B-rol
   assert.deepEqual(inicioDosLeaks(brolls, vars, FPS, jaNaFaixa), [2.64, 7.24, 56.64]);
   // Sai em 25,24 e o proximo entra 0,8 s depois: os dois leaks entram, o segundo come o fim do primeiro.
   assert.deepEqual(inicioDosLeaks([{ inicio: 20, fim: 25.24 }, { inicio: 26.04, fim: 30 }], vars, FPS), [19.64, 24.88, 25.68, 29.64]);
+});
+
+test("trilhaFaltando: copia onde nao tem musica; pula se a copia, antes de aparada, cairia na musica da vizinha", () => {
+  const vars = [
+    { inicioQ: 0, fimQ: 1500 }, // 0-60 s: o modelo esta aqui
+    { inicioQ: 1750, fimQ: 3250 }, // 70-130 s: livre ate 140
+    { inicioQ: 3300, fimQ: 3500 }, // 132-140 s: a copia de 60 s passaria de 140
+    { inicioQ: 3500 + 25, fimQ: 5000 }, // 141-200 s: o Leo ja pos
+  ];
+  const naFaixa = [{ inicio: 0, fim: 60 }, { inicio: 141, fim: 200 }];
+  const r = trilhaFaltando(vars, FPS, naFaixa, 60);
+  assert.deepEqual(r.entram, [vars[1]]);
+  assert.deepEqual(r.pulam, [vars[2]]);
 });

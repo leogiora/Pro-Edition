@@ -93,6 +93,30 @@ export function inicioDosLeaks(
   return saida;
 }
 
+/**
+ * Variacoes que ganham a copia da trilha: as que nao tem musica na faixa. O
+ * clone nasce com a duracao do modelo e so depois e aparado no fim da
+ * variacao; se ate la cobrir musica que ja esta na faixa, a variacao pula (o
+ * overwrite apagaria o que o Leo pos).
+ */
+export function trilhaFaltando(
+  vars: readonly Variacao[],
+  fps: number,
+  naFaixa: ReadonlyArray<{ readonly inicio: number; readonly fim: number }>,
+  duracaoModelo: number
+): { entram: Variacao[]; pulam: Variacao[] } {
+  const meioQuadro = 0.5 / fps;
+  const cruza = (ini: number, fim: number): boolean => naFaixa.some((c) => ini < c.fim - meioQuadro && c.inicio < fim - meioQuadro);
+  const entram: Variacao[] = [];
+  const pulam: Variacao[] = [];
+  for (const v of vars) {
+    const ini = v.inicioQ / fps;
+    if (cruza(ini, v.fimQ / fps)) continue;
+    (cruza(ini, ini + duracaoModelo) ? pulam : entram).push(v);
+  }
+  return { entram, pulam };
+}
+
 /** B-roll mais curto que isto, depois de aparado no fim do doutor, nem entra. */
 export const BROLL_MINIMO_S = 1;
 

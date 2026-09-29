@@ -24,7 +24,8 @@ O primeiro cartão do Pro Ads. Lê a sequência aberta (clipes da V1, variaçõe
 separadas por 1 s ou mais de vão, B-rolls e legendas que já existem) e, num clique:
 manda o áudio uma vez para o ElevenLabs, corta as pausas (zoom, posição e Lumetri
 de cada clipe voltam em cada pedaço), põe os B-rolls, opcionalmente o Split, o
-light leak em cada troca doutor ↔ B-roll, e cria as faixas de legenda e de preço.
+light leak em cada troca doutor ↔ B-roll, a trilha em cada variação, e cria as
+faixas de legenda e de preço.
 O registro de cada execução fica em `editar-log.json`, na pasta de dados do plugin.
 
 O light leak é o do Premiere Composer que já está no projeto (o da timeline, ou o
@@ -35,14 +36,22 @@ B-rolls colados, no começo ou fim da variação, nem onde a faixa já tem algo
 19.09 a regra põe os 79 leaks que o Leo pôs, no mesmo quadro. Falta provar no
 Premiere que o `.aegraphic` entra pelo overwrite como um clipe comum.
 
+A trilha é a música que o Leo pôs embaixo de uma variação na A2, **clonada**
+(`createCloneTrackItemAction`) para as outras e aparada no fim de cada uma: o clone
+leva o ganho e o trecho da música, e a API não tem como ajustar volume. No Andro
+19.09 as 20 variações têm "stillness.WAV" do 0 da música, −18 dB de ganho de clipe,
+começando e terminando com a variação. Variação que já tem música fica; se a cópia,
+antes de aparada, cairia na música da vizinha, fica de fora com aviso
+(`trilhaFaltando` em `src/editar.ts`). Falta provar o clone no Premiere.
+
 UXP não cria faixa de legenda. Quem cria é a **ponte**: uma extensão CEP escondida
 (`ferramentas/pro-captions-timeline/ponte.html`) que abre com o Premiere e atende
 o pedido que o Editar grava em `timeline-pedido.txt`. Ela só liga quando a janela
 do Premiere é ativada. O cartão Pro Captions usa a mesma ponte. Sem ela, os .srt vão para o painel
 Projeto e o registro manda arrastar.
 
-Provado no Premiere 25.6.6 (TESTE Editar 3 e 5, 3:00 → 2:27 em 11 s). Ainda
-falta: a trilha e o fim de variação só existem no programa `app/`.
+Provado no Premiere 25.6.6 (TESTE Editar 3 e 5, 3:00 → 2:27 em 11 s), antes do
+light leak e da trilha, que ainda não rodaram ao vivo.
 
 O estilo da legenda (Pro-Captions 96 / Preço 150) fica à mão, por escolha do Leo
 (2026-09-24). Nenhuma API aplica estilo em faixa de legenda (D-02, reconferido

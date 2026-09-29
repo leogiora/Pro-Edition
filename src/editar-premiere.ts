@@ -8,6 +8,7 @@
  *   4. Auto B-roll pela fala, terminando junto com cada variacao
  *   5. Auto Split (opcional)
  *   5b. light leak em cada troca doutor <-> B-roll (regra em editar.ts)
+ *   5c. trilha: a musica de uma variacao copiada para as outras
  *   6. legendas: .srt de texto e de preco, e o pedido para o ajudante CEP
  *      criar as faixas de legenda (o UXP nao cria)
  *
@@ -55,12 +56,21 @@ import { validar } from "../ferramentas/pro-captions/src/segmentar.ts";
 import type { PalavraEditada } from "../ferramentas/pro-captions/src/transcript.ts";
 import { aplicarSplit } from "./autosplit-premiere.ts";
 import { DIVISAO_PADRAO } from "./autosplit.ts";
-import { cortesDosPedacos, dentroDasVariacoes, inicioDosLeaks, moverPalavras, variacoes, type Variacao } from "./editar.ts";
+import {
+  cortesDosPedacos,
+  dentroDasVariacoes,
+  inicioDosLeaks,
+  moverPalavras,
+  trilhaFaltando,
+  variacoes,
+  type Variacao,
+} from "./editar.ts";
 import {
   apagarArquivo,
   aplicarPlano,
   clipesEmQuadros,
   exportarAudio,
+  itensDa,
   lerSequencia,
   linhasDoAplicado,
   type ClipeLido,
@@ -451,6 +461,65 @@ async function colocarLeaks(vars: readonly Variacao[], fps: number, registrar: R
   registrar(`${inicios.length} light leaks na V${faixa + 1} (${item.name})`, "ok");
 }
 
+// ------------------------------------------------------------------ trilha
+
+/** A2: onde o Leo poe a musica (stillness.WAV nas 20 variacoes do Andro 19.09). */
+const FAIXA_TRILHA = 1;
+
+/**
+ * A musica que o Leo pos embaixo de uma variacao vai para as outras, como ele
+ * faz (copiar/colar): medido nas 20 variacoes do Andro 19.09 (29/09), do
+ * comeco da musica, -18 dB de ganho de clipe, comecando e terminando com a
+ * variacao. E clone, nao overwrite do arquivo: a API nao ajusta volume, e o
+ * clone leva o ganho e o trecho da musica. Depois o fim vai para o fim de cada
+ * variacao.
+ */
+async function colocarTrilha(vars: readonly Variacao[], fps: number, registrar: Registrar): Promise<void> {
+  const project = await ppro.Project.getActiveProject();
+  const sequence = await project.getActiveSequence();
+  const ler = async () =>
+    Promise.all(
+      (await itensDa(sequence, false, FAIXA_TRILHA)).map(async (i) => ({
+        i,
+        inicio: (await i.getStartTime()).seconds,
+        fim: (await i.getEndTime()).seconds,
+      }))
+    );
+  const naFaixa = await ler();
+  const modelo = naFaixa[0];
+  if (modelo === undefined) {
+    registrar(`trilha: ponha a música embaixo de uma variação na A${FAIXA_TRILHA + 1} e o Editar copia para as outras`, "aviso");
+    return;
+  }
+  const { entram, pulam } = trilhaFaltando(vars, fps, naFaixa, modelo.fim - modelo.inicio);
+  for (const v of pulam) registrar(`  trilha: ${relogio(v.inicioQ / fps)} ficou de fora (a cópia cairia na música da variação seguinte)`, "aviso");
+  if (entram.length === 0) {
+    if (pulam.length === 0) registrar("trilha: toda variação já tem", "passo");
+    return;
+  }
+
+  const editor = await ppro.SequenceEditor.getEditor(sequence);
+  const deslocamentos = await Promise.all(entram.map((v) => ppro.TickTime.createWithSeconds(v.inicioQ / fps - modelo.inicio)));
+  comTransacao(project, `Editar: trilha em ${entram.length} variações`, (adicionar) => {
+    for (const d of deslocamentos) adicionar(editor.createCloneTrackItemAction(modelo.i, d, 0, 0, false, false));
+  });
+
+  type ComFim = { createSetEndAction: (t: unknown) => unknown };
+  const depois = await ler();
+  const fins: Array<{ item: ComFim; fim: unknown }> = [];
+  for (const v of entram) {
+    const c = depois.find((x) => Math.abs(x.inicio - v.inicioQ / fps) < 0.5 / fps);
+    if (c) fins.push({ item: c.i as unknown as ComFim, fim: await ppro.TickTime.createWithSeconds(v.fimQ / fps) });
+  }
+  comTransacao(project, "Editar: trilha termina com a variação", (adicionar) => {
+    for (const f of fins) adicionar(f.item.createSetEndAction(f.fim));
+  });
+  registrar(
+    `trilha em ${fins.length} de ${entram.length} variação(ões) na A${FAIXA_TRILHA + 1}, cópia da que já estava`,
+    fins.length === entram.length ? "ok" : "aviso"
+  );
+}
+
 // ---------------------------------------------------------------- legendas
 
 async function colocarLegendas(palavras: readonly PalavraEditada[], cortes: readonly number[], registrar: Registrar): Promise<void> {
@@ -478,6 +547,7 @@ export interface OpcoesEditar {
   readonly broll: boolean;
   readonly split: boolean;
   readonly leak: boolean;
+  readonly trilha: boolean;
   readonly legendas: boolean;
 }
 
@@ -542,6 +612,12 @@ export async function editar(opcoes: OpcoesEditar, registrar: Registrar, progres
   if (opcoes.leak) {
     progresso("light leak");
     await colocarLeaks(vars, fps, registrar).catch((e) => registrar(`Light leak: ${(e as Error).message}`, "erro"));
+  }
+
+  // 5c. Trilha: a musica de uma variacao copiada para as outras.
+  if (opcoes.trilha) {
+    progresso("trilha");
+    await colocarTrilha(vars, fps, registrar).catch((e) => registrar(`Trilha: ${(e as Error).message}`, "erro"));
   }
 
   // 6. Legendas por ultimo: a timeline ja esta no formato final.

@@ -113,7 +113,9 @@ sem mudar a escala). Só o trecho coberto sobe, porque a tela cheia subida abre
 tarja preta embaixo; a V1 é cortada nas bordas do B-roll, com o áudio vinculado
 junto. Doutor **deitado** fica como está: lá a posição muda com o trecho e é o
 Leo quem ajusta. Trilha (opcional): a música do começo, repetindo se for curta,
-cortada no fim de cada variação, no volume escolhido (padrão −20 dB).
+cortada no fim de cada variação, no volume escolhido (padrão −18 dB: o ganho
+de clipe do Leo nas 20 variações do Andro 19.09, que começam todas do 0 da
+música e terminam com o doutor).
 
 **Crop/flop do doutor largado na cadeira** é decisão de olho: continua manual.
 Automatizar pede ver o quadro (modelo de visão), fase futura.

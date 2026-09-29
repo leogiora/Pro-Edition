@@ -99,6 +99,11 @@ o Leo antes de mexer):
      troca doutor ↔ broll. Falta provar no Premiere que o `.aegraphic` entra
      pelo overwrite. A animação em si (.mogrt, pop) continua no item 3 do
      Plano.
+6. ~~**Trilha no Editar.**~~ **Feito (29/09):** o README dizia que a trilha
+   só existia no `app/`. Medida nas 20 variações do Andro 19.09 (stillness.WAV
+   do 0, −18 dB, começa e termina com a variação), agora o Editar clona a
+   música que o Leo pôs numa variação para as outras. Falta provar o clone
+   no Premiere.
 
 ## O padrão de legenda que ele segue (visto em duas gravações de tela)
 
@@ -147,6 +152,7 @@ o Leo antes de mexer):
 | Cópia do clipe baixado pelo Aprender | a medir |
 | Fase 0 do XML | a importar (prova regerada em 28/09) |
 | Light leak pelo Editar (`.aegraphic` no overwrite) | a medir |
+| Trilha pelo Editar (clone do clipe da A2 + fim na variação) | a medir |
 
 ## Arquivos de teste fora do repositório
 

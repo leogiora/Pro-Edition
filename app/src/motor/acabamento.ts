@@ -40,7 +40,8 @@ export interface ResultadoAcabamentoSalvo {
   readonly avisos: string[];
 }
 
-const VOLUME_PADRAO_DB = -20;
+// Ganho de clipe da trilha nas 20 variacoes do Andro 19.09 (29/09).
+const VOLUME_PADRAO_DB = -18;
 
 export async function abrirParaAcabamento(caminho: string, cfg: Config): Promise<EntradaAcabamento> {
   const { avisos, ...s } = lerSequenciaXml(await readFile(caminho, "utf8"));

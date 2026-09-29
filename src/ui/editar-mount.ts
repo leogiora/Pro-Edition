@@ -68,6 +68,7 @@ export function mount(root: HTMLElement): void {
         broll: marcado("edBroll"),
         split: marcado("edSplit"),
         leak: marcado("edLeak"),
+        trilha: marcado("edTrilha"),
         legendas: marcado("edLegendas"),
       },
       registrar,

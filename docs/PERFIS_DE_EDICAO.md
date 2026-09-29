@@ -141,6 +141,11 @@ com o código** (Auto B-roll e Acabamento em `app/LEIA-ME.md`):
   faixas na borda. Não entra entre dois brolls colados (28 de 28) nem no
   começo ou fim da variação. **Desde 29/09 o Editar faz isso** (`src/editar.ts`,
   `inicioDosLeaks`): 79 de 79 bordas iguais às dele.
+- **Trilha (medida em 29/09, 20 variações).** "stillness.WAV" na A2, uma por
+  variação, sempre do 0 da música, começando e terminando exatamente com a
+  variação, ganho de clipe −18 dB (sem efeito de volume). O Editar copia a
+  que ele pôs numa variação para as outras (README, "Editar"); o `app/` usa
+  −18 dB como padrão.
 
 Os dois jeitos de legenda da Menopausa Cancelada:
 1. Com os produtos na mesa: maiúscula condensada sobre uma faixa roxa.
