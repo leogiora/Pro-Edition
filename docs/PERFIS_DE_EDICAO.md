@@ -88,6 +88,15 @@ com o código** (Auto B-roll e Acabamento em `app/LEIA-ME.md`):
   ponto e 61% do tempo de broll dele coberto (antes 51%). Item de lista
   abaixo de 1,2 s continua de fora: com piso menor, o planejador picotava
   frase normal (`plano.ts`, `ateOProximo`).
+- **Conceito (29/09, variações 1–6).** O planejador acerta o ponto (53 de
+  58), mas o conceito bate com o do Leo em 26. As trocas são gosto dele:
+  "a ereção falhou" e "a coragem vai só até a metade" → Desanimado (não
+  Viagra ou Frustrado); "a consulta é por telemedicina" → Teleconsulta;
+  "Eu sou médico focado…" empata Doutor e Corpo do homem em 100% e ele usa
+  Doutor em 4 de 5. Há também nome repetido na biblioteca ("14.000 mil
+  homens" e "Milhares de homens" são a mesma imagem). Deixar vencer o
+  candidato colado de score maior não mudou nada (26 → 25). Quem ensina é o
+  **Aprender**, clicado depois de cada variação acabada.
 - **O que ele fez com a sugestão do painel.** Nas variações 2 e 3 o que
   estava na V2 antes dele (tela cheia, sem crop — o jeito do painel) dá
   o antes e depois. Das 14 colocações, 10 ficaram no mesmo ponto com o

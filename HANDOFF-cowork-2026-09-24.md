@@ -16,6 +16,13 @@ Contexto para continuar no Claude Code o que foi feito numa conversa do Claude
 
 Ler isto antes do resto; as seções "Atualização" no fim são o histórico.
 
+**29/09:** todos os passos abaixo que dão para fazer sem o Premiere estão
+feitos (inclusive split, light leak e trilha no Editar). O Leo deixou os
+testes ao vivo para o final (tabela "Estado dos testes") e autorizou seguir de
+passo em passo, com commit e push ao fim de cada um. Próximo trabalho novo:
+o seletor de perfil (Plano, item 1, em `PERFIS_DE_EDICAO.md`), quando chegar
+um vídeo que não seja da AndroClinic.
+
 - **Legenda (Pro Captions + ElevenLabs):** pronta no código, inclusive a
   segmentação no estilo do Leo (`segmentar.ts` + `maxPalavras: 3` no
   `PRESET_ELEVENLABS`). Sete gravações de tela dele editando o Andro 19.09
@@ -50,8 +57,11 @@ o Leo antes de mexer):
    novo quando o Leo acabar mais variações; as que têm light leak são as
    acabadas. **Rodado de novo às 15:15 (variações 1–6):** a densidade máxima
    agora deixa o broll ir até o próximo, atravessando a frase (49 → 61
-   brolls contra 70 do Leo; `simular.ts` na mesma pasta mede). Falta ver no
-   Premiere, com Analisar numa variação sem broll.
+   brolls contra 70 do Leo; `simular.ts` na mesma pasta mede). **Rodou ao
+   vivo em 29/09 10:14** (variação 11, 11 brolls, o seguinte cortando o
+   anterior). Falta o Aprender dizer o que ele manteve. O conceito (26 de 58
+   iguais ao dele) é gosto e se ensina pelo Aprender; detalhe em
+   `PERFIS_DE_EDICAO.md`, "Conceito".
 3. **Split do Andro no Acabamento.** O broll é constante e dá pra
    automatizar: preenche a largura, borda de cima em ~1120 px, Feather 7%.
    **Feito (29/09)** no painel e no `app/` (`src/autosplit.ts`: sem overscan,
@@ -150,6 +160,7 @@ o Leo antes de mexer):
 | Ajudante CEP (T1–T3) | **OK** (24/09): instalado, e criou as faixas legendas.srt e precos.srt numa chamada |
 | Aprender pelo nome do arquivo + `trazidos.json` | **OK** (28/09 13:59): os 8 clipes copiados creditados pelo nome da pasta |
 | Cópia do clipe baixado pelo Aprender | a medir |
+| B-roll até o próximo (densidade máxima) | **rodou** (29/09 10:14, variação 11); falta o Aprender |
 | Fase 0 do XML | a importar (prova regerada em 28/09) |
 | Light leak pelo Editar (`.aegraphic` no overwrite) | a medir |
 | Trilha pelo Editar (clone do clipe da A2 + fim na variação) | a medir |

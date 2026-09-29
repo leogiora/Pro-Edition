@@ -16,8 +16,10 @@ e a `duracaoMinima`. Script: `teste-broll\simular.ts` (fora do repo).
 
 **Testes.** `npm run verify` verde (254 aqui, +2) e fumaca ok.
 
-**Falta ao vivo:** reiniciar o Premiere e rodar o Analisar numa variacao sem
-broll; conferir se os clipes atravessando frase ficam como o Leo faria.
+**Ao vivo (29/09 10:14, `ultimo-log.json`):** o Leo rodou na variacao 11
+(10:32-11:34) com a regra nova: 11 B-rolls, e o Viagra de 10:39 saiu com 1,4 s
+porque o Doppler entrou logo depois e o cortou — o `ateOProximo` rodando. Falta
+o proximo Aprender dizer o que ele manteve e apagou dessa rodada.
 
 ## 2026-09-28 — Aprender leva o clipe baixado para a pasta
 
