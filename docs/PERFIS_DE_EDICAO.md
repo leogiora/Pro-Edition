@@ -206,6 +206,26 @@ não de conceito: o Auto B-roll não acha nada nelas até serem renomeadas.
 | **Som** | ? | ? | lo-fi e hip-hop (Pixabay e `01. Assets`) + efeitos: câmera, porta, caixa registradora, fanfarra |
 | **Animação** | ? | ? | Premiere Composer (light leak); 90 a 110 gráficos de texto por projeto |
 
+**Menopausa Instagram — medido em 29/09 no reel "Queda de cabelo, pele seca e
+dor?" (instagram.com/menopausa.cancelada/reel/DdyxdrfhCz9, 29,4 s, 1080×1920;
+o mesmo roteiro do teste do Editar no "Projeto Base", 37 s → 30 s):**
+- **Legenda:** minúscula, branca, sem caixa, 1 a 4 palavras ("você passa na
+  pele", "de dentro pra fora"); a palavra que importa em **negrito**, as
+  pequenas ("de", "nas", "que", "pra") mais finas e menores. Fica na linha do
+  split quando tem B-roll, e mais baixa (altura do peito) sem B-roll.
+- **Split com B-roll em cima** só no sintoma falado: "queda de cabelo",
+  "cabelo que não cresce", "pele seca", "dor nas articulações", "ansiedade".
+  O resto é a apresentadora em tela cheia.
+- **Figurinha de produto:** foto recortada do produto com o nome embaixo, nos
+  cantos de cima, entrando quando ela fala do produto e se acumulando (Óleo de
+  alecrim / Óleo de rícino, Colágeno, Creme hidratante, Femme Healthy,
+  Ômega 3, Gelol).
+- **CTA no fim:** faixa roxa com "EU QUERO" em maiúscula e "COMENTA AGORA
+  MESMO" embaixo, enquanto ela pede o comentário.
+- O Editar, no teste de 29/09, fez só a parte de Ads: pausas e legenda de 1 a
+  3 palavras, sem minúscula/negrito, sem split (a pasta "Brolls - Menopausa"
+  não tem nome de conceito), sem figurinha e sem CTA.
+
 Fontes lidas dos projetos:
 - AndroClinic: Bebas Neue (1.299 legendas no `Andro 19.09`).
 - Menopausa Cancelada: Helvetica Bold e Light, Arial Black.
