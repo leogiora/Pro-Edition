@@ -152,9 +152,10 @@ com o código** (Auto B-roll e Acabamento em `app/LEIA-ME.md`):
   `inicioDosLeaks`): 79 de 79 bordas iguais às dele.
 - **Trilha (medida em 29/09, 20 variações).** "stillness.WAV" na A2, uma por
   variação, sempre do 0 da música, começando e terminando exatamente com a
-  variação, ganho de clipe −18 dB (sem efeito de volume). O Editar copia a
-  que ele pôs numa variação para as outras (README, "Editar"); o `app/` usa
-  −18 dB como padrão.
+  variação, só ganho de clipe (sem efeito de volume): **−10 dB nas variações
+  acabadas** (1–10 no save das 11:55) e −18 nas que ele ainda não mexeu. O
+  Editar clona a da primeira variação para as que não têm (provado ao vivo em
+  29/09, com o ganho junto); o `app/` usa −10 dB como padrão.
 
 Os dois jeitos de legenda da Menopausa Cancelada:
 1. Com os produtos na mesa: maiúscula condensada sobre uma faixa roxa.

@@ -45,10 +45,17 @@ Premiere que o `.aegraphic` entra pelo overwrite como um clipe comum.
 A trilha é a música que o Leo pôs embaixo de uma variação na A2, **clonada**
 (`createCloneTrackItemAction`) para as outras e aparada no fim de cada uma: o clone
 leva o ganho e o trecho da música, e a API não tem como ajustar volume. No Andro
-19.09 as 20 variações têm "stillness.WAV" do 0 da música, −18 dB de ganho de clipe,
-começando e terminando com a variação. Variação que já tem música fica; se a cópia,
-antes de aparada, cairia na música da vizinha, fica de fora com aviso
-(`trilhaFaltando` em `src/editar.ts`). Falta provar o clone no Premiere.
+19.09 as 20 variações têm "stillness.WAV" do 0 da música, começando e terminando com
+a variação (−10 dB de ganho de clipe nas acabadas). Variação que já tem música fica;
+se a cópia, antes de aparada, cairia na música da vizinha, fica de fora com aviso
+(`trilhaFaltando` em `src/editar.ts`).
+
+Light leak e trilha **provados ao vivo** em 29/09, numa cópia do Andro 19.09
+(Premiere 25): 16 leaks nas 16 bordas da variação 10, cada um 0,36 s antes da borda
+(0,80 s: o Premiere arredonda o 0,834 s do arquivo para 20 quadros); a trilha clonada
+na variação 12, do 0, do começo ao fim dela, com o ganho do clipe de origem. Split,
+light leak e trilha rodam sem ElevenLabs: a fala só é pedida com Pausas, B-roll ou
+Legendas marcados.
 
 UXP não cria faixa de legenda. Quem cria é a **ponte**: uma extensão CEP escondida
 (`ferramentas/pro-captions-timeline/ponte.html`) que abre com o Premiere e atende
@@ -56,8 +63,8 @@ o pedido que o Editar grava em `timeline-pedido.txt`. Ela só liga quando a jane
 do Premiere é ativada. O cartão Pro Captions usa a mesma ponte. Sem ela, os .srt vão para o painel
 Projeto e o registro manda arrastar.
 
-Provado no Premiere 25.6.6 (TESTE Editar 3 e 5, 3:00 → 2:27 em 11 s), antes do
-light leak e da trilha, que ainda não rodaram ao vivo.
+Provado no Premiere 25.6.6 (TESTE Editar 3 e 5, 3:00 → 2:27 em 11 s); light leak,
+trilha, empresa e split da Menopausa provados em 29/09 (acima).
 
 O estilo da legenda (Pro-Captions 96 / Preço 150) fica à mão, por escolha do Leo
 (2026-09-24). Nenhuma API aplica estilo em faixa de legenda (D-02, reconferido

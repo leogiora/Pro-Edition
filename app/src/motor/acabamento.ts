@@ -48,8 +48,9 @@ export interface ResultadoAcabamentoSalvo {
   readonly avisos: string[];
 }
 
-// Ganho de clipe da trilha nas 20 variacoes do Andro 19.09 (29/09).
-const VOLUME_PADRAO_DB = -18;
+// Ganho de clipe da trilha nas variacoes ACABADAS do Andro 19.09 (1-10, save
+// de 29/09 11:55): -10 dB. As ainda nao mexidas estavam em -18.
+const VOLUME_PADRAO_DB = -10;
 
 export async function abrirParaAcabamento(caminho: string, cfg: Config): Promise<EntradaAcabamento> {
   const { avisos, ...s } = lerSequenciaXml(await readFile(caminho, "utf8"));

@@ -160,17 +160,22 @@ o Leo antes de mexer):
 | Painel Pro Edition carrega depois da correção do TextEncoder | OK (24/09) |
 | Export do áudio da sequência pelo Pro Captions | OK — 27:18 em 6,4 s, 52 MB |
 | `fetch` sai do UXP e chega no ElevenLabs | OK — a API respondeu |
-| Chave do ElevenLabs | Primeiro FALHOU (colou o ID da chave), depois **OK** no mesmo dia: "ElevenLabs respondeu em 6 s" no botão Editar (24/09) |
+| Chave do ElevenLabs | OK em 24/09; **recusada em 29/09** (401 "Invalid API key"): o Leo precisa colar uma chave nova no Pro Captions |
 | Multipart a mão, keyterms, tempo alinhado com a sequência | L3–L4 **OK** (24/09); L5 indireto, falta o olho (`docs/API_PROOFS.md`) |
 | Ajudante CEP (T1–T3) | **OK** (24/09): instalado, e criou as faixas legendas.srt e precos.srt numa chamada |
 | Aprender pelo nome do arquivo + `trazidos.json` | **OK** (28/09 13:59): os 8 clipes copiados creditados pelo nome da pasta |
 | Cópia do clipe baixado pelo Aprender | a medir |
 | B-roll até o próximo (densidade máxima) | **rodou** (29/09 10:14, variação 11); falta o Aprender |
-| Fase 0 do XML | a importar (prova regerada em 28/09) |
-| Light leak pelo Editar (`.aegraphic` no overwrite) | a medir |
-| Trilha pelo Editar (clone do clipe da A2 + fim na variação) | a medir |
-| Empresa no Editar (lista `<select>`, troca a pasta do Auto B-roll) | a medir |
-| Split da Menopausa (B-roll em cima, `Bottom` do Rounded Crop) no Auto Split | a medir |
+| Fase 0 do XML | **7 de 8 OK** (29/09); espelho não viaja no XML do FCP, nem o Premiere exporta (`app/LEIA-ME.md`) |
+| Light leak pelo Editar (`.aegraphic` no overwrite) | **OK** (29/09, cópia do Andro 19.09): 16 leaks nas 16 bordas da variação 10 |
+| Trilha pelo Editar (clone do clipe da A2 + fim na variação) | **OK** (29/09): variação 12, do começo ao fim, com o ganho do clipe de origem |
+| Empresa no Editar (lista `<select>`, troca a pasta do Auto B-roll) | **OK** (29/09) |
+| Split da Menopausa (B-roll em cima, `Bottom` do Rounded Crop) no Auto Split | **OK** (29/09): borda de baixo em 45%, Bottom 27,5% no 720×1280 |
+
+Testes de 29/09 feitos por Claude numa cópia: `Andro 19.09\TESTE Pro Edition
+29.09.prproj` (o original não foi tocado; a cópia pode ser apagada). Falta: L5
+(olho), cópia do Aprender (renomear clipe do Envato), híbrido com `.srt` e chave
+nova, doutor em pé no Acabamento.
 
 ## Arquivos de teste fora do repositório
 

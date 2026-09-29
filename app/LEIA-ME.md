@@ -116,9 +116,10 @@ sem mudar a escala). Só o trecho coberto sobe, porque a tela cheia subida abre
 tarja preta embaixo; a V1 é cortada nas bordas do B-roll, com o áudio vinculado
 junto. Doutor **deitado** fica como está: lá a posição muda com o trecho e é o
 Leo quem ajusta. Trilha (opcional): a música do começo, repetindo se for curta,
-cortada no fim de cada variação, no volume escolhido (padrão −18 dB: o ganho
-de clipe do Leo nas 20 variações do Andro 19.09, que começam todas do 0 da
-música e terminam com o doutor).
+cortada no fim de cada variação, no volume escolhido (padrão −10 dB: o ganho
+de clipe do Leo nas variações acabadas do Andro 19.09, save de 29/09 11:55; as
+ainda não mexidas estavam em −18. Todas começam do 0 da música e terminam com
+o doutor).
 
 **Crop/flop do doutor largado na cadeira** é decisão de olho: continua manual.
 Automatizar pede ver o quadro (modelo de visão), fase futura.
@@ -150,7 +151,7 @@ Legenda (é o "Abrir com" do Windows).
 
 | Fase | O quê | Estado |
 |---|---|---|
-| 0 | Prova do XML no Premiere (`scripts/prova-xml.ts`) | **esperando o Leo importar** |
+| 0 | Prova do XML no Premiere (`scripts/prova-xml.ts`) | **7 de 8 OK** (29/09, Premiere 25); espelho não viaja no XML |
 | 1 | Programa + Legendas (arrasta vídeo/áudio → revisa → `.srt`) | feito (2026-09-24) |
 | 2 | Auto Pausas: XML exportado do Premiere (ou brutas) → XML sem pausas + legenda | feito (2026-09-24), falta rodar com a chave |
 | 3 | Auto B-roll: XML → B-roll pela fala na V2, com o aprendizado do painel | feito (2026-09-24); o Aprender ainda é do painel |
@@ -179,8 +180,19 @@ Referência de como o Premiere escreve o mesmo formato: exportar a sequência
 "Reels" do Andro 19.09 por `Arquivo > Exportar > Final Cut Pro XML` para
 `prova/reels.xml`.
 
-**Limite conhecido:** Lumetri não viaja no XML do FCP. O Leo aplica a cor
-depois (um preset em todos os clipes da V1, ou camada de ajuste).
+**Resultado (29/09, importado numa cópia do Andro 19.09 no Premiere 25):**
+itens 1, 2, 3, 5, 6, 7 e 8 OK — 1080×1920, 25 fps, 8,68 s sem pedir mídia;
+Escala 90; o 2º clipe em Posição 810/960 (a convenção do `deslocamento` está
+certa); B-roll com Escala 150 e Crop Top 50%; V3 desativado; A1 vinculado com
+crossfade nos cortes; Confident a −12 dB. O item 4 falhou: o Premiere avisa
+"Effect <Flop> ... not translated". E não é o `xml.ts`: aplicando Horizontal
+Flip no Premiere e exportando o XML, ele também diz "not translated". **Espelho
+não viaja no XML do FCP, em nenhum sentido.** Consequência: clipe que o Leo
+espelhou volta sem espelho depois do Auto Pausas pelo programa.
+
+**Limite conhecido:** Lumetri e espelho não viajam no XML do FCP. O Leo aplica
+a cor depois (um preset em todos os clipes da V1, ou camada de ajuste) e o
+flop à mão.
 
 ### Como a timeline real é (Andro 19.09, lido do .prproj)
 

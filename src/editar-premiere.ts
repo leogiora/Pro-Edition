@@ -564,11 +564,13 @@ export async function editar(opcoes: OpcoesEditar, registrar: Registrar, progres
   const originais = clipesEmQuadros(s);
   registrar(`${s.info.name}: ${s.v1.length} clipe(s) na V1, ${variacoes(originais, fps).length} variação(ões)`, "passo");
 
-  // 1-2. A fala, uma vez so.
+  // 1-2. A fala, uma vez so. So pausas, B-roll e legendas usam: split, light
+  // leak e trilha rodam sem ElevenLabs (e sem chave).
   const empresa = await comLimite("empresa", lerEmpresa(), 5000);
   const preset = presetDa(empresa);
   registrar(`empresa: ${EMPRESAS[empresa].nome} (termos do ElevenLabs e da legenda)`, "passo");
-  const fala = await ouvirSequencia(preset, registrar, progresso);
+  const fala: Fala =
+    opcoes.pausas || opcoes.broll || opcoes.legendas ? await ouvirSequencia(preset, registrar, progresso) : { palavras: [], db: [] };
   let palavras = fala.palavras;
   let cortes = originais.slice(1).map((c) => c.inicioQ / fps);
   let clipesDepois: ReadonlyArray<{ inicioQ: number; fimQ: number }> = originais;
