@@ -18,11 +18,15 @@ import {
 import { parseTrazidos, type Trazido } from "../ferramentas/auto-broll/src/aprendizado.ts";
 import {
   calcularEnquadramento,
+  cobrirQuadrado,
   DIVISAO_PADRAO,
   enquadrarEmCima,
+  escalaBase,
   fracaoDivisao,
   resolverPerfil,
+  SOBRA_QUADRADO,
   tamanhoNoNome,
+  tamanhoPelaEscala,
   FEATHER_PCT,
   ROUNDNESS_PCT,
   type Enquadramento,
@@ -527,6 +531,101 @@ export async function aplicarSplit(opcoes: OpcoesSplit): Promise<ResultadoSplit>
   await writeJson("autosplit-aplicado.json", { quando: Date.now(), divisao: opcoes.divisao, itens: aplicado });
   await writeJson("ultimo-log-autosplit.json", { quando: Date.now(), linhas });
   return { ok, linhas };
+}
+
+// ------------------------------------------------------- quadrado (1:1)
+
+/** x de um Position (fracao do quadro), que volta como PointF ou lista. */
+function xDe(v: unknown): number {
+  if (Array.isArray(v)) return Number(v[0]);
+  const n = Number((v as { x?: unknown } | null)?.x);
+  return Number.isFinite(n) ? n : NaN;
+}
+
+/**
+ * Quadrado a partir da Reels, como o Leo faz no Andro 19.09 (29/09): ele
+ * duplica a Reels e muda para 1080x1080; isto acerta o resto. Doutor (V1)
+ * cobrindo o quadrado, centrado na altura (o split nao existe aqui) e com o
+ * mesmo desvio de enquadramento na largura; B-roll cobrindo com
+ * SOBRA_QUADRADO, centrado, sem o Rounded Crop. Cor (Lumetri), legenda e light
+ * leak ficam como estao. Tres transacoes: V1, B-roll, tirar o corte.
+ */
+export async function aplicarQuadrado(): Promise<ResultadoSplit> {
+  const info = await getSequenceInfo();
+  if (!(info.width > 0) || info.width !== info.height) {
+    throw new Error(
+      `A sequencia ativa e ${info.width}x${info.height}. Duplique a Reels, mude para 1080x1080 (Sequence Settings) e rode de novo.`,
+    );
+  }
+  const Q = info.width;
+  const linhas: string[] = [`${info.name} — ${Q}x${Q}`];
+  const { project, sequence } = await ativa();
+
+  // 1. V1: a escala-base de cada arquivo diz o tamanho dele (tamanhoPelaEscala).
+  const lidos: Array<{ nome: string; escala: ParamLike; pos: ParamLike; s: number; x: number }> = [];
+  for (const it of await itensDaFaixa(sequence, 0)) {
+    const motion = await acharComponente(await it.getComponentChain(), MATCH_MOTION);
+    const escala = motion ? await acharParam(motion, "Scale") : null;
+    const pos = motion ? await acharParam(motion, "Position") : null;
+    if (!escala || !pos) continue;
+    const s = numeroDe(await lerParam(escala));
+    const x = xDe(await lerParam(pos));
+    if (Number.isFinite(s) && s > 0 && Number.isFinite(x)) lidos.push({ nome: (await nomeDe(it)) ?? "", escala, pos, s, x });
+  }
+  const novaDe = new Map<string, number>();
+  for (const nome of new Set(lidos.map((l) => l.nome))) {
+    const base = escalaBase(lidos.filter((l) => l.nome === nome).map((l) => l.s));
+    const tam = base === undefined ? undefined : tamanhoPelaEscala(base);
+    if (tam) novaDe.set(nome, cobrirQuadrado(Q, tam.w, tam.h));
+    else linhas.push(`V1: ${nome} com escala-base ${base} — tamanho desconhecido, ficou como estava`);
+  }
+  const acoesV1: Array<() => unknown> = [];
+  for (const l of lidos) {
+    const nova = novaDe.get(l.nome);
+    if (nova === undefined) continue;
+    const x = Q * (0.5 + (l.x - 0.5) * (nova / l.s));
+    acoesV1.push(() => l.escala.createSetValueAction(l.escala.createKeyframe(nova), true));
+    acoesV1.push(() => l.pos.createSetValueAction(l.pos.createKeyframe(posicaoNormalizada(x, Q / 2, Q, Q).ponto), true));
+  }
+  if (acoesV1.length > 0) {
+    comTransacao(project as never, `Quadrado: ${acoesV1.length / 2} clipes da V1`, (add) => {
+      for (const a of acoesV1) add(a());
+    });
+  }
+  linhas.push(`V1: ${acoesV1.length / 2} de ${lidos.length} clipes cobrindo o quadrado (${[...novaDe.values()].map((v) => Math.round(v)).join(", ")}%).`);
+
+  // 2. B-roll: o tamanho vem de onde o Auto Split tira (perfil, trazidos, nome do Pexels).
+  const plano = await montarPlano({ faixa: null, divisao: DIVISAO_PADRAO, subirDoutor: false, refazer: false });
+  const acoesB: Array<() => unknown> = [];
+  const semCorte: Array<() => unknown> = [];
+  for (const b of plano.itens) {
+    const item = await acharItem(await itensDaFaixa(sequence, b.videoTrackIndex), b.sourceName, b.startSeconds);
+    const chain = item ? await item.getComponentChain() : null;
+    const motion = chain ? await acharComponente(chain, MATCH_MOTION) : null;
+    const escala = motion ? await acharParam(motion, "Scale") : null;
+    const pos = motion ? await acharParam(motion, "Position") : null;
+    if (!chain || !escala || !pos) continue;
+    const nova = cobrirQuadrado(Q, b.geom.w, b.geom.h, SOBRA_QUADRADO);
+    acoesB.push(() => escala.createSetValueAction(escala.createKeyframe(nova), true));
+    acoesB.push(() => pos.createSetValueAction(pos.createKeyframe(posicaoNormalizada(Q / 2, Q / 2, Q, Q).ponto), true));
+    const corte = await acharComponente(chain, MATCH_EFEITO);
+    if (corte) semCorte.push(() => chain.createRemoveComponentAction(corte));
+  }
+  if (acoesB.length > 0) {
+    comTransacao(project as never, `Quadrado: ${acoesB.length / 2} B-rolls`, (add) => {
+      for (const a of acoesB) add(a());
+    });
+  }
+  if (semCorte.length > 0) {
+    comTransacao(project as never, "Quadrado: tirar o corte do split", (add) => {
+      for (const a of semCorte) add(a());
+    });
+  }
+  linhas.push(`B-roll: ${acoesB.length / 2} cobrindo o quadrado com ${Math.round((SOBRA_QUADRADO - 1) * 100)}% de sobra, ${semCorte.length} sem o Rounded Crop.`);
+  linhas.push(...plano.linhas.filter((l) => /intocados|^\s{3}/.test(l)));
+
+  await writeJson("ultimo-log-autosplit.json", { quando: Date.now(), linhas });
+  return { ok: true, linhas };
 }
 
 // ------------------------------------------------------- diagnostico do efeito

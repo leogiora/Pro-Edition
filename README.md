@@ -28,6 +28,14 @@ light leak em cada troca doutor ↔ B-roll, a trilha em cada variação, e cria 
 faixas de legenda e de preço.
 O registro de cada execução fica em `editar-log.json`, na pasta de dados do plugin.
 
+**Quadrado 1:1** (botão no cartão Auto Split): na Reels duplicada e já mudada para
+1080×1080, o doutor cobre o quadrado, centrado na altura e com o mesmo desvio de
+enquadramento na largura, e o B-roll cobre com 20% de sobra, centrado, sem o Rounded
+Crop. O UXP não dá o tamanho do clipe; o da V1 sai da escala-base dele na Reels
+(`tamanhoPelaEscala`: 4K deitado entra a 90, em pé a 50), o do B-roll de onde o Auto
+Split já tira. Cor, legenda e light leak ficam. Provado em 29/09 na cópia do Andro
+19.09: 697 clipes da V1 a 50% (o que o Leo pôs à mão) e 100 B-rolls.
+
 A **empresa** (AndroClinic, GrandCare ou Menopausa Cancelada) é escolhida no topo do
 cartão e fica em `perfil.json`: dá os termos do ElevenLabs e a pasta de B-roll de cada
 uma. Trocar de empresa guarda a pasta em uso na empresa que sai e põe no Auto B-roll a

@@ -10,7 +10,10 @@ import {
   nudgeDoutorPosY,
   resolverPerfil,
   SPLIT_DA_EMPRESA,
+  cobrirQuadrado,
+  escalaBase,
   tamanhoNoNome,
+  tamanhoPelaEscala,
   type EntradaGeom,
   type Perfil,
 } from "../src/autosplit.ts";
@@ -200,4 +203,13 @@ test("broll em cima (Menopausa): cobre a caixa um pouco maior, corta embaixo; a 
   assert.equal(enquadrarEmCima(1080, 1920, 1080, 1920, 0.45).escalaPct, 100);
   // A apresentadora 720x1280 a 100%: o Leo pos em 1159; a regra da 1139. Sem descer abaixo do meio.
   assert.equal(Math.round(descerPessoaPosY({ H: 1280, hDoc: 1280, escalaDocPct: 100, fimFrac: 0.45 })), 1139);
+});
+
+test("quadrado: tamanho pela escala-base da Reels, doutor cobre sem sobra, B-roll com 1,2x (Andro 19.09, 29/09)", () => {
+  assert.deepEqual(tamanhoPelaEscala(90), { w: 3840, h: 2160 }); // bruta deitada
+  assert.deepEqual(tamanhoPelaEscala(50), { w: 2160, h: 3840 }); // bruta em pe
+  assert.equal(tamanhoPelaEscala(57), undefined); // doutor subido do split nao e base
+  assert.equal(escalaBase([90, 57, 90, 57, 90]), 90);
+  assert.equal(cobrirQuadrado(1080, 3840, 2160), 50); // o Leo: 50
+  assert.equal(Math.round(cobrirQuadrado(1080, 720, 1280, 1.2)), 180); // o Leo: 180
 });

@@ -9,7 +9,7 @@
 
 import { lerEmpresa } from "../../ferramentas/pro-captions/src/premiere.ts";
 import { EMPRESAS } from "../../ferramentas/pro-captions/src/preset.ts";
-import { aplicarSplit, diagnostico, getSequenceInfo, type OpcoesSplit } from "../autosplit-premiere.ts";
+import { aplicarQuadrado, aplicarSplit, diagnostico, getSequenceInfo, type OpcoesSplit } from "../autosplit-premiere.ts";
 import { DIVISAO_PADRAO, SPLIT_DA_EMPRESA } from "../autosplit.ts";
 
 export function mount(root: HTMLElement): void {
@@ -82,6 +82,21 @@ export function mount(root: HTMLElement): void {
           "",
           r.ok ? "Pronto. Ajuste o que precisar no Premiere." : "Aplicado com problema: veja as linhas acima.",
         );
+      } catch (e) {
+        mostrarErro(e);
+      }
+    })();
+  });
+
+  // Na sequencia duplicada da Reels e ja mudada para 1080x1080 (Sequence Settings).
+  pega("asQuadrado").addEventListener("click", () => {
+    void (async () => {
+      try {
+        estado("quadrado", "ativo");
+        escrever("Montando o quadrado (a V1 inteira leva um tempo)...");
+        const r = await aplicarQuadrado();
+        estado("quadrado pronto", "ok");
+        escrever(...r.linhas, "", "Pronto. Confira no Program e ajuste o que precisar.");
       } catch (e) {
         mostrarErro(e);
       }

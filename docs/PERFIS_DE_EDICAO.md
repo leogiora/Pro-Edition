@@ -150,6 +150,13 @@ com o código** (Auto B-roll e Acabamento em `app/LEIA-ME.md`):
   faixas na borda. Não entra entre dois brolls colados (28 de 28) nem no
   começo ou fim da variação. **Desde 29/09 o Editar faz isso** (`src/editar.ts`,
   `inicioDosLeaks`): 79 de 79 bordas iguais às dele.
+- **Quadrado (1080×1080, medido em 29/09 no save das 11:55).** O Leo duplica
+  a Reels e muda para 1080×1080. O doutor vai para a escala que cobre o
+  quadrado (50% na bruta 4K), centrado; o subido do split (57%) volta para o
+  centro. O B-roll fica em tela cheia, centrado e sem o Rounded Crop, a 180%
+  (no 720×1280, 1,2x o que cobre; o mesmo 180 colado no 464×832 deixa faixa
+  preta dos lados). Legenda, light leak e trilha iguais aos da Reels. O botão
+  "Quadrado 1:1" do Auto Split faz isso (README, "Editar").
 - **Trilha (medida em 29/09, 20 variações).** "stillness.WAV" na A2, uma por
   variação, sempre do 0 da música, começando e terminando exatamente com a
   variação, só ganho de clipe (sem efeito de volume): **−10 dB nas variações

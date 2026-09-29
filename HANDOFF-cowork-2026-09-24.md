@@ -114,6 +114,10 @@ o Leo antes de mexer):
      troca doutor ↔ broll. Falta provar no Premiere que o `.aegraphic` entra
      pelo overwrite. A animação em si (.mogrt, pop) continua no item 3 do
      Plano.
+7. ~~**Quadrado 1:1.**~~ **Feito e provado (29/09):** o Leo voltou a fazer a
+   versão quadrada (sequência "Quadrado" no Andro 19.09, metade convertida à
+   mão). Botão no Auto Split; regra em `PERFIS_DE_EDICAO.md`, "Quadrado".
+   Clipe do Envato sem tamanho conhecido fica como está.
 6. ~~**Trilha no Editar.**~~ **Feito (29/09):** o README dizia que a trilha
    só existia no `app/`. Medida nas 20 variações do Andro 19.09 (stillness.WAV
    do 0, −18 dB, começa e termina com a variação), agora o Editar clona a
@@ -171,6 +175,7 @@ o Leo antes de mexer):
 | Trilha pelo Editar (clone do clipe da A2 + fim na variação) | **OK** (29/09): variação 12, do começo ao fim, com o ganho do clipe de origem |
 | Empresa no Editar (lista `<select>`, troca a pasta do Auto B-roll) | **OK** (29/09) |
 | Split da Menopausa (B-roll em cima, `Bottom` do Rounded Crop) no Auto Split | **OK** (29/09): borda de baixo em 45%, Bottom 27,5% no 720×1280 |
+| Quadrado 1:1 (botão do Auto Split) | **OK** (29/09): 697 clipes da V1 a 50%, 100 B-rolls cobrindo o quadrado |
 
 Testes de 29/09 feitos por Claude numa cópia: `Andro 19.09\TESTE Pro Edition
 29.09.prproj` (o original não foi tocado; a cópia pode ser apagada). Falta: L5

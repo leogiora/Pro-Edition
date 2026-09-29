@@ -209,6 +209,50 @@ export function descerPessoaPosY(e: EntradaDoutor & { readonly fimFrac: number }
   return Math.max(e.H / 2, e.H * (e.fimFrac - SOBREPOSICAO_PESSOA) + (e.hDoc * e.escalaDocPct) / 200);
 }
 
+// ------------------------------------------------------- quadrado (1:1)
+
+/** A Reels do Leo, de onde o Quadrado e duplicado. */
+const REELS = { W: 1080, H: 1920 } as const;
+const TAMANHOS_COMUNS: ReadonlyArray<readonly [number, number]> = [
+  [3840, 2160], [2160, 3840], [1920, 1080], [1080, 1920], [1280, 720], [720, 1280],
+];
+
+/**
+ * O tamanho do video pela escala com que ele cobre a Reels. O UXP nao da o
+ * tamanho do clipe, mas a escala-base diz: 4K deitado entra a 90 (cobre os 1920
+ * de altura), 4K em pe a 50, 1080p a 178 ou 100, 720p a 267 ou 150 — valores
+ * que nao se confundem.
+ * ponytail: so tamanhos de camera e celular; fora deles o clipe fica como esta.
+ */
+export function tamanhoPelaEscala(escalaPct: number): { w: number; h: number } | undefined {
+  let melhor: { w: number; h: number; erro: number } | undefined;
+  for (const [w, h] of TAMANHOS_COMUNS) {
+    const cobre = Math.max(REELS.W / w, REELS.H / h) * 100;
+    const erro = Math.abs(escalaPct - cobre) / cobre;
+    if (erro < 0.05 && (melhor === undefined || erro < melhor.erro)) melhor = { w, h, erro };
+  }
+  return melhor && { w: melhor.w, h: melhor.h };
+}
+
+/** A escala que mais aparece: a base do arquivo, sem o doutor subido do split (57). */
+export function escalaBase(escalas: readonly number[]): number | undefined {
+  const vezes = new Map<number, number>();
+  for (const e of escalas) vezes.set(Math.round(e * 10) / 10, (vezes.get(Math.round(e * 10) / 10) ?? 0) + 1);
+  return [...vezes.entries()].sort((a, b) => b[1] - a[1])[0]?.[0];
+}
+
+/**
+ * Quanto o B-roll passa do quadrado. O Leo pos 180% no 720x1280 (29/09), 1,2x
+ * o que cobre; o mesmo 180 colado no 464x832 deixa faixa preta dos lados, entao
+ * a regra e a proporcao, nao o numero.
+ */
+export const SOBRA_QUADRADO = 1.2;
+
+/** Escala (%) que cobre um quadro Q x Q. O doutor vai sem sobra (4K deitado: 50, como o Leo). */
+export function cobrirQuadrado(Q: number, w: number, h: number, sobra = 1): number {
+  return Math.max(Q / w, Q / h) * sobra * 100;
+}
+
 // -------------------------------------------- doutor e back-solve do aprender
 
 export const DOCTOR_UP = 0.85;
