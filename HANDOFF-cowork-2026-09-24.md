@@ -19,9 +19,10 @@ Ler isto antes do resto; as seções "Atualização" no fim são o histórico.
 **29/09:** todos os passos abaixo que dão para fazer sem o Premiere estão
 feitos (inclusive split, light leak e trilha no Editar). O Leo deixou os
 testes ao vivo para o final (tabela "Estado dos testes") e autorizou seguir de
-passo em passo, com commit e push ao fim de cada um. Próximo trabalho novo:
-o seletor de perfil (Plano, item 1, em `PERFIS_DE_EDICAO.md`), quando chegar
-um vídeo que não seja da AndroClinic.
+passo em passo, com commit e push ao fim de cada um. O seletor de perfil
+(Plano, item 1, em `PERFIS_DE_EDICAO.md`) foi feito só na parte da empresa:
+termos do ElevenLabs e pasta de B-roll de cada uma. O tipo (Ads/Instagram)
+espera um Instagram para medir.
 
 - **Legenda (Pro Captions + ElevenLabs):** pronta no código, inclusive a
   segmentação no estilo do Leo (`segmentar.ts` + `maxPalavras: 3` no
@@ -164,6 +165,7 @@ o Leo antes de mexer):
 | Fase 0 do XML | a importar (prova regerada em 28/09) |
 | Light leak pelo Editar (`.aegraphic` no overwrite) | a medir |
 | Trilha pelo Editar (clone do clipe da A2 + fim na variação) | a medir |
+| Empresa no Editar (lista `<select>`, troca a pasta do Auto B-roll) | a medir |
 
 ## Arquivos de teste fora do repositório
 

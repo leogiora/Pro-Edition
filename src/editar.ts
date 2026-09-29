@@ -7,6 +7,7 @@
  * cairem no lugar certo — e isso que mora aqui.
  */
 
+import { empresaDe, type Empresa } from "../ferramentas/pro-captions/src/preset.ts";
 import type { PalavraEditada } from "../ferramentas/pro-captions/src/transcript.ts";
 import type { Pedaco } from "./pausas.ts";
 
@@ -115,6 +116,33 @@ export function trilhaFaltando(
     (cruza(ini, ini + duracaoModelo) ? pulam : entram).push(v);
   }
   return { entram, pulam };
+}
+
+/**
+ * Perfil de edicao (docs/PERFIS_DE_EDICAO.md): a empresa escolhida no Editar e
+ * a pasta de B-roll de cada uma. Fica em `perfil.json`, fora do `config.json`
+ * do Auto B-roll, que regrava o dele so com os campos dele.
+ */
+export interface PerfilEdicao {
+  readonly empresa: Empresa;
+  readonly bibliotecas: Readonly<Partial<Record<Empresa, string>>>;
+}
+
+export function parsePerfil(raw: unknown): PerfilEdicao {
+  const b = (raw as { bibliotecas?: unknown } | null)?.bibliotecas;
+  const bibliotecas: Partial<Record<Empresa, string>> = {};
+  if (typeof b === "object" && b !== null) {
+    for (const [k, v] of Object.entries(b)) {
+      if (typeof v === "string" && empresaDe({ empresa: k }) === k) bibliotecas[k as Empresa] = v;
+    }
+  }
+  return { empresa: empresaDe(raw), bibliotecas };
+}
+
+/** A pasta em uso fica com a empresa que sai; a da que entra volta (vazia se nunca foi escolhida). */
+export function trocarEmpresa(p: PerfilEdicao, pastaEmUso: string, nova: Empresa): { perfil: PerfilEdicao; pasta: string } {
+  const bibliotecas = pastaEmUso ? { ...p.bibliotecas, [p.empresa]: pastaEmUso } : p.bibliotecas;
+  return { perfil: { empresa: nova, bibliotecas }, pasta: bibliotecas[nova] ?? "" };
 }
 
 /** B-roll mais curto que isto, depois de aparado no fim do doutor, nem entra. */

@@ -6,6 +6,7 @@
  */
 
 import { candidatosDoPreset, PRESET_WAV, wavCompleto } from "./audio.ts";
+import { empresaDe, type Empresa } from "./preset.ts";
 import type { ClipeComOrigem } from "./transcript.ts";
 
 declare function require(id: string): unknown;
@@ -516,6 +517,16 @@ export async function lerChaveElevenLabs(): Promise<string | null> {
     return typeof chave === "string" && chave.trim().length > 0 ? chave.trim() : null;
   } catch {
     return null;
+  }
+}
+
+/** A empresa escolhida no Editar (`perfil.json`); sem escolha, AndroClinic. */
+export async function lerEmpresa(): Promise<Empresa> {
+  const bruto = await lerDados("perfil.json");
+  try {
+    return empresaDe(bruto === null ? null : JSON.parse(bruto));
+  } catch {
+    return empresaDe(null);
   }
 }
 

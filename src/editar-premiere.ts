@@ -48,10 +48,11 @@ import {
   guardarTranscricao,
   legendasNaTimeline,
   lerChaveElevenLabs,
+  lerEmpresa,
   lerTranscricaoGuardada,
   salvarSrt,
 } from "../ferramentas/pro-captions/src/premiere.ts";
-import { PRESET_ELEVENLABS } from "../ferramentas/pro-captions/src/preset.ts";
+import { EMPRESAS, presetDa, type Preset } from "../ferramentas/pro-captions/src/preset.ts";
 import { validar } from "../ferramentas/pro-captions/src/segmentar.ts";
 import type { PalavraEditada } from "../ferramentas/pro-captions/src/transcript.ts";
 import { aplicarSplit } from "./autosplit-premiere.ts";
@@ -134,7 +135,7 @@ interface Fala {
   readonly db: readonly number[];
 }
 
-async function ouvirSequencia(registrar: Registrar, progresso: (t: string) => void): Promise<Fala> {
+async function ouvirSequencia(preset: Preset, registrar: Registrar, progresso: (t: string) => void): Promise<Fala> {
   const chave = await comLimite("chave", lerChaveElevenLabs(), 5000);
   if (!chave) throw new Error("Sem chave do ElevenLabs. Salve a chave (sk_…) no Pro Captions e clique de novo.");
 
@@ -156,7 +157,7 @@ async function ouvirSequencia(registrar: Registrar, progresso: (t: string) => vo
       const t0 = Date.now();
       json = await comLimite(
         "ElevenLabs",
-        transcreverNoElevenLabs(audio.bytes, chave, termosChave(PRESET_ELEVENLABS), (t) => registrar(t, "aviso")),
+        transcreverNoElevenLabs(audio.bytes, chave, termosChave(preset), (t) => registrar(t, "aviso")),
         15 * 60 * 1000
       );
       registrar(`ElevenLabs respondeu em ${((Date.now() - t0) / 1000).toFixed(0)} s`, "passo");
@@ -522,9 +523,14 @@ async function colocarTrilha(vars: readonly Variacao[], fps: number, registrar: 
 
 // ---------------------------------------------------------------- legendas
 
-async function colocarLegendas(palavras: readonly PalavraEditada[], cortes: readonly number[], registrar: Registrar): Promise<void> {
-  const blocos = gerarBlocos(palavras, cortes, PRESET_ELEVENLABS);
-  const problemas = validar(blocos, PRESET_ELEVENLABS);
+async function colocarLegendas(
+  palavras: readonly PalavraEditada[],
+  cortes: readonly number[],
+  preset: Preset,
+  registrar: Registrar
+): Promise<void> {
+  const blocos = gerarBlocos(palavras, cortes, preset);
+  const problemas = validar(blocos, preset);
   if (problemas.length > 0) {
     registrar(`legenda reprovada na validação: ${problemas.slice(0, 3).join("; ")}`, "erro");
     return;
@@ -559,7 +565,10 @@ export async function editar(opcoes: OpcoesEditar, registrar: Registrar, progres
   registrar(`${s.info.name}: ${s.v1.length} clipe(s) na V1, ${variacoes(originais, fps).length} variação(ões)`, "passo");
 
   // 1-2. A fala, uma vez so.
-  const fala = await ouvirSequencia(registrar, progresso);
+  const empresa = await comLimite("empresa", lerEmpresa(), 5000);
+  const preset = presetDa(empresa);
+  registrar(`empresa: ${EMPRESAS[empresa].nome} (termos do ElevenLabs e da legenda)`, "passo");
+  const fala = await ouvirSequencia(preset, registrar, progresso);
   let palavras = fala.palavras;
   let cortes = originais.slice(1).map((c) => c.inicioQ / fps);
   let clipesDepois: ReadonlyArray<{ inicioQ: number; fimQ: number }> = originais;
@@ -623,7 +632,7 @@ export async function editar(opcoes: OpcoesEditar, registrar: Registrar, progres
   // 6. Legendas por ultimo: a timeline ja esta no formato final.
   if (opcoes.legendas) {
     progresso("legendas");
-    await colocarLegendas(palavras, cortes, registrar).catch((e) => registrar(`Legendas: ${(e as Error).message}`, "erro"));
+    await colocarLegendas(palavras, cortes, preset, registrar).catch((e) => registrar(`Legendas: ${(e as Error).message}`, "erro"));
   }
 
   registrar(`pronto em ${((Date.now() - t0) / 1000).toFixed(0)} s`, "ok");

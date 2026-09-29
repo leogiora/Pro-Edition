@@ -1,7 +1,17 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { cortesDosPedacos, dentroDasVariacoes, inicioDosLeaks, moverPalavras, trilhaFaltando, variacoes } from "../src/editar.ts";
+import {
+  cortesDosPedacos,
+  dentroDasVariacoes,
+  inicioDosLeaks,
+  moverPalavras,
+  parsePerfil,
+  trilhaFaltando,
+  trocarEmpresa,
+  variacoes,
+} from "../src/editar.ts";
+import { presetDa } from "../ferramentas/pro-captions/src/preset.ts";
 import type { Pedaco } from "../src/pausas.ts";
 
 const FPS = 25;
@@ -82,4 +92,17 @@ test("trilhaFaltando: copia onde nao tem musica; pula se a copia, antes de apara
   const r = trilhaFaltando(vars, FPS, naFaixa, 60);
   assert.deepEqual(r.entram, [vars[1]]);
   assert.deepEqual(r.pulam, [vars[2]]);
+});
+
+test("perfil: troca de empresa guarda a pasta de quem sai e devolve a de quem entra; termos vem da empresa", () => {
+  const vazio = parsePerfil(null); // sem perfil.json: AndroClinic, como sempre foi
+  assert.equal(vazio.empresa, "androclinic");
+  const g = trocarEmpresa(vazio, "C:\\Brolls - 2026", "grandcare");
+  assert.equal(g.pasta, ""); // GrandCare nunca teve pasta escolhida
+  const volta = trocarEmpresa(parsePerfil(JSON.parse(JSON.stringify(g.perfil))), "C:\\Brolls - Grandcare", "androclinic");
+  assert.equal(volta.pasta, "C:\\Brolls - 2026");
+  assert.deepEqual(volta.perfil.bibliotecas, { androclinic: "C:\\Brolls - 2026", grandcare: "C:\\Brolls - Grandcare" });
+  assert.equal(parsePerfil({ empresa: "toString", bibliotecas: { toString: "x" } }).empresa, "androclinic"); // lixo nao vira empresa
+  assert.ok(presetDa("grandcare").termosChave.includes("GrandCare"));
+  assert.equal(presetDa("grandcare").maxPalavras, 3); // o resto e o preset dos Ads
 });

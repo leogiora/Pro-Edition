@@ -13,9 +13,10 @@ import { audioMudo } from "../../../ferramentas/pro-captions/src/audio.ts";
 import { assinaturaDoAudio, palavrasDoElevenLabs, termosChave } from "../../../ferramentas/pro-captions/src/elevenlabs.ts";
 import { transcreverNoElevenLabs } from "../../../ferramentas/pro-captions/src/elevenlabs-rede.ts";
 import { blocosNosCortes, blocosParaSrt, gerarBlocos, lerSrt } from "../../../ferramentas/pro-captions/src/pipeline.ts";
-import { PRESET_ELEVENLABS } from "../../../ferramentas/pro-captions/src/preset.ts";
+import { empresaDe, PRESET_ELEVENLABS, presetDa, type Preset } from "../../../ferramentas/pro-captions/src/preset.ts";
 import { validar, type BlocoLegenda } from "../../../ferramentas/pro-captions/src/segmentar.ts";
 import type { PalavraEditada } from "../../../ferramentas/pro-captions/src/transcript.ts";
+import { jsonDe, pastaDoPainel } from "./broll.ts";
 import type { Config } from "./config.ts";
 import { audioParaTranscrever } from "./midia.ts";
 
@@ -37,6 +38,11 @@ export interface Legendas {
  */
 const SEM_ORCAMENTO = { ...PRESET_ELEVENLABS, maxCaracteres: Infinity };
 
+/** Os termos da empresa escolhida no Editar do painel (`perfil.json`); sem painel, AndroClinic. */
+async function presetDoPainel(): Promise<Preset> {
+  return presetDa(empresaDe(await jsonDe(await pastaDoPainel(), "perfil.json")));
+}
+
 /**
  * WAV -> JSON do ElevenLabs. A resposta fica guardada pela assinatura do
  * audio: o mesmo arquivo nunca e pago duas vezes (legenda e pausas dividem).
@@ -56,7 +62,7 @@ export async function transcreverWav(
   if (chave === null) throw new Error("Falta a chave do ElevenLabs. Cole a chave (começa com sk_) em Configurações.");
 
   avisar("transcrevendo no ElevenLabs");
-  const json = await transcreverNoElevenLabs(wav, chave, termosChave(PRESET_ELEVENLABS), avisar);
+  const json = await transcreverNoElevenLabs(wav, chave, termosChave(await presetDoPainel()), avisar);
   await cfg.guardarTranscricao(assinatura, json);
   return { json, guardada: false };
 }
@@ -95,18 +101,20 @@ export async function gerarLegendas(
   if (palavras.length === 0) throw new Error("Nenhuma palavra reconhecida neste arquivo.");
 
   avisar("montando legendas");
-  if (cues === null) return { ...legendasDasPalavras(palavras, []), origem, cortes: "proprios" };
-  const blocos = blocosNosCortes(palavras, cues, PRESET_ELEVENLABS);
+  const preset = await presetDoPainel();
+  if (cues === null) return { ...legendasDasPalavras(palavras, [], preset), origem, cortes: "proprios" };
+  const blocos = blocosNosCortes(palavras, cues, preset);
   return { blocos, problemas: validar(blocos, SEM_ORCAMENTO), origem, cortes: "premiere" };
 }
 
 /** Palavras ja no tempo da sequencia -> blocos. `cortes` em segundos. */
 export function legendasDasPalavras(
   palavras: readonly PalavraEditada[],
-  cortes: readonly number[]
+  cortes: readonly number[],
+  preset: Preset = PRESET_ELEVENLABS
 ): Pick<Legendas, "blocos" | "problemas"> {
-  const blocos = gerarBlocos(palavras, cortes, PRESET_ELEVENLABS);
-  return { blocos, problemas: validar(blocos, PRESET_ELEVENLABS) };
+  const blocos = gerarBlocos(palavras, cortes, preset);
+  return { blocos, problemas: validar(blocos, preset) };
 }
 
 /**

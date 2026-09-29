@@ -195,5 +195,17 @@ Fontes lidas dos projetos:
    - faixas e nomes dos estilos;
    - trilha e logo;
    - termos do ElevenLabs.
+
+   **Feito em 29/09, só a empresa:** o Editar tem a lista AndroClinic /
+   GrandCare / Menopausa Cancelada (`perfil.json`). Cada uma tem a sua pasta
+   de B-roll ("Brolls - 2026", "Brolls - Grandcare", "Brolls - Menopausa",
+   no Downloads) e os seus termos do ElevenLabs, também usados pelo cartão
+   Pro Captions e pela tela Legendas do programa (`EMPRESAS` em
+   `ferramentas/pro-captions/src/preset.ts`). Os da GrandCare e da Menopausa
+   saíram das legendas revisadas dos projetos delas: marca, Edemilson Banach,
+   Reset 90, Femme Healthy, termos de saúde. Trilha e light leak não precisam
+   de perfil: o Editar copia o que já está no projeto. O **tipo**
+   (Ads/Instagram) fica para quando houver um Instagram para medir: o código
+   só monta o split dos Ads.
 2. **Instagram**: faixa de destaque para as palavras-chave e faixa de gancho.
 3. **Animações**: depois, por .mogrt; decisão do Leo.

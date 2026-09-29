@@ -13,6 +13,8 @@ const fixture = (nome: string): string =>
 
 // Com a resposta do ElevenLabs em .json nada vai para a rede nem para a configuracao.
 const semConfig = {} as Config;
+// Sem painel nenhum: a empresa nao depende do perfil.json de quem roda o teste.
+process.env.APPDATA = mkdtempSync(join(tmpdir(), "sem-painel-"));
 
 test("Legenda nos blocos do Premiere: .srt do Premiere + resposta do ElevenLabs -> .srt no corte dele", async () => {
   const json = fixture("elevenlabs-andro1909-variacao1.json");

@@ -28,6 +28,11 @@ light leak em cada troca doutor ↔ B-roll, a trilha em cada variação, e cria 
 faixas de legenda e de preço.
 O registro de cada execução fica em `editar-log.json`, na pasta de dados do plugin.
 
+A **empresa** (AndroClinic, GrandCare ou Menopausa Cancelada) é escolhida no topo do
+cartão e fica em `perfil.json`: dá os termos do ElevenLabs e a pasta de B-roll de cada
+uma. Trocar de empresa guarda a pasta em uso na empresa que sai e põe no Auto B-roll a
+pasta da que entra.
+
 O light leak é o do Premiere Composer que já está no projeto (o da timeline, ou o
 primeiro com "Light Leak" no nome), inteiro, começando 0,36 s antes da borda do
 B-roll, na faixa do leak que já existe ou logo acima do B-roll. Não entra entre dois
