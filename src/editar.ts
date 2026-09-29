@@ -7,7 +7,7 @@
  * cairem no lugar certo — e isso que mora aqui.
  */
 
-import { empresaDe, type Empresa } from "../ferramentas/pro-captions/src/preset.ts";
+import { empresaDe, tipoDe, type Empresa, type Tipo } from "../ferramentas/pro-captions/src/preset.ts";
 import type { PalavraEditada } from "../ferramentas/pro-captions/src/transcript.ts";
 import type { Pedaco } from "./pausas.ts";
 
@@ -125,6 +125,8 @@ export function trilhaFaltando(
  */
 export interface PerfilEdicao {
   readonly empresa: Empresa;
+  /** Ads ou Instagram: por enquanto so muda a legenda (minuscula, negrito). */
+  readonly tipo: Tipo;
   readonly bibliotecas: Readonly<Partial<Record<Empresa, string>>>;
 }
 
@@ -136,13 +138,13 @@ export function parsePerfil(raw: unknown): PerfilEdicao {
       if (typeof v === "string" && empresaDe({ empresa: k }) === k) bibliotecas[k as Empresa] = v;
     }
   }
-  return { empresa: empresaDe(raw), bibliotecas };
+  return { empresa: empresaDe(raw), tipo: tipoDe(raw), bibliotecas };
 }
 
 /** A pasta em uso fica com a empresa que sai; a da que entra volta (vazia se nunca foi escolhida). */
 export function trocarEmpresa(p: PerfilEdicao, pastaEmUso: string, nova: Empresa): { perfil: PerfilEdicao; pasta: string } {
   const bibliotecas = pastaEmUso ? { ...p.bibliotecas, [p.empresa]: pastaEmUso } : p.bibliotecas;
-  return { perfil: { empresa: nova, bibliotecas }, pasta: bibliotecas[nova] ?? "" };
+  return { perfil: { ...p, empresa: nova, bibliotecas }, pasta: bibliotecas[nova] ?? "" };
 }
 
 /** B-roll mais curto que isto, depois de aparado no fim do doutor, nem entra. */

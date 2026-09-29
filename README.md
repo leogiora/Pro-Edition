@@ -36,6 +36,11 @@ Crop. O UXP não dá o tamanho do clipe; o da V1 sai da escala-base dele na Reel
 Split já tira. Cor, legenda e light leak ficam. Provado em 29/09 na cópia do Andro
 19.09: 697 clipes da V1 a 50% (o que o Leo pôs à mão) e 100 B-rolls.
 
+O **tipo** (Ads ou Instagram) fica logo abaixo, também em `perfil.json`. No
+Instagram a legenda sai em minúscula com uma palavra em negrito (`<b>` no `.srt`);
+a fonte vai pelo Properties, porque o estilo de faixa apaga o negrito
+(`docs/PERFIS_DE_EDICAO.md`, "Menopausa Instagram").
+
 A **empresa** (AndroClinic, GrandCare ou Menopausa Cancelada) é escolhida no topo do
 cartão e fica em `perfil.json`: dá os termos do ElevenLabs e a pasta de B-roll de cada
 uma. Trocar de empresa guarda a pasta em uso na empresa que sai e põe no Auto B-roll a

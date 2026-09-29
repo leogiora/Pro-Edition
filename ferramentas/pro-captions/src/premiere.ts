@@ -6,7 +6,7 @@
  */
 
 import { candidatosDoPreset, PRESET_WAV, wavCompleto } from "./audio.ts";
-import { empresaDe, type Empresa } from "./preset.ts";
+import { empresaDe, tipoDe, type Empresa, type Tipo } from "./preset.ts";
 import type { ClipeComOrigem } from "./transcript.ts";
 
 declare function require(id: string): unknown;
@@ -341,6 +341,10 @@ async function pedirAPonte(legendas: string, precos: string | null): Promise<str
   return null;
 }
 
+/** Provado em 29/09: o estilo de faixa apaga o negrito e a cor que o .srt trouxe; trocar a fonte no Properties nao. */
+export const AVISO_INSTAGRAM =
+  "Instagram: NÃO aplique estilo de faixa (apaga o negrito). Selecione as legendas da faixa e troque fonte, tamanho e posição no Properties.";
+
 export interface LinhaTimeline {
   readonly texto: string;
   readonly tipo: "ok" | "aviso" | "erro";
@@ -520,14 +524,23 @@ export async function lerChaveElevenLabs(): Promise<string | null> {
   }
 }
 
-/** A empresa escolhida no Editar (`perfil.json`); sem escolha, AndroClinic. */
-export async function lerEmpresa(): Promise<Empresa> {
+async function lerPerfil(): Promise<unknown> {
   const bruto = await lerDados("perfil.json");
   try {
-    return empresaDe(bruto === null ? null : JSON.parse(bruto));
+    return bruto === null ? null : JSON.parse(bruto);
   } catch {
-    return empresaDe(null);
+    return null;
   }
+}
+
+/** A empresa escolhida no Editar (`perfil.json`); sem escolha, AndroClinic. */
+export async function lerEmpresa(): Promise<Empresa> {
+  return empresaDe(await lerPerfil());
+}
+
+/** Ads ou Instagram, escolhido no Editar; sem escolha, Ads. */
+export async function lerTipo(): Promise<Tipo> {
+  return tipoDe(await lerPerfil());
 }
 
 export async function salvarChaveElevenLabs(chave: string): Promise<void> {

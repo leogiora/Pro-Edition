@@ -13,7 +13,7 @@ import { audioMudo } from "../../../ferramentas/pro-captions/src/audio.ts";
 import { assinaturaDoAudio, palavrasDoElevenLabs, termosChave } from "../../../ferramentas/pro-captions/src/elevenlabs.ts";
 import { transcreverNoElevenLabs } from "../../../ferramentas/pro-captions/src/elevenlabs-rede.ts";
 import { blocosNosCortes, blocosParaSrt, gerarBlocos, lerSrt } from "../../../ferramentas/pro-captions/src/pipeline.ts";
-import { empresaDe, PRESET_ELEVENLABS, presetDa, type Preset } from "../../../ferramentas/pro-captions/src/preset.ts";
+import { empresaDe, PRESET_ELEVENLABS, presetDa, tipoDe, type Preset } from "../../../ferramentas/pro-captions/src/preset.ts";
 import { validar, type BlocoLegenda } from "../../../ferramentas/pro-captions/src/segmentar.ts";
 import type { PalavraEditada } from "../../../ferramentas/pro-captions/src/transcript.ts";
 import { jsonDe, pastaDoPainel } from "./broll.ts";
@@ -40,7 +40,8 @@ const SEM_ORCAMENTO = { ...PRESET_ELEVENLABS, maxCaracteres: Infinity };
 
 /** Os termos da empresa escolhida no Editar do painel (`perfil.json`); sem painel, AndroClinic. */
 async function presetDoPainel(): Promise<Preset> {
-  return presetDa(empresaDe(await jsonDe(await pastaDoPainel(), "perfil.json")));
+  const perfil = await jsonDe(await pastaDoPainel(), "perfil.json");
+  return presetDa(empresaDe(perfil), PRESET_ELEVENLABS, tipoDe(perfil));
 }
 
 /**
@@ -133,7 +134,7 @@ export async function salvarSrts(
   const saida: string[] = [];
   const normais = blocos.filter((b) => b.estilo === "normal");
   const precos = blocos.filter((b) => b.estilo === "preco");
-  await writeFile(`${base} - legendas.srt`, blocosParaSrt(normais), "utf8");
+  await writeFile(`${base} - legendas.srt`, blocosParaSrt(normais, (await presetDoPainel()).instagram), "utf8");
   saida.push(`${base} - legendas.srt`);
   if (precos.length > 0) {
     await writeFile(`${base} - precos.srt`, blocosParaSrt(precos), "utf8");

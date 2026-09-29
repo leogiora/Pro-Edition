@@ -34,7 +34,12 @@ export interface Preset {
   readonly termosChave: readonly string[];
   /** Faixa de video lida para cortes e transcricao. 0 = V1. */
   readonly trackDeCortes: number;
-  readonly maiusculas: boolean;
+  /**
+   * Instagram: o .srt sai em minuscula, com a palavra-chave em <b>. Medido no
+   * reel da Menopausa de 29/09 (docs/PERFIS_DE_EDICAO.md). O Premiere guarda o
+   * <b> do .srt, mas o estilo de faixa apaga: a fonte vai pelo Properties.
+   */
+  readonly instagram: boolean;
   /**
    * A transcricao ja acerta "e"/"é" e nao precisa da correcao por contexto.
    *
@@ -139,7 +144,7 @@ export const PRESET_PADRAO: Preset = {
   termosProtegidos: EMPRESAS.androclinic.termosProtegidos,
   termosChave: EMPRESAS.androclinic.termosChave,
   trackDeCortes: 0,
-  maiusculas: true,
+  instagram: false,
   confiarNoAcento: false,
   quebrarEmPontuacao: false,
 };
@@ -152,8 +157,19 @@ export const PRESET_ELEVENLABS: Preset = {
   maxPalavras: 3,
 };
 
+/** O tipo do video (`perfil.json`): Ads, o de sempre, ou Instagram. */
+export type Tipo = "ads" | "instagram";
+
+export function tipoDe(raw: unknown): Tipo {
+  return (raw as { tipo?: unknown } | null)?.tipo === "instagram" ? "instagram" : "ads";
+}
+
 /** O preset com os termos da empresa: o resto (bloco, pontuacao) e o dos Ads. */
-export function presetDa(empresa: Empresa, base: Preset = PRESET_ELEVENLABS): Preset {
+export function presetDa(empresa: Empresa, base: Preset = PRESET_ELEVENLABS, tipo: Tipo = "ads"): Preset {
   const { termosProtegidos, termosChave } = EMPRESAS[empresa];
-  return { ...base, termosProtegidos, termosChave };
+  if (tipo === "ads") return { ...base, termosProtegidos, termosChave, instagram: false };
+  // Reel da Menopausa (29/09): blocos de ate 21 caracteres ("cabelo que nao
+  // cresce") na Helvetica, menor que a Bebas 96 dos 20. maxPalavras 4 acertou
+  // 7 dos blocos vistos no reel; 3 com a folga do segmentar, 9.
+  return { ...base, termosProtegidos, termosChave, instagram: true, maxCaracteres: 24 };
 }

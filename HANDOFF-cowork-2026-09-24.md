@@ -180,6 +180,7 @@ o Leo antes de mexer):
 | Trilha pelo Editar (clone do clipe da A2 + fim na variação) | **OK** (29/09): variação 12, do começo ao fim, com o ganho do clipe de origem |
 | Empresa no Editar (lista `<select>`, troca a pasta do Auto B-roll) | **OK** (29/09) |
 | Split da Menopausa (B-roll em cima, `Bottom` do Rounded Crop) no Auto Split | **OK** (29/09): borda de baixo em 45%, Bottom 27,5% no 720×1280 |
+| Negrito e cor pelo `.srt` (legenda do Instagram) | **OK** (29/09, cópia): `<b>`, `<i>` e cor passam; fonte e tamanho não; estilo de faixa apaga, Properties não. O seletor Ads/Instagram do Editar falta rodar ao vivo |
 | Quadrado 1:1 (botão do Auto Split) | **OK** (29/09): 697 clipes da V1 a 50%, 100 B-rolls cobrindo o quadrado |
 
 Testes de 29/09 feitos por Claude numa cópia: `Andro 19.09\TESTE Pro Edition

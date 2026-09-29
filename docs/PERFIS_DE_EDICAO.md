@@ -225,6 +225,16 @@ o mesmo roteiro do teste do Editar no "Projeto Base", 37 s → 30 s):**
 - O Editar, no teste de 29/09, fez só a parte de Ads: pausas e legenda de 1 a
   3 palavras, sem minúscula/negrito, sem split (a pasta "Brolls - Menopausa"
   não tem nome de conceito), sem figurinha e sem CTA.
+- **Feito (29/09): tipo Instagram no Editar** (`perfil.json`, `tipo`). A
+  legenda sai em minúscula, sem "?" no fim, com uma palavra em `<b>` (a mais
+  longa que não é pequena: acerta "passa", "dentro", "toma", "cresce",
+  "direct"; no título do sintoma o reel põe tudo em negrito) e até 24
+  caracteres. Provado no Premiere: o `.srt` guarda `<b>`, `<i>` e cor;
+  `<font face>` e `size` são ignorados; **o estilo de faixa apaga** o negrito e
+  a cor, trocar a fonte pelo Properties não. Então no Instagram a fonte
+  (Helvetica Light), o tamanho e a posição vão pelo Properties, com as
+  legendas selecionadas. As figurinhas estão em
+  `C:\Edição\1. Menopausa Cancelada\Criativos\04.09\O que passar X O que tomar - Imagens`.
 
 Fontes lidas dos projetos:
 - AndroClinic: Bebas Neue (1.299 legendas no `Andro 19.09`).
