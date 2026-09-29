@@ -93,8 +93,12 @@ o Leo antes de mexer):
      `app/LEIA-ME.md`.
    - **Cópia do Aprender:** renomear um clipe do Envato no Projeto e clicar
      em Aprender.
-   - Light leak fica pra fase de animação (item 3 do Plano no
-     `PERFIS_DE_EDICAO.md`).
+   - ~~Light leak fica pra fase de animação.~~ **Feito (29/09):** a
+     colocação é regra fixa (79 de 79 bordas nas variações 1–6), e o Editar
+     copia o leak do Premiere Composer que já está no projeto para cada
+     troca doutor ↔ broll. Falta provar no Premiere que o `.aegraphic` entra
+     pelo overwrite. A animação em si (.mogrt, pop) continua no item 3 do
+     Plano.
 
 ## O padrão de legenda que ele segue (visto em duas gravações de tela)
 
@@ -142,6 +146,7 @@ o Leo antes de mexer):
 | Aprender pelo nome do arquivo + `trazidos.json` | **OK** (28/09 13:59): os 8 clipes copiados creditados pelo nome da pasta |
 | Cópia do clipe baixado pelo Aprender | a medir |
 | Fase 0 do XML | a importar (prova regerada em 28/09) |
+| Light leak pelo Editar (`.aegraphic` no overwrite) | a medir |
 
 ## Arquivos de teste fora do repositório
 

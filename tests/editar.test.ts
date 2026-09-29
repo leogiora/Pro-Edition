@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { cortesDosPedacos, dentroDasVariacoes, moverPalavras, variacoes } from "../src/editar.ts";
+import { cortesDosPedacos, dentroDasVariacoes, inicioDosLeaks, moverPalavras, variacoes } from "../src/editar.ts";
 import type { Pedaco } from "../src/pausas.ts";
 
 const FPS = 25;
@@ -55,4 +55,18 @@ test("B-roll termina com o doutor; o que cai no espaco ou sobra curto sai", () =
   ]);
   assert.equal(r.aparados, 1);
   assert.equal(r.fora.length, 2);
+});
+
+test("inicioDosLeaks: 0,36 s antes de cada troca doutor/B-roll; nada entre B-rolls colados, na ponta da variacao ou onde ja tem", () => {
+  const vars = [{ inicioQ: 0, fimQ: 1500 }]; // 0 a 60 s
+  const brolls = [
+    { inicio: 0, fim: 3 }, // entra no comeco da variacao: so a saida ganha leak
+    { inicio: 7.6, fim: 9.16 },
+    { inicio: 9.16, fim: 12 }, // colado no anterior: a troca em 9,16 e broll/broll
+    { inicio: 57, fim: 60 }, // sai no fim da variacao
+  ];
+  const jaNaFaixa = [{ inicio: 11.64, fim: 12.48 }]; // o Leo ja pos o da saida em 12
+  assert.deepEqual(inicioDosLeaks(brolls, vars, FPS, jaNaFaixa), [2.64, 7.24, 56.64]);
+  // Sai em 25,24 e o proximo entra 0,8 s depois: os dois leaks entram, o segundo come o fim do primeiro.
+  assert.deepEqual(inicioDosLeaks([{ inicio: 20, fim: 25.24 }, { inicio: 26.04, fim: 30 }], vars, FPS), [19.64, 24.88, 25.68, 29.64]);
 });

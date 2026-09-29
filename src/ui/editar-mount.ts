@@ -63,7 +63,13 @@ export function mount(root: HTMLElement): void {
     linhas.length = 0;
     estado("editando", "ativo");
     void editar(
-      { pausas: marcado("edPausas"), broll: marcado("edBroll"), split: marcado("edSplit"), legendas: marcado("edLegendas") },
+      {
+        pausas: marcado("edPausas"),
+        broll: marcado("edBroll"),
+        split: marcado("edSplit"),
+        leak: marcado("edLeak"),
+        legendas: marcado("edLegendas"),
+      },
       registrar,
       (t) => estado(t, "ativo")
     )

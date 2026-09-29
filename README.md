@@ -23,9 +23,17 @@ com o histórico inteiro.
 O primeiro cartão do Pro Ads. Lê a sequência aberta (clipes da V1, variações
 separadas por 1 s ou mais de vão, B-rolls e legendas que já existem) e, num clique:
 manda o áudio uma vez para o ElevenLabs, corta as pausas (zoom, posição e Lumetri
-de cada clipe voltam em cada pedaço), põe os B-rolls, opcionalmente o Split, e
-cria as faixas de legenda e de preço. O registro de cada execução fica em
-`editar-log.json`, na pasta de dados do plugin.
+de cada clipe voltam em cada pedaço), põe os B-rolls, opcionalmente o Split, o
+light leak em cada troca doutor ↔ B-roll, e cria as faixas de legenda e de preço.
+O registro de cada execução fica em `editar-log.json`, na pasta de dados do plugin.
+
+O light leak é o do Premiere Composer que já está no projeto (o da timeline, ou o
+primeiro com "Light Leak" no nome), inteiro, começando 0,36 s antes da borda do
+B-roll, na faixa do leak que já existe ou logo acima do B-roll. Não entra entre dois
+B-rolls colados, no começo ou fim da variação, nem onde a faixa já tem algo
+(`inicioDosLeaks` em `src/editar.ts`). Nas 79 bordas das variações 1–6 do Andro
+19.09 a regra põe os 79 leaks que o Leo pôs, no mesmo quadro. Falta provar no
+Premiere que o `.aegraphic` entra pelo overwrite como um clipe comum.
 
 UXP não cria faixa de legenda. Quem cria é a **ponte**: uma extensão CEP escondida
 (`ferramentas/pro-captions-timeline/ponte.html`) que abre com o Premiere e atende

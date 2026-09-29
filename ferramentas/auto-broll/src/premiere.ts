@@ -373,7 +373,7 @@ export async function lerBrollsAcimaDeV1(): Promise<BrollNaTimeline[]> {
  * bin (pasta do painel de Projeto) fica de fora. Desce recursivamente pra
  * achar tudo, nao so o que esta solto na raiz.
  */
-async function todosOsItens(pasta: { getItems: () => Promise<unknown[]> }): Promise<Array<{ name: string }>> {
+export async function todosOsItens(pasta: { getItems: () => Promise<unknown[]> }): Promise<Array<{ name: string }>> {
   const filhos = (await pasta.getItems()) as Array<{ name: string }>;
   const saida: Array<{ name: string }> = [];
   for (const filho of filhos) {

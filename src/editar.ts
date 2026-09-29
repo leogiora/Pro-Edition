@@ -56,6 +56,43 @@ export function cortesDosPedacos(pedacos: readonly Pedaco[], fps: number): numbe
   return pedacos.slice(1).map((p) => p.destinoQ / fps);
 }
 
+/**
+ * Light leak em cada troca doutor <-> B-roll, como o Leo monta: o leak inteiro
+ * (0,84 s no Premiere Composer) comecando 0,36 s antes da borda. Medido nas 79
+ * bordas das variacoes 1-6 do Andro 19.09 (29/09): 77 exatas; nenhum leak entre
+ * dois B-rolls colados (28 de 28) nem no comeco ou fim da variacao (5 de 5).
+ */
+export const LEAK_ANTES_S = 0.36;
+export const LEAK_S = 0.84;
+
+/**
+ * Onde cada leak comeca, em segundos, arredondado para o quadro e em ordem.
+ * Pula a borda cujo leak cairia em cima de algo que ja esta em `ocupado` (a
+ * faixa do leak): o que o Leo ja pos fica, e rodar duas vezes nao duplica. Dois
+ * leaks novos que se encostam entram os dois: inseridos em ordem, o seguinte
+ * come o fim do anterior, como o Leo faz (B-roll que sai e outro entrando 0,8 s
+ * depois).
+ */
+export function inicioDosLeaks(
+  brolls: ReadonlyArray<{ readonly inicio: number; readonly fim: number }>,
+  vars: readonly Variacao[],
+  fps: number,
+  ocupado: ReadonlyArray<{ readonly inicio: number; readonly fim: number }> = []
+): number[] {
+  const meioQuadro = 0.5 / fps;
+  const perto = (a: number, b: number): boolean => Math.abs(a - b) < meioQuadro;
+  const saida: number[] = [];
+  for (const x of brolls.flatMap((b) => [b.inicio, b.fim]).sort((a, b) => a - b)) {
+    const colada = brolls.filter((b) => perto(b.inicio, x) || perto(b.fim, x)).length > 1;
+    const ponta = vars.some((v) => perto(v.inicioQ / fps, x) || perto(v.fimQ / fps, x));
+    const inicio = Math.round((x - LEAK_ANTES_S) * fps) / fps;
+    const fim = inicio + LEAK_S;
+    if (colada || ponta || ocupado.some((o) => inicio < o.fim - meioQuadro && o.inicio < fim - meioQuadro)) continue;
+    saida.push(inicio);
+  }
+  return saida;
+}
+
 /** B-roll mais curto que isto, depois de aparado no fim do doutor, nem entra. */
 export const BROLL_MINIMO_S = 1;
 

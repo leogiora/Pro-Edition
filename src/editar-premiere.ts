@@ -7,6 +7,7 @@
  *      original acompanham cada pedaco
  *   4. Auto B-roll pela fala, terminando junto com cada variacao
  *   5. Auto Split (opcional)
+ *   5b. light leak em cada troca doutor <-> B-roll (regra em editar.ts)
  *   6. legendas: .srt de texto e de preco, e o pedido para o ajudante CEP
  *      criar as faixas de legenda (o UXP nao cria)
  *
@@ -22,7 +23,7 @@ import {
   parseMemoria,
   parsePendentes,
 } from "../ferramentas/auto-broll/src/aprendizado.ts";
-import { parseConfig, relogio } from "../ferramentas/auto-broll/src/domain.ts";
+import { ehVideo, parseConfig, relogio } from "../ferramentas/auto-broll/src/domain.ts";
 import { parseCacheIntensidade, ritmo } from "../ferramentas/auto-broll/src/intensidade.ts";
 import { parseSinonimos, SINONIMOS_PADRAO, usarSinonimos } from "../ferramentas/auto-broll/src/match.ts";
 import { planejar, REGRAS_DENSAS, REGRAS_PADRAO, semSobrepor } from "../ferramentas/auto-broll/src/plano.ts";
@@ -34,7 +35,9 @@ import {
   listarPastaBrolls,
   medirBiblioteca,
   readJson,
+  todosOsItens,
   writeJson,
+  type BrollNaTimeline,
 } from "../ferramentas/auto-broll/src/premiere.ts";
 import { audioMudo } from "../ferramentas/pro-captions/src/audio.ts";
 import { assinaturaDoAudio, palavrasDoElevenLabs, termosChave } from "../ferramentas/pro-captions/src/elevenlabs.ts";
@@ -52,7 +55,7 @@ import { validar } from "../ferramentas/pro-captions/src/segmentar.ts";
 import type { PalavraEditada } from "../ferramentas/pro-captions/src/transcript.ts";
 import { aplicarSplit } from "./autosplit-premiere.ts";
 import { DIVISAO_PADRAO } from "./autosplit.ts";
-import { cortesDosPedacos, dentroDasVariacoes, moverPalavras, variacoes, type Variacao } from "./editar.ts";
+import { cortesDosPedacos, dentroDasVariacoes, inicioDosLeaks, moverPalavras, variacoes, type Variacao } from "./editar.ts";
 import {
   apagarArquivo,
   aplicarPlano,
@@ -403,6 +406,51 @@ async function colocarBroll(
   return entram.length;
 }
 
+// -------------------------------------------------------------- light leak
+
+const ehLeak = (c: BrollNaTimeline): boolean => /light leak/i.test(`${c.nomeNoProjeto} ${c.caminho}`);
+
+/**
+ * Light leak do Premiere Composer em cada troca doutor <-> B-roll (regra em
+ * editar.ts). O leak e o que o Leo ja usa: o da timeline, ou o primeiro com
+ * "Light Leak" no nome no painel Projeto; entra inteiro (0,84 s, sem audio).
+ * Vai na faixa do leak que ja esta la, ou logo acima da faixa de B-roll.
+ */
+async function colocarLeaks(vars: readonly Variacao[], fps: number, registrar: Registrar): Promise<void> {
+  const config = parseConfig(await comLimite("ler config", readJson("config.json"), 5000));
+  const naTimeline = await comLimite("ler a timeline", lerBrollsAcimaDeV1(), 10000);
+  const modelo = naTimeline.find(ehLeak);
+  const faixa = modelo?.videoTrackIndex ?? config.videoTrackIndex + 1;
+
+  const project = await ppro.Project.getActiveProject();
+  const itens = await comLimite("ler o projeto", todosOsItens(await project.getRootItem()), 20000);
+  const item = itens.find((i) => (modelo ? i.name === modelo.nomeNoProjeto : /light leak/i.test(i.name)));
+  if (item === undefined) {
+    registrar("light leak: nenhum no projeto. Gere um no Premiere Composer e rode de novo", "aviso");
+    return;
+  }
+
+  const trecho = (c: BrollNaTimeline) => ({ inicio: c.startSeconds, fim: c.endSeconds });
+  const inicios = inicioDosLeaks(
+    naTimeline.filter((c) => ehVideo(c.sourceName)).map(trecho),
+    vars,
+    fps,
+    naTimeline.filter((c) => c.videoTrackIndex === faixa).map(trecho)
+  );
+  if (inicios.length === 0) {
+    registrar("light leak: toda troca de B-roll já tem", "passo");
+    return;
+  }
+
+  const editor = await ppro.SequenceEditor.getEditor(await project.getActiveSequence());
+  const tempos = await Promise.all(inicios.map((t) => ppro.TickTime.createWithSeconds(t)));
+  // Faixa de audio do B-roll, nunca a A1: o leak nao tem audio, mas se tiver, nao pisa na fala.
+  comTransacao(project, `Editar: ${inicios.length} light leaks`, (adicionar) => {
+    for (const t of tempos) adicionar(editor.createOverwriteItemAction(item, t, faixa, config.audioTrackIndex));
+  });
+  registrar(`${inicios.length} light leaks na V${faixa + 1} (${item.name})`, "ok");
+}
+
 // ---------------------------------------------------------------- legendas
 
 async function colocarLegendas(palavras: readonly PalavraEditada[], cortes: readonly number[], registrar: Registrar): Promise<void> {
@@ -429,6 +477,7 @@ export interface OpcoesEditar {
   readonly pausas: boolean;
   readonly broll: boolean;
   readonly split: boolean;
+  readonly leak: boolean;
   readonly legendas: boolean;
 }
 
@@ -487,6 +536,12 @@ export async function editar(opcoes: OpcoesEditar, registrar: Registrar, progres
     } catch (e) {
       registrar(`Split: ${(e as Error).message}`, "erro");
     }
+  }
+
+  // 5b. Light leak nas trocas doutor <-> B-roll.
+  if (opcoes.leak) {
+    progresso("light leak");
+    await colocarLeaks(vars, fps, registrar).catch((e) => registrar(`Light leak: ${(e as Error).message}`, "erro"));
   }
 
   // 6. Legendas por ultimo: a timeline ja esta no formato final.

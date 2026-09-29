@@ -134,8 +134,13 @@ com o código** (Auto B-roll e Acabamento em `app/LEIA-ME.md`):
   crédito: os "5 créditos" que aparecem no Envato são de IA, e a licença
   sai sozinha quando ele arrasta o clipe.
 - **Light leak.** Clipe "Generated Light Leak" do Premiere Composer (plugin
-  UXP instalado) na V3, por cima do broll. Pela timeline, cai nas bordas do
-  broll — entrada e, às vezes, saída. Ele gera um e copia/cola nos outros.
+  UXP instalado) na V3, por cima do broll. Ele gera um e copia/cola nos
+  outros. **Regra medida (29/09, variações 1–6, 158 pedaços):** o leak inteiro
+  (0,84 s, sem áudio) começa 0,36 s antes de cada troca doutor ↔ broll, na
+  entrada e na saída; fica cortado em dois só porque ele corta todas as
+  faixas na borda. Não entra entre dois brolls colados (28 de 28) nem no
+  começo ou fim da variação. **Desde 29/09 o Editar faz isso** (`src/editar.ts`,
+  `inicioDosLeaks`): 79 de 79 bordas iguais às dele.
 
 Os dois jeitos de legenda da Menopausa Cancelada:
 1. Com os produtos na mesa: maiúscula condensada sobre uma faixa roxa.
