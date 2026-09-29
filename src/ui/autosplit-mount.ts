@@ -8,6 +8,7 @@
  */
 
 import { aplicarSplit, diagnostico, getSequenceInfo, type OpcoesSplit } from "../autosplit-premiere.ts";
+import { DIVISAO_PADRAO } from "../autosplit.ts";
 
 export function mount(root: HTMLElement): void {
   const pega = <T extends HTMLElement>(id: string): T => root.querySelector<T>(`#${id}`)!;
@@ -37,7 +38,7 @@ export function mount(root: HTMLElement): void {
     const n = Number(bruto);
     return {
       faixa: bruto === "" || !Number.isFinite(n) || n < 1 ? null : n - 1,
-      divisao: Number(divisao.value) || 50,
+      divisao: Number(divisao.value) || DIVISAO_PADRAO,
       subirDoutor: false, // entra junto com o nudge do doutor, ainda nao feito
       refazer: refazer.checked,
     };

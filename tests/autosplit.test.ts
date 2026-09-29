@@ -74,14 +74,15 @@ test("fracaoDivisao parseia e clampa", () => {
   assert.equal(fracaoDivisao(50), 0.5);
   assert.equal(fracaoDivisao(30), 0.4);
   assert.equal(fracaoDivisao(70), 0.6);
+  assert.equal(fracaoDivisao(Number.NaN), 0.58); // campo vazio: a caixa do Leo
 });
 
 test("geometria: retrato, ancora media — cobre a caixa e nao passa dela", () => {
   const r = calcularEnquadramento(BASE);
   // corte de topo = ancoraY - folga(pessoa .12) + 0 = 0.18
   assert.ok(Math.abs(r.cropTopoPct - 18) < 0.01);
-  // escala cobre a caixa: max(1080/720, 960/(1280*0.82)) * 1.03, em %
-  const esperado = Math.max(1080 / 720, 960 / (1280 * 0.82)) * 1.03 * 100;
+  // escala cobre a caixa sem sobra (o Leo nao usa overscan): max(1080/720, 960/(1280*0.82)), em %
+  const esperado = Math.max(1080 / 720, 960 / (1280 * 0.82)) * 100;
   assert.ok(Math.abs(r.escalaPct - esperado) < 0.5);
   assert.equal(r.posX, 540);
   // o topo da parte visivel nao pode ficar abaixo de yBox (960): sem tarja

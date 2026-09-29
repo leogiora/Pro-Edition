@@ -103,7 +103,11 @@ B-roll que passa do fim do doutor é aparado; o que começa num espaço sai.
 Split (opcional): a geometria do painel (`src/autosplit.ts`,
 `calcularEnquadramento`) com o perfil empacotado (`src/autosplit-perfil.json`)
 e os ajustes que o Leo ensinou (`autosplit-perfil-override.json` do PluginData)
-→ escala, posição e Cortar (topo + feather 5%) no XML. Doutor **em pé**: sobe
+→ escala, posição e Cortar (topo + feather 7%) no XML, com a caixa de baixo
+em 58% e o B-roll preenchendo a largura sem sobra, como o Leo (medido em 29/09
+nos 70 B-rolls do Andro 19.09). O Leo usa o Rounded Crop do Film Impact; o
+XML leva o Cortar nativo, e se o feather dele suavizar também as laterais
+(sem overscan, elas encostam na borda da tela), aparece na Fase 0. Doutor **em pé**: sobe
 enquanto o B-roll está na tela (`nudgeDoutorPosY`, Y 960 → 816 em tela cheia,
 sem mudar a escala). Só o trecho coberto sobe, porque a tela cheia subida abre
 tarja preta embaixo; a V1 é cortada nas bordas do B-roll, com o áudio vinculado

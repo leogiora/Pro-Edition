@@ -62,10 +62,14 @@ com o código** (Auto B-roll e Acabamento em `app/LEIA-ME.md`):
   464×832, 150 no 720×1280) e a borda de cima visível fica em 1000–1145 px
   (mediana ~1120; na variação 3, 1123–1128), por baixo da borda do doutor.
   A sobreposição some no Feather 7% do "FI: Rounded Crop FX" do Film
-  Impact (Top 8–45% conforme o clipe; sem arredondar). O código faz
-  diferente: não sobe o doutor em bruta deitada (`app/LEIA-ME.md`), usa o
-  Cortar nativo com feather 5% e overscan de 3%, e a linha vem do campo de
-  divisão (40–60%).
+  Impact (Top 8–45% conforme o clipe; sem arredondar). **Desde 29/09 o
+  código faz igual** (medido nos 70 brolls das variações 1–6): Feather 7,
+  sem overscan, caixa de baixo em 58% por padrão (borda do código a 21 px
+  da dele, mediana; em 50% ficava a 159 px). O Top de cada clipe continua
+  vindo do perfil: o dele sai de colar atributos (na variação 1 todo
+  464×832 tem Top 30 e Y 1506, todo 720×1280 Top 23 e Y 1568), então segue
+  o tamanho do arquivo, não o que está no quadro. Doutor deitado continua
+  manual (`app/LEIA-ME.md`).
 - **Áudio do broll.** Ele desvincula e apaga — igual ao código.
 - **Quantidade e duração (gabarito, variações 1–3).** 14, 15 e 8 brolls;
   cobrem 54%, 61% e 46% da variação. Duração de 0,6 a 4,9 s (mediana

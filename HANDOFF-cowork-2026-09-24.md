@@ -54,6 +54,8 @@ o Leo antes de mexer):
    Premiere, com Analisar numa variação sem broll.
 3. **Split do Andro no Acabamento.** O broll é constante e dá pra
    automatizar: preenche a largura, borda de cima em ~1120 px, Feather 7%.
+   **Feito (29/09)** no painel e no `app/` (`src/autosplit.ts`: sem overscan,
+   Feather 7, caixa em 58%), medido nos 70 brolls das variações 1–6.
    O doutor não tem número fixo. O 540/580 com Escala 57 do Andro 19.09 é
    de bruta deitada, que muda por trecho; a do Andro costuma vir em pé
    (Leo, 28/09). Em pé: feito no `app/` em 28/09 (`acabamento.ts`: sobe

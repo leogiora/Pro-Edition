@@ -63,7 +63,7 @@ export function resolverPerfil(
 
 /*
  * Constantes de calibracao. O modelo minimo nao ve o que so o olho ve (quanta
- * folga de cabeca um close pede, quanto de overscan o feather come), entao
+ * folga de cabeca um close pede), entao
  * estes numeros sao botoes de ajuste — mexer aqui, nao espalhar magic numbers
  * pela conta.
  * ponytail: ajuste fino do mundo real; medir num video de verdade e afinar.
@@ -72,10 +72,17 @@ export const FOLGA: Readonly<Record<Assunto, number>> = {
   rosto: 0.18, pessoa: 0.12, dupla: 0.10, aberto: 0.05,
 };
 export const CROP_TOPO_MAX = 0.60;
-export const OVERSCAN = 1.03;
 export const SUBJ_IN_BOX = 0.40;
-export const FEATHER_PCT = 5;
+/*
+ * Medido nos 70 B-rolls das variacoes 1-6 do Andro 19.09 (perfil AndroClinic
+ * Ads, 29/09): Feather 7 e Roundness 0 em todos; escala = preencher a largura,
+ * sem sobra (67 de 70); borda de cima do B-roll na mediana de 1119 px = 58%.
+ * Com a caixa em 58%, a borda do codigo fica a 21 px da dele (mediana); em 50%,
+ * a 159 px.
+ */
+export const FEATHER_PCT = 7;
 export const ROUNDNESS_PCT = 0;
+export const DIVISAO_PADRAO = 58;
 
 const clamp = (v: number, lo: number, hi: number): number => Math.min(Math.max(v, lo), hi);
 
@@ -97,9 +104,9 @@ export interface Enquadramento {
   readonly cropTopoPct: number;
 }
 
-/** "50" no campo -> 0.5; fora de 40..60 e clampado (o usuario tenta 50/50). */
+/** "58" no campo -> 0.58; fora de 40..60 e clampado. */
 export function fracaoDivisao(valorCampo: number): number {
-  const f = Number.isFinite(valorCampo) ? valorCampo / 100 : 0.5;
+  const f = (Number.isFinite(valorCampo) ? valorCampo : DIVISAO_PADRAO) / 100;
   return clamp(f, 0.40, 0.60);
 }
 
@@ -119,8 +126,7 @@ export function calcularEnquadramento(e: EntradaGeom): Enquadramento {
   const hVis = e.h * (1 - cropTopo);
   const aVis = cropTopo < 1 ? (e.ancoraY - cropTopo) / (1 - cropTopo) : 0;
 
-  const escala = Math.max(Wbox / e.w, Hbox / hVis) * OVERSCAN;
-  const s = escala;
+  const s = Math.max(Wbox / e.w, Hbox / hVis);
 
   const posX = e.W / 2;
   let posY =
@@ -132,7 +138,7 @@ export function calcularEnquadramento(e: EntradaGeom): Enquadramento {
   const posYMax = yBox - (cropTopo - 0.5) * e.h * s;   // topo visivel nao passa de yBox
   posY = posYMin <= posYMax ? clamp(posY, posYMin, posYMax) : posYMin;
 
-  return { escalaPct: escala * 100, posX, posY, cropTopoPct: cropTopo * 100 };
+  return { escalaPct: s * 100, posX, posY, cropTopoPct: cropTopo * 100 };
 }
 
 // -------------------------------------------- doutor e back-solve do aprender

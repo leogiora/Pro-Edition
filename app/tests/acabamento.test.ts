@@ -54,8 +54,8 @@ test("Split: B-roll na caixa de baixo, com corte do topo e feather, abaixo do me
   for (const c of r.sequencia.video[1]!) {
     assert.ok((c.deslocamento?.y ?? 0) > 0, "centro do B-roll desce para a metade de baixo");
     assert.ok((c.recorte?.topo ?? 0) > 0);
-    assert.equal(c.recorte?.suavizar, 5);
-    assert.notEqual(c.escala, 150);
+    assert.equal(c.recorte?.suavizar, 7);
+    assert.equal(c.escala, 150, "preenche a largura sem sobra, como o Leo (1080 / 720)");
   }
   assert.equal(r.subidos, 0, "bruta deitada: o doutor fica como o Leo deixou");
   assert.deepEqual(r.sequencia.video[0], seq.video[0]);

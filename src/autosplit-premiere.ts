@@ -18,6 +18,7 @@ import {
 import { parseTrazidos, type Trazido } from "../ferramentas/auto-broll/src/aprendizado.ts";
 import {
   calcularEnquadramento,
+  DIVISAO_PADRAO,
   fracaoDivisao,
   resolverPerfil,
   FEATHER_PCT,
@@ -531,7 +532,7 @@ export async function diagnostico(): Promise<string[]> {
     candidato ? `candidato: "${candidato.display}" (${candidato.match})` : "nenhum candidato obvio — ver a lista no JSON",
   );
 
-  const plano = await montarPlano({ faixa: null, divisao: 50, subirDoutor: false, refazer: false });
+  const plano = await montarPlano({ faixa: null, divisao: DIVISAO_PADRAO, subirDoutor: false, refazer: false });
   if (plano.itens.length === 0) {
     linhas.push("sem B-roll acima da V1 — nao deu pra testar Motion/efeito no clipe");
     await writeJson("diag-autosplit.json", saida);
