@@ -232,6 +232,8 @@ export function blocosParaSrt(blocos: readonly BlocoLegenda[], instagram = false
 const SEM_DESTAQUE: ReadonlySet<string> = new Set([
   ...PENDURADAS,
   "você", "eu", "ele", "ela", "esse", "essa", "isso", "este", "esta", "aqui", "ali", "lá", "ó", "é", "tá", "já", "mais",
+  // Menopausa, 29/09: "ela <b>não</b> tá", "ali pro <b>teu</b>", "<b>então</b> cê quer".
+  "cê", "não", "sim", "ei", "teu", "tua", "então", "sobre", "tem",
 ]);
 
 /**
