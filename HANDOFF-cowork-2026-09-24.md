@@ -21,8 +21,12 @@ feitos (inclusive split, light leak e trilha no Editar). O Leo deixou os
 testes ao vivo para o final (tabela "Estado dos testes") e autorizou seguir de
 passo em passo, com commit e push ao fim de cada um. O seletor de perfil
 (Plano, item 1, em `PERFIS_DE_EDICAO.md`) foi feito só na parte da empresa:
-termos do ElevenLabs e pasta de B-roll de cada uma. O tipo (Ads/Instagram)
-espera um Instagram para medir.
+termos do ElevenLabs e pasta de B-roll de cada uma. Depois, medido nos
+criativos da Menopausa: o split dela tem o B-roll **em cima**, e o lado do
+split virou da empresa (Auto Split, Editar e Acabamento). O tipo
+(Ads/Instagram) continua sem gabarito. As pastas de B-roll da Menopausa e da
+GrandCare não têm nome de conceito: o Auto B-roll não serve nelas até serem
+renomeadas (decisão do Leo).
 
 - **Legenda (Pro Captions + ElevenLabs):** pronta no código, inclusive a
   segmentação no estilo do Leo (`segmentar.ts` + `maxPalavras: 3` no
@@ -166,6 +170,7 @@ o Leo antes de mexer):
 | Light leak pelo Editar (`.aegraphic` no overwrite) | a medir |
 | Trilha pelo Editar (clone do clipe da A2 + fim na variação) | a medir |
 | Empresa no Editar (lista `<select>`, troca a pasta do Auto B-roll) | a medir |
+| Split da Menopausa (B-roll em cima, `Bottom` do Rounded Crop) no Auto Split | a medir |
 
 ## Arquivos de teste fora do repositório
 

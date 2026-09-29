@@ -5,8 +5,9 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { basename, dirname, join } from "node:path";
 
+import { empresaDe } from "../../../ferramentas/pro-captions/src/preset.ts";
 import perfilBruto from "../../../src/autosplit-perfil.json" with { type: "json" };
-import type { OverridePerfil, Perfil } from "../../../src/autosplit.ts";
+import { SPLIT_DA_EMPRESA, type OverridePerfil, type Perfil } from "../../../src/autosplit.ts";
 import { acabar, variacoes } from "../acabamento.ts";
 import { lerSequenciaXml } from "../xml-ler.ts";
 import { sequenciaParaXml, type Midia } from "../xml.ts";
@@ -20,7 +21,14 @@ export interface EntradaAcabamento {
   readonly brolls: number;
   readonly trilha: string | null;
   readonly volumeTrilhaDb: number;
+  /** Linha do split da empresa escolhida no Editar do painel. */
+  readonly divisao: number;
   readonly avisos: string[];
+}
+
+/** Split da empresa escolhida no Editar do painel (`perfil.json`); sem painel, AndroClinic. */
+async function splitDoPainel(): Promise<(typeof SPLIT_DA_EMPRESA)[keyof typeof SPLIT_DA_EMPRESA]> {
+  return SPLIT_DA_EMPRESA[empresaDe(await jsonDe(await pastaDoPainel(), "perfil.json"))];
 }
 
 export interface OpcoesAcabamentoTela {
@@ -52,6 +60,7 @@ export async function abrirParaAcabamento(caminho: string, cfg: Config): Promise
     brolls: (s.video[1] ?? []).length,
     trilha: pref.trilha ?? null,
     volumeTrilhaDb: pref.volumeTrilhaDb ?? VOLUME_PADRAO_DB,
+    divisao: (await splitDoPainel()).divisao,
     avisos,
   };
 }
@@ -70,8 +79,10 @@ export async function rodarAcabamento(caminho: string, opcoes: OpcoesAcabamentoT
   }
 
   const override = ((await jsonDe(await pastaDoPainel(), "autosplit-perfil-override.json")) ?? {}) as OverridePerfil;
+  const { lado, feather } = await splitDoPainel();
+  const perfil = perfilBruto as unknown as Perfil;
   const r = acabar(entrada, {
-    ...(opcoes.split ? { split: { divisao: opcoes.divisao, perfil: perfilBruto as unknown as Perfil, override } } : {}),
+    ...(opcoes.split ? { split: { divisao: opcoes.divisao, perfil, override, lado, feather } } : {}),
     ...(trilha !== undefined ? { trilha } : {}),
   });
 

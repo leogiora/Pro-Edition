@@ -6,6 +6,8 @@
  * autosplit-premiere.ts.
  */
 
+import type { Empresa } from "../ferramentas/pro-captions/src/preset.ts";
+
 export type Assunto = "rosto" | "pessoa" | "dupla" | "aberto";
 export type Orientacao = "retrato" | "paisagem";
 
@@ -102,6 +104,8 @@ export interface Enquadramento {
   readonly posX: number;
   readonly posY: number;
   readonly cropTopoPct: number;
+  /** So no broll de cima: o corte e embaixo (Bottom do Rounded Crop). */
+  readonly cropBasePct?: number;
 }
 
 /** "58" no campo -> 0.58; fora de 40..60 e clampado. */
@@ -139,6 +143,70 @@ export function calcularEnquadramento(e: EntradaGeom): Enquadramento {
   posY = posYMin <= posYMax ? clamp(posY, posYMin, posYMax) : posYMin;
 
   return { escalaPct: s * 100, posX, posY, cropTopoPct: cropTopo * 100 };
+}
+
+// ------------------------------------------------------- lado do split
+
+export type LadoSplit = "baixo" | "cima";
+
+/**
+ * O Pexels grava o tamanho no nome ("10222557-uhd_2160_4096_25fps.mp4"), e a
+ * pasta de B-roll da Menopausa e quase toda assim. Sem isso o Auto Split pula
+ * o clipe, porque o UXP nao da o tamanho do quadro.
+ */
+export function tamanhoNoNome(nome: string): { w: number; h: number } | undefined {
+  const m = /(\d{3,4})_(\d{3,4})_\d+fps/.exec(nome);
+  return m ? { w: Number(m[1]), h: Number(m[2]) } : undefined;
+}
+
+/**
+ * Split de cada empresa, medido nos projetos dela (29/09). AndroClinic: os 70
+ * B-rolls das variacoes 1-6 do Andro 19.09. Menopausa: criativos 07.09, 17.09,
+ * 18.09 e 28.09, B-roll EM CIMA com a borda de baixo em 37-52% da altura
+ * (mediana 45%) e Feather de 3 a 11 (mediana 5). GrandCare nao medida: o
+ * PERFIS diz que e igual a AndroClinic.
+ */
+export const SPLIT_DA_EMPRESA: Readonly<Record<Empresa, { lado: LadoSplit; divisao: number; feather: number }>> = {
+  androclinic: { lado: "baixo", divisao: DIVISAO_PADRAO, feather: FEATHER_PCT },
+  grandcare: { lado: "baixo", divisao: DIVISAO_PADRAO, feather: FEATHER_PCT },
+  menopausa: { lado: "cima", divisao: 45, feather: 5 },
+};
+
+/**
+ * Quanto o B-roll de cima passa da altura da caixa. Na Menopausa o 1920x1080
+ * entra a 64% numa caixa de 576 px (1,2x); os outros criativos dao 1,1 a 1,4.
+ * ponytail: media de 4 criativos, afinar se o Leo mexer muito na escala.
+ */
+export const SOBRA_EM_CIMA = 1.2;
+
+/**
+ * B-roll na caixa de cima (Menopausa). Nao e a conta de baixo de ponta-cabeca:
+ * la o Leo enquadra pelo assunto; aqui ele cobre a caixa com o clipe inteiro,
+ * um pouco maior que ela, centrado, e corta embaixo o que passa da borda.
+ * `fimFrac` e onde a caixa termina (a borda de baixo do B-roll).
+ */
+export function enquadrarEmCima(W: number, H: number, w: number, h: number, fimFrac: number): Enquadramento {
+  const caixa = H * fimFrac;
+  const s = Math.max(W / w, (SOBRA_EM_CIMA * caixa) / h);
+  const posY = caixa / 2;
+  const sobraEmbaixo = Math.max(0, posY + (h * s) / 2 - caixa);
+  return { escalaPct: s * 100, posX: W / 2, posY, cropTopoPct: 0, cropBasePct: (sobraEmbaixo / (h * s)) * 100 };
+}
+
+/**
+ * Quanto a pessoa entra por baixo da borda do B-roll: 4% na bruta deitada do
+ * Andro 19.09, 4 a 10% nos criativos da Menopausa.
+ */
+export const SOBREPOSICAO_PESSOA = 0.06;
+
+/**
+ * Pessoa por baixo do B-roll de cima: desce ate a borda de cima dela ficar
+ * SOBREPOSICAO_PESSOA acima da borda do B-roll. Descer so corta o tronco (a
+ * cabeca fica no alto do quadro dela); nunca sobe. Menopausa 28.09: 1139 contra
+ * 1159 do Leo; 17.09: 1722 contra 1691.
+ */
+export function descerPessoaPosY(e: EntradaDoutor & { readonly fimFrac: number }): number {
+  return Math.max(e.H / 2, e.H * (e.fimFrac - SOBREPOSICAO_PESSOA) + (e.hDoc * e.escalaDocPct) / 200);
 }
 
 // -------------------------------------------- doutor e back-solve do aprender

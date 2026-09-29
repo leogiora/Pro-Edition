@@ -19,12 +19,15 @@ import { parseTrazidos, type Trazido } from "../ferramentas/auto-broll/src/apren
 import {
   calcularEnquadramento,
   DIVISAO_PADRAO,
+  enquadrarEmCima,
   fracaoDivisao,
   resolverPerfil,
+  tamanhoNoNome,
   FEATHER_PCT,
   ROUNDNESS_PCT,
   type Enquadramento,
   type EntradaGeom,
+  type LadoSplit,
   type OverridePerfil,
   type Perfil,
 } from "./autosplit.ts";
@@ -52,6 +55,7 @@ const MATCH_MOTION = "AE.ADBE Motion";
  */
 const MATCH_EFEITO = "AE.Impact_Crop_FX";
 const PARAM_TOPO = "Top";
+const PARAM_BASE = "Bottom";
 const PARAM_FEATHER = "Feather";
 const PARAM_ROUNDNESS = "Roundness";
 
@@ -106,6 +110,9 @@ export interface OpcoesSplit {
   readonly divisao: number; // valor do campo, ex. 50
   readonly subirDoutor: boolean;
   readonly refazer: boolean;
+  /** Da empresa (SPLIT_DA_EMPRESA): sem isto, B-roll embaixo e feather da AndroClinic. */
+  readonly lado?: LadoSplit;
+  readonly feather?: number;
 }
 
 export interface ItemPlano {
@@ -177,7 +184,10 @@ export async function montarPlano(opcoes: OpcoesSplit): Promise<PlanoSplit> {
   for (const b of alvo) {
     const doArquivo = perfil.porArquivo[b.sourceName];
     const trazido = trazidos.get(b.caminho) ?? trazidos.get(b.sourceName);
-    const tam = doArquivo?.w && doArquivo?.h ? { w: doArquivo.w, h: doArquivo.h } : trazido;
+    const tam =
+      (doArquivo?.w && doArquivo?.h ? { w: doArquivo.w, h: doArquivo.h } : undefined) ??
+      (trazido?.w && trazido?.h ? trazido : undefined) ??
+      tamanhoNoNome(b.sourceName);
     if (!tam?.w || !tam?.h) {
       ignorados.set(b.sourceName, (ignorados.get(b.sourceName) ?? 0) + 1);
       continue;
@@ -203,7 +213,10 @@ export async function montarPlano(opcoes: OpcoesSplit): Promise<PlanoSplit> {
       videoTrackIndex: b.videoTrackIndex,
       orientacao,
       perfilOrigem: resolvido.origem,
-      enquadramento: calcularEnquadramento(geom),
+      enquadramento:
+        opcoes.lado === "cima"
+          ? enquadrarEmCima(info.width, info.height, tam.w, tam.h, brollTopoFrac)
+          : calcularEnquadramento(geom),
       geom,
     });
   }
@@ -353,7 +366,15 @@ export async function aplicarSplit(opcoes: OpcoesSplit): Promise<ResultadoSplit>
 
   // --- transacao 1: Motion (escala + posicao) e anexar o efeito
   const acoes1: Array<() => unknown> = [];
-  const paraSetar: Array<{ sourceName: string; videoTrackIndex: number; startSeconds: number; topoPct: number }> = [];
+  const paraSetar: Array<{
+    sourceName: string;
+    videoTrackIndex: number;
+    startSeconds: number;
+    topoPct: number;
+    basePct: number;
+  }> = [];
+  const feather = opcoes.feather ?? FEATHER_PCT;
+  const caixa = opcoes.lado === "cima" ? "de cima" : "de baixo";
   const conferidos: string[] = [];
   let jaTinham = 0;
   let posicionados = 0;
@@ -397,6 +418,7 @@ export async function aplicarSplit(opcoes: OpcoesSplit): Promise<ResultadoSplit>
         videoTrackIndex: it.videoTrackIndex,
         startSeconds: it.startSeconds,
         topoPct: e.cropTopoPct,
+        basePct: e.cropBasePct ?? 0,
       });
     }
 
@@ -422,7 +444,7 @@ export async function aplicarSplit(opcoes: OpcoesSplit): Promise<ResultadoSplit>
   comTransacao(project as never, `Auto Split: ${posicionados} B-rolls`, (add) => {
     for (const a of acoes1) add(a());
   });
-  linhas.push(`${posicionados} B-rolls posicionados na caixa de baixo.`);
+  linhas.push(`${posicionados} B-rolls posicionados na caixa ${caixa}.`);
   for (const c of conferidos) linhas.push(`   ${c}`);
   if (jaTinham > 0) linhas.push(`${jaTinham} ja tinham o Rounded Crop (pulados; marque "Refazer do zero" pra refazer).`);
 
@@ -444,7 +466,8 @@ export async function aplicarSplit(opcoes: OpcoesSplit): Promise<ResultadoSplit>
       }
       for (const [nome, valor] of [
         [PARAM_TOPO, alvo.topoPct],
-        [PARAM_FEATHER, FEATHER_PCT],
+        [PARAM_BASE, alvo.basePct],
+        [PARAM_FEATHER, feather],
         [PARAM_ROUNDNESS, ROUNDNESS_PCT],
       ] as const) {
         const par = await acharParam(comp, nome);
@@ -456,7 +479,7 @@ export async function aplicarSplit(opcoes: OpcoesSplit): Promise<ResultadoSplit>
       comTransacao(h2.project as never, "Auto Split: corte de topo e feather", (add) => {
         for (const a of acoes2) add(a());
       });
-      linhas.push(`${paraSetar.length} Rounded Crop aplicados (Top por clipe, feather ${FEATHER_PCT}%).`);
+      linhas.push(`${paraSetar.length} Rounded Crop aplicados (corte ${opcoes.lado === "cima" ? "embaixo" : "em cima"} por clipe, feather ${feather}%).`);
     }
 
     // Conferir o que REALMENTE ficou na timeline, nao o que eu mandei fazer.

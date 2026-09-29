@@ -23,7 +23,7 @@ ouvido. O que está marcado com **?** falta confirmar com o Leo.
 | | AndroClinic | GrandCare | Menopausa Cancelada |
 |---|---|---|---|
 | **Legenda** | Bebas Neue, MAIÚSCULA, branca com sombra, 1 a 3 palavras, no terço de baixo | igual à AndroClinic (Bebas Neue no `Grandcare.prproj`) | dois jeitos (ver abaixo) |
-| **Layout** | doutor em tela cheia; B-roll entra na metade de baixo (split) | igual; tarja com o nome do doutor no começo | apresentadora com os produtos na mesa |
+| **Layout** | doutor em tela cheia; B-roll entra na metade de baixo (split) | igual; tarja com o nome do doutor no começo | apresentadora com os produtos na mesa; nos criativos de setembro, split com o **B-roll em cima** (medido, ver abaixo) |
 | **Logo** | — | GrandCare branco no canto superior direito | — |
 | **Transição** | light leak em alguns cortes | light leak (Premiere Composer) | — |
 | **Música** | trilha baixa de fundo | `Confident.wav`, `Main Version.wav` | ? |
@@ -163,6 +163,22 @@ Os dois jeitos de legenda da Menopausa Cancelada:
    - palavra-chave maior e em negrito;
    - emoji (💧).
 
+**Menopausa Cancelada Ads — medido no `.prproj` (29/09, criativos 07.09,
+17.09, 18.09 e 28.09):** split com o **B-roll em cima** e a apresentadora
+embaixo. O B-roll cobre a caixa de cima um pouco maior que ela (1,1 a 1,4x a
+altura; 64% num 1920×1080 em sequência 720×1280) e o Rounded Crop corta
+**embaixo** (Bottom) o que passa da borda, que fica em 37–52% da altura
+(mediana 45%). Feather de 3 a 11, muda de projeto para projeto. A
+apresentadora desce só enquanto o B-roll está na tela (Y de 0,50 para
+0,77–0,91), até a borda de cima dela ficar 4–10% por baixo da borda do
+B-roll, a mesma sobreposição do doutor deitado do Andro 19.09 (4%). A
+legenda **não é faixa de legenda**: são gráficos de texto (90 no 28.09),
+fora do alcance do Editar. O 07.09 é quadrado (1080×1080). Desde 29/09 o
+split segue a empresa (`SPLIT_DA_EMPRESA` em `src/autosplit.ts`): Auto Split
+do painel, Editar e Acabamento do `app/`. A pasta "Brolls - Menopausa"
+(61 arquivos) e a "Brolls - Grandcare" (55) têm nome do Pexels ou número,
+não de conceito: o Auto B-roll não acha nada nelas até serem renomeadas.
+
 ## Instagram (orgânico)
 
 | | AndroClinic | GrandCare | Menopausa Cancelada |
@@ -204,8 +220,10 @@ Fontes lidas dos projetos:
    `ferramentas/pro-captions/src/preset.ts`). Os da GrandCare e da Menopausa
    saíram das legendas revisadas dos projetos delas: marca, Edemilson Banach,
    Reset 90, Femme Healthy, termos de saúde. Trilha e light leak não precisam
-   de perfil: o Editar copia o que já está no projeto. O **tipo**
-   (Ads/Instagram) fica para quando houver um Instagram para medir: o código
-   só monta o split dos Ads.
+   de perfil: o Editar copia o que já está no projeto. O **lado do split**
+   também é da empresa (a Menopausa põe o B-roll em cima), não do tipo. O
+   **tipo** (Ads/Instagram) continua sem gabarito: o único orgânico no disco
+   ("Orgânico", Menopausa) não tem split nem faixa de legenda, só a
+   apresentadora com zoom 100/150, gráficos de texto e light leak.
 2. **Instagram**: faixa de destaque para as palavras-chave e faixa de gancho.
 3. **Animações**: depois, por .mogrt; decisão do Leo.

@@ -226,6 +226,7 @@ async function abrirAcabamento(caminho: string): Promise<void> {
     mostrarMusica();
     $<HTMLInputElement>("acabComTrilha").checked = musica !== null;
     $<HTMLInputElement>("acabVolume").value = String(e.volumeTrilhaDb);
+    $<HTMLInputElement>("acabDivisao").value = String(e.divisao);
     $("acabEntrada").hidden = false;
     estado("acabamento", e.avisos.length > 0 ? e.avisos.join(" · ") : "pronto", e.avisos.length > 0 ? "" : "ok");
   } catch (erro) {

@@ -16,10 +16,13 @@
 
 import {
   calcularEnquadramento,
+  descerPessoaPosY,
+  enquadrarEmCima,
   FEATHER_PCT,
   fracaoDivisao,
   nudgeDoutorPosY,
   resolverPerfil,
+  type LadoSplit,
   type OverridePerfil,
   type Perfil,
 } from "../../src/autosplit.ts";
@@ -47,8 +50,18 @@ export function variacoes(v1: readonly Clipe[], fps: number): Variacao[] {
 }
 
 export interface OpcoesAcabamento {
-  /** Doutor em cima, B-roll embaixo. `divisao` e onde a caixa de baixo comeca (40..60, em %). */
-  readonly split?: { readonly divisao: number; readonly perfil: Perfil; readonly override: OverridePerfil };
+  /**
+   * Doutor e B-roll dividindo a tela. `divisao` e a linha (40..60, em %): onde a
+   * caixa de baixo comeca, ou onde a de cima termina com `lado: "cima"`
+   * (Menopausa). Lado e feather vem da empresa (SPLIT_DA_EMPRESA).
+   */
+  readonly split?: {
+    readonly divisao: number;
+    readonly perfil: Perfil;
+    readonly override: OverridePerfil;
+    readonly lado?: LadoSplit;
+    readonly feather?: number;
+  };
   readonly trilha?: { readonly midia: Midia; readonly ganhoDb: number };
 }
 
@@ -132,22 +145,26 @@ export function acabar(entrada: Sequencia, opcoes: OpcoesAcabamento): ResultadoA
         const s = opcoes.split!;
         const nome = nomeDe(c.midia.caminho);
         const p = resolverPerfil(s.perfil, s.override, nome, h >= w ? "retrato" : "paisagem");
-        const e = calcularEnquadramento({
-          W: entrada.largura,
-          H: entrada.altura,
-          brollTopoFrac: fracaoDivisao(s.divisao),
-          w,
-          h,
-          ancoraY: p.ancoraY,
-          assunto: p.assunto,
-          cropTopoExtra: p.cropTopoExtra,
-        });
+        const e =
+          s.lado === "cima"
+            ? enquadrarEmCima(entrada.largura, entrada.altura, w, h, fracaoDivisao(s.divisao))
+            : calcularEnquadramento({
+                W: entrada.largura,
+                H: entrada.altura,
+                brollTopoFrac: fracaoDivisao(s.divisao),
+                w,
+                h,
+                ancoraY: p.ancoraY,
+                assunto: p.assunto,
+                cropTopoExtra: p.cropTopoExtra,
+              });
         enquadrados++;
+        const pct = (v: number): number => Math.round(v * 100) / 100;
         return {
           ...c,
-          escala: Math.round(e.escalaPct * 100) / 100,
+          escala: pct(e.escalaPct),
           deslocamento: { x: Math.round(e.posX - entrada.largura / 2), y: Math.round(e.posY - entrada.altura / 2) },
-          recorte: { esquerda: 0, direita: 0, topo: Math.round(e.cropTopoPct * 100) / 100, base: 0, suavizar: FEATHER_PCT },
+          recorte: { esquerda: 0, direita: 0, topo: pct(e.cropTopoPct), base: pct(e.cropBasePct ?? 0), suavizar: s.feather ?? FEATHER_PCT },
         };
       });
 
@@ -168,7 +185,11 @@ export function acabar(entrada: Sequencia, opcoes: OpcoesAcabamento): ResultadoA
       if (cobertos.length === 0) return [c];
       const cortes = [...new Set(cobertos.flat())].filter((q) => q > c.inicioQ && q < c.fimQ).sort((a, b) => a - b);
       if (c.grupo !== undefined) cortesDoGrupo.set(c.grupo, cortes);
-      const y = Math.round(nudgeDoutorPosY({ H: entrada.altura, hDoc: h, escalaDocPct: c.escala ?? 100 }) - entrada.altura / 2);
+      const doutor = { H: entrada.altura, hDoc: h, escalaDocPct: c.escala ?? 100 };
+      const s = opcoes.split!;
+      // B-roll em cima (Menopausa): a pessoa desce ate a borda dele; embaixo (Andro): o doutor sobe.
+      const novoY = s.lado === "cima" ? descerPessoaPosY({ ...doutor, fimFrac: fracaoDivisao(s.divisao) }) : nudgeDoutorPosY(doutor);
+      const y = Math.round(novoY - entrada.altura / 2);
       return picotar(c, cortes).map((p) => {
         if (!cobertos.some(([a, z]) => p.inicioQ >= a && p.fimQ <= z)) return p;
         subidos++;

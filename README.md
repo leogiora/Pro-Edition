@@ -31,7 +31,8 @@ O registro de cada execução fica em `editar-log.json`, na pasta de dados do pl
 A **empresa** (AndroClinic, GrandCare ou Menopausa Cancelada) é escolhida no topo do
 cartão e fica em `perfil.json`: dá os termos do ElevenLabs e a pasta de B-roll de cada
 uma. Trocar de empresa guarda a pasta em uso na empresa que sai e põe no Auto B-roll a
-pasta da que entra.
+pasta da que entra. O split também é da empresa (`SPLIT_DA_EMPRESA`): AndroClinic e
+GrandCare com o B-roll embaixo, Menopausa com o B-roll em cima, cortado embaixo.
 
 O light leak é o do Premiere Composer que já está no projeto (o da timeline, ou o
 primeiro com "Light Leak" no nome), inteiro, começando 0,36 s antes da borda do

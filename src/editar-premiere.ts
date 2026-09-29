@@ -56,7 +56,7 @@ import { EMPRESAS, presetDa, type Preset } from "../ferramentas/pro-captions/src
 import { validar } from "../ferramentas/pro-captions/src/segmentar.ts";
 import type { PalavraEditada } from "../ferramentas/pro-captions/src/transcript.ts";
 import { aplicarSplit } from "./autosplit-premiere.ts";
-import { DIVISAO_PADRAO } from "./autosplit.ts";
+import { SPLIT_DA_EMPRESA } from "./autosplit.ts";
 import {
   cortesDosPedacos,
   dentroDasVariacoes,
@@ -609,7 +609,8 @@ export async function editar(opcoes: OpcoesEditar, registrar: Registrar, progres
   if (opcoes.split) {
     progresso("split");
     try {
-      const r = await aplicarSplit({ faixa: null, divisao: DIVISAO_PADRAO, subirDoutor: false, refazer: false });
+      const { lado, divisao, feather } = SPLIT_DA_EMPRESA[empresa];
+      const r = await aplicarSplit({ faixa: null, divisao, lado, feather, subirDoutor: false, refazer: false });
       for (const l of r.linhas.slice(-4)) registrar(`  ${l}`, "vazio");
       registrar(r.ok ? "split aplicado" : "split com avisos", r.ok ? "ok" : "aviso");
     } catch (e) {

@@ -95,6 +95,26 @@ test("Split: doutor em pe sobe so por baixo do B-roll, e o audio vinculado e cor
   assert.deepEqual(validarSequencia(r.sequencia), []);
 });
 
+test("Split com o B-roll em cima (Menopausa): corte embaixo e a pessoa desce so por baixo dele", () => {
+  const emPe: Midia = { caminho: "C:\\brutas\\vertical.mp4", duracaoQ: 1000, largura: 1080, altura: 1920, canais: 2 };
+  const s: Sequencia = {
+    ...seq,
+    video: [
+      [{ midia: emPe, inicioQ: 0, fimQ: 300, entradaQ: 10, grupo: "p0" }],
+      [{ midia: broll, inicioQ: 100, fimQ: 200, entradaQ: 0 }],
+    ],
+    audio: [[{ midia: emPe, inicioQ: 0, fimQ: 300, entradaQ: 10, grupo: "p0" }]],
+  };
+  const r = acabar(s, { split: { divisao: 45, perfil, override: {}, lado: "cima", feather: 5 } });
+  const b = r.sequencia.video[1]![0]!;
+  assert.equal(b.recorte?.topo, 0);
+  assert.ok((b.recorte?.base ?? 0) > 0, "o que passa da caixa de cima e cortado embaixo");
+  assert.equal(b.recorte?.suavizar, 5);
+  assert.ok((b.deslocamento?.y ?? 0) < 0, "centro do B-roll sobe para a caixa de cima");
+  // 1920 * (0,45 - 0,06) + 960 = 1709 -> 749 abaixo do centro
+  assert.deepEqual(r.sequencia.video[0]!.map((c) => c.deslocamento?.y ?? 0), [0, 749, 0]);
+});
+
 test("Trilha: uma por variacao, repetindo a musica curta, terminando com o doutor", () => {
   const r = acabar(seq, { trilha: { midia: musica, ganhoDb: -20 } });
   const a2 = r.sequencia.audio[1]!;

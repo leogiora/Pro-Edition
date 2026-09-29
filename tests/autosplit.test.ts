@@ -4,9 +4,13 @@ import {
   aprenderEnquadramento,
   calcularEnquadramento,
   conceito,
+  descerPessoaPosY,
+  enquadrarEmCima,
   fracaoDivisao,
   nudgeDoutorPosY,
   resolverPerfil,
+  SPLIT_DA_EMPRESA,
+  tamanhoNoNome,
   type EntradaGeom,
   type Perfil,
 } from "../src/autosplit.ts";
@@ -180,4 +184,20 @@ test("aprender: usuario arrastou o clipe pra cima -> ancora do arquivo estava ma
   });
   assert.equal(r.mudou, true);
   assert.ok(r.ancoraY > 0.30);
+});
+
+test("broll em cima (Menopausa): cobre a caixa um pouco maior, corta embaixo; a pessoa desce ate a borda", () => {
+  assert.equal(SPLIT_DA_EMPRESA.menopausa.lado, "cima");
+  assert.deepEqual(tamanhoNoNome("10222557-uhd_2160_4096_25fps.mp4"), { w: 2160, h: 4096 });
+  assert.equal(tamanhoNoNome("senior-woman-portrait-with-gray-hair.mov"), undefined);
+  // Menopausa 28.09: 1920x1080 numa sequencia 720x1280, caixa ate 45%. O Leo: escala 64, borda em 584 px.
+  const r = enquadrarEmCima(720, 1280, 1920, 1080, 0.45);
+  assert.equal(Math.round(r.escalaPct), 64);
+  const borda = r.posY + (1080 * r.escalaPct) / 200 - ((r.cropBasePct ?? 0) / 100) * 1080 * (r.escalaPct / 100);
+  assert.ok(Math.abs(borda - 576) < 1, `borda de baixo em ${borda}`);
+  assert.ok(r.posY - (1080 * r.escalaPct) / 200 <= 0, "cobre o topo do quadro");
+  // Vertical enche a largura (o dele no 18.09: 1080x1920 a 100% numa sequencia 1080x1920).
+  assert.equal(enquadrarEmCima(1080, 1920, 1080, 1920, 0.45).escalaPct, 100);
+  // A apresentadora 720x1280 a 100%: o Leo pos em 1159; a regra da 1139. Sem descer abaixo do meio.
+  assert.equal(Math.round(descerPessoaPosY({ H: 1280, hDoc: 1280, escalaDocPct: 100, fimFrac: 0.45 })), 1139);
 });
