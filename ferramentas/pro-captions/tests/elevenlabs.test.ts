@@ -113,12 +113,14 @@ test("variacao 1 real: blocos curtos, sem artigo pendurado, como a legenda revis
     .filter((b) => b.estilo === "normal")
     .map((b) => b.texto);
   for (const b of blocos) {
-    assert.ok(b.split(" ").length <= 3, `mais de 3 palavras: "${b}"`);
+    // 3, com folga de uma quando evita palavra curta sozinha ou pendurada.
+    assert.ok(b.split(" ").length <= 4, `mais de 4 palavras: "${b}"`);
     assert.doesNotMatch(b, / (o|a|um|de|do|no|na|em|e|que)$/i, `terminou pendurado: "${b}"`);
   }
   // Antes: "evita a hora" / "H", "estresse e tratar o" / "que precisa".
   assert.ok(!blocos.includes("H"));
-  for (const esperado of ["o problema", "a solução", "o que precisa", "um problema"]) {
+  // "até que um dia": 4 palavras, igual à legenda revisada.
+  for (const esperado of ["o problema", "a solução", "o que precisa", "um problema", "até que um dia"]) {
     assert.ok(blocos.includes(esperado), `faltou o bloco "${esperado}"`);
   }
 });

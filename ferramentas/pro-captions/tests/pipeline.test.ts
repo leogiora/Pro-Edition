@@ -55,6 +55,18 @@ test("blocosParaSrt gera um cue por bloco no formato srt", () => {
   assert.match(cues[1] ?? "", /^2\n00:00:0/);
 });
 
+test("gerarBlocos: 'H' nao fica sozinho e a legenda vai ate a seguinte (Reels do Andro 19.09, 8:23)", () => {
+  const p = (text: string, inicio: number, fim: number, eos = false): PalavraEditada => ({ text, inicio, fim, confidence: 1, eos, sourceName: "x" });
+  const blocos = gerarBlocos(
+    [p("mas", 503.048, 503.168), p("na", 503.208, 503.288), p("hora", 503.328, 503.528), p("H,", 503.568, 503.588), p("nada.", 503.948, 504.228, true), p("Aí", 505.8, 506)],
+    [],
+    PRESET_ELEVENLABS
+  );
+  assert.deepEqual(blocos.map((b) => b.texto), ["mas na hora H", "nada", "Aí"]);
+  assert.equal(blocos[0]?.fim, 503.948); // colada na seguinte
+  assert.equal(blocos[1]?.fim, 504.228); // vao de 1 s ou mais: sai da tela
+});
+
 /* ------------------------------------------ blocos do Premiere (hibrido) */
 
 test("lerSrt: tempo, texto em duas linhas, BOM e CRLF", () => {

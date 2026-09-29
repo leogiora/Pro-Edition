@@ -50,8 +50,11 @@ o Leo antes de mexer):
    arrastar o `.srt` e o áudio juntos). Pelo caminho real, 3 palavras
    diferentes e 95% dos cortes. Detalhe em
    `ferramentas/pro-captions/RETOMAR-pro-captions.md` e `app/LEIA-ME.md`.
-   Falta rodar com uma sequência inteira: exportar o `.srt` e o áudio do
-   Premiere e passar no programa com a chave `sk_`.
+   ~~Falta rodar com a chave `sk_`.~~ **Feito (29/09, chave nova):** L5
+   provado na "Reels" (+0,04 s constante), híbrido no programa com 96% dos
+   cortes, e três achados corrigidos (palavra curta sozinha, legenda colada na
+   seguinte, reimportação do `.srt` trazendo o texto velho). Detalhe em
+   `ferramentas/pro-captions/RETOMAR-pro-captions.md`, 29/09.
 2. ~~**Gabarito de broll.**~~ Feito no Claude Code (28/09): lido do
    `.prproj` (variações 1–3, save das 11:05). Resultado em
    `docs/PERFIS_DE_EDICAO.md`, "Montagem do broll". Resumo: o painel acerta
@@ -164,8 +167,10 @@ o Leo antes de mexer):
 | Painel Pro Edition carrega depois da correção do TextEncoder | OK (24/09) |
 | Export do áudio da sequência pelo Pro Captions | OK — 27:18 em 6,4 s, 52 MB |
 | `fetch` sai do UXP e chega no ElevenLabs | OK — a API respondeu |
-| Chave do ElevenLabs | OK em 24/09; **recusada em 29/09** (401 "Invalid API key"): o Leo precisa colar uma chave nova no Pro Captions |
-| Multipart a mão, keyterms, tempo alinhado com a sequência | L3–L4 **OK** (24/09); L5 indireto, falta o olho (`docs/API_PROOFS.md`) |
+| Chave do ElevenLabs | OK em 24/09; recusada em 29/09 de manhã; **chave nova OK (29/09 14:12)**. O programa usa a do painel quando não tem a sua |
+| Multipart a mão, keyterms, tempo alinhado com a sequência | L3–L4 **OK** (24/09); **L5 OK (29/09)**: 610 blocos casados com a legenda revisada, +0,04 s constante, sem deriva (`docs/API_PROOFS.md`) |
+| Legenda híbrida no programa (`.srt` do Premiere + áudio) | **OK** (29/09): variação 1, 81/84 cortes, 2 de 176 palavras, tempo mediano 0 ms |
+| Legenda colada, 4 palavras contra palavra solta, `.srt` reimportado | **OK** (29/09): faixa nova com os 758 blocos novos, 728 de 757 vãos zerados |
 | Ajudante CEP (T1–T3) | **OK** (24/09): instalado, e criou as faixas legendas.srt e precos.srt numa chamada |
 | Aprender pelo nome do arquivo + `trazidos.json` | **OK** (28/09 13:59): os 8 clipes copiados creditados pelo nome da pasta |
 | Cópia do clipe baixado pelo Aprender | a medir |
@@ -178,9 +183,11 @@ o Leo antes de mexer):
 | Quadrado 1:1 (botão do Auto Split) | **OK** (29/09): 697 clipes da V1 a 50%, 100 B-rolls cobrindo o quadrado |
 
 Testes de 29/09 feitos por Claude numa cópia: `Andro 19.09\TESTE Pro Edition
-29.09.prproj` (o original não foi tocado; a cópia pode ser apagada). Falta: L5
-(olho), cópia do Aprender (renomear clipe do Envato), híbrido com `.srt` e chave
-nova, doutor em pé no Acabamento.
+29.09.prproj` (o original não foi tocado; a cópia pode ser apagada). Falta:
+cópia do Aprender (renomear clipe do Envato: o nome é gosto do Leo) e doutor
+em pé no Acabamento (quando vier bruta em pé). Na "Reels" do Andro 19.09, os
+clipes de áudio das variações 11–20 estão mudos: a legenda pelo ElevenLabs sai
+só até 11:33 (o painel agora avisa).
 
 ## Arquivos de teste fora do repositório
 

@@ -85,6 +85,11 @@ function custoDoBloco(
   // ("circulação", "telemedicina") e comum na legenda revisada do editor.
   if (bloco.length === 1 && nucleo(ultima.text).corpo.length < 4) custo += 2;
 
+  // Uma palavra alem do limite so compensa quando toda quebra deixaria palavra
+  // curta sozinha ou pendurada: "mas na hora H" (Leo, Andro 19.09; 4% dos
+  // blocos dele tem 4 palavras). Dois blocos limpos (2) ainda ganham de 2,5.
+  if (bloco.length > preset.maxPalavras) custo += 1.5;
+
   if (fechaAFrase) return custo;
 
   if (PENDURADAS.has(nucleo(ultima.text).corpo.toLowerCase())) custo += 3;
@@ -127,8 +132,9 @@ function partir(
     inicio[j] = j - 1;
     for (let i = j - 1; i >= 0; i--) {
       const bloco = frase.slice(i, j);
-      // Uma palavra sozinha maior que o orcamento e melhor que nada.
-      if (bloco.length > 1 && !cabe(bloco, preset)) break;
+      // Uma palavra sozinha maior que o orcamento e melhor que nada. O limite de
+      // palavras tem folga de uma (custoDoBloco cobra); o de caracteres, nao.
+      if (bloco.length > 1 && (larguraDe(bloco) > preset.maxCaracteres || bloco.length > preset.maxPalavras + 1)) break;
       const custo = (melhor[i] ?? Infinity) + custoDoBloco(bloco, j === n, preset, cortes);
       if (custo < (melhor[j] ?? Infinity)) {
         melhor[j] = custo;

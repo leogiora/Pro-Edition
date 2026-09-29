@@ -45,6 +45,14 @@ tentar "consertar" isso pra um gênero fixo. A grafia é "estresse" ("SONO,
 ESTRESSE"); "stress" é erro do Premiere que ele corrige (já está na lista do
 HANDOFF), então "stress" não deveria estar no `termosChave`.
 
+**Legenda na timeline (medida em 29/09 nos 862 blocos das variações 1–10):**
+cada bloco fica até o seguinte entrar (1.685 de 1.722 sem vão), e o Pro
+Captions agora faz igual quando o vão é menor que 1 s. O limite de 3 palavras
+tem folga de uma quando a quebra deixaria palavra curta sozinha ou pendurada
+("Mas na hora h", "Até que um dia"; 4% dos blocos dele). Os blocos dele: 26%
+de 1 palavra, 46% de 2, 24% de 3; os nossos puxam mais para 3, e repetimos 70%
+dos cortes. O híbrido (bloco do Premiere, palavra do ElevenLabs) repete 96%.
+
 **Montagem do broll (três gravações de 28/09, variações 1 e 2), comparada
 com o código** (Auto B-roll e Acabamento em `app/LEIA-ME.md`):
 - **Split (medido no `.prproj`, save de 28/09 11:05, variações 1, 2 e 3).**

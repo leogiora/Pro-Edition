@@ -224,6 +224,16 @@ async function lerComElevenLabs(): Promise<Entrada> {
   const palavras = palavrasDoElevenLabs(json);
   if (palavras === null) throw new Error("A resposta do ElevenLabs não é JSON legível.");
   registrar(`${palavras.length} palavras ouvidas pelo ElevenLabs`);
+  // Clipe de audio mudo so silencia o trecho dele (Andro 19.09, 29/09: variacoes
+  // 11-20 mudas, a fala parou em 11:33 de 23:22), e o audioMudo nao pega.
+  const ultimaFala = palavras[palavras.length - 1]?.fim ?? 0;
+  const ultimoClipe = Math.max(0, ...cortes);
+  if (ultimoClipe - ultimaFala > 60) {
+    registrar(
+      `AVISO: a fala acaba em ${relogio(ultimaFala)} e a V1 vai até ${relogio(ultimoClipe)}. ` +
+        "Clipe de áudio mudo nesse trecho? Ali fica sem legenda."
+    );
+  }
   return { cortes, palavras, preset };
 }
 

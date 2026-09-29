@@ -37,12 +37,22 @@ function revisarTexto(palavras: readonly PalavraEditada[], preset: Preset): Pala
   return corrigirPorques(ps);
 }
 
+/** Vao a partir do qual a legenda sai da tela: o mesmo que separa variacoes no Editar. */
+const VAO_SEM_LEGENDA_S = 1;
+
 export function gerarBlocos(
   palavras: readonly PalavraEditada[],
   cortes: readonly number[],
   preset: Preset = PRESET_PADRAO
 ): BlocoLegenda[] {
-  return segmentar(revisarTexto(palavras, preset), cortes, preset);
+  const blocos = segmentar(revisarTexto(palavras, preset), cortes, preset);
+  // A legenda do Leo fica ate a seguinte entrar (1.685 de 1.722 no Andro 19.09);
+  // o fim da palavra deixava a tela vazia 0,04-0,28 s e um "H," de 20 ms, menor
+  // que um quadro, que o Premiere jogou no 0:00.
+  return blocos.map((b, i) => {
+    const prox = blocos[i + 1];
+    return prox !== undefined && prox.inicio > b.fim && prox.inicio - b.fim < VAO_SEM_LEGENDA_S ? { ...b, fim: prox.inicio } : b;
+  });
 }
 
 /* ------------------------------------------ blocos do Premiere (hibrido) */

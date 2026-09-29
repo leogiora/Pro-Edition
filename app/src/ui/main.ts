@@ -469,7 +469,7 @@ const config = $<HTMLDialogElement>("config");
 async function atualizarChave(): Promise<void> {
   const tem = await pro.temChave();
   const dica = $("chaveEstado");
-  dica.textContent = tem ? "Chave salva neste computador (cifrada)." : "Nenhuma chave salva ainda.";
+  dica.textContent = tem ? "Chave salva neste computador (a daqui ou a do Pro Captions no painel)." : "Nenhuma chave salva ainda.";
   dica.className = `dica${tem ? " ok" : ""}`;
 }
 

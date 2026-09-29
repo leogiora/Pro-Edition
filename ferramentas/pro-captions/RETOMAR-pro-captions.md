@@ -1,5 +1,33 @@
 # RETOMAR — Pro Captions
 
+## 2026-09-29 (Claude Code) — chave nova, L5 e hibrido provados ao vivo
+
+Com a chave nova, na "Reels" de uma copia do Andro 19.09 (54:25 de audio,
+129 s no ElevenLabs, 1.836 palavras). Medido no `.prproj` (scripts em
+`teste-legendas/`; gabarito `gabarito_reels_ate_1133.srt`, 862 blocos das
+variacoes 1-10 revisadas):
+
+- **L5 OK.** 610 blocos da legenda revisada casados pela primeira palavra: a
+  nova comeca 0,04 s depois (1 quadro a 25 fps), igual nos quatro quartos,
+  sem deriva; 91% ate 0,1 s, 99% ate 0,25 s.
+- **Fala parou em 11:33.** Os clipes de audio das variacoes 11-20 estao mudos
+  na sequencia (`IsMuted`); o export sai em silencio dali. O painel agora avisa
+  quando a fala acaba mais de 60 s antes do ultimo clipe da V1.
+- **"H" sozinho de 20 ms** ("mas na hora" / "H,"): menor que um quadro, o
+  Premiere jogou no 0:00. O `partir` agora aceita uma palavra alem do limite
+  quando toda quebra deixaria palavra curta sozinha ou pendurada (o Leo fez
+  "Mas na hora h" e "Ate que um dia"; 4% dos blocos dele tem 4 palavras).
+  Cortes do Leo repetidos: 69% -> 70%, cortes a mais 150 -> 136.
+- **Legenda colada na seguinte**, como a do Leo (1.685 de 1.722 sem vao):
+  `gerarBlocos` estica o fim ate o proximo bloco quando o vao e menor que 1 s.
+  No Premiere: 728 de 757 vaos zerados (o resto e o preco, na faixa dele).
+- **Reimportar o mesmo `legendas.srt` trazia o texto velho.** A ponte agora
+  importa uma copia com hora no nome (`legendas 14h32m43s.srt`). Provado: a
+  faixa nova veio com os 758 blocos novos.
+- **Hibrido no programa:** audio da variacao 1 + `premiere_antes_da_revisao.srt`,
+  chave lida do painel. 81/84 cortes (96%), 2 palavras diferentes de 176
+  ("a" a mais e "focado"/"focada"), tempo mediano 0 ms.
+
 ## 2026-09-28 (Claude Code) — medido sem Premiere: o corte do Premiere ganha
 
 A resposta do ElevenLabs salva (`teste-legendas/elevenlabs.json.json`)

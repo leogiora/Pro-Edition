@@ -62,11 +62,28 @@ function proCaptions_mesmoCaminho(a, b) {
 }
 
 /**
- * Importa o arquivo DE NOVO (o conteudo pode ter mudado desde a ultima
- * importacao) e devolve o item novo \u2014 o que nao existia antes.
+ * Uma copia do .srt com nome proprio. O Premiere guarda o .srt lido por
+ * caminho: reimportar o mesmo caminho criou um item novo com o texto da
+ * primeira vez (29/09, Andro 19.09). As copias ficam na pasta de dados,
+ * uns 40 KB cada.
+ */
+function proCaptions_copiaNova(arquivo) {
+    var d = new Date();
+    var p = function (n) { return (n < 10 ? "0" : "") + n; };
+    var nome = arquivo.displayName.replace(/\.srt$/i, "") + " " +
+        p(d.getHours()) + "h" + p(d.getMinutes()) + "m" + p(d.getSeconds()) + "s.srt";
+    var copia = new File(arquivo.parent.fsName + "\\" + nome);
+    return arquivo.copy(copia.fsName) ? copia : null;
+}
+
+/**
+ * Importa uma copia nova do arquivo (o conteudo pode ter mudado desde a
+ * ultima importacao) e devolve o item novo \u2014 o que nao existia antes.
  */
 function proCaptions_importar(bin, arquivo) {
-    var caminho = arquivo.fsName;
+    var copia = proCaptions_copiaNova(arquivo);
+    if (!copia) return null;
+    var caminho = copia.fsName;
     var antes = proCaptions_idsCom(bin, caminho);
     var ok = app.project.importFiles([caminho], true, bin, false);
     if (!ok) return null;

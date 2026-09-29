@@ -32,7 +32,9 @@ empacotar um build "essentials" em `extraResources` e apontar
 
 A chave do ElevenLabs e as transcrições pagas ficam em
 `%APPDATA%\Pro Edition\` de cada máquina (a chave é cifrada pelo Windows e
-não abre em outro computador).
+não abre em outro computador). Sem chave própria, o programa usa a que foi
+colada no Pro Captions do painel (`elevenlabs-chave.json` na pasta de dados
+dele). Provado em 29/09: híbrido da variação 1 com 96% dos cortes do Leo.
 
 ## Como é feito
 

@@ -152,7 +152,7 @@ ElevenLabs para a variacao 1 do Andro 19.09). Falta provar dentro do painel:
 | L2 | `fetch` sai do UXP com `network.domains` no manifest | **OK** (2026-09-24, tres rodadas "TESTE Editar"): "ElevenLabs respondeu em 6 s" | log: "ElevenLabs respondeu em N s" |
 | L3 | Corpo multipart montado a mao (sem FormData) aceito pela API | **OK** (mesmas rodadas): "384 palavras ouvidas" | idem |
 | L4 | `keyterms` repetido por campo aceito | **OK** (mesmas rodadas): nenhuma linha "recusou os termos-chave" | log: "recusou os termos-chave" |
-| L5 | Tempo da resposta == tempo da sequencia (audio exportado desde o zero) | **indireto** — as 82 pausas cortadas pelo tempo do ElevenLabs bateram ("V1 e A1 em sincronia", "Duração confere"); a legenda em cima da fala falta conferir no olho | legenda importada cai em cima da fala |
+| L5 | Tempo da resposta == tempo da sequencia (audio exportado desde o zero) | **OK** (2026-09-29, Reels da copia do Andro 19.09, chave nova): 610 blocos da legenda revisada casados; a nova comeca +0,04 s (1 quadro), constante nos 11,5 min ouvidos, 91% ate 0,1 s. Antes: indireto, pelas 82 pausas de 24/09 | legenda importada cai em cima da fala |
 
 ## Colocar o .srt na timeline pelo ajudante CEP (2026-09-24) — a medir
 
