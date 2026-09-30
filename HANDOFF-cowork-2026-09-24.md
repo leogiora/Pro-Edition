@@ -30,19 +30,24 @@ renomeadas (decisão do Leo).
 
 **30/09 (Cowork):** uma gravação do Leo montando o broll do `Meno 29.09`,
 que é **orgânico do Instagram** (confirmado por ele) — o primeiro gabarito
-do tipo Instagram. A legenda está numa faixa de legenda e difere do tipo
-Instagram do Editar (mantém "?", frase começa com maiúscula, palavra-chave
-em bloco maiúsculo e maior, fala citada em amarelo e itálico); o broll veio
-todo do Envato. Detalhe em `PERFIS_DE_EDICAO.md`, "Menopausa Instagram — ao
-vivo". A partir de agora, toda gravação do Leo é material de refinamento do
-plugin.
+do tipo Instagram. Detalhe em `PERFIS_DE_EDICAO.md`, "Menopausa Instagram —
+ao vivo". A partir de agora, toda gravação do Leo é material de refinamento
+do plugin.
+
+**30/09 (Claude Code), estado atual:** a legenda do Instagram é a mesma dos
+Ads (medido nos 252 blocos do `Meno 29.09`); o tipo Instagram do Editar feito
+em 29/09 foi apagado, e o negrito fica à mão (nenhuma regra acertou mais que
+"sem negrito"). Chave do ElevenLabs, L5 e híbrido provados em 29/09. Split da
+Menopausa: a apresentadora desce com teto de 0,9 da altura. Falta, e depende
+do Leo: cópia do Aprender (renomear um clipe do Envato; proposta:
+comprimidos → "Medicamento") e doutor em pé no Acabamento.
 
 - **Legenda (Pro Captions + ElevenLabs):** pronta no código, inclusive a
   segmentação no estilo do Leo (`segmentar.ts` + `maxPalavras: 3` no
   `PRESET_ELEVENLABS`). Sete gravações de tela dele editando o Andro 19.09
   confirmaram o estilo sem contradizer nada; achados em
   `docs/PERFIS_DE_EDICAO.md`, bloco "AndroClinic Ads — confirmado ao vivo".
-  Falta rodar ao vivo com a chave certa do ElevenLabs (a que começa com `sk_`).
+  Rodou ao vivo com a chave nova em 29/09.
 - **Auto B-roll e Acabamento:** já existem (painel e programa, ver
   `app/LEIA-ME.md`). Nas três últimas gravações o Leo monta à mão o broll
   das variações 1 e 2; o que ele faz diferente do código está no mesmo bloco
