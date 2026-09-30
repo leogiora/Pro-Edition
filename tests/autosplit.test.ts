@@ -203,6 +203,8 @@ test("broll em cima (Menopausa): cobre a caixa um pouco maior, corta embaixo; a 
   assert.equal(enquadrarEmCima(1080, 1920, 1080, 1920, 0.45).escalaPct, 100);
   // A apresentadora 720x1280 a 100%: o Leo pos em 1159; a regra da 1139. Sem descer abaixo do meio.
   assert.equal(Math.round(descerPessoaPosY({ H: 1280, hDoc: 1280, escalaDocPct: 100, fimFrac: 0.45 })), 1139);
+  // Meno 29.09 (Insta): 1080x1920 a 100 numa 720x1280; o Leo pos 1121.
+  assert.equal(Math.round(descerPessoaPosY({ H: 1280, hDoc: 1920, escalaDocPct: 100, fimFrac: 0.45 })), 1152);
 });
 
 test("quadrado: tamanho pela escala-base da Reels, doutor cobre sem sobra, B-roll com 1,2x (Andro 19.09, 29/09)", () => {

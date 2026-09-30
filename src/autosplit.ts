@@ -203,10 +203,12 @@ export const SOBREPOSICAO_PESSOA = 0.06;
  * Pessoa por baixo do B-roll de cima: desce ate a borda de cima dela ficar
  * SOBREPOSICAO_PESSOA acima da borda do B-roll. Descer so corta o tronco (a
  * cabeca fica no alto do quadro dela); nunca sobe. Menopausa 28.09: 1139 contra
- * 1159 do Leo; 17.09: 1722 contra 1691.
+ * 1159 do Leo; 17.09: 1722 contra 1691. Teto de 0,9 da altura: com a pessoa
+ * maior que a tela (29.09, escala 100 numa 720x1280) a cabeca nao esta no alto
+ * do quadro e a conta dava 1459; o Leo pos 1121, e o maior dele e 0,905.
  */
 export function descerPessoaPosY(e: EntradaDoutor & { readonly fimFrac: number }): number {
-  return Math.max(e.H / 2, e.H * (e.fimFrac - SOBREPOSICAO_PESSOA) + (e.hDoc * e.escalaDocPct) / 200);
+  return Math.max(e.H / 2, Math.min(0.9 * e.H, e.H * (e.fimFrac - SOBREPOSICAO_PESSOA) + (e.hDoc * e.escalaDocPct) / 200));
 }
 
 // ------------------------------------------------------- quadrado (1:1)
