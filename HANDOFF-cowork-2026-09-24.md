@@ -38,9 +38,9 @@ do plugin.
 Ads (medido nos 252 blocos do `Meno 29.09`); o tipo Instagram do Editar feito
 em 29/09 foi apagado, e o negrito fica à mão (nenhuma regra acertou mais que
 "sem negrito"). Chave do ElevenLabs, L5 e híbrido provados em 29/09. Split da
-Menopausa: a apresentadora desce com teto de 0,9 da altura. Falta, e depende
-do Leo: cópia do Aprender (renomear um clipe do Envato; proposta:
-comprimidos → "Medicamento") e doutor em pé no Acabamento.
+Menopausa: a apresentadora desce com teto de 0,9 da altura. Cópia do
+Aprender provada no original (30/09). Falta só o doutor em pé no Acabamento,
+quando vier bruta em pé.
 
 - **Legenda (Pro Captions + ElevenLabs):** pronta no código, inclusive a
   segmentação no estilo do Leo (`segmentar.ts` + `maxPalavras: 3` no
@@ -187,7 +187,7 @@ o Leo antes de mexer):
 | Legenda colada, 4 palavras contra palavra solta, `.srt` reimportado | **OK** (29/09): faixa nova com os 758 blocos novos, 728 de 757 vãos zerados |
 | Ajudante CEP (T1–T3) | **OK** (24/09): instalado, e criou as faixas legendas.srt e precos.srt numa chamada |
 | Aprender pelo nome do arquivo + `trazidos.json` | **OK** (28/09 13:59): os 8 clipes copiados creditados pelo nome da pasta |
-| Cópia do clipe baixado pelo Aprender | a medir |
+| Cópia do clipe baixado pelo Aprender | **OK** (30/09, no original): comprimidos renomeado "Medicamento" no Projeto → `Brolls - 2026\Medicamento (3).mp4`, mesmo tamanho, 1080×1920 no `trazidos.json`, colocação creditada. Não rodar Aprender numa cópia do projeto: a pasta de dados é uma só e as pendências vão pelo nome da sequência |
 | B-roll até o próximo (densidade máxima) | **rodou** (29/09 10:14, variação 11); falta o Aprender |
 | Fase 0 do XML | **7 de 8 OK** (29/09); espelho não viaja no XML do FCP, nem o Premiere exporta (`app/LEIA-ME.md`) |
 | Light leak pelo Editar (`.aegraphic` no overwrite) | **OK** (29/09, cópia do Andro 19.09): 16 leaks nas 16 bordas da variação 10 |
