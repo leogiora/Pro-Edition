@@ -12,7 +12,6 @@ import { assinaturaDoAudio, palavrasDoElevenLabs, termosChave } from "../elevenl
 import { transcreverNoElevenLabs } from "../elevenlabs-rede.ts";
 import { blocosParaSrt, gerarBlocos } from "../pipeline.ts";
 import {
-  AVISO_INSTAGRAM,
   apagarArquivo,
   comLimite,
   escreverTranscricao,
@@ -24,7 +23,6 @@ import {
   lerBackup,
   lerChaveElevenLabs,
   lerEmpresa,
-  lerTipo,
   lerClipes,
   lerCortes,
   lerTranscricaoGuardada,
@@ -33,7 +31,7 @@ import {
   salvarSrt,
   type SequenceInfo,
 } from "../premiere.ts";
-import { EMPRESAS, PRESET_ELEVENLABS, PRESET_PADRAO, presetDa, type Preset } from "../preset.ts";
+import { EMPRESAS, PRESET_PADRAO, presetDa, type Preset } from "../preset.ts";
 import { validar } from "../segmentar.ts";
 import {
   parseTranscricao,
@@ -180,9 +178,8 @@ async function lerComElevenLabs(): Promise<Entrada> {
   const cortes = await comLimite("cortes", lerCortes(0));
   registrar(`V1: ${cortes.length} cortes`);
   const empresa = await comLimite("empresa", lerEmpresa());
-  const tipo = await comLimite("tipo", lerTipo());
-  const preset = presetDa(empresa, PRESET_ELEVENLABS, tipo);
-  registrar(`termos de ${EMPRESAS[empresa].nome}${tipo === "instagram" ? ", legenda do Instagram" : ""} (troca no Editar)`);
+  const preset = presetDa(empresa);
+  registrar(`termos de ${EMPRESAS[empresa].nome} (troca no Editar)`);
 
   estado("exportando áudio", "ativo");
   const audio = await comLimite("exportar o áudio", exportarAudioDaSequencia(), 10 * 60 * 1000);
@@ -299,7 +296,7 @@ async function gerar(): Promise<void> {
   // legenda e o estilo da faixa resolve o tamanho (96 no texto, 150 no
   // preco) sem mexer em legenda individual (D-16).
   const normais = blocos.filter((b) => b.estilo === "normal");
-  const caminhos = [await comLimite("srt", salvarSrt("legendas.srt", blocosParaSrt(normais, preset.instagram)))];
+  const caminhos = [await comLimite("srt", salvarSrt("legendas.srt", blocosParaSrt(normais)))];
   if (precos.length > 0) {
     caminhos.push(await comLimite("srt precos", salvarSrt("precos.srt", blocosParaSrt(precos))));
   }
@@ -309,10 +306,7 @@ async function gerar(): Promise<void> {
   // O UXP nao cria faixa de legenda (E7c); a ponte CEP cria, e sem ela os
   // .srt vao para o painel Projeto para o arrasto manual.
   registrar("");
-  for (const l of await legendasNaTimeline(caminhos[0]!, caminhos[1] ?? null)) {
-    if (!(preset.instagram && l.texto.startsWith("Falta só o estilo"))) registrar(l.texto);
-  }
-  if (preset.instagram) registrar(AVISO_INSTAGRAM);
+  for (const l of await legendasNaTimeline(caminhos[0]!, caminhos[1] ?? null)) registrar(l.texto);
   estado(
     revisar.length > 0 ? `${revisar.length} para revisar` : "legendas geradas",
     revisar.length > 0 ? "aviso" : "ok"

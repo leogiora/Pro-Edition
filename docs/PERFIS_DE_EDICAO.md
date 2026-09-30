@@ -225,16 +225,6 @@ o mesmo roteiro do teste do Editar no "Projeto Base", 37 s → 30 s):**
 - O Editar, no teste de 29/09, fez só a parte de Ads: pausas e legenda de 1 a
   3 palavras, sem minúscula/negrito, sem split (a pasta "Brolls - Menopausa"
   não tem nome de conceito), sem figurinha e sem CTA.
-- **Feito (29/09): tipo Instagram no Editar** (`perfil.json`, `tipo`). A
-  legenda sai em minúscula, sem "?" no fim, com uma palavra em `<b>` (a mais
-  longa que não é pequena: acerta "passa", "dentro", "toma", "cresce",
-  "direct"; no título do sintoma o reel põe tudo em negrito) e até 24
-  caracteres. Provado no Premiere: o `.srt` guarda `<b>`, `<i>` e cor;
-  `<font face>` e `size` são ignorados; **o estilo de faixa apaga** o negrito e
-  a cor, trocar a fonte pelo Properties não. Então no Instagram a fonte
-  (Helvetica Light), o tamanho e a posição vão pelo Properties, com as
-  legendas selecionadas. As figurinhas estão em
-  `C:\Edição\1. Menopausa Cancelada\Criativos\04.09\O que passar X O que tomar - Imagens`.
 
 **Menopausa Instagram — ao vivo (30/09, uma gravação de tela montando o broll
 do `Meno 29.09`; é orgânico, confirmado pelo Leo). Primeiro gabarito do tipo
@@ -246,11 +236,14 @@ Instagram no disco:**
   palavras, às vezes 4. Palavra-chave com estilo à parte: "EXAMES DE SANGUE"
   em maiúscula, negrito e maior; o fim da fala citada ("é zero"") em
   amarelo, negrito e itálico.
-- **Contra o tipo Instagram do Editar:** o Editar tira o "?" e põe tudo em
-  minúscula; aqui o "?" fica e a frase começa com maiúscula. O destaque
-  também é outro: não uma palavra em `<b>`, mas o bloco inteiro da
-  palavra-chave em maiúscula e maior (tamanho vai pelo Properties, não pelo
-  `.srt`), e amarelo+itálico na fala citada (dá pelo `.srt`).
+- **O tipo Instagram do Editar (29/09) foi apagado em 30/09.** Ele tirava o
+  "?" e punha tudo em minúscula; aqui o "?" fica e a frase começa com
+  maiúscula. O negrito é escolha de sentido: medido nos 252 blocos do
+  `Meno 29.09`, "sem negrito" acerta 67%, "palavra mais longa" 31%, "fim do
+  bloco" 48%. Só 4 blocos passam de 20 caracteres. Logo a legenda do
+  Instagram sai igual à dos Ads, e o destaque fica à mão. Provado para quando
+  voltar: o `.srt` guarda `<b>`, `<i>` e cor, não fonte nem tamanho; o
+  estilo de faixa apaga o que o `.srt` trouxe, o Properties não.
 - **Broll todo do Envato**, buscado na hora pelo tema da fala ("exames
   médico", "mulher pensando", "mulher com uma médica", "reposição hormonal
   feminino", "mulher com libido", "médica feminina", "exame de sangue",

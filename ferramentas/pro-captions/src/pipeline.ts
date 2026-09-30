@@ -9,7 +9,7 @@
 
 import { detectarPrecos, textoDoPreco, type Preco } from "./preco.ts";
 import { PRESET_PADRAO, type Preset } from "./preset.ts";
-import { emFrases, montarBloco, PENDURADAS, segmentar, type BlocoLegenda } from "./segmentar.ts";
+import { emFrases, montarBloco, segmentar, type BlocoLegenda } from "./segmentar.ts";
 import {
   corrigirEAcento,
   corrigirPorques,
@@ -219,37 +219,8 @@ function tempoSrt(segundos: number): string {
  * segments (fronteiras migram entre blocos), enquanto a importacao de .srt
  * preserva os cues como estao. Evidencia em docs/API_PROOFS.md, E5.
  */
-export function blocosParaSrt(blocos: readonly BlocoLegenda[], instagram = false): string {
+export function blocosParaSrt(blocos: readonly BlocoLegenda[]): string {
   return blocos
-    .map((b, i) => {
-      const texto = instagram && b.estilo === "normal" ? paraInstagram(b.texto) : b.texto;
-      return `${i + 1}\n${tempoSrt(b.inicio)} --> ${tempoSrt(b.fim)}\n${texto}\n`;
-    })
+    .map((b, i) => `${i + 1}\n${tempoSrt(b.inicio)} --> ${tempoSrt(b.fim)}\n${b.texto}\n`)
     .join("\n");
 }
-
-/** Nunca levam o negrito: as penduradas do segmentar e as de apontar. */
-const SEM_DESTAQUE: ReadonlySet<string> = new Set([
-  ...PENDURADAS,
-  "você", "eu", "ele", "ela", "esse", "essa", "isso", "este", "esta", "aqui", "ali", "lá", "ó", "é", "tá", "já", "mais",
-  // Menopausa, 29/09: "ela <b>não</b> tá", "ali pro <b>teu</b>", "<b>então</b> cê quer".
-  "cê", "não", "sim", "ei", "teu", "tua", "então", "sobre", "tem",
-]);
-
-/**
- * Legenda do Instagram da Menopausa (reel de 29/09): minuscula, sem "?" no fim,
- * uma palavra em negrito ("você <b>passa</b> na pele", "de <b>dentro</b> pra fora").
- */
-export function paraInstagram(texto: string): string {
-  const palavras = texto.toLocaleLowerCase("pt-BR").replace(/[?!]+$/, "").split(" ");
-  // ponytail: a mais longa que nao e pequena (empate: a ultima). Acerta passa,
-  // dentro, toma, cresce, direct; no titulo do sintoma ("queda de cabelo") o Leo
-  // poe tudo em negrito. Medido num reel so: afinar com mais.
-  let alvo = -1;
-  palavras.forEach((p, i) => {
-    const corpo = nucleo(p).corpo;
-    if (!SEM_DESTAQUE.has(corpo) && corpo.length >= (alvo < 0 ? 1 : nucleo(palavras[alvo] ?? "").corpo.length)) alvo = i;
-  });
-  return palavras.map((p, i) => (i === alvo ? `<b>${p}</b>` : p)).join(" ");
-}
-

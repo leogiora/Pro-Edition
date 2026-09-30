@@ -57,7 +57,7 @@ const cabe = (palavras: readonly PalavraRevisada[], preset: Preset): boolean =>
  * Artigo, preposicao, conjuncao e pronome atono puxam a palavra seguinte:
  * "tratar o" / "que precisa" deixa o leitor esperando o resto no bloco de baixo.
  */
-export const PENDURADAS: ReadonlySet<string> = new Set([
+const PENDURADAS: ReadonlySet<string> = new Set([
   "o", "a", "os", "as", "um", "uma", "uns", "umas",
   "de", "do", "da", "dos", "das", "em", "no", "na", "nos", "nas",
   "ao", "à", "por", "pelo", "pela", "pra", "pro", "com", "sem",

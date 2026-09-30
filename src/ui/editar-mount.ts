@@ -108,16 +108,8 @@ export function mount(root: HTMLElement): void {
       else registrar(`${nome}: escolha a pasta de B-roll dela no Auto B-roll`, "aviso");
     })().catch((e) => registrar(`empresa: ${(e as Error)?.message ?? String(e)}`, "erro"));
   });
-  const tipo = pega<HTMLSelectElement>("edTipo");
-  tipo.addEventListener("change", () => {
-    void (async () => {
-      await writeJson(PERFIL, { ...parsePerfil(await readJson(PERFIL)), tipo: tipo.value === "instagram" ? "instagram" : "ads" });
-      registrar(tipo.value === "instagram" ? "Instagram: legenda minúscula, uma palavra em negrito" : "Ads: legenda como sempre", "passo");
-    })().catch((e) => registrar(`tipo: ${(e as Error)?.message ?? String(e)}`, "erro"));
-  });
   void readJson(PERFIL).then((p) => {
     seletor.value = parsePerfil(p).empresa;
-    tipo.value = parsePerfil(p).tipo;
   });
 
   void ler();

@@ -46,15 +46,13 @@ import { transcreverNoElevenLabs } from "../ferramentas/pro-captions/src/elevenl
 import { blocosParaSrt, gerarBlocos } from "../ferramentas/pro-captions/src/pipeline.ts";
 import {
   guardarTranscricao,
-  AVISO_INSTAGRAM,
   legendasNaTimeline,
   lerChaveElevenLabs,
   lerEmpresa,
-  lerTipo,
   lerTranscricaoGuardada,
   salvarSrt,
 } from "../ferramentas/pro-captions/src/premiere.ts";
-import { EMPRESAS, PRESET_ELEVENLABS, presetDa, type Preset } from "../ferramentas/pro-captions/src/preset.ts";
+import { EMPRESAS, presetDa, type Preset } from "../ferramentas/pro-captions/src/preset.ts";
 import { validar } from "../ferramentas/pro-captions/src/segmentar.ts";
 import type { PalavraEditada } from "../ferramentas/pro-captions/src/transcript.ts";
 import { aplicarSplit } from "./autosplit-premiere.ts";
@@ -540,15 +538,12 @@ async function colocarLegendas(
   const normais = blocos.filter((b) => b.estilo === "normal");
   const precos = blocos.filter((b) => b.estilo === "preco");
   const revisar = blocos.filter((b) => b.precisaRevisao);
-  const caminhoLegendas = await salvarSrt("legendas.srt", blocosParaSrt(normais, preset.instagram));
+  const caminhoLegendas = await salvarSrt("legendas.srt", blocosParaSrt(normais));
   const caminhoPrecos = precos.length > 0 ? await salvarSrt("precos.srt", blocosParaSrt(precos)) : null;
   registrar(`${blocos.length} legendas · ${precos.length} preço(s) · ${revisar.length} para revisar`, "passo");
   for (const b of revisar.slice(0, 6)) registrar(`  revisar ${relogio(b.inicio)}: ${b.motivos.join("; ")}`, "aviso");
 
-  for (const l of await legendasNaTimeline(caminhoLegendas, caminhoPrecos)) {
-    if (!(preset.instagram && l.texto.startsWith("Falta só o estilo"))) registrar(l.texto, l.tipo);
-  }
-  if (preset.instagram) registrar(AVISO_INSTAGRAM, "aviso");
+  for (const l of await legendasNaTimeline(caminhoLegendas, caminhoPrecos)) registrar(l.texto, l.tipo);
 }
 
 // ------------------------------------------------------------------- tudo
@@ -572,12 +567,8 @@ export async function editar(opcoes: OpcoesEditar, registrar: Registrar, progres
   // 1-2. A fala, uma vez so. So pausas, B-roll e legendas usam: split, light
   // leak e trilha rodam sem ElevenLabs (e sem chave).
   const empresa = await comLimite("empresa", lerEmpresa(), 5000);
-  const tipo = await comLimite("tipo", lerTipo(), 5000);
-  const preset = presetDa(empresa, PRESET_ELEVENLABS, tipo);
-  registrar(
-    `empresa: ${EMPRESAS[empresa].nome}${tipo === "instagram" ? " · Instagram (legenda minúscula, palavra em negrito)" : ""} (termos do ElevenLabs e da legenda)`,
-    "passo"
-  );
+  const preset = presetDa(empresa);
+  registrar(`empresa: ${EMPRESAS[empresa].nome} (termos do ElevenLabs e da legenda)`, "passo");
   const fala: Fala =
     opcoes.pausas || opcoes.broll || opcoes.legendas ? await ouvirSequencia(preset, registrar, progresso) : { palavras: [], db: [] };
   let palavras = fala.palavras;

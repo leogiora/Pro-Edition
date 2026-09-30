@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 import { palavrasDoElevenLabs } from "../src/elevenlabs.ts";
-import { blocosNosCortes, blocosParaSrt, gerarBlocos, lerSrt, paraInstagram } from "../src/pipeline.ts";
+import { blocosNosCortes, blocosParaSrt, gerarBlocos, lerSrt } from "../src/pipeline.ts";
 import { PRESET_ELEVENLABS, PRESET_PADRAO } from "../src/preset.ts";
 import type { PalavraEditada } from "../src/transcript.ts";
 
@@ -65,19 +65,6 @@ test("gerarBlocos: 'H' nao fica sozinho e a legenda vai ate a seguinte (Reels do
   assert.deepEqual(blocos.map((b) => b.texto), ["mas na hora H", "nada", "Aí"]);
   assert.equal(blocos[0]?.fim, 503.948); // colada na seguinte
   assert.equal(blocos[1]?.fim, 504.228); // vao de 1 s ou mais: sai da tela
-});
-
-test("paraInstagram: minuscula e a palavra em negrito, como no reel da Menopausa (29/09)", () => {
-  assert.equal(paraInstagram("Você passa na pele"), "você <b>passa</b> na pele");
-  assert.equal(paraInstagram("de dentro pra fora"), "de <b>dentro</b> pra fora");
-  assert.equal(paraInstagram("você toma pra"), "você <b>toma</b> pra");
-  assert.equal(paraInstagram("cabelo que não cresce?"), "cabelo que não <b>cresce</b>");
-  assert.equal(paraInstagram("no seu direct"), "no seu <b>direct</b>");
-  assert.equal(paraInstagram("esse aqui ó"), "esse aqui ó"); // nada pra destacar
-  // Ads nao muda; preco nunca vira minuscula.
-  const blocos = gerarBlocos(palavras("Você toma pra|"), [], PRESET_ELEVENLABS);
-  assert.match(blocosParaSrt(blocos), /\nVocê toma pra\n/);
-  assert.match(blocosParaSrt(blocos, true), /\nvocê <b>toma<\/b> pra\n/);
 });
 
 /* ------------------------------------------ blocos do Premiere (hibrido) */

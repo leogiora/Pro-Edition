@@ -105,9 +105,4 @@ test("perfil: troca de empresa guarda a pasta de quem sai e devolve a de quem en
   assert.equal(parsePerfil({ empresa: "toString", bibliotecas: { toString: "x" } }).empresa, "androclinic"); // lixo nao vira empresa
   assert.ok(presetDa("grandcare").termosChave.includes("GrandCare"));
   assert.equal(presetDa("grandcare").maxPalavras, 3); // o resto e o preset dos Ads
-  // Tipo: sem escolha e Ads; Instagram sobrevive a troca de empresa.
-  assert.equal(vazio.tipo, "ads");
-  const insta = trocarEmpresa(parsePerfil({ empresa: "menopausa", tipo: "instagram" }), "", "androclinic");
-  assert.equal(insta.perfil.tipo, "instagram");
-  assert.equal(presetDa("menopausa", undefined, "instagram").instagram, true);
 });
