@@ -236,6 +236,88 @@ o mesmo roteiro do teste do Editar no "Projeto Base", 37 s → 30 s):**
   legendas selecionadas. As figurinhas estão em
   `C:\Edição\1. Menopausa Cancelada\Criativos\04.09\O que passar X O que tomar - Imagens`.
 
+**Menopausa Instagram — ao vivo (30/09, uma gravação de tela montando o broll
+do `Meno 29.09`; é orgânico, confirmado pelo Leo). Primeiro gabarito do tipo
+Instagram no disco:**
+- **Legenda em faixa de legenda** (C1, "Subtitle"), não em gráfico de texto.
+  Caixa de frase, com pontuação ("É o que", "mas a mulher", "sabe por quê?",
+  aspas na fala da paciente: "Doutora / a minha vontade / é zero"), branca,
+  fina, sem serifa, um pouco abaixo do meio da tela; blocos de 1 a 3
+  palavras, às vezes 4. Palavra-chave com estilo à parte: "EXAMES DE SANGUE"
+  em maiúscula, negrito e maior; o fim da fala citada ("é zero"") em
+  amarelo, negrito e itálico.
+- **Contra o tipo Instagram do Editar:** o Editar tira o "?" e põe tudo em
+  minúscula; aqui o "?" fica e a frase começa com maiúscula. O destaque
+  também é outro: não uma palavra em `<b>`, mas o bloco inteiro da
+  palavra-chave em maiúscula e maior (tamanho vai pelo Properties, não pelo
+  `.srt`), e amarelo+itálico na fala citada (dá pelo `.srt`).
+- **Broll todo do Envato**, buscado na hora pelo tema da fala ("exames
+  médico", "mulher pensando", "mulher com uma médica", "reposição hormonal
+  feminino", "mulher com libido", "médica feminina", "exame de sangue",
+  "mulher sem libido"); a "Brolls - Menopausa" não foi aberta. Os downloads
+  ficam soltos em `Downloads`, com o nome em inglês. Cobre quase o vídeo
+  todo, um atrás do outro, não só o sintoma como no reel medido acima.
+- Na primeira gravação ele só soltou e aparou os brolls (Escala 100,
+  centrados, sem crop, cortados na frase).
+- Zoom na apresentadora num trecho sem broll: keyframe de Escala (116%, e
+  107% noutro ponto) e Posição no clipe aninhado dela, com a interpolação
+  dos keyframes ajustada (o orgânico antigo também tinha zoom, 100/150).
+
+**Segunda gravação (30/09, acabamento do mesmo `Meno 29.09`):**
+- **Split com B-roll em cima**, igual ao medido nos Ads (valores no bloco
+  medido abaixo). Monta num clipe e cola nos outros.
+- **Legenda sobe pra linha do split:** seleciona os blocos e sobe a posição
+  pelo Properties (Align and Transform), Helvetica. Destaques confirmados:
+  uma palavra em negrito dentro do bloco minúsculo ("tá tão **baixa**", "é
+  **zero**"), bloco inteiro em maiúscula e negrito ("SEM VONTADE", "EXAMES
+  DE SANGUE") e a fala citada inteira em amarelo e itálico ("Doutora", "a
+  minha vontade", "é zero"").
+- **Som na fala citada:** "Studio Reverb" no áudio dela só no trecho da
+  citação, com ajuste de ganho.
+- **Efeito sonoro:** clique de mouse do Envato ("Mouse Click01.wav") numa
+  faixa de áudio própria, colado em vários pontos (vai de ponto de edição
+  em ponto de edição e cola), com ganho ajustado; um deles no cartão do
+  perfil com botão "Seguir" que aparece no vídeo.
+- **Fim:** gráficos "EU QUERO" / "COMENTA AGORA MESMO" e o cartão do perfil
+  (sequência aninhada), como no reel medido.
+
+**Menopausa Instagram — medido no `.prproj` (30/09, `Meno 29.09`, sequência
+"Video 29.09", 720×1280; o Leo pediu pra usar como o padrão do Insta).** A
+sequência tem três vídeos: 0–45 s (`IMG_3740`), 49–97 s (cópia do primeiro)
+e 103–160 s (`IMG_3742/3743`, outro roteiro). Números dos vídeos 1 e 3:
+- **Legenda (171 blocos, faixa de legenda, Helvetica 75):** 66% normal, 18%
+  com **uma palavra em negrito** dentro do bloco (a que importa: "tá
+  **perfeito**", "o **estradiol**", "me fala **bem baixinho**"), 14% com o
+  **bloco todo em negrito** (termo ou sintoma: "reposição hormonal", "exames
+  de sangue", e numa lista falada um bloco por item: "Perna pesada" / "Pé
+  frio" / "varizes e varicose" / "falta de memória"…), e a fala citada em
+  **negrito itálico** (amarela na tela). O destaque às vezes cresce: 73 a
+  128 contra 75 do normal ("é **zero**" 113; "sem vontade" 93, que aparece
+  em maiúscula). Palavras por bloco: 1 (30), 2 (81), 3 (40), 4 (16), 5+ (4).
+  Caixa de frase: maiúscula só no começo da frase (24), "?" mantido (6).
+- **Split (todo broll):** "Rounded Crop" do Film Impact (`AE.Impact_Crop_FX`,
+  o mesmo do Andro, não o do Premiere), broll em cima com Y 0,25–0,27 e a
+  escala que cobre a largura (68 no 1920×1080, 98 no 1280×720, 32–34 no 4K);
+  corte embaixo com Bottom 18, Feather 12, Offset −9% no vídeo 1, e Bottom
+  10, Feather 7, Offset −5% no vídeo 3, onde ele também move o X do broll
+  (0,35 a 0,79) pra enquadrar o assunto. A apresentadora desce pra Y 0,876
+  (escala 100) enquanto tem broll e volta pro centro sem broll.
+- **Quantidade de broll:** 11 no vídeo 1 (58% do tempo) e 17 no vídeo 3
+  (55%), de 0,6 a 3,5 s, quase todos colados um no outro. Todos do Envato,
+  com o nome em inglês, fora da "Brolls - Menopausa".
+- **Fala citada:** o trecho fica sem broll, com a apresentadora no centro,
+  zoom com keyframe e Lumetri próprio, efeito no áudio (o reverb da
+  gravação) e **light leak na entrada e na saída** da citação — é o único
+  lugar com light leak no vídeo 1.
+- **Emoji (vídeo 3):** PNG de emoji da Apple (160 px) numa faixa acima, ao
+  lado da legenda na linha do split, casando com a palavra: 🥶 em "Pé frio",
+  🤔 em "falta de memória", 💧 em "baixa lubrificação", 💏 na intimidade, 🥰,
+  ✨ e 🤤. Sete em 57 s; no vídeo 1 nenhum.
+- **Música:** "Chill.WAV" na A2, do começo ao fim de cada vídeo.
+- **Fim:** gráfico de texto do CTA (~2,8 s) e depois o cartão do perfil
+  (sequência aninhada, Y 0,78, Drop Shadow, ~2,9 s). Os cliques de mouse da
+  gravação não ficaram no projeto salvo.
+
 Fontes lidas dos projetos:
 - AndroClinic: Bebas Neue (1.299 legendas no `Andro 19.09`).
 - Menopausa Cancelada: Helvetica Bold e Light, Arial Black.

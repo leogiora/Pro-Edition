@@ -28,6 +28,15 @@ split virou da empresa (Auto Split, Editar e Acabamento). O tipo
 GrandCare não têm nome de conceito: o Auto B-roll não serve nelas até serem
 renomeadas (decisão do Leo).
 
+**30/09 (Cowork):** uma gravação do Leo montando o broll do `Meno 29.09`,
+que é **orgânico do Instagram** (confirmado por ele) — o primeiro gabarito
+do tipo Instagram. A legenda está numa faixa de legenda e difere do tipo
+Instagram do Editar (mantém "?", frase começa com maiúscula, palavra-chave
+em bloco maiúsculo e maior, fala citada em amarelo e itálico); o broll veio
+todo do Envato. Detalhe em `PERFIS_DE_EDICAO.md`, "Menopausa Instagram — ao
+vivo". A partir de agora, toda gravação do Leo é material de refinamento do
+plugin.
+
 - **Legenda (Pro Captions + ElevenLabs):** pronta no código, inclusive a
   segmentação no estilo do Leo (`segmentar.ts` + `maxPalavras: 3` no
   `PRESET_ELEVENLABS`). Sete gravações de tela dele editando o Andro 19.09
