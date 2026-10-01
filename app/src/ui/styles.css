@@ -54,7 +54,8 @@ button:disabled { opacity: .45; cursor: default; }
   border-bottom: 1px solid var(--line);
   background: var(--bg-1);
 }
-.marca { font-weight: 700; letter-spacing: .01em; }
+.marca { display: flex; align-items: center; font-weight: 700; letter-spacing: .01em; }
+.marca-simbolo { display: flex; margin-right: 9px; }
 .titulo { color: var(--txt-2); }
 .migalha { background: none; border: none; padding: 6px 4px; color: var(--txt-2); }
 .migalha:hover { background: none; color: var(--txt); }
@@ -181,3 +182,54 @@ dialog input { width: 100%; font: inherit; color: var(--txt); background: var(--
 /* ------------------------------------------------------------ acabamento */
 .numero { width: 64px; font: inherit; color: var(--txt); background: var(--bg-0); border: 1px solid var(--line-2); border-radius: 6px; padding: 2px 6px; }
 .dica button { padding: 2px 10px; font-size: 12px; margin-left: 6px; }
+
+/* ================================================== tela inicial (h-*) ===
+   O mesmo hall do painel (src/ui/seletor.css), em CSS de navegador: grade
+   de verdade, porque aqui nao e UXP. */
+#hall { max-width: 1180px; margin: 0 auto; width: 100%; }
+.h-heroi {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 28px; width: 100%;
+  padding: 22px 24px; border: 1px solid var(--azul); border-radius: 14px;
+  background: var(--bg-1); color: inherit; text-align: left; cursor: pointer;
+  transition: background .15s, transform .15s;
+}
+.h-heroi:hover { background: var(--bg-2); }
+.h-heroi:active, .h-card:active { transform: scale(.99); }
+.h-heroi-texto { display: flex; flex-direction: column; flex: 1 1 360px; min-width: 0; }
+.h-heroi-cima { display: flex; align-items: center; }
+.h-heroi-nome { flex: 1; font-size: 22px; font-weight: 700; color: #fff; }
+.h-cta { padding: 6px 20px; border-radius: 999px; background: var(--azul); color: #fff; font-size: 13px; font-weight: 600; }
+.h-heroi-desc { margin: 8px 0 16px; color: var(--txt-2); font-size: 13px; line-height: 1.55; }
+.h-bolas { display: flex; gap: 8px; }
+.h-bola-item { display: flex; flex-direction: column; align-items: center; flex: 1; min-width: 0; }
+.h-bola { display: flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 50%; margin-bottom: 5px; }
+.h-bola-nome { font-size: 12px; color: var(--txt-2); }
+.h-grupo { margin: 30px 0 12px 2px; font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--txt-2); }
+.h-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(460px, 1fr)); gap: 10px; }
+.h-card {
+  display: flex; align-items: center; gap: 14px; padding: 14px 16px;
+  border: 1px solid var(--line); border-radius: 12px; background: var(--bg-1);
+  color: inherit; text-align: left; cursor: pointer; transition: background .15s, border-color .15s, transform .15s;
+}
+.h-card:hover { background: var(--bg-2); border-color: var(--c); }
+.h-ico { display: flex; align-items: center; justify-content: center; flex: none; width: 36px; height: 36px; border-radius: 50%; }
+.h-texto { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.h-nome { font-size: 15px; font-weight: 600; color: #fff; margin-bottom: 3px; }
+.h-desc { font-size: 12px; line-height: 1.5; color: var(--txt-2); }
+.h-mapa { display: flex; flex-direction: column; flex: 0 0 170px; }
+.h-mapa-heroi { flex: 1 1 340px; }
+.h-nota { margin: 26px 0 0; padding-top: 14px; border-top: 1px solid var(--line); font-size: 12px; color: var(--txt-3); }
+/* Miniaturas de desenharTrilhas(): a cor vem do card (--c) ou da faixa. */
+.trilha { display: flex; align-items: center; height: 11px; }
+.h-mapa-heroi .trilha { height: 15px; }
+.trilha-rotulo { flex: 0 0 22px; font-size: 10px; color: var(--txt-3); }
+.trilha-faixa { display: flex; flex: 1; height: 6px; border-radius: 2px; overflow: hidden; background: #101318; }
+.h-mapa-heroi .trilha-faixa { height: 9px; }
+.seg { flex: 1 1 0; min-width: 0; border-radius: 1px; }
+.seg-base { background: #5f6774; }
+.h-card .seg-novo { background: var(--c); }
+.trilha[data-faixa="C2"] .seg-novo { background: #ff7d71; }
+.h-heroi .trilha[data-faixa="C1"] .seg-novo { background: #eceef2; }
+.h-heroi .trilha[data-faixa="V3"] .seg-novo { background: #eeab4c; }
+.h-heroi .trilha[data-faixa="V2"] .seg-novo { background: #8d82f5; }
+.h-heroi .trilha[data-faixa="A2"] .seg-novo { background: #4fc3a1; }
