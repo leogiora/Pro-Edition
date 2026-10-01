@@ -23,4 +23,5 @@ test("tempoDoCursor: minutos e segundos com decimo", () => {
   assert.equal(tempoDoCursor(14.25), "00:14.2");
   assert.equal(tempoDoCursor(75), "01:15.0");
   assert.equal(tempoDoCursor(0), "00:00.0");
+  assert.equal(tempoDoCursor(6866.95), "1:54:26.9"); // a Live 30.09 tem quase 2 h
 });

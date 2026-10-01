@@ -39,10 +39,11 @@ export function lerEstadoPremiere(raw: unknown): EstadoPremiere | null {
   };
 }
 
-/** "00:14.2": o tempo do cursor como o Premiere mostra, com decimo. */
+/** "00:14.2" ou "1:54:26.9": o tempo do cursor como o Premiere mostra, com decimo. */
 export function tempoDoCursor(s: number): string {
   const d = Math.floor(s * 10) / 10;
-  const m = Math.floor(d / 60);
-  const resto = (d - m * 60).toFixed(1).padStart(4, "0");
-  return `${String(m).padStart(2, "0")}:${resto}`;
+  const h = Math.floor(d / 3600);
+  const m = Math.floor((d - h * 3600) / 60);
+  const seg = (d - h * 3600 - m * 60).toFixed(1).padStart(4, "0");
+  return h > 0 ? `${h}:${String(m).padStart(2, "0")}:${seg}` : `${String(m).padStart(2, "0")}:${seg}`;
 }
