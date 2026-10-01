@@ -46,7 +46,8 @@ const html = await readFile(join(raiz, "src", "ui", "index.html"), "utf8");
 
 const injetar = (texto, marca, conteudo) => {
   if (!texto.includes(marca)) throw new Error(`index.html perdeu a marca ${marca}`);
-  return texto.replace(marca, conteudo);
+  // Funcao, nao texto: "$&" e "$'" no bundle seriam padroes de substituicao.
+  return texto.replace(marca, () => conteudo);
 };
 
 let saida = injetar(html, "<!--ESTILOS-->", `<style>\n${css}\n</style>`);
