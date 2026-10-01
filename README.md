@@ -11,6 +11,10 @@ No código e nos documentos ficam os nomes antigos. Também não mudaram:
 - o nome do programa instalado;
 - a pasta "Pro Captions" no painel Projeto.
 
+**Logo:** em `marca/`, com o guia de uso em `marca/GUIA.md`. O símbolo são as
+faixas da timeline com o cursor coral cortando todas. No topo do painel ele é
+desenhado com caixas (`marca()` em `src/shell.ts`), porque o UXP não garante SVG.
+
 
 | Grupo   | Ferramenta      | Código                      |
 |---------|-----------------|-----------------------------|

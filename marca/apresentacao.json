@@ -1,0 +1,32 @@
+{
+  "brand": "Cutline",
+  "tagline": "A edição inteira em um clique",
+  "brief": "Painel do Premiere Pro que corta as pausas, põe B-roll, split, leak, trilha e legendas em todas as variações de um anúncio. Para editores que querem velocidade sem perder o próprio estilo.",
+  "adjectives": ["rápido", "preciso", "automático", "profissional"],
+  "criteria": "Sucesso: fugir da tesoura, da chama e da claquete dos concorrentes, ser reconhecível em 16 px no Premiere e funcionar em uma cor.",
+  "industry": "software",
+  "mockups": ["app-icon", "favicon-tab", "website", "social", "sticker", "business-card"],
+  "nav": ["AutoEdit", "SilenceCut", "B-Roller"],
+  "brand_color": "#0d0f13",
+  "greyscale": false,
+  "designer": "Claude para o Leo",
+  "round": 2,
+  "concepts": [
+    {
+      "name": "Faixas",
+      "symbol": "cutline-simbolo-claro.svg",
+      "lockup": "cutline-horizontal-claro.svg",
+      "symbol_on_tile": "cutline-simbolo-escuro.svg",
+      "lockup_on_dark": "cutline-horizontal-escuro.svg",
+      "tile_color": "#0d0f13",
+      "idea": "As faixas da timeline com o cursor coral cortando todas de uma vez.",
+      "rationale": [
+        "É a linguagem do próprio painel: as miniaturas de faixa da tela inicial",
+        "O cursor coral é o mesmo da timeline viva e vira o pingo do i no nome",
+        "Um corte único em todas as faixas = a edição inteira num clique"
+      ]
+    }
+  ],
+  "recommendation": "Faixas — escolhida pelo Leo em 01/10.",
+  "next_steps": ["Ver o ícone novo no Premiere", "Usar a versão horizontal no programa e nos materiais"]
+}

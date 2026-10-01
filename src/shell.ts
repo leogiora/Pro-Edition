@@ -85,6 +85,37 @@ export function icone(tipo: Icone, cor: string): string {
   }
 }
 
+/**
+ * O simbolo do Cutline (marca/cutline-simbolo-pequeno-*.svg) feito de caixas,
+ * para o topo do painel: o UXP nao garante SVG. Tres faixas cortadas no meio e
+ * o cursor coral em cima (triangulo em fatias, sem truque de borda).
+ */
+export function marca(altura: number, faixa = "#eceef2", cursor = "#ff7d71"): string {
+  const s = altura / 256;
+  const px = (v: number): string => `${(v * s).toFixed(2)}px`;
+  const caixa = (l: number, a: number, estilo = ""): string =>
+    `<span style="display: flex; flex: none; width: ${px(l)}; height: ${px(a)}; ${estilo}"></span>`;
+  const linha = (dentro: string, topo: number): string =>
+    `<span style="display: flex; flex-direction: row; flex: none; margin-top: ${px(topo)}">${dentro}</span>`;
+  const r = px(22);
+  const barra = (l: number, lado: "esq" | "dir"): string =>
+    caixa(l, 44, `background-color: ${faixa}; ${lado === "esq" ? `border-top-left-radius: ${r}; border-bottom-left-radius: ${r}` : `border-top-right-radius: ${r}; border-bottom-right-radius: ${r}`}`);
+  // cursor: 4 fatias de 9 unidades, de 56 a 14 de largura, centradas em 128
+  const fatias = [56, 42, 28, 14]
+    .map((l, i) => linha(caixa(128 - l / 2, 9) + caixa(l, 9, `background-color: ${cursor}`), i === 0 ? 18 : 0))
+    .join("");
+  const faixas = (
+    [
+      [28, 196, 12],
+      [64, 228, 16],
+      [44, 212, 16],
+    ] as const
+  )
+    .map(([a, b, topo]) => linha(caixa(a, 44) + barra(116 - a, "esq") + caixa(24, 44) + barra(b - 140, "dir"), topo))
+    .join("");
+  return `<span style="display: flex; flex-direction: column; flex: none; width: ${px(256)}; height: ${px(256)}">${fatias}${faixas}</span>`;
+}
+
 /** Pedaco de uma faixa da timeline viva: `item` -1 e vazio. */
 export interface Segmento {
   readonly grow: number;
