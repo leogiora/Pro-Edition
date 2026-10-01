@@ -4,7 +4,7 @@
  * IDs e classes entre os dois plugins, documentada no spec).
  */
 
-import { desenharTrilhas, escolherTela, extrairCorpo, type Ferramenta, type Tela } from "../shell.ts";
+import { desenharTrilhas, escolherTela, extrairCorpo, icone, type Ferramenta, type Icone, type Tela } from "../shell.ts";
 
 import htmlBrollBruto from "../../ferramentas/auto-broll/src/ui/index.html";
 import cssBroll from "../../ferramentas/auto-broll/src/ui/styles.css";
@@ -124,6 +124,10 @@ function montarSeletor(root: HTMLElement): void {
   // Depois dos cliques: miniatura e enfeite, nunca pode deixar o hall morto.
   root.querySelectorAll<HTMLElement>("[data-trilhas]").forEach((mapa) => {
     mapa.innerHTML = desenharTrilhas(mapa.dataset.trilhas ?? "");
+  });
+  // Icones de caixa (sem emoji), escuros sobre a bolinha colorida.
+  root.querySelectorAll<HTMLElement>("[data-icone]").forEach((el) => {
+    el.innerHTML = icone(el.dataset.icone as Icone, "#0d0f13");
   });
 }
 

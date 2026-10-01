@@ -1,7 +1,15 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
-import { desenharTrilhas, escolherTela, extrairCorpo, segmentos, type Tela } from "../src/shell.ts";
+import { desenharTrilhas, escolherTela, extrairCorpo, icone, segmentos, type Icone, type Tela } from "../src/shell.ts";
+
+test("icone: todo icone e caixa na cor pedida, sem caractere (nada de emoji no UXP)", () => {
+  for (const t of ["pausas", "broll", "split", "leak", "trilha", "legendas", "podcast"] as Icone[]) {
+    const html = icone(t, "#123456");
+    assert.match(html, /#123456/);
+    assert.equal(html.replace(/<[^>]*>/g, ""), ""); // so tags, nenhum texto
+  }
+});
 
 test("segmentos: vazio e item alternam; sobreposto comeca onde o anterior acaba; passa do fim e aparado", () => {
   assert.deepEqual(segmentos([{ de: 2, ate: 4 }, { de: 1, ate: 1.5 }, { de: 3.5, ate: 12 }], 10), [

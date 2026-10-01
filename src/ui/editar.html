@@ -109,10 +109,6 @@
     cursor: pointer;
   }
 
-  .etapa[data-on="nao"] {
-    opacity: 0.35;
-  }
-
   .bola {
     display: flex;
     flex-direction: row;
@@ -123,8 +119,7 @@
     margin-bottom: 3px;
     border: 1px solid #333b47;
     border-radius: 13px;
-    font-size: 13px;
-    color: #9098a6;
+    background-color: #14171d;
   }
 
   .etapa-nome {
@@ -385,14 +380,15 @@
   .tl-C2 { background-color: #ff7d71; }
 
   .tl-regua {
-    height: 5px;
+    height: 10px;
     background-color: transparent;
   }
 
   .tl-cursor {
     flex: none;
-    width: 2px;
-    height: 5px;
+    width: 3px;
+    height: 10px;
+    border-radius: 1px;
     background-color: #ff7d71;
   }
 
@@ -611,9 +607,6 @@
     margin: 1px 0;
     font-size: 12px;
     color: #9098a6;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
   }
 
   .feed-linha[data-tom="ok"] { color: #4ecb8d; }
@@ -630,6 +623,23 @@
   .log {
     height: 200px;
     margin: 0 0 8px 0;
+  }
+
+  /* ---- resposta ao clique: o que foi tocado acende por um instante (JS liga
+     data-apertado; o UXP nao garante :active nem transicao). */
+  [data-apertado="sim"] {
+    background-color: #2a3550;
+  }
+
+  .btn-pri[data-apertado="sim"] {
+    background-color: #1d4ed8;
+  }
+
+  .var:hover,
+  .chip:hover,
+  .aba:hover,
+  .btn-sec:hover {
+    border-color: #4a5466;
   }
 
   /* ---- rodape */
@@ -669,7 +679,7 @@
   <span id="edPill" class="pill" data-tom="ativo">lendo</span>
 </header>
 
-<main class="conteudo">
+<main id="edRolagem" class="conteudo">
   <div class="bloco">
     <div id="edEmpresas" class="chips"></div>
     <div id="edEtapas" class="etapas"></div>

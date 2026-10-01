@@ -174,7 +174,7 @@ async function ouvirSequencia(preset: Preset, registrar: Registrar, progresso: (
   try {
     registrar(`áudio da sequência: ${(audio.bytes.byteLength / 1e6).toFixed(1)} MB em ${(audio.ms / 1000).toFixed(1)} s`, "passo");
     if (audioMudo(audio.bytes)) {
-      throw new Error("O áudio da sequência está mudo (A1 silenciada ou outra faixa em solo). Nada foi enviado ao ElevenLabs.");
+      throw new Error("O áudio da sequência saiu mudo: mídia offline, A1 silenciada ou outra faixa em solo. Nada foi enviado ao ElevenLabs.");
     }
     const db = nivelPorJanela(audio.bytes, JANELA_S * 1000).db[0] ?? [];
 

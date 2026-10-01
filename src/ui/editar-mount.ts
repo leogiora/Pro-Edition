@@ -12,18 +12,18 @@ import { EMPRESAS, type Empresa } from "../../ferramentas/pro-captions/src/prese
 import { SPLIT_DA_EMPRESA } from "../autosplit.ts";
 import { marcarFala, parsePerfil, quadros, trocarEmpresa, type ResumoVariacao, type Trecho } from "../editar.ts";
 import { editar, lerEstado, type AoVivo, type Etapa, type Registrar } from "../editar-premiere.ts";
-import { segmentos } from "../shell.ts";
+import { icone, segmentos, type Icone } from "../shell.ts";
 
 const LOG = "editar-log.json";
 const PERFIL = "perfil.json";
 
-const ETAPAS: ReadonlyArray<{ readonly id: Etapa; readonly nome: string; readonly simbolo: string; readonly cor: string }> = [
-  { id: "pausas", nome: "Pausas", simbolo: "✂", cor: "#4ecb8d" },
-  { id: "broll", nome: "B-roll", simbolo: "▣", cor: "#8d82f5" },
-  { id: "split", nome: "Split", simbolo: "▤", cor: "#67c7e2" },
-  { id: "leak", nome: "Leak", simbolo: "☀", cor: "#eeab4c" },
-  { id: "trilha", nome: "Trilha", simbolo: "♪", cor: "#4fc3a1" },
-  { id: "legendas", nome: "Legendas", simbolo: "≡", cor: "#eceef2" },
+const ETAPAS: ReadonlyArray<{ readonly id: Etapa & Icone; readonly nome: string; readonly cor: string }> = [
+  { id: "pausas", nome: "Pausas", cor: "#4ecb8d" },
+  { id: "broll", nome: "B-roll", cor: "#8d82f5" },
+  { id: "split", nome: "Split", cor: "#67c7e2" },
+  { id: "leak", nome: "Leak", cor: "#eeab4c" },
+  { id: "trilha", nome: "Trilha", cor: "#4fc3a1" },
+  { id: "legendas", nome: "Legendas", cor: "#eceef2" },
 ];
 const COR_EMPRESA: Readonly<Record<Empresa, string>> = { androclinic: "#3b82f6", grandcare: "#4fc3a1", menopausa: "#e07ba8" };
 const FAIXAS = ["C2", "C1", "V3", "V2", "V1", "A2"] as const;
@@ -54,12 +54,21 @@ export function mount(root: HTMLElement): void {
     pai.appendChild(el);
     return el;
   };
+  /** Todo clique acende o que foi tocado por um instante: o Leo ve que pegou. */
+  const apertar = (el: HTMLElement) => {
+    el.setAttribute("data-apertado", "sim");
+    setTimeout(() => el.setAttribute("data-apertado", "nao"), 180);
+  };
   const clicavel = (el: HTMLElement, fazer: () => void) => {
     el.setAttribute("role", "button");
     el.setAttribute("tabindex", "0");
-    el.addEventListener("click", fazer);
+    const ir = () => {
+      apertar(el);
+      fazer();
+    };
+    el.addEventListener("click", ir);
     el.addEventListener("keydown", (e) => {
-      if ((e as KeyboardEvent).key === "Enter" || (e as KeyboardEvent).key === " ") fazer();
+      if ((e as KeyboardEvent).key === "Enter" || (e as KeyboardEvent).key === " ") ir();
     });
   };
 
@@ -104,6 +113,8 @@ export function mount(root: HTMLElement): void {
     logAberto = !logAberto;
     log.setAttribute("style", logAberto ? "" : "display: none");
     pega("edVerLog").textContent = logAberto ? "esconder o registro completo" : "ver o registro completo";
+    // Abre embaixo da dobra: rola ate ele, senao parece que o clique nao fez nada.
+    if (logAberto) setTimeout(() => (pega("edRolagem").scrollTop = pega("edRolagem").scrollHeight), 0);
   });
 
   const pill = (texto: string, tom: "ativo" | "ok" | "aviso" | "erro") => {
@@ -139,33 +150,58 @@ export function mount(root: HTMLElement): void {
   };
 
   // ---- etapas: bolinhas que ligam e desligam, e acendem quando rodam
+  /**
+   * Cada estado com cor explicita (o UXP ignora opacity): desligada cinza,
+   * ligada com a cor da etapa, rodando pulsando, feita cheia.
+   */
+  let pulso = false;
   const desenharEtapas = () => {
     const caixa = pega("edEtapas");
     limpar(caixa);
     for (const e of ETAPAS) {
       const tom = tomDa[e.id];
       const el = novo(caixa, "div", "etapa");
-      el.setAttribute("data-on", ativo[e.id] ? "sim" : "nao");
-      const bola = novo(el, "span", "bola", tom === "rodando" ? "…" : e.simbolo);
+      const bola = novo(el, "span", "bola");
       const nome = novo(el, "span", "etapa-nome", e.nome);
-      const fundo = tom === "ok" ? e.cor : tom === "aviso" ? "#eeab4c" : tom === "erro" ? "#ff7d71" : null;
-      if (fundo) {
-        bola.setAttribute("style", `background-color: ${fundo}; border-color: ${fundo}; color: #0d0f13`);
-        nome.setAttribute("style", `color: ${fundo}`);
+      const cheia = tom === "ok" ? e.cor : tom === "aviso" ? "#eeab4c" : tom === "erro" ? "#ff7d71" : null;
+      let traco = e.cor;
+      if (cheia) {
+        traco = "#0d0f13";
+        bola.setAttribute("style", `background-color: ${cheia}; border-color: ${cheia}`);
+        nome.setAttribute("style", `color: ${cheia}`);
       } else if (tom === "rodando") {
-        bola.setAttribute("style", `border-color: ${e.cor}; color: ${e.cor}`);
+        bola.setAttribute("style", `background-color: ${pulso ? "#2a3550" : "#141a2a"}; border-color: ${e.cor}; border-width: 2px`);
         nome.setAttribute("style", `color: ${e.cor}`);
+      } else if (ativo[e.id]) {
+        bola.setAttribute("style", `border-color: ${e.cor}`);
+        nome.setAttribute("style", "color: #eceef2");
+      } else {
+        traco = "#4a515c";
+        bola.setAttribute("style", "border-color: #2a2f38; background-color: #101318");
+        nome.setAttribute("style", "color: #4a515c");
       }
+      bola.innerHTML = icone(e.id, traco);
       clicavel(el, () => {
         if (ocupado) return;
         ativo[e.id] = !ativo[e.id];
+        pega("edProg").textContent = `${e.nome} ${ativo[e.id] ? "ligado" : "desligado"} para o próximo Editar`;
         desenharEtapas();
       });
     }
   };
+  // Enquanto o Editar roda, a etapa da vez pulsa (o UXP nao garante animacao em CSS).
+  let animacao: ReturnType<typeof setInterval> | null = null;
+  const animar = (ligar: boolean) => {
+    if (animacao !== null) clearInterval(animacao);
+    animacao = ligar
+      ? setInterval(() => {
+          pulso = !pulso;
+          desenharEtapas();
+        }, 450)
+      : null;
+  };
 
   // ---- andamento e grade de variacoes
-  const prefixo = () => (seqNome.trim()[0] ?? "V").toUpperCase();
   const avisos = () => resumo.filter((r) => r.falaSomeEmS !== null).length;
   const desenharAndamento = () => {
     pega("edBarraFeito").setAttribute("style", `flex-grow: ${editado && !ocupado ? 1 : feitas}`);
@@ -181,7 +217,7 @@ export function mount(root: HTMLElement): void {
       const el = novo(grade, "div", "var");
       el.setAttribute("data-sel", i === sel ? "sim" : "nao");
       const cima = novo(el, "div", "var-cima");
-      novo(cima, "span", "var-nome", `${prefixo()}${i + 1}`);
+      novo(cima, "span", "var-nome", String(i + 1));
       const tom = ocupado ? "ativo" : !editado ? "" : r.falaSomeEmS !== null ? "aviso" : "ok";
       novo(cima, "span", "var-st", tom === "ativo" ? "…" : tom === "ok" ? "✓" : tom === "aviso" ? "!" : "○").setAttribute("data-tom", tom);
       const barra = novo(el, "div", "var-barra");
@@ -455,6 +491,7 @@ export function mount(root: HTMLElement): void {
     split = null;
     t = 0;
     parar();
+    animar(true);
     desenharTudo();
     void editar(
       { ...ativo },
@@ -464,15 +501,20 @@ export function mount(root: HTMLElement): void {
       },
       aoVivo
     )
-      .then(() => pill("pronto", "ok"))
+      .then(() => {
+        pill("pronto", "ok");
+        editado = true;
+        pega("edProg").textContent = `${resumo.length} variação(ões) editada(s)`;
+      })
       .catch((erro) => {
-        registrar((erro as Error)?.message ?? String(erro), "erro");
+        const m = (erro as Error)?.message ?? String(erro);
+        registrar(m, "erro");
         pill("falhou", "erro");
+        pega("edProg").textContent = `Parou: ${m}`;
       })
       .finally(() => {
         ocupado = false;
-        editado = true;
-        pega("edProg").textContent = `${resumo.length} variação(ões) editada(s)`;
+        animar(false);
         desenharTudo();
         void guardarLog().catch(() => undefined);
       });
