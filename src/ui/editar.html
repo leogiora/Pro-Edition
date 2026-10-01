@@ -1,6 +1,7 @@
 <!-- Fragmento: o shell injeta isto em document.body, depois da folha da
      familia (ferramentas/auto-broll/src/ui/styles.css). Sem CSS Grid, sem gap,
-     sem var(); botoes sao sp-button (ver UXP_ARMADILHAS.md). -->
+     sem var(), sem largura em %; botoes sao sp-button e o que e clicavel e
+     nosso e div[role=button] (ver UXP_ARMADILHAS.md). -->
 <style>
   .marca-nome::before {
     background-color: #eceef2;
@@ -17,14 +18,164 @@
     margin: 0 0 6px 0;
   }
 
+  .etapa-linha {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+  }
+
+  /* Resultado da etapa, a direita da caixa: cor pelo estado. */
+  .etapa-res {
+    flex: 1 1 auto;
+    min-width: 0;
+    margin-left: 8px;
+    text-align: right;
+    font-size: 11px;
+    color: #5f6774;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .etapa-res[data-tom="rodando"] {
+    color: #3b82f6;
+  }
+
+  .etapa-res[data-tom="ok"] {
+    color: #4ecb8d;
+  }
+
+  .etapa-res[data-tom="aviso"] {
+    color: #eeab4c;
+  }
+
+  .etapa-res[data-tom="erro"] {
+    color: #ff7d71;
+  }
+
   .etapa-nota {
     margin: 0 0 0 28px;
     font-size: 11px;
     color: #5f6774;
   }
 
+  /* Andamento: dois pedacos com flex-grow, sem largura em %. */
+  .barra {
+    display: flex;
+    flex-direction: row;
+    flex: none;
+    height: 4px;
+    margin: 4px 0 2px 0;
+    border-radius: 2px;
+    overflow: hidden;
+    background-color: #1a1e26;
+  }
+
+  .barra-feito {
+    background-color: #3b82f6;
+  }
+
+  .nums {
+    display: flex;
+    flex-direction: row;
+  }
+
+  .num {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    flex: 1 1 0;
+    min-width: 0;
+    margin: 0 3px;
+    padding: 6px 8px;
+    background-color: #0d0f13;
+    border: 1px solid #232830;
+    border-radius: 7px;
+  }
+
+  .num-rotulo {
+    font-size: 11px;
+    color: #9098a6;
+  }
+
+  .num-valor {
+    font-size: 18px;
+    font-weight: 600;
+    color: #eceef2;
+  }
+
+  .num-sub {
+    font-size: 11px;
+    color: #5f6774;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .grade {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    margin: 0 -3px;
+  }
+
+  .var {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    flex: none;
+    width: 62px;
+    margin: 3px;
+    padding: 5px 6px;
+    background-color: #0d0f13;
+    border: 1px solid #232830;
+    border-radius: 7px;
+    cursor: pointer;
+  }
+
+  .var:hover {
+    background-color: #1a1e26;
+  }
+
+  .var[data-sel="sim"] {
+    border-color: #3b82f6;
+  }
+
+  .var-nome {
+    font-size: 11px;
+    font-weight: 600;
+    color: #eceef2;
+  }
+
+  .var-linha {
+    font-size: 11px;
+    color: #5f6774;
+    white-space: nowrap;
+  }
+
+  .var-cor {
+    height: 3px;
+    margin-top: 4px;
+    border-radius: 2px;
+    background-color: #333b47;
+  }
+
+  .var-cor[data-tom="ok"] {
+    background-color: #4ecb8d;
+  }
+
+  .var-cor[data-tom="aviso"] {
+    background-color: #eeab4c;
+  }
+
+  .var-detalhe {
+    margin-top: 6px;
+    font-size: 12px;
+    color: #9098a6;
+  }
+
   .log {
-    height: 260px;
+    height: 160px;
     margin: 0;
   }
 </style>
@@ -59,28 +210,29 @@
         <span class="etapa-nota">empresa: termos do ElevenLabs e pasta de B-roll de cada uma</span>
       </div>
       <div class="etapa">
-        <sp-checkbox id="edPausas" checked>Tirar as pausas</sp-checkbox>
+        <div class="etapa-linha"><sp-checkbox id="edPausas" checked>Tirar as pausas</sp-checkbox><span id="edRes_pausas" class="etapa-res"></span></div>
         <span class="etapa-nota">zoom e posição de cada clipe acompanham os pedaços</span>
       </div>
       <div class="etapa">
-        <sp-checkbox id="edBroll" checked>Colocar B-roll pela fala</sp-checkbox>
+        <div class="etapa-linha"><sp-checkbox id="edBroll" checked>Colocar B-roll pela fala</sp-checkbox><span id="edRes_broll" class="etapa-res"></span></div>
         <span class="etapa-nota">termina junto com o doutor em cada variação</span>
       </div>
       <div class="etapa">
-        <sp-checkbox id="edSplit">Split: doutor em cima, B-roll embaixo</sp-checkbox>
+        <div class="etapa-linha"><sp-checkbox id="edSplit">Split: doutor em cima, B-roll embaixo</sp-checkbox><span id="edRes_split" class="etapa-res"></span></div>
       </div>
       <div class="etapa">
-        <sp-checkbox id="edLeak" checked>Light leak nas trocas de B-roll</sp-checkbox>
+        <div class="etapa-linha"><sp-checkbox id="edLeak" checked>Light leak nas trocas de B-roll</sp-checkbox><span id="edRes_leak" class="etapa-res"></span></div>
         <span class="etapa-nota">o leak do Premiere Composer que já está no projeto</span>
       </div>
       <div class="etapa">
-        <sp-checkbox id="edTrilha" checked>Trilha em cada variação</sp-checkbox>
+        <div class="etapa-linha"><sp-checkbox id="edTrilha" checked>Trilha em cada variação</sp-checkbox><span id="edRes_trilha" class="etapa-res"></span></div>
         <span class="etapa-nota">cópia da música que você pôs na A2, com o mesmo volume</span>
       </div>
       <div class="etapa">
-        <sp-checkbox id="edLegendas" checked>Legendas na timeline</sp-checkbox>
+        <div class="etapa-linha"><sp-checkbox id="edLegendas" checked>Legendas na timeline</sp-checkbox><span id="edRes_legendas" class="etapa-res"></span></div>
         <span class="etapa-nota">texto e preço em faixas separadas</span>
       </div>
+      <div class="barra"><span id="edBarraFeito" class="barra-feito" style="flex-grow: 0"></span><span id="edBarraResto" style="flex-grow: 1"></span></div>
       <div class="dica">O áudio vai para o ElevenLabs uma vez só; a mesma fala serve para tudo.</div>
     </div>
   </section>
@@ -89,6 +241,22 @@
     <sp-button id="edEditar" variant="cta">Editar</sp-button>
     <sp-button id="edRelir" variant="secondary" quiet>Ler de novo</sp-button>
   </div>
+
+  <section class="secao">
+    <div class="secao-cabeca">
+      <span class="cod">VAR</span>
+      <span id="edVarRotulo" class="secao-rotulo">Variações</span>
+    </div>
+    <div class="secao-corpo">
+      <div class="nums">
+        <div class="num"><span class="num-rotulo">Duração</span><span id="edNumDur" class="num-valor">–</span><span id="edNumDurSub" class="num-sub"></span></div>
+        <div class="num"><span class="num-rotulo">B-rolls</span><span id="edNumBroll" class="num-valor">–</span><span id="edNumLeak" class="num-sub"></span></div>
+        <div class="num"><span class="num-rotulo">Legendas</span><span id="edNumLeg" class="num-valor">–</span><span id="edNumPreco" class="num-sub"></span></div>
+      </div>
+      <div id="edGrade" class="grade"></div>
+      <div id="edVarDetalhe" class="var-detalhe">Clique numa variação para ver o que entrou nela.</div>
+    </div>
+  </section>
 
   <section class="secao secao-log">
     <div class="secao-cabeca">

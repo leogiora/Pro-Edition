@@ -118,6 +118,52 @@ export function trilhaFaltando(
   return { entram, pulam };
 }
 
+/** Fala que acaba isto antes do fim da variacao vira aviso (audio mudo no Andro 19.09, variacoes 11-20). */
+export const FALA_SOME_S = 3;
+
+/** O que o painel mostra de cada variacao depois do Editar. */
+export interface ResumoVariacao {
+  readonly duracaoS: number;
+  /** Duracao antes do Auto Pausas; null quando o corte mudou o numero de variacoes. */
+  readonly antesS: number | null;
+  readonly brolls: number;
+  readonly leaks: number;
+  readonly legendas: number;
+  readonly precos: number;
+  /** Segundos (do inicio da variacao) onde a fala acaba cedo; 0 = sem fala; null = ok ou sem transcricao. */
+  readonly falaSomeEmS: number | null;
+}
+
+export function resumoPorVariacao(
+  vars: readonly Variacao[],
+  antes: readonly Variacao[],
+  fps: number,
+  feito: {
+    readonly brolls: readonly number[];
+    readonly leaks: readonly number[];
+    readonly blocos: ReadonlyArray<{ readonly inicio: number; readonly estilo: string }>;
+    readonly palavras: ReadonlyArray<{ readonly inicio: number; readonly fim: number }>;
+  }
+): ResumoVariacao[] {
+  return vars.map((v, i) => {
+    const ini = v.inicioQ / fps;
+    const fim = v.fimQ / fps;
+    const dentro = (t: number): boolean => t >= ini && t < fim;
+    const fala = feito.palavras.filter((p) => dentro(p.inicio));
+    const ultima = Math.max(ini, ...fala.map((p) => p.fim));
+    const a = antes.length === vars.length ? antes[i]! : null;
+    return {
+      duracaoS: fim - ini,
+      antesS: a ? (a.fimQ - a.inicioQ) / fps : null,
+      brolls: feito.brolls.filter(dentro).length,
+      leaks: feito.leaks.filter(dentro).length,
+      legendas: feito.blocos.filter((b) => b.estilo !== "preco" && dentro(b.inicio)).length,
+      precos: feito.blocos.filter((b) => b.estilo === "preco" && dentro(b.inicio)).length,
+      falaSomeEmS: feito.palavras.length === 0 || fim - ultima <= FALA_SOME_S ? null : ultima - ini,
+    };
+  });
+}
+
 /**
  * Perfil de edicao (docs/PERFIS_DE_EDICAO.md): a empresa escolhida no Editar e
  * a pasta de B-roll de cada uma. Fica em `perfil.json`, fora do `config.json`

@@ -62,8 +62,10 @@ import {
   dentroDasVariacoes,
   inicioDosLeaks,
   moverPalavras,
+  resumoPorVariacao,
   trilhaFaltando,
   variacoes,
+  type ResumoVariacao,
   type Variacao,
 } from "./editar.ts";
 import {
@@ -92,6 +94,20 @@ const MATCH_LUMETRI = "AE.ADBE Lumetri";
 
 export type Registrar = (texto: string, tipo?: "passo" | "ok" | "aviso" | "erro" | "vazio") => void;
 
+export type Etapa = keyof OpcoesEditar;
+
+/** O painel acompanha cada etapa e recebe, no fim, o que caiu em cada variacao. */
+export interface AoVivo {
+  etapa(id: Etapa, estado: "rodando" | "ok" | "aviso" | "erro", resumo?: string): void;
+  variacoes(lista: readonly ResumoVariacao[]): void;
+}
+
+/** O que cada etapa devolve para o painel: uma frase curta. */
+interface Feito {
+  readonly resumo: string;
+  readonly aviso?: boolean;
+}
+
 // ------------------------------------------------------------------ estado
 
 export interface EstadoSequencia {
@@ -99,6 +115,8 @@ export interface EstadoSequencia {
   readonly duracaoS: number;
   readonly clipesV1: number;
   readonly variacoes: number;
+  /** Duracao de cada variacao, para a grade do painel antes de editar. */
+  readonly duracoesS: readonly number[];
   readonly brollsAcimaDaV1: number;
   readonly faixasDeLegenda: number;
   readonly temChave: boolean;
@@ -116,11 +134,13 @@ export async function lerEstado(): Promise<EstadoSequencia> {
   } catch {
     // Contar legenda e enfeite: sem isto o estado continua valendo.
   }
+  const vars = variacoes(clipes, s.fps);
   return {
     nome: s.info.name,
     duracaoS: Math.max(...clipes.map((c) => c.fimQ)) / s.fps,
     clipesV1: s.v1.length,
-    variacoes: variacoes(clipes, s.fps).length,
+    variacoes: vars.length,
+    duracoesS: vars.map((v) => (v.fimQ - v.inicioQ) / s.fps),
     brollsAcimaDaV1: (await comLimite("B-rolls", lerBrollsAcimaDeV1(), 10000)).length,
     faixasDeLegenda,
     temChave: (await comLimite("chave", lerChaveElevenLabs(), 5000)) !== null,
@@ -352,7 +372,7 @@ async function colocarBroll(
   nomeSequencia: string,
   registrar: Registrar,
   progresso: (t: string) => void
-): Promise<number> {
+): Promise<Feito & { inicios: number[] }> {
   const config = parseConfig(await comLimite("ler config", readJson("config.json"), 5000));
   if (!config.libraryPath) throw new Error("Pasta de B-rolls não configurada. Abra o Auto B-roll uma vez e escolha a pasta.");
   usarSinonimos(parseSinonimos(await comLimite("ler sinônimos", readJson("sinonimos.json"), 5000)) ?? SINONIMOS_PADRAO);
@@ -386,7 +406,7 @@ async function colocarBroll(
   if (aparados > 0) registrar(`${aparados} B-roll(s) aparados para terminar junto com o vídeo`, "passo");
   if (entram.length === 0) {
     registrar("nenhum B-roll bom o bastante para entrar sozinho", "aviso");
-    return 0;
+    return { resumo: "nenhum entrou", aviso: true, inicios: [] };
   }
 
   progresso(`colocando ${entram.length} B-rolls`);
@@ -414,7 +434,7 @@ async function colocarBroll(
     })
   );
   registrar(`${entram.length} B-rolls na V${config.videoTrackIndex + 1}`, "ok");
-  return entram.length;
+  return { resumo: `${entram.length} na V${config.videoTrackIndex + 1}`, aviso: feito.avisos.length > 0, inicios: entram.map((c) => c.inicio) };
 }
 
 // -------------------------------------------------------------- light leak
@@ -427,7 +447,7 @@ const ehLeak = (c: BrollNaTimeline): boolean => /light leak/i.test(`${c.nomeNoPr
  * "Light Leak" no nome no painel Projeto; entra inteiro (0,84 s, sem audio).
  * Vai na faixa do leak que ja esta la, ou logo acima da faixa de B-roll.
  */
-async function colocarLeaks(vars: readonly Variacao[], fps: number, registrar: Registrar): Promise<void> {
+async function colocarLeaks(vars: readonly Variacao[], fps: number, registrar: Registrar): Promise<Feito & { inicios: number[] }> {
   const config = parseConfig(await comLimite("ler config", readJson("config.json"), 5000));
   const naTimeline = await comLimite("ler a timeline", lerBrollsAcimaDeV1(), 10000);
   const modelo = naTimeline.find(ehLeak);
@@ -438,7 +458,7 @@ async function colocarLeaks(vars: readonly Variacao[], fps: number, registrar: R
   const item = itens.find((i) => (modelo ? i.name === modelo.nomeNoProjeto : /light leak/i.test(i.name)));
   if (item === undefined) {
     registrar("light leak: nenhum no projeto. Gere um no Premiere Composer e rode de novo", "aviso");
-    return;
+    return { resumo: "nenhum no projeto", aviso: true, inicios: [] };
   }
 
   const trecho = (c: BrollNaTimeline) => ({ inicio: c.startSeconds, fim: c.endSeconds });
@@ -450,7 +470,7 @@ async function colocarLeaks(vars: readonly Variacao[], fps: number, registrar: R
   );
   if (inicios.length === 0) {
     registrar("light leak: toda troca de B-roll já tem", "passo");
-    return;
+    return { resumo: "toda troca já tem", inicios: [] };
   }
 
   const editor = await ppro.SequenceEditor.getEditor(await project.getActiveSequence());
@@ -460,6 +480,7 @@ async function colocarLeaks(vars: readonly Variacao[], fps: number, registrar: R
     for (const t of tempos) adicionar(editor.createOverwriteItemAction(item, t, faixa, config.audioTrackIndex));
   });
   registrar(`${inicios.length} light leaks na V${faixa + 1} (${item.name})`, "ok");
+  return { resumo: `${inicios.length} na V${faixa + 1}`, inicios };
 }
 
 // ------------------------------------------------------------------ trilha
@@ -475,7 +496,7 @@ const FAIXA_TRILHA = 1;
  * clone leva o ganho e o trecho da musica. Depois o fim vai para o fim de cada
  * variacao.
  */
-async function colocarTrilha(vars: readonly Variacao[], fps: number, registrar: Registrar): Promise<void> {
+async function colocarTrilha(vars: readonly Variacao[], fps: number, registrar: Registrar): Promise<Feito> {
   const project = await ppro.Project.getActiveProject();
   const sequence = await project.getActiveSequence();
   const ler = async () =>
@@ -490,13 +511,13 @@ async function colocarTrilha(vars: readonly Variacao[], fps: number, registrar: 
   const modelo = naFaixa[0];
   if (modelo === undefined) {
     registrar(`trilha: ponha a música embaixo de uma variação na A${FAIXA_TRILHA + 1} e o Editar copia para as outras`, "aviso");
-    return;
+    return { resumo: `sem música na A${FAIXA_TRILHA + 1}`, aviso: true };
   }
   const { entram, pulam } = trilhaFaltando(vars, fps, naFaixa, modelo.fim - modelo.inicio);
   for (const v of pulam) registrar(`  trilha: ${relogio(v.inicioQ / fps)} ficou de fora (a cópia cairia na música da variação seguinte)`, "aviso");
   if (entram.length === 0) {
     if (pulam.length === 0) registrar("trilha: toda variação já tem", "passo");
-    return;
+    return pulam.length === 0 ? { resumo: "toda variação já tem" } : { resumo: `${pulam.length} ficaram de fora`, aviso: true };
   }
 
   const editor = await ppro.SequenceEditor.getEditor(sequence);
@@ -519,6 +540,7 @@ async function colocarTrilha(vars: readonly Variacao[], fps: number, registrar: 
     `trilha em ${fins.length} de ${entram.length} variação(ões) na A${FAIXA_TRILHA + 1}, cópia da que já estava`,
     fins.length === entram.length ? "ok" : "aviso"
   );
+  return { resumo: `${fins.length} variações`, aviso: fins.length < entram.length || pulam.length > 0 };
 }
 
 // ---------------------------------------------------------------- legendas
@@ -528,13 +550,10 @@ async function colocarLegendas(
   cortes: readonly number[],
   preset: Preset,
   registrar: Registrar
-): Promise<void> {
+): Promise<Feito & { blocos: ReturnType<typeof gerarBlocos> }> {
   const blocos = gerarBlocos(palavras, cortes, preset);
   const problemas = validar(blocos, preset);
-  if (problemas.length > 0) {
-    registrar(`legenda reprovada na validação: ${problemas.slice(0, 3).join("; ")}`, "erro");
-    return;
-  }
+  if (problemas.length > 0) throw new Error(`legenda reprovada na validação: ${problemas.slice(0, 3).join("; ")}`);
   const normais = blocos.filter((b) => b.estilo === "normal");
   const precos = blocos.filter((b) => b.estilo === "preco");
   const revisar = blocos.filter((b) => b.precisaRevisao);
@@ -543,7 +562,13 @@ async function colocarLegendas(
   registrar(`${blocos.length} legendas · ${precos.length} preço(s) · ${revisar.length} para revisar`, "passo");
   for (const b of revisar.slice(0, 6)) registrar(`  revisar ${relogio(b.inicio)}: ${b.motivos.join("; ")}`, "aviso");
 
-  for (const l of await legendasNaTimeline(caminhoLegendas, caminhoPrecos)) registrar(l.texto, l.tipo);
+  const linhas = await legendasNaTimeline(caminhoLegendas, caminhoPrecos);
+  for (const l of linhas) registrar(l.texto, l.tipo);
+  return {
+    resumo: `${normais.length} · ${precos.length} preço(s)`,
+    aviso: linhas.some((l) => l.tipo === "erro" || l.tipo === "aviso"),
+    blocos,
+  };
 }
 
 // ------------------------------------------------------------------- tudo
@@ -557,12 +582,33 @@ export interface OpcoesEditar {
   readonly legendas: boolean;
 }
 
-export async function editar(opcoes: OpcoesEditar, registrar: Registrar, progresso: (t: string) => void): Promise<boolean> {
+export async function editar(
+  opcoes: OpcoesEditar,
+  registrar: Registrar,
+  progresso: (t: string) => void,
+  aoVivo?: AoVivo
+): Promise<boolean> {
   const t0 = Date.now();
   const s = await comLimite("ler a sequência", lerSequencia(opcoes.pausas), 20000);
   const fps = s.fps;
   const originais = clipesEmQuadros(s);
   registrar(`${s.info.name}: ${s.v1.length} clipe(s) na V1, ${variacoes(originais, fps).length} variação(ões)`, "passo");
+
+  // Cada etapa avisa o painel; a que falha fica marcada e as outras seguem.
+  const etapa = async <T extends Feito>(id: Etapa, rotulo: string, fazer: () => Promise<T>): Promise<T | null> => {
+    progresso(rotulo.toLowerCase());
+    aoVivo?.etapa(id, "rodando");
+    try {
+      const r = await fazer();
+      aoVivo?.etapa(id, r.aviso ? "aviso" : "ok", r.resumo);
+      return r;
+    } catch (e) {
+      const m = (e as Error)?.message ?? String(e);
+      registrar(`${rotulo}: ${m}`, "erro");
+      aoVivo?.etapa(id, "erro", m);
+      return null;
+    }
+  };
 
   // 1-2. A fala, uma vez so. So pausas, B-roll e legendas usam: split, light
   // leak e trilha rodam sem ElevenLabs (e sem chave).
@@ -575,69 +621,72 @@ export async function editar(opcoes: OpcoesEditar, registrar: Registrar, progres
   let cortes = originais.slice(1).map((c) => c.inicioQ / fps);
   let clipesDepois: ReadonlyArray<{ inicioQ: number; fimQ: number }> = originais;
 
-  // 3. Auto Pausas.
+  // 3. Auto Pausas. Erro aqui para tudo: as outras etapas dependem do corte.
   if (opcoes.pausas) {
     progresso("decidindo as pausas");
-    const falaP = palavras.filter((p) => p.fim > p.inicio).map((p) => ({ texto: p.text, inicio: p.inicio, fim: p.fim }));
-    const blocos = blocosDeFala(fala.db, JANELA_S, falaP);
-    const duracaoQ = Math.max(...originais.map((c) => c.fimQ));
-    const plano = planejarCortes(blocos, { fps, duracaoQ, margemS: MARGEM_PADRAO_S });
-    if (plano.cortes.length === 0) {
-      registrar("nenhuma pausa para cortar", "passo");
-    } else {
-      const movimentos = await lerMovimentos(s.v1);
-      const r = await aplicarPlano(s, plano.trechos, progresso);
-      for (const l of linhasDoAplicado(r, r.pedacos.length)) registrar(l, r.emSincronia && r.contagemOk && r.duracaoOk ? "passo" : "aviso");
-      registrar(`${plano.cortes.length} pausas cortadas · ${relogio(duracaoQ / fps)} → ${relogio(r.totalQ / fps)}`, "ok");
-      await reaplicarMovimentos(r.pedacos, originais, movimentos, registrar).catch((e) =>
-        registrar(`zoom/posição não reaplicados: ${(e as Error).message}`, "aviso")
-      );
-      palavras = moverPalavras(palavras, r.pedacos, fps);
-      cortes = cortesDosPedacos(r.pedacos, fps);
-      clipesDepois = r.pedacos.map((p) => ({ inicioQ: p.destinoQ, fimQ: p.destinoQ + p.midiaAteQ - p.midiaDeQ }));
+    aoVivo?.etapa("pausas", "rodando");
+    try {
+      const falaP = palavras.filter((p) => p.fim > p.inicio).map((p) => ({ texto: p.text, inicio: p.inicio, fim: p.fim }));
+      const blocos = blocosDeFala(fala.db, JANELA_S, falaP);
+      const duracaoQ = Math.max(...originais.map((c) => c.fimQ));
+      const plano = planejarCortes(blocos, { fps, duracaoQ, margemS: MARGEM_PADRAO_S });
+      if (plano.cortes.length === 0) {
+        registrar("nenhuma pausa para cortar", "passo");
+        aoVivo?.etapa("pausas", "ok", "nenhuma pausa");
+      } else {
+        const movimentos = await lerMovimentos(s.v1);
+        const r = await aplicarPlano(s, plano.trechos, progresso);
+        const certo = r.emSincronia && r.contagemOk && r.duracaoOk;
+        for (const l of linhasDoAplicado(r, r.pedacos.length)) registrar(l, certo ? "passo" : "aviso");
+        registrar(`${plano.cortes.length} pausas cortadas · ${relogio(duracaoQ / fps)} → ${relogio(r.totalQ / fps)}`, "ok");
+        await reaplicarMovimentos(r.pedacos, originais, movimentos, registrar).catch((e) =>
+          registrar(`zoom/posição não reaplicados: ${(e as Error).message}`, "aviso")
+        );
+        palavras = moverPalavras(palavras, r.pedacos, fps);
+        cortes = cortesDosPedacos(r.pedacos, fps);
+        clipesDepois = r.pedacos.map((p) => ({ inicioQ: p.destinoQ, fimQ: p.destinoQ + p.midiaAteQ - p.midiaDeQ }));
+        aoVivo?.etapa("pausas", certo ? "ok" : "aviso", `${plano.cortes.length} cortes · ${relogio(duracaoQ / fps)} → ${relogio(r.totalQ / fps)}`);
+      }
+    } catch (e) {
+      aoVivo?.etapa("pausas", "erro", (e as Error)?.message ?? String(e));
+      throw e;
     }
   }
   const vars = variacoes(clipesDepois, fps);
 
   // 4. Auto B-roll.
-  if (opcoes.broll) {
-    progresso("escolhendo B-rolls");
-    await colocarBroll(palavras, vars, fps, s.info.name, registrar, progresso).catch((e) =>
-      registrar(`B-roll: ${(e as Error).message}`, "erro")
-    );
-  }
+  const broll = opcoes.broll
+    ? await etapa("broll", "B-roll", () => colocarBroll(palavras, vars, fps, s.info.name, registrar, progresso))
+    : null;
 
   // 5. Auto Split.
   if (opcoes.split) {
-    progresso("split");
-    try {
+    await etapa("split", "Split", async () => {
       const { lado, divisao, feather } = SPLIT_DA_EMPRESA[empresa];
       const r = await aplicarSplit({ faixa: null, divisao, lado, feather, subirDoutor: false, refazer: false });
       for (const l of r.linhas.slice(-4)) registrar(`  ${l}`, "vazio");
       registrar(r.ok ? "split aplicado" : "split com avisos", r.ok ? "ok" : "aviso");
-    } catch (e) {
-      registrar(`Split: ${(e as Error).message}`, "erro");
-    }
+      return { resumo: r.ok ? "aplicado" : "com avisos", aviso: !r.ok };
+    });
   }
 
   // 5b. Light leak nas trocas doutor <-> B-roll.
-  if (opcoes.leak) {
-    progresso("light leak");
-    await colocarLeaks(vars, fps, registrar).catch((e) => registrar(`Light leak: ${(e as Error).message}`, "erro"));
-  }
+  const leaks = opcoes.leak ? await etapa("leak", "Light leak", () => colocarLeaks(vars, fps, registrar)) : null;
 
   // 5c. Trilha: a musica de uma variacao copiada para as outras.
-  if (opcoes.trilha) {
-    progresso("trilha");
-    await colocarTrilha(vars, fps, registrar).catch((e) => registrar(`Trilha: ${(e as Error).message}`, "erro"));
-  }
+  if (opcoes.trilha) await etapa("trilha", "Trilha", () => colocarTrilha(vars, fps, registrar));
 
   // 6. Legendas por ultimo: a timeline ja esta no formato final.
-  if (opcoes.legendas) {
-    progresso("legendas");
-    await colocarLegendas(palavras, cortes, preset, registrar).catch((e) => registrar(`Legendas: ${(e as Error).message}`, "erro"));
-  }
+  const legendas = opcoes.legendas ? await etapa("legendas", "Legendas", () => colocarLegendas(palavras, cortes, preset, registrar)) : null;
 
+  aoVivo?.variacoes(
+    resumoPorVariacao(vars, variacoes(originais, fps), fps, {
+      brolls: broll?.inicios ?? [],
+      leaks: leaks?.inicios ?? [],
+      blocos: legendas?.blocos ?? [],
+      palavras,
+    })
+  );
   registrar(`pronto em ${((Date.now() - t0) / 1000).toFixed(0)} s`, "ok");
   return true;
 }

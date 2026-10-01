@@ -7,6 +7,7 @@ import {
   inicioDosLeaks,
   moverPalavras,
   parsePerfil,
+  resumoPorVariacao,
   trilhaFaltando,
   trocarEmpresa,
   variacoes,
@@ -105,4 +106,22 @@ test("perfil: troca de empresa guarda a pasta de quem sai e devolve a de quem en
   assert.equal(parsePerfil({ empresa: "toString", bibliotecas: { toString: "x" } }).empresa, "androclinic"); // lixo nao vira empresa
   assert.ok(presetDa("grandcare").termosChave.includes("GrandCare"));
   assert.equal(presetDa("grandcare").maxPalavras, 3); // o resto e o preset dos Ads
+});
+
+test("resumoPorVariacao: conta o que caiu em cada uma e avisa a fala que acaba cedo (audio mudo)", () => {
+  const vars = [{ inicioQ: 0, fimQ: 250 }, { inicioQ: 300, fimQ: 550 }]; // 0-10 s e 12-22 s
+  const antes = [{ inicioQ: 0, fimQ: 300 }, { inicioQ: 350, fimQ: 650 }];
+  const r = resumoPorVariacao(vars, antes, FPS, {
+    brolls: [2, 5, 13],
+    leaks: [1.6, 4.6, 12.6],
+    blocos: [{ inicio: 0, estilo: "normal" }, { inicio: 8, estilo: "preco" }, { inicio: 12, estilo: "normal" }],
+    palavras: [w("a", 0, 9.5), w("b", 12, 15)], // a 2a fala acaba em 15 s: 7 s mudos antes do fim (22 s)
+  });
+  assert.deepEqual(r[0], { duracaoS: 10, antesS: 12, brolls: 2, leaks: 2, legendas: 1, precos: 1, falaSomeEmS: null });
+  assert.equal(r[1]!.brolls, 1);
+  assert.equal(r[1]!.falaSomeEmS, 3);
+  // Sem transcricao (so split/leak/trilha) nao ha aviso de fala; numero de variacoes mudou: sem "antes".
+  const s = resumoPorVariacao(vars, antes.slice(0, 1), FPS, { brolls: [], leaks: [], blocos: [], palavras: [] });
+  assert.equal(s[1]!.falaSomeEmS, null);
+  assert.equal(s[0]!.antesS, null);
 });
