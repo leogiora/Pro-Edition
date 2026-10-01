@@ -260,6 +260,7 @@ o Leo antes de mexer):
 | Split da Menopausa (B-roll em cima, `Bottom` do Rounded Crop) no Auto Split | **OK** (29/09): borda de baixo em 45%, Bottom 27,5% no 720×1280 |
 | Quadrado 1:1 (botão do Auto Split) | **OK** (29/09): 697 clipes da V1 a 50%, 100 B-rolls cobrindo o quadrado |
 | Tela nova do Editar (estado por etapa, barra, números, grade de variações, timeline viva com a tela 9:16, abas Quadros e Fala) | falta: abrir o Editar numa edição real e conferir. O B-roll do Editar entra em `pendentes.json` pelo nome da sequência, então o teste não pode ser numa cópia |
+| Ponte plugin → programa (o plugin conta sequência, cursor e seleção a cada 0,5 s por 127.0.0.1:47800; o programa mostra no topo) | receptor do programa **OK** (01/10, envio simulado: 200 no válido, 400 no lixo). Falta: reiniciar o Premiere com o manifest novo e ver "Premiere ao vivo" no programa |
 
 Testes de 29/09 feitos por Claude numa cópia: `Andro 19.09\TESTE Pro Edition
 29.09.prproj` (o original não foi tocado; a cópia pode ser apagada). Falta:
