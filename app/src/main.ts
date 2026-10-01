@@ -5,6 +5,7 @@
 
 import { app, BrowserWindow, dialog, ipcMain, shell } from "electron";
 import { existsSync } from "node:fs";
+import { createServer } from "node:http";
 import { writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
@@ -14,6 +15,7 @@ import { abrirParaAcabamento, rodarAcabamento, type OpcoesAcabamentoTela } from 
 import { abrirParaBroll, rodarBroll } from "./motor/broll.ts";
 import { abrirParaPausas, rodarPausas } from "./motor/pausas.ts";
 import { abrirParaPodcast, rodarPodcast } from "./motor/podcast.ts";
+import { lerEstadoPremiere, PORTA_PREMIERE } from "./premiere-ao-vivo.ts";
 
 const cfg = new Config(app.getPath("userData"));
 
@@ -52,6 +54,37 @@ function criarJanela(): void {
       }, Number(process.env.PRO_EDITION_PRINT_ESPERA ?? 800));
     }
   });
+}
+
+/**
+ * O plugin no Premiere (a "extensao") conta o que esta aberto a cada meio
+ * segundo; o programa repassa para a tela. So 127.0.0.1: nada de fora do PC.
+ * Porta ocupada nao derruba o programa, so tira o "ao vivo".
+ */
+function escutarPremiere(): void {
+  const servidor = createServer((req, res) => {
+    if (req.method !== "POST" || req.url !== "/premiere") {
+      res.writeHead(404).end();
+      return;
+    }
+    let corpo = "";
+    req.on("data", (pedaco: Buffer) => {
+      corpo += pedaco.toString("utf8");
+      if (corpo.length > 10_000) req.destroy();
+    });
+    req.on("end", () => {
+      let estado = null;
+      try {
+        estado = lerEstadoPremiere(JSON.parse(corpo));
+      } catch {
+        // corpo que nao e JSON: recusado abaixo
+      }
+      if (estado) for (const janela of BrowserWindow.getAllWindows()) janela.webContents.send("premiere", estado);
+      res.writeHead(estado ? 200 : 400, { "Content-Type": "application/json" }).end("{}");
+    });
+  });
+  servidor.on("error", (e) => console.error(`ponte do Premiere: ${e.message}`));
+  servidor.listen(PORTA_PREMIERE, "127.0.0.1");
 }
 
 const FILTROS = {
@@ -151,6 +184,9 @@ if (!app.requestSingleInstanceLock()) {
     const arquivo = argv.slice(1).find((a) => !a.startsWith("-") && existsSync(a) && /\.[a-z0-9]+$/i.test(a));
     if (arquivo !== undefined) janela.webContents.send("abrir", arquivo);
   });
-  void app.whenReady().then(criarJanela);
+  void app.whenReady().then(() => {
+    criarJanela();
+    escutarPremiere();
+  });
   app.on("window-all-closed", () => app.quit());
 }

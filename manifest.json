@@ -20,7 +20,7 @@
   "requiredPermissions": {
     "localFileSystem": "fullAccess",
     "network": {
-      "domains": ["https://api.elevenlabs.io"]
+      "domains": ["https://api.elevenlabs.io", "http://127.0.0.1:47800", "http://localhost:47800"]
     }
   },
   "icons": [

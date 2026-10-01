@@ -26,6 +26,8 @@ import { mount as mountAutocut } from "./autocut-mount.ts";
 import htmlAutosplit from "./autosplit.html";
 import { mount as mountAutosplit } from "./autosplit-mount.ts";
 
+import { ligarPonteApp } from "../ponte-app.ts";
+
 import htmlSeletor from "./seletor.html";
 import cssSeletor from "./seletor.css";
 
@@ -166,3 +168,5 @@ function mostrar(ferramenta: Ferramenta): void {
 }
 
 mostrar("seletor");
+// Depois da tela: se a ponte falhar, o painel ja esta de pe.
+ligarPonteApp();
