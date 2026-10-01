@@ -13,9 +13,18 @@ type Evento =
   | { tipo: "registro"; texto: string; tom: Parameters<Registrar>[1] }
   | { tipo: "progresso"; texto: string }
   | { tipo: "etapa"; id: Etapa; estado: Parameters<AoVivo["etapa"]>[1]; resumo?: string }
-  | { tipo: "variacoes"; lista: ResumoVariacao[] };
+  | { tipo: "variacoes"; lista: ResumoVariacao[] }
+  | { tipo: "alvo"; indices: number[] };
+
+/** O ipc embrulha a mensagem: "Error invoking remote method 'x': Error: <a nossa>". */
+const limpa = (e: unknown): Error =>
+  new Error((e instanceof Error ? e.message : String(e)).replace(/^Error invoking remote method '[^']+': (Error: )?/, ""));
 
 export function motorRemoto(pro: ProApi): MotorEditar {
+  const pedir = (nome: string, args: readonly unknown[]): Promise<unknown> =>
+    pro.pedirPremiere(nome, args).catch((e) => {
+      throw limpa(e);
+    });
   // Um AutoEdit por vez: os eventos vao para quem esta editando agora.
   let ouvinte: ((e: Evento) => void) | null = null;
   pro.aoEventoPremiere((e) => {
@@ -24,11 +33,11 @@ export function motorRemoto(pro: ProApi): MotorEditar {
   });
 
   return {
-    lerEstado: () => pro.pedirPremiere("lerEstado", []) as Promise<EstadoSequencia>,
-    lerEmpresa: () => pro.pedirPremiere("lerEmpresa", []) as Promise<Empresa>,
-    trocarEmpresa: (nova) => pro.pedirPremiere("trocarEmpresa", [nova]) as Promise<{ nome: string; pasta: string }>,
+    lerEstado: () => pedir("lerEstado", []) as Promise<EstadoSequencia>,
+    lerEmpresa: () => pedir("lerEmpresa", []) as Promise<Empresa>,
+    trocarEmpresa: (nova) => pedir("trocarEmpresa", [nova]) as Promise<{ nome: string; pasta: string }>,
     guardarLog: async (linhas) => {
-      await pro.pedirPremiere("guardarLog", [linhas]);
+      await pedir("guardarLog", [linhas]);
     },
     editar: async (opcoes, registrar, progresso, aoVivo) => {
       ouvinte = (e) => {
@@ -36,9 +45,10 @@ export function motorRemoto(pro: ProApi): MotorEditar {
         else if (e.tipo === "progresso") progresso(e.texto);
         else if (e.tipo === "etapa") aoVivo.etapa(e.id, e.estado, e.resumo);
         else if (e.tipo === "variacoes") aoVivo.variacoes(e.lista);
+        else if (e.tipo === "alvo") aoVivo.alvo(e.indices);
       };
       try {
-        return (await pro.pedirPremiere("editar", [opcoes])) as boolean;
+        return (await pedir("editar", [opcoes])) as boolean;
       } finally {
         ouvinte = null;
       }

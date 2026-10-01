@@ -62,9 +62,11 @@ import {
   dentroDasVariacoes,
   inicioDosLeaks,
   moverPalavras,
+  protegerFora,
   resumoPorVariacao,
   trilhaFaltando,
   variacoes,
+  variacoesDaSelecao,
   type AoVivo,
   type Etapa,
   type EstadoSequencia,
@@ -485,8 +487,10 @@ async function colocarLeaks(vars: readonly Variacao[], fps: number, registrar: R
   }
 
   const trecho = (c: BrollNaTimeline) => ({ inicio: c.startSeconds, fim: c.endSeconds });
+  // So o B-roll das variacoes da vez (todas, ou so as da selecao).
+  const dentro = (c: BrollNaTimeline) => vars.some((v) => c.startSeconds * fps >= v.inicioQ - 0.5 && c.startSeconds * fps < v.fimQ);
   const inicios = inicioDosLeaks(
-    naTimeline.filter((c) => ehVideo(c.sourceName)).map(trecho),
+    naTimeline.filter((c) => ehVideo(c.sourceName) && dentro(c)).map(trecho),
     vars,
     fps,
     naTimeline.filter((c) => c.videoTrackIndex === faixa).map(trecho)
@@ -597,6 +601,16 @@ async function colocarLegendas(
 
 // ------------------------------------------------------------------- tudo
 
+/** Inicio e fim, em segundos, de cada clipe selecionado na timeline. */
+async function lerSelecao(): Promise<Array<{ inicio: number; fim: number }>> {
+  const sequence = await (await ppro.Project.getActiveProject()).getActiveSequence();
+  const itens = (await (await sequence.getSelection()).getTrackItems()) as Array<{
+    getStartTime: () => Promise<{ seconds: number }>;
+    getEndTime: () => Promise<{ seconds: number }>;
+  }>;
+  return Promise.all(itens.map(async (i) => ({ inicio: (await i.getStartTime()).seconds, fim: (await i.getEndTime()).seconds })));
+}
+
 export async function editar(
   opcoes: OpcoesEditar,
   registrar: Registrar,
@@ -608,6 +622,15 @@ export async function editar(
   const fps = s.fps;
   const originais = clipesEmQuadros(s);
   registrar(`${s.info.name}: ${s.v1.length} clipe(s) na V1, ${variacoes(originais, fps).length} variação(ões)`, "passo");
+
+  // So a selecao: as variacoes com algum clipe selecionado; as outras ficam como estao.
+  const todasAntes = variacoes(originais, fps);
+  const escolhidas = opcoes.soSelecao
+    ? variacoesDaSelecao(todasAntes, fps, await comLimite("seleção", lerSelecao(), 10000))
+    : todasAntes.map((_, i) => i);
+  if (escolhidas.length === 0) throw new Error("Nada selecionado: clique num clipe da variação que quer editar e tente de novo.");
+  if (opcoes.soSelecao) registrar(`só a seleção: variação ${escolhidas.map((i) => i + 1).join(", ")} de ${todasAntes.length}`, "passo");
+  aoVivo?.alvo(escolhidas);
 
   // O que ja estava (base) mais o que o Editar poe, para o painel redesenhar a
   // cada etapa. Sem a base, o B-roll que o Leo ja tinha sumia do desenho.
@@ -667,7 +690,8 @@ export async function editar(
     aoVivo?.etapa("pausas", "rodando");
     try {
       const falaP = palavras.filter((p) => p.fim > p.inicio).map((p) => ({ texto: p.text, inicio: p.inicio, fim: p.fim }));
-      const blocos = blocosDeFala(fala.db, JANELA_S, falaP);
+      // As variacoes fora da selecao entram como "fala": o corte passa por elas sem tirar nada.
+      const blocos = [...blocosDeFala(fala.db, JANELA_S, falaP), ...protegerFora(todasAntes, fps, escolhidas).map((b) => ({ ...b, motivo: "fala" as const }))];
       const duracaoQ = Math.max(...originais.map((c) => c.fimQ));
       const plano = planejarCortes(blocos, { fps, duracaoQ, margemS: MARGEM_PADRAO_S });
       if (plano.cortes.length === 0) {
@@ -694,7 +718,13 @@ export async function editar(
     }
     mostrar();
   }
-  const vars = variacoes(clipesDepois, fps);
+  const todasDepois = variacoes(clipesDepois, fps);
+  if (opcoes.soSelecao && todasDepois.length !== todasAntes.length) {
+    throw new Error(`o corte mudou o número de variações (${todasAntes.length} → ${todasDepois.length}); rode o resto com "Editar todas"`);
+  }
+  const vars = escolhidas.flatMap((i) => (todasDepois[i] ? [todasDepois[i]] : []));
+  /** Fala e B-roll so das variacoes da vez. */
+  const naVez = (t: number) => vars.some((v) => t * fps >= v.inicioQ && t * fps < v.fimQ);
 
   // 4. Auto B-roll.
   if (opcoes.broll) {
@@ -705,7 +735,15 @@ export async function editar(
   if (opcoes.split) {
     await etapa("split", "Split", async () => {
       const { lado, divisao, feather } = SPLIT_DA_EMPRESA[empresa];
-      const r = await aplicarSplit({ faixa: null, divisao, lado, feather, subirDoutor: false, refazer: false });
+      const r = await aplicarSplit({
+        faixa: null,
+        divisao,
+        lado,
+        feather,
+        subirDoutor: false,
+        refazer: false,
+        entre: vars.map((v) => ({ inicio: v.inicioQ / fps, fim: v.fimQ / fps })),
+      });
       for (const l of r.linhas.slice(-4)) registrar(`  ${l}`, "vazio");
       registrar(r.ok ? "split aplicado" : "split com avisos", r.ok ? "ok" : "aviso");
       return { resumo: r.ok ? "aplicado" : "com avisos", aviso: !r.ok };
@@ -733,7 +771,7 @@ export async function editar(
   // 6. Legendas por ultimo: a timeline ja esta no formato final.
   if (opcoes.legendas) {
     await etapa("legendas", "Legendas", async () => {
-      const r = await colocarLegendas(palavras, cortes, preset, registrar);
+      const r = await colocarLegendas(opcoes.soSelecao ? palavras.filter((p) => naVez(p.inicio)) : palavras, cortes, preset, registrar);
       blocos = r.blocos;
       return r;
     });

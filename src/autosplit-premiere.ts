@@ -123,6 +123,8 @@ export interface OpcoesSplit {
   /** Da empresa (SPLIT_DA_EMPRESA): sem isto, B-roll embaixo e feather da AndroClinic. */
   readonly lado?: LadoSplit;
   readonly feather?: number;
+  /** So os B-rolls que comecam dentro destes trechos (segundos): o AutoEdit "so a selecao". */
+  readonly entre?: ReadonlyArray<{ readonly inicio: number; readonly fim: number }>;
 }
 
 export interface ItemPlano {
@@ -185,7 +187,9 @@ export async function montarPlano(opcoes: OpcoesSplit): Promise<PlanoSplit> {
   const brollTopoFrac = fracaoDivisao(opcoes.divisao);
 
   const todos = await lerBrollsAcimaDeV1();
-  const alvo = opcoes.faixa === null ? todos : todos.filter((b) => b.videoTrackIndex === opcoes.faixa);
+  const alvo = (opcoes.faixa === null ? todos : todos.filter((b) => b.videoTrackIndex === opcoes.faixa)).filter(
+    (b) => !opcoes.entre || opcoes.entre.some((t) => b.startSeconds >= t.inicio - 0.02 && b.startSeconds < t.fim),
+  );
 
   const linhas: string[] = [];
   const itens: ItemPlano[] = [];

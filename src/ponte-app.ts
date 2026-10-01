@@ -57,6 +57,7 @@ async function atender(p: Pedido): Promise<unknown> {
         {
           etapa: (id, estado, resumo) => evento({ tipo: "etapa", id, estado, resumo }),
           variacoes: (lista) => evento({ tipo: "variacoes", lista }),
+          alvo: (indices) => evento({ tipo: "alvo", indices }),
         }
       );
     default:

@@ -85,6 +85,9 @@ export function mount(root: HTMLElement, motor: MotorEditar): void {
   const tomDa: Partial<Record<Etapa, Tom>> = {};
   let resumo: readonly ResumoVariacao[] = [];
   let editado = false;
+  /** Variacoes que a edicao da vez mexe, e as que ja foram editadas desde a ultima leitura. */
+  let alvos: ReadonlySet<number> = new Set();
+  const editadas = new Set<number>();
   let ocupado = false;
   /** O Leo clicou numa variacao durante o Editar: a tela fica nela. */
   let escolhida = false;
@@ -206,12 +209,12 @@ export function mount(root: HTMLElement, motor: MotorEditar): void {
   };
 
   // ---- andamento e grade de variacoes
-  const avisos = () => resumo.filter((r) => r.falaSomeEmS !== null).length;
+  const avisos = () => resumo.filter((r, i) => editadas.has(i) && r.falaSomeEmS !== null).length;
   const desenharAndamento = () => {
     pega("edBarraFeito").setAttribute("style", `flex-grow: ${editado && !ocupado ? 1 : feitas}`);
     pega("edBarraResto").setAttribute("style", `flex-grow: ${editado && !ocupado ? 0 : Math.max(total - feitas, total === 0 ? 1 : 0)}`);
     const cont = pega("edCont");
-    cont.textContent = editado && !ocupado ? `${resumo.length - avisos()} ok${avisos() > 0 ? ` · ${avisos()} com aviso` : ""}` : "";
+    cont.textContent = editado && !ocupado ? `${editadas.size - avisos()} ok${avisos() > 0 ? ` · ${avisos()} com aviso` : ""}` : "";
   };
 
   const desenharGrade = () => {
@@ -222,14 +225,15 @@ export function mount(root: HTMLElement, motor: MotorEditar): void {
       el.setAttribute("data-sel", i === sel ? "sim" : "nao");
       const cima = novo(el, "div", "var-cima");
       novo(cima, "span", "var-nome", String(i + 1));
-      const tom = ocupado ? "ativo" : !editado ? "" : r.falaSomeEmS !== null ? "aviso" : "ok";
+      const naVez = ocupado && alvos.has(i);
+      const tom = naVez ? "ativo" : !editadas.has(i) ? "" : r.falaSomeEmS !== null ? "aviso" : "ok";
       novo(cima, "span", "var-st", tom === "ativo" ? "…" : tom === "ok" ? "✓" : tom === "aviso" ? "!" : "○").setAttribute("data-tom", tom);
       const barra = novo(el, "div", "var-barra");
       const feito = novo(barra, "span", "var-feito");
       feito.setAttribute("data-tom", tom);
-      const g = ocupado ? feitas : editado ? 1 : 0;
+      const g = naVez ? feitas : editadas.has(i) ? 1 : 0;
       feito.setAttribute("style", `flex-grow: ${g}`);
-      novo(barra, "span", "").setAttribute("style", `flex-grow: ${ocupado ? Math.max(total - feitas, 0) : editado ? 0 : 1}`);
+      novo(barra, "span", "").setAttribute("style", `flex-grow: ${naVez ? Math.max(total - feitas, 0) : editadas.has(i) ? 0 : 1}`);
       clicavel(el, () => {
         sel = i;
         t = 0;
@@ -440,6 +444,10 @@ export function mount(root: HTMLElement, motor: MotorEditar): void {
       desenharGrade();
       desenharDetalhe();
     },
+    alvo(indices) {
+      alvos = new Set(indices);
+      desenharGrade();
+    },
   };
   pega("edGrade").addEventListener("click", () => {
     if (ocupado) escolhida = true;
@@ -457,6 +465,8 @@ export function mount(root: HTMLElement, motor: MotorEditar): void {
       ativo.legendas = e.faixasDeLegenda === 0;
       resumo = e.resumo;
       editado = false;
+      editadas.clear();
+      alvos = new Set();
       sel = 0;
       t = 0;
       split = null;
@@ -475,8 +485,9 @@ export function mount(root: HTMLElement, motor: MotorEditar): void {
     }
   };
 
-  const rodar = () => {
+  const rodar = (soSelecao: boolean) => {
     if (ocupado) return;
+    alvos = new Set(soSelecao ? [] : resumo.map((_, i) => i));
     ocupado = true;
     escolhida = false;
     linhas.length = 0;
@@ -495,11 +506,14 @@ export function mount(root: HTMLElement, motor: MotorEditar): void {
       pega("edProg").textContent = `Editando · ${texto}`;
     };
     void motor
-      .editar({ ...ativo }, registrar, progresso, aoVivo)
+      .editar({ ...ativo, soSelecao }, registrar, progresso, aoVivo)
       .then(() => {
         pill("pronto", "ok");
         editado = true;
-        pega("edProg").textContent = `${resumo.length} variação(ões) editada(s)`;
+        for (const i of alvos) editadas.add(i);
+        pega("edProg").textContent = soSelecao
+          ? `Variação ${[...alvos].map((i) => i + 1).join(", ")} editada`
+          : `${resumo.length} variação(ões) editada(s)`;
       })
       .catch((erro) => {
         const m = (erro as Error)?.message ?? String(erro);
@@ -516,7 +530,11 @@ export function mount(root: HTMLElement, motor: MotorEditar): void {
         void motor.guardarLog(linhas).catch(() => undefined);
       });
   };
-  clicavel(pega("edEditar"), rodar);
+  clicavel(pega("edEditar"), () => rodar(false));
+  clicavel(pega("edSelecao"), () => rodar(true));
+  pega("edIcoTodas").innerHTML = icone("todas", "#ffffff");
+  pega("edIcoSel").innerHTML = icone("selecao", "#85b7eb");
+  pega("edIcoReler").innerHTML = icone("reler", "#9098a6");
   clicavel(pega("edRelir"), () => {
     if (!ocupado) void ler();
   });
