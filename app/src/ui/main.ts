@@ -5,6 +5,7 @@
 import type { BlocoLegenda, Legendas, ProApi } from "../api.ts";
 import { SILENCIO_MS, tempoDoCursor } from "../premiere-ao-vivo.ts";
 import { motorRemoto } from "./motor-remoto.ts";
+import { desenharTrilhas, icone, marca, type Icone } from "../../../src/shell.ts";
 import cssFamilia from "../../../ferramentas/auto-broll/src/ui/styles.css";
 import htmlEditar from "../../../src/ui/editar.html";
 import { mount as montarAutoEdit } from "../../../src/ui/editar-mount.ts";
@@ -74,6 +75,11 @@ function abrirAutoEdit(): void {
   quadro.addEventListener("load", () => montarAutoEdit(quadro.contentDocument!.body, motorRemoto(pro)), { once: true });
   quadro.srcdoc = `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><style>${cssFamilia}</style></head><body>${htmlEditar}</body></html>`;
 }
+
+// Tela inicial: simbolo, icones e miniaturas, os mesmos do painel.
+$("marcaSimbolo").innerHTML = marca(22);
+for (const el of document.querySelectorAll<HTMLElement>("[data-icone]")) el.innerHTML = icone(el.dataset.icone as Icone, "#0d0f13");
+for (const el of document.querySelectorAll<HTMLElement>("[data-trilhas]")) el.innerHTML = desenharTrilhas(el.dataset.trilhas ?? "");
 
 for (const card of document.querySelectorAll<HTMLElement>("[data-abre]")) {
   card.addEventListener("click", () => abrir(card.dataset.abre as Tela));

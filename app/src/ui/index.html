@@ -9,47 +9,75 @@
 <body>
   <header class="topo">
     <button id="voltar" class="migalha" hidden>← Cutline</button>
-    <span id="marca" class="marca">Cutline</span>
+    <span id="marca" class="marca"><span id="marcaSimbolo" class="marca-simbolo" aria-hidden="true"></span>Cutline</span>
     <span id="titulo" class="titulo"></span>
     <span id="premiere" class="premiere" data-on="nao" title="O plugin Cutline no Premiere conta o que esta aberto">Premiere: desconectado</span>
     <button id="abrirConfig" class="icone" title="Configurações" aria-label="Configurações">⚙</button>
   </header>
 
   <main id="hall" class="tela">
-    <section class="grupo">
-      <h2>Pro Ads</h2>
-      <div class="cards">
-        <button class="card" data-abre="autoedit" style="--acento:#3b82f6">
-          <span class="card-nome">AutoEdit</span>
-          <span class="card-desc">A edição inteira no Premiere aberto, em todas as variações: pausas, B-roll, split, leak, trilha e legendas. Precisa do painel Cutline aberto no Premiere.</span>
-        </button>
-        <button class="card" data-abre="pausas" style="--acento:#4ecb8d">
-          <span class="card-nome">SilenceCut</span>
-          <span class="card-desc">Tira as pausas e os respiros da sequência que você separou e devolve um XML pronto para o Premiere, com a legenda junto.</span>
-        </button>
-        <button class="card" data-abre="legendas" style="--acento:#eeab4c">
-          <span class="card-nome">Captions</span>
-          <span class="card-desc">Transcreve com o ElevenLabs e gera o .srt no seu padrão, com os preços num arquivo separado.</span>
-        </button>
-        <button class="card" data-abre="broll" style="--acento:#8d82f5">
-          <span class="card-nome">B-Roller</span>
-          <span class="card-desc">Escolhe o B-roll pelo que o doutor fala, com o que o painel já aprendeu, e coloca na V2.</span>
-        </button>
-        <button class="card" data-abre="acabamento" style="--acento:#3b82f6">
-          <span class="card-nome">Acabamento</span>
-          <span class="card-desc">Split meio a meio, trilha em cada variação, e B-roll e trilha terminando junto com o doutor.</span>
-        </button>
-      </div>
-    </section>
-    <section class="grupo">
-      <h2>Podcast</h2>
-      <div class="cards">
-        <button class="card" data-abre="podcast" style="--acento:#ff7d71">
-          <span class="card-nome">PodCut</span>
-          <span class="card-desc">Duas câmeras, dois microfones: corta as quatro trilhas juntas e liga só quem está falando.</span>
-        </button>
-      </div>
-    </section>
+    <!-- O mesmo hall do painel (src/ui/seletor.html), com nomes h-* para nao
+         bater nas classes do programa. Icones, miniaturas e simbolo saem de
+         src/shell.ts (icone, desenharTrilhas, marca). -->
+    <button class="h-heroi" data-abre="autoedit">
+      <span class="h-heroi-texto">
+        <span class="h-heroi-cima"><span class="h-heroi-nome">AutoEdit</span><span class="h-cta">Abrir</span></span>
+        <span class="h-heroi-desc">A edição inteira no Premiere aberto, em todas as variações. O programa é a tela; quem edita é o painel Cutline aberto no Premiere.</span>
+        <span class="h-bolas"><span class="h-bola-item"><span class="h-bola" data-icone="pausas" style="background-color:#4ecb8d"></span><span class="h-bola-nome">Pausas</span></span><span class="h-bola-item"><span class="h-bola" data-icone="broll" style="background-color:#8d82f5"></span><span class="h-bola-nome">B-roll</span></span><span class="h-bola-item"><span class="h-bola" data-icone="split" style="background-color:#67c7e2"></span><span class="h-bola-nome">Split</span></span><span class="h-bola-item"><span class="h-bola" data-icone="leak" style="background-color:#eeab4c"></span><span class="h-bola-nome">Leak</span></span><span class="h-bola-item"><span class="h-bola" data-icone="trilha" style="background-color:#4fc3a1"></span><span class="h-bola-nome">Trilha</span></span><span class="h-bola-item"><span class="h-bola" data-icone="legendas" style="background-color:#eceef2"></span><span class="h-bola-nome">Legendas</span></span></span>
+      </span>
+      <span class="h-mapa h-mapa-heroi" aria-hidden="true"
+        data-trilhas="C2 -------------##---------|C1 ##-###-##-####-##-###-##|V3 -#--#----#---#----#--#--|V2 --###-----###----###----|V1 ========================|A2 ########################"></span>
+    </button>
+
+    <p class="h-grupo">Ferramentas avulsas · trabalham com o XML exportado do Premiere</p>
+    <div class="h-cards">
+      <button class="h-card" data-abre="pausas" style="--c:#4ecb8d">
+        <span class="h-ico" data-icone="pausas" style="background-color:#4ecb8d"></span>
+        <span class="h-texto">
+          <span class="h-nome">SilenceCut</span>
+          <span class="h-desc">Tira as pausas e os respiros da sequência que você separou e devolve um XML pronto para o Premiere, com a legenda junto.</span>
+        </span>
+        <span class="h-mapa" aria-hidden="true" data-trilhas="V1 ###-###-##-####-###-##|A1 ###-###-##-####-###-##"></span>
+      </button>
+      <button class="h-card" data-abre="legendas" style="--c:#eceef2">
+        <span class="h-ico" data-icone="legendas" style="background-color:#eceef2"></span>
+        <span class="h-texto">
+          <span class="h-nome">Captions</span>
+          <span class="h-desc">Transcreve com o ElevenLabs e gera o .srt no seu padrão, com os preços num arquivo separado.</span>
+        </span>
+        <span class="h-mapa" aria-hidden="true" data-trilhas="C2 -------##------##-----|C1 ##-###-##-####-##-###-|V1 ======================"></span>
+      </button>
+      <button class="h-card" data-abre="broll" style="--c:#8d82f5">
+        <span class="h-ico" data-icone="broll" style="background-color:#8d82f5"></span>
+        <span class="h-texto">
+          <span class="h-nome">B-Roller</span>
+          <span class="h-desc">Escolhe o B-roll pelo que o doutor fala, com o que o painel já aprendeu, e coloca na V2.</span>
+        </span>
+        <span class="h-mapa" aria-hidden="true" data-trilhas="V2 --###-----##----###---|V1 ======================|A3 --###-----##----###---"></span>
+      </button>
+      <button class="h-card" data-abre="acabamento" style="--c:#67c7e2">
+        <span class="h-ico" data-icone="split" style="background-color:#67c7e2"></span>
+        <span class="h-texto">
+          <span class="h-nome">Acabamento</span>
+          <span class="h-desc">Split meio a meio, trilha em cada variação, e B-roll e trilha terminando junto com o doutor.</span>
+        </span>
+        <span class="h-mapa" aria-hidden="true" data-trilhas="V2 --###-----##----###---|V1 ======================|A2 ######################"></span>
+      </button>
+    </div>
+
+    <p class="h-grupo">Podcast</p>
+    <div class="h-cards">
+      <button class="h-card" data-abre="podcast" style="--c:#4fc3a1">
+        <span class="h-ico" data-icone="podcast" style="background-color:#4fc3a1"></span>
+        <span class="h-texto">
+          <span class="h-nome">PodCut</span>
+          <span class="h-desc">Duas câmeras, dois microfones: corta as quatro trilhas juntas e liga só quem está falando.</span>
+        </span>
+        <span class="h-mapa" aria-hidden="true" data-trilhas="V2 #####-----###----#####|V1 -----#####---####-----|A2 #####-----###----#####|A1 -----#####---####-----"></span>
+      </button>
+    </div>
+
+    <p class="h-nota">As miniaturas mostram o que cada ferramenta faz na sequência: em cinza o que já está nela, em cor o que ela coloca.</p>
   </main>
 
   <main id="autoedit" class="tela" hidden>
