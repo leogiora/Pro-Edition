@@ -375,7 +375,7 @@ export async function aplicar(mapa: Mapa, segmentos: readonly Segmento[], fps: n
       linhas.push(`corte em ${comoTempo(quadro, tpf)}: ${alvos.length} tracks atingidas, esperado 4.`);
     }
 
-    comTransacao(project as never, `Podcast AutoCut: corte em ${comoTempo(quadro, tpf)}`, (adicionar) => {
+    comTransacao(project as never, `PodCut: corte em ${comoTempo(quadro, tpf)}`, (adicionar) => {
       for (const a of alvos) {
         adicionar(editor.createCloneTrackItemAction(a.item, a.deslocamento, 0, 0, true, false));
       }
@@ -426,7 +426,7 @@ export async function aplicar(mapa: Mapa, segmentos: readonly Segmento[], fps: n
     bordas.set(rotulo(alvo), inicios.join(","));
   }
 
-  comTransacao(project as never, "Podcast AutoCut: sincronizar e alternar", (adicionar) => {
+  comTransacao(project as never, "PodCut: sincronizar e alternar", (adicionar) => {
     for (const acao of acoes) adicionar(acao());
   });
 

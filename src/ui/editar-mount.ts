@@ -145,7 +145,7 @@ export function mount(root: HTMLElement): void {
       await writeJson("config.json", { ...config, libraryPath: r.pasta });
       const nome = EMPRESAS[r.perfil.empresa].nome;
       if (r.pasta) registrar(`${nome}: B-roll de ${r.pasta}`, "passo");
-      else registrar(`${nome}: escolha a pasta de B-roll dela no Auto B-roll`, "aviso");
+      else registrar(`${nome}: escolha a pasta de B-roll dela no B-Roller`, "aviso");
     })().catch((e) => registrar(`empresa: ${(e as Error)?.message ?? String(e)}`, "erro"));
   };
 
@@ -184,7 +184,7 @@ export function mount(root: HTMLElement): void {
       clicavel(el, () => {
         if (ocupado) return;
         ativo[e.id] = !ativo[e.id];
-        pega("edProg").textContent = `${e.nome} ${ativo[e.id] ? "ligado" : "desligado"} para o próximo Editar`;
+        pega("edProg").textContent = `${e.nome} ${ativo[e.id] ? "ligado" : "desligado"} para o próximo AutoEdit`;
         desenharEtapas();
       });
     }
@@ -466,7 +466,7 @@ export function mount(root: HTMLElement): void {
       parar();
       pega("edProg").textContent = `${e.variacoes} variação(ões) na sequência · ${relogio(e.duracaoS)}`;
       desenharTudo();
-      if (!e.temChave) registrar("Sem chave do ElevenLabs: salve a chave no Pro Captions antes de editar.", "aviso");
+      if (!e.temChave) registrar("Sem chave do ElevenLabs: salve a chave no Captions antes de editar.", "aviso");
       pill("pronto", "ok");
     } catch (erro) {
       pega("edSeq").textContent = "· sem sequência";

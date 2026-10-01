@@ -29,7 +29,7 @@ function criarJanela(): void {
     height: 760,
     minWidth: 760,
     minHeight: 520,
-    title: "Pro Edition",
+    title: "Cutline",
     backgroundColor: "#0d0f13",
     icon: join(__dirname, "icon.png"),
     webPreferences: { preload: join(__dirname, "preload.cjs"), contextIsolation: true, sandbox: true },

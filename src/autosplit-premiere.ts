@@ -445,7 +445,7 @@ export async function aplicarSplit(opcoes: OpcoesSplit): Promise<ResultadoSplit>
     return { ok: false, linhas };
   }
 
-  comTransacao(project as never, `Auto Split: ${posicionados} B-rolls`, (add) => {
+  comTransacao(project as never, `SplitScreen: ${posicionados} B-rolls`, (add) => {
     for (const a of acoes1) add(a());
   });
   linhas.push(`${posicionados} B-rolls posicionados na caixa ${caixa}.`);
@@ -480,7 +480,7 @@ export async function aplicarSplit(opcoes: OpcoesSplit): Promise<ResultadoSplit>
       }
     }
     if (acoes2.length > 0) {
-      comTransacao(h2.project as never, "Auto Split: corte de topo e feather", (add) => {
+      comTransacao(h2.project as never, "SplitScreen: corte de topo e feather", (add) => {
         for (const a of acoes2) add(a());
       });
       linhas.push(`${paraSetar.length} Rounded Crop aplicados (corte ${opcoes.lado === "cima" ? "embaixo" : "em cima"} por clipe, feather ${feather}%).`);
@@ -779,6 +779,6 @@ export async function diagnostico(): Promise<string[]> {
   await writeJson("diag-autosplit.json", saida);
   linhas.push("");
   linhas.push("Desfaca no Premiere (Ctrl+Z) ate a timeline voltar ao que era.");
-  linhas.push("Me mande o diag-autosplit.json (PluginData do Pro Edition).");
+  linhas.push("Me mande o diag-autosplit.json (PluginData do Cutline).");
   return linhas;
 }

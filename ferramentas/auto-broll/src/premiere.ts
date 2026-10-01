@@ -588,7 +588,7 @@ export async function inserirPlano(
     }
     if (prontos.length === 0) throw new Error("Nenhum B-roll pronto para inserir.");
 
-    comTransacao(project as never, `Auto B-roll: inserir ${prontos.length} B-rolls`, (adicionar) => {
+    comTransacao(project as never, `B-Roller: inserir ${prontos.length} B-rolls`, (adicionar) => {
       for (const p of prontos) {
         adicionar(
           editor.createOverwriteItemAction(p.item, p.at, opcoes.videoTrackIndex, opcoes.audioTrackIndex)
@@ -636,7 +636,7 @@ export async function inserirPlano(
     }
 
     if (acoes.length > 0) {
-      comTransacao(project as never, "Auto B-roll: ajustar duracao e escala", (adicionar) => {
+      comTransacao(project as never, "B-Roller: ajustar duracao e escala", (adicionar) => {
         for (const acao of acoes) adicionar(acao());
       });
       passos.push(`${ajustados} ajustados (duracao${opcoes.preencherTela ? " e escala" : ""})`);
@@ -657,7 +657,7 @@ export async function inserirPlano(
 
     if (alvos.length > 0) {
       const editor = await ppro.SequenceEditor.getEditor(sequence);
-      comTransacao(project as never, "Auto B-roll: remover audio", (adicionar) => {
+      comTransacao(project as never, "B-Roller: remover audio", (adicionar) => {
         let selecao: { addItem: (i: unknown, d: boolean) => boolean } | null = null;
         ppro.TrackItemSelection.createEmptySelection((s: typeof selecao) => {
           selecao = s;

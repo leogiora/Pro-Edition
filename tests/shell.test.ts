@@ -1,7 +1,15 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
-import { desenharTrilhas, escolherTela, extrairCorpo, icone, segmentos, type Icone, type Tela } from "../src/shell.ts";
+import { desenharTrilhas, escolherTela, extrairCorpo, icone, marca, segmentos, type Icone, type Tela } from "../src/shell.ts";
+
+test("marca: o simbolo do Cutline so com caixas, no tamanho pedido", () => {
+  const html = marca(256);
+  assert.equal(html.replace(/<[^>]*>/g, ""), "");
+  assert.match(html, /width: 256\.00px; height: 256\.00px/);
+  assert.equal((html.match(/#ff7d71/g) ?? []).length, 4); // cursor em 4 fatias
+  assert.equal((html.match(/#eceef2/g) ?? []).length, 6); // 3 faixas cortadas
+});
 
 test("icone: todo icone e caixa na cor pedida, sem caractere (nada de emoji no UXP)", () => {
   for (const t of ["pausas", "broll", "split", "leak", "trilha", "legendas", "podcast"] as Icone[]) {
