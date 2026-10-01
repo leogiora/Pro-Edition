@@ -66,7 +66,22 @@ faixas (C2 preço, C1 legenda, V3 leak, V2 B-roll, V1 doutor, A2 trilha).
 - Clicar num quadro ou numa palavra leva a timeline para aquele ponto.
 - As regras são puras, `marcarFala()` e `quadros()` em `editar.ts`.
 
-A tela nova do Editar está completa, mas falta testar no Premiere.
+**Layout do protótipo (01/10):** o Leo abriu os passos 1 a 3 no Premiere e a
+tela ainda tinha o layout antigo (caixas de marcar, lista, seções empilhadas).
+Ela foi refeita igual ao protótipo combinado:
+- **topo:** "Editar · sequência" com a pílula de estado;
+- **seleção:** empresas em botões e as etapas em bolinhas com símbolo que ligam e desligam e acendem quando rodam;
+- **andamento:** a barra e a grade R1…R10;
+- **variação escolhida:** o nome com as primeiras palavras da fala, 4 números (cortes, B-rolls, legendas, preços), o aviso de áudio mudo e as abas;
+- **embaixo:** o registro curto (o completo atrás de um clique) e o rodapé "Editar todas" / "Ler de novo".
+
+A timeline já aparece antes de editar: `lerEstado` devolve a V1, os B-rolls
+e os leaks que já estão na sequência.
+
+O "Só esta" do protótipo ficou de fora, porque o Editar trabalha na sequência
+inteira. Os símbolos das etapas são caracteres (✂ ▣ ▤ ☀ ♪ ≡), porque o UXP não
+tem a fonte de ícones. Conferido no navegador com o código real e um Premiere
+falso. Falta abrir no Premiere.
 
 - **Legenda (Pro Captions + ElevenLabs):** pronta no código, inclusive a
   segmentação no estilo do Leo (`segmentar.ts` + `maxPalavras: 3` no

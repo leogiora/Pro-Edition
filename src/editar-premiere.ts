@@ -56,7 +56,7 @@ import { EMPRESAS, presetDa, type Preset } from "../ferramentas/pro-captions/src
 import { validar } from "../ferramentas/pro-captions/src/segmentar.ts";
 import type { PalavraEditada } from "../ferramentas/pro-captions/src/transcript.ts";
 import { aplicarSplit } from "./autosplit-premiere.ts";
-import { SPLIT_DA_EMPRESA } from "./autosplit.ts";
+import { conceito, SPLIT_DA_EMPRESA } from "./autosplit.ts";
 import {
   cortesDosPedacos,
   dentroDasVariacoes,
@@ -115,8 +115,8 @@ export interface EstadoSequencia {
   readonly duracaoS: number;
   readonly clipesV1: number;
   readonly variacoes: number;
-  /** Duracao de cada variacao, para a grade do painel antes de editar. */
-  readonly duracoesS: readonly number[];
+  /** Cada variacao como ja esta (V1, B-roll e leak que estao la), para a grade e a timeline antes de editar. */
+  readonly resumo: readonly ResumoVariacao[];
   readonly brollsAcimaDaV1: number;
   readonly faixasDeLegenda: number;
   readonly temChave: boolean;
@@ -135,13 +135,23 @@ export async function lerEstado(): Promise<EstadoSequencia> {
     // Contar legenda e enfeite: sem isto o estado continua valendo.
   }
   const vars = variacoes(clipes, s.fps);
+  const acima = await comLimite("B-rolls", lerBrollsAcimaDeV1(), 10000);
   return {
     nome: s.info.name,
     duracaoS: Math.max(...clipes.map((c) => c.fimQ)) / s.fps,
     clipesV1: s.v1.length,
     variacoes: vars.length,
-    duracoesS: vars.map((v) => (v.fimQ - v.inicioQ) / s.fps),
-    brollsAcimaDaV1: (await comLimite("B-rolls", lerBrollsAcimaDeV1(), 10000)).length,
+    resumo: resumoPorVariacao(vars, [], s.fps, {
+      clipes: clipes.map((c) => ({ inicio: c.inicioQ / s.fps, fim: c.fimQ / s.fps })),
+      brolls: acima
+        .filter((c) => !ehLeak(c) && ehVideo(c.sourceName))
+        .map((c) => ({ inicio: c.startSeconds, fim: c.endSeconds, nome: conceito(c.sourceName) })),
+      leaks: acima.filter(ehLeak).map((c) => c.startSeconds),
+      blocos: [],
+      palavras: [],
+      trilha: [],
+    }),
+    brollsAcimaDaV1: acima.length,
     faixasDeLegenda,
     temChave: (await comLimite("chave", lerChaveElevenLabs(), 5000)) !== null,
   };

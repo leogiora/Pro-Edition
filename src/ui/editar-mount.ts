@@ -1,5 +1,8 @@
 /*
- * Tela do Editar. So orquestra: le o estado, liga as caixas, chama o adapter.
+ * Tela do Editar, no layout do prototipo que o Leo escolheu (01/10): empresa,
+ * etapas em bolinhas, grade de variacoes, detalhe da escolhida com Timeline,
+ * Quadros e Fala, e o registro curto. So orquestra: le o estado, chama o
+ * adapter e desenha o que ele manda (AoVivo).
  * Botoes ligados ANTES de qualquer await (UXP_ARMADILHAS, regra 2).
  */
 
@@ -13,18 +16,20 @@ import { segmentos } from "../shell.ts";
 
 const LOG = "editar-log.json";
 const PERFIL = "perfil.json";
-const CAIXA: Readonly<Record<Etapa, string>> = {
-  pausas: "edPausas",
-  broll: "edBroll",
-  split: "edSplit",
-  leak: "edLeak",
-  trilha: "edTrilha",
-  legendas: "edLegendas",
-};
-const MARCA = { rodando: "", ok: "✓ ", aviso: "! ", erro: "✗ " } as const;
+
+const ETAPAS: ReadonlyArray<{ readonly id: Etapa; readonly nome: string; readonly simbolo: string; readonly cor: string }> = [
+  { id: "pausas", nome: "Pausas", simbolo: "✂", cor: "#4ecb8d" },
+  { id: "broll", nome: "B-roll", simbolo: "▣", cor: "#8d82f5" },
+  { id: "split", nome: "Split", simbolo: "▤", cor: "#67c7e2" },
+  { id: "leak", nome: "Leak", simbolo: "☀", cor: "#eeab4c" },
+  { id: "trilha", nome: "Trilha", simbolo: "♪", cor: "#4fc3a1" },
+  { id: "legendas", nome: "Legendas", simbolo: "≡", cor: "#eceef2" },
+];
+const COR_EMPRESA: Readonly<Record<Empresa, string>> = { androclinic: "#3b82f6", grandcare: "#4fc3a1", menopausa: "#e07ba8" };
 const FAIXAS = ["C2", "C1", "V3", "V2", "V1", "A2"] as const;
 const nLeg = (r: ResumoVariacao): number => r.legendas.filter((l) => !l.preco).length;
 const nPreco = (r: ResumoVariacao): number => r.legendas.length - nLeg(r);
+const ouTraco = (n: number): string => (n > 0 ? String(n) : "–");
 
 function itensDa(r: ResumoVariacao, faixa: (typeof FAIXAS)[number]): readonly Trecho[] {
   if (faixa === "C2") return r.legendas.filter((l) => l.preco);
@@ -35,86 +40,198 @@ function itensDa(r: ResumoVariacao, faixa: (typeof FAIXAS)[number]): readonly Tr
   return r.trilha ? [{ de: 0, ate: r.duracaoS }] : [];
 }
 
+type Tom = "rodando" | "ok" | "aviso" | "erro";
+
 export function mount(root: HTMLElement): void {
   const pega = <T extends HTMLElement>(id: string): T => root.querySelector<T>(`#${id}`)!;
+  const limpar = (el: HTMLElement) => {
+    while (el.firstChild) el.removeChild(el.firstChild);
+  };
+  const novo = (pai: HTMLElement, tag: string, classe: string, texto = ""): HTMLElement => {
+    const el = document.createElement(tag);
+    el.className = classe;
+    el.textContent = texto;
+    pai.appendChild(el);
+    return el;
+  };
+  const clicavel = (el: HTMLElement, fazer: () => void) => {
+    el.setAttribute("role", "button");
+    el.setAttribute("tabindex", "0");
+    el.addEventListener("click", fazer);
+    el.addEventListener("keydown", (e) => {
+      if ((e as KeyboardEvent).key === "Enter" || (e as KeyboardEvent).key === " ") fazer();
+    });
+  };
+
+  // ---- estado da tela
+  let seqNome = "";
+  let empresa: Empresa = "androclinic";
+  const ativo: Record<Etapa, boolean> = { pausas: true, broll: true, split: false, leak: true, trilha: true, legendas: true };
+  const tomDa: Partial<Record<Etapa, Tom>> = {};
+  let resumo: readonly ResumoVariacao[] = [];
+  let editado = false;
+  let ocupado = false;
+  /** O Leo clicou numa variacao durante o Editar: a tela fica nela. */
+  let escolhida = false;
+  let sel = 0;
+  let total = 0;
+  let feitas = 0;
+  /** Lado e divisao do split, depois que a etapa Split rodou. */
+  let split: { lado: "baixo" | "cima"; divisao: number } | null = null;
+
+  // ---- registro: as ultimas linhas embaixo; o completo atras de um clique e no arquivo
   const log = pega<HTMLPreElement>("edLog");
   const linhas: string[] = [];
-
+  const curtas: Array<{ texto: string; tom: string }> = [];
+  const desenharFeed = () => {
+    const feed = pega("edFeed");
+    limpar(feed);
+    if (curtas.length === 0) novo(feed, "span", "feed-linha", "O que acontece aparece aqui.");
+    for (const l of curtas.slice(-4)) novo(feed, "span", "feed-linha", l.texto).setAttribute("data-tom", l.tom);
+  };
   const registrar: Registrar = (texto, tipo = "passo") => {
     const marca = tipo === "erro" ? "✗ " : tipo === "aviso" ? "! " : tipo === "ok" ? "✓ " : "";
     linhas.push(`${marca}${texto}`);
     log.textContent = linhas.join("\n");
     log.scrollTop = log.scrollHeight;
+    if (tipo !== "vazio") {
+      curtas.push({ texto: `${marca}${texto}`, tom: tipo });
+      desenharFeed();
+    }
   };
-  const estado = (texto: string, tom: "ativo" | "ok" | "aviso" | "erro") => {
-    const badge = pega("edEstado");
-    badge.textContent = texto;
-    badge.setAttribute("data-tom", tom);
-  };
-  const marcado = (id: string) => (pega(id) as HTMLElement & { checked?: boolean }).checked === true;
-  const soma = (xs: readonly number[]) => xs.reduce((a, b) => a + b, 0);
+  let logAberto = false;
+  clicavel(pega("edVerLog"), () => {
+    logAberto = !logAberto;
+    log.setAttribute("style", logAberto ? "" : "display: none");
+    pega("edVerLog").textContent = logAberto ? "esconder o registro completo" : "ver o registro completo";
+  });
 
-  // ---- andamento das etapas: resultado ao lado de cada caixa e a barra
-  let total = 0;
-  let feitas = 0;
-  const barra = () => {
-    pega("edBarraFeito").setAttribute("style", `flex-grow: ${feitas}`);
-    pega("edBarraResto").setAttribute("style", `flex-grow: ${Math.max(total - feitas, total === 0 ? 1 : 0)}`);
-  };
-  const marcarEtapa = (id: Etapa, texto: string, tom: string) => {
-    const el = pega(`edRes_${id}`);
-    el.textContent = texto;
-    el.setAttribute("data-tom", tom);
+  const pill = (texto: string, tom: "ativo" | "ok" | "aviso" | "erro") => {
+    const p = pega("edPill");
+    p.textContent = texto;
+    p.setAttribute("data-tom", tom);
   };
 
-  // ---- variacoes: grade, numeros e o detalhe da escolhida
-  let duracoes: readonly number[] = [];
-  let resumo: readonly ResumoVariacao[] | null = null;
-  let sel = -1;
+  // ---- empresas
+  const desenharEmpresas = () => {
+    const caixa = pega("edEmpresas");
+    limpar(caixa);
+    for (const [id, e] of Object.entries(EMPRESAS) as Array<[Empresa, { nome: string }]>) {
+      const chip = novo(caixa, "div", "chip", e.nome);
+      chip.setAttribute("data-on", id === empresa ? "sim" : "nao");
+      if (id === empresa) chip.setAttribute("style", `border-color: ${COR_EMPRESA[id]}`);
+      clicavel(chip, () => trocar(id));
+    }
+  };
+  const trocar = (nova: Empresa) => {
+    if (ocupado || nova === empresa) return;
+    empresa = nova;
+    desenharEmpresas();
+    void (async () => {
+      const config = parseConfig(await readJson("config.json"));
+      const r = trocarEmpresa(parsePerfil(await readJson(PERFIL)), config.libraryPath, nova);
+      await writeJson(PERFIL, r.perfil);
+      await writeJson("config.json", { ...config, libraryPath: r.pasta });
+      const nome = EMPRESAS[r.perfil.empresa].nome;
+      if (r.pasta) registrar(`${nome}: B-roll de ${r.pasta}`, "passo");
+      else registrar(`${nome}: escolha a pasta de B-roll dela no Auto B-roll`, "aviso");
+    })().catch((e) => registrar(`empresa: ${(e as Error)?.message ?? String(e)}`, "erro"));
+  };
 
-  const detalhar = () => {
-    const d = pega("edVarDetalhe");
-    const r = resumo?.[sel];
-    if (sel < 0) {
-      d.textContent = "Clique numa variação para ver o que entrou nela.";
-    } else if (!r) {
-      d.textContent = `Variação ${sel + 1}: ${relogio(duracoes[sel] ?? 0)}, ainda não editada.`;
-    } else {
-      const partes = [
-        `Variação ${sel + 1}: ${relogio(r.duracaoS)}${r.antesS !== null ? ` (era ${relogio(r.antesS)})` : ""}`,
-        `${r.brolls.length} B-roll(s)`,
-        `${r.leaks.length} leak(s)`,
-        `${nLeg(r)} legenda(s)`,
-      ];
-      if (nPreco(r) > 0) partes.push(`${nPreco(r)} preço(s)`);
-      if (r.trilha) partes.push("trilha");
-      const fala =
-        r.falaSomeEmS === null
-          ? ""
-          : r.falaSomeEmS === 0
-            ? ". Sem fala nenhuma: áudio mudo?"
-            : `. A fala some em ${relogio(r.falaSomeEmS)}: áudio mudo nesse trecho? Ali fica sem legenda.`;
-      d.textContent = partes.join(" · ") + fala;
+  // ---- etapas: bolinhas que ligam e desligam, e acendem quando rodam
+  const desenharEtapas = () => {
+    const caixa = pega("edEtapas");
+    limpar(caixa);
+    for (const e of ETAPAS) {
+      const tom = tomDa[e.id];
+      const el = novo(caixa, "div", "etapa");
+      el.setAttribute("data-on", ativo[e.id] ? "sim" : "nao");
+      const bola = novo(el, "span", "bola", tom === "rodando" ? "…" : e.simbolo);
+      const nome = novo(el, "span", "etapa-nome", e.nome);
+      const fundo = tom === "ok" ? e.cor : tom === "aviso" ? "#eeab4c" : tom === "erro" ? "#ff7d71" : null;
+      if (fundo) {
+        bola.setAttribute("style", `background-color: ${fundo}; border-color: ${fundo}; color: #0d0f13`);
+        nome.setAttribute("style", `color: ${fundo}`);
+      } else if (tom === "rodando") {
+        bola.setAttribute("style", `border-color: ${e.cor}; color: ${e.cor}`);
+        nome.setAttribute("style", `color: ${e.cor}`);
+      }
+      clicavel(el, () => {
+        if (ocupado) return;
+        ativo[e.id] = !ativo[e.id];
+        desenharEtapas();
+      });
     }
   };
 
-  const numeros = () => {
-    const dur = soma(resumo ? resumo.map((r) => r.duracaoS) : duracoes);
-    const antes = resumo?.every((r) => r.antesS !== null) ? soma(resumo.map((r) => r.antesS ?? 0)) : null;
-    pega("edNumDur").textContent = antes !== null && antes - dur >= 1 ? `−${relogio(antes - dur)}` : relogio(dur);
-    pega("edNumDurSub").textContent = antes !== null && antes - dur >= 1 ? `${relogio(antes)} → ${relogio(dur)}` : resumo ? "" : "antes de editar";
-    pega("edNumBroll").textContent = resumo ? String(soma(resumo.map((r) => r.brolls.length))) : "–";
-    pega("edNumLeak").textContent = resumo ? `${soma(resumo.map((r) => r.leaks.length))} leak(s)` : "";
-    pega("edNumLeg").textContent = resumo ? String(soma(resumo.map(nLeg))) : "–";
-    pega("edNumPreco").textContent = resumo ? `${soma(resumo.map(nPreco))} preço(s)` : "";
+  // ---- andamento e grade de variacoes
+  const prefixo = () => (seqNome.trim()[0] ?? "V").toUpperCase();
+  const avisos = () => resumo.filter((r) => r.falaSomeEmS !== null).length;
+  const desenharAndamento = () => {
+    pega("edBarraFeito").setAttribute("style", `flex-grow: ${editado && !ocupado ? 1 : feitas}`);
+    pega("edBarraResto").setAttribute("style", `flex-grow: ${editado && !ocupado ? 0 : Math.max(total - feitas, total === 0 ? 1 : 0)}`);
+    const cont = pega("edCont");
+    cont.textContent = editado && !ocupado ? `${resumo.length - avisos()} ok${avisos() > 0 ? ` · ${avisos()} com aviso` : ""}` : "";
   };
 
-  // ---- timeline viva da variacao escolhida e a tela 9:16 no cursor
+  const desenharGrade = () => {
+    const grade = pega("edGrade");
+    limpar(grade);
+    resumo.forEach((r, i) => {
+      const el = novo(grade, "div", "var");
+      el.setAttribute("data-sel", i === sel ? "sim" : "nao");
+      const cima = novo(el, "div", "var-cima");
+      novo(cima, "span", "var-nome", `${prefixo()}${i + 1}`);
+      const tom = ocupado ? "ativo" : !editado ? "" : r.falaSomeEmS !== null ? "aviso" : "ok";
+      novo(cima, "span", "var-st", tom === "ativo" ? "…" : tom === "ok" ? "✓" : tom === "aviso" ? "!" : "○").setAttribute("data-tom", tom);
+      const barra = novo(el, "div", "var-barra");
+      const feito = novo(barra, "span", "var-feito");
+      feito.setAttribute("data-tom", tom);
+      const g = ocupado ? feitas : editado ? 1 : 0;
+      feito.setAttribute("style", `flex-grow: ${g}`);
+      novo(barra, "span", "").setAttribute("style", `flex-grow: ${ocupado ? Math.max(total - feitas, 0) : editado ? 0 : 1}`);
+      clicavel(el, () => {
+        sel = i;
+        t = 0;
+        parar();
+        desenharGrade();
+        desenharDetalhe();
+      });
+    });
+  };
+
+  // ---- detalhe: nome, numeros, aviso e a vista escolhida
+  const desenharDetalhe = () => {
+    const r = resumo[sel];
+    const gancho = r ? r.palavras.slice(0, 4).map((p) => p.nome ?? "").join(" ") : "";
+    pega("edVarNome").textContent = r ? `${seqNome} ${sel + 1}${gancho ? ` · ${gancho}` : ""}` : "Nenhuma variação";
+    pega("edVarDur").textContent = !r
+      ? ""
+      : r.antesS !== null && r.antesS - r.duracaoS >= 0.5
+        ? `${relogio(r.antesS)} → ${relogio(r.duracaoS)}`
+        : relogio(r.duracaoS);
+    const pausasFeitas = tomDa.pausas === "ok" || tomDa.pausas === "aviso";
+    pega("edMetCortes").textContent = r && pausasFeitas ? String(Math.max(0, r.clipes.length - 1)) : "–";
+    pega("edMetBroll").textContent = r ? ouTraco(r.brolls.length) : "–";
+    pega("edMetLeg").textContent = r ? ouTraco(nLeg(r)) : "–";
+    pega("edMetPreco").textContent = r ? ouTraco(nPreco(r)) : "–";
+    const aviso = pega("edAvisoVar");
+    if (r && r.falaSomeEmS !== null) {
+      aviso.textContent =
+        r.falaSomeEmS === 0
+          ? "! Sem fala nenhuma nesta variação: áudio mudo?"
+          : `! A fala some em ${relogio(r.falaSomeEmS)}: áudio mudo nesse trecho? Ali fica sem legenda.`;
+      aviso.setAttribute("style", "");
+    } else {
+      aviso.setAttribute("style", "display: none");
+    }
+    desenharVista();
+  };
+
+  // ---- timeline viva e a tela 9:16 no cursor
   let t = 0;
   let tocando: ReturnType<typeof setInterval> | null = null;
-  /** Lado e divisao do split, depois que a etapa Split rodou. */
-  let split: { lado: "baixo" | "cima"; divisao: number } | null = null;
-  const atual = (): ResumoVariacao | null => (resumo && sel >= 0 ? (resumo[sel] ?? null) : null);
+  const atual = (): ResumoVariacao | null => resumo[sel] ?? null;
 
   const parte = (el: HTMLElement, tipo: string, grow: number, texto: string) => {
     el.setAttribute("data-tipo", tipo);
@@ -140,10 +257,7 @@ export function mount(root: HTMLElement): void {
 
   const quadro = () => {
     const r = atual();
-    if (!r) {
-      pega("edTempo").textContent = "a timeline aparece quando o Editar rodar";
-      return;
-    }
+    if (!r) return;
     const dentro = (x: Trecho) => t >= x.de && t < x.ate;
     pega("edReguaAntes").setAttribute("style", `flex-grow: ${Math.round(t * 100)}`);
     pega("edReguaDepois").setAttribute("style", `flex-grow: ${Math.max(1, Math.round((r.duracaoS - t) * 100))}`);
@@ -162,17 +276,15 @@ export function mount(root: HTMLElement): void {
     const r = atual();
     for (const f of FAIXAS) {
       const faixa = pega(`edTl_${f}`);
-      while (faixa.firstChild) faixa.removeChild(faixa.firstChild);
+      limpar(faixa);
       if (!r) continue;
       for (const s of segmentos(itensDa(r, f), r.duracaoS)) {
-        const el = document.createElement("span");
-        el.className = s.item < 0 ? "tl-seg" : `tl-seg tl-${f}`;
+        const el = novo(faixa, "span", s.item < 0 ? "tl-seg" : `tl-seg tl-${f}`);
         el.setAttribute("style", `flex-grow: ${s.grow}`);
         el.addEventListener("click", () => {
           t = s.de;
           quadro();
         });
-        faixa.appendChild(el);
       }
     }
     if (r && t > r.duracaoS) t = 0;
@@ -198,27 +310,11 @@ export function mount(root: HTMLElement): void {
       quadro();
     }, 100);
   };
-  const clicavel = (el: HTMLElement, fazer: () => void) => {
-    el.addEventListener("click", fazer);
-    el.addEventListener("keydown", (e) => {
-      if ((e as KeyboardEvent).key === "Enter" || (e as KeyboardEvent).key === " ") fazer();
-    });
-  };
   clicavel(pega("edPlay"), tocar);
 
   // ---- abas: Timeline, Quadros (um por pedaco da V1) e Fala (a fala marcada)
   type Vista = "tl" | "qd" | "fl";
   let vista: Vista = "tl";
-  const limpar = (el: HTMLElement) => {
-    while (el.firstChild) el.removeChild(el.firstChild);
-  };
-  const novo = (pai: HTMLElement, classe: string, texto = ""): HTMLElement => {
-    const el = document.createElement(classe.startsWith("tela-parte") ? "div" : "span");
-    el.className = classe;
-    el.textContent = texto;
-    pai.appendChild(el);
-    return el;
-  };
   /** Clicar num quadro ou numa palavra leva a timeline para aquele ponto. */
   const irPara = (de: number) => {
     t = de;
@@ -232,19 +328,13 @@ export function mount(root: HTMLElement): void {
     const r = atual();
     if (!r) return;
     for (const q of quadros(r)) {
-      const el = document.createElement("div");
-      el.className = "qd";
-      el.setAttribute("role", "button");
-      el.setAttribute("tabindex", "0");
-      const tela = document.createElement("div");
-      tela.className = "qd-tela";
+      const el = novo(caixa, "div", "qd");
+      const tela = novo(el, "div", "qd-tela");
       tela.setAttribute("data-leak", q.leak ? "sim" : "nao");
-      encher(novo(tela, "tela-parte"), novo(tela, "tela-parte"), q.broll);
-      el.appendChild(tela);
-      novo(el, "qd-tempo", relogio(q.de));
-      novo(el, "qd-leg", q.legenda).setAttribute("data-preco", q.preco ? "sim" : "nao");
+      encher(novo(tela, "div", "tela-parte"), novo(tela, "div", "tela-parte"), q.broll);
+      novo(el, "span", "qd-tempo", relogio(q.de));
+      novo(el, "span", "qd-leg", q.legenda).setAttribute("data-preco", q.preco ? "sim" : "nao");
       clicavel(el, () => irPara(q.de));
-      caixa.appendChild(el);
     }
   };
 
@@ -253,17 +343,17 @@ export function mount(root: HTMLElement): void {
     limpar(caixa);
     const r = atual();
     if (!r) return;
-    if (r.palavras.length === 0) novo(caixa, "pl-mudo", "sem fala transcrita nesta variação");
+    if (r.palavras.length === 0) novo(caixa, "span", "pl-mudo", "A fala aparece aqui depois que o Editar ouvir a sequência.");
     for (const p of marcarFala(r)) {
-      if (p.corte) novo(caixa, "pl-corte");
-      else if (p.quebra) novo(caixa, "pl-quebra");
-      if (p.broll) novo(caixa, "pl-tag", p.broll);
-      const el = novo(caixa, "pl", p.texto);
+      if (p.corte) novo(caixa, "span", "pl-corte");
+      else if (p.quebra) novo(caixa, "span", "pl-quebra");
+      if (p.broll) novo(caixa, "span", "pl-tag", p.broll);
+      const el = novo(caixa, "span", "pl", p.texto);
       el.setAttribute("data-coberta", p.coberta ? "sim" : "nao");
       el.setAttribute("data-preco", p.preco ? "sim" : "nao");
       el.addEventListener("click", () => irPara(p.de));
     }
-    if (r.falaSomeEmS !== null && r.palavras.length > 0) novo(caixa, "pl-mudo", "· áudio mudo daqui em diante");
+    if (r.falaSomeEmS !== null && r.palavras.length > 0) novo(caixa, "span", "pl-mudo", "· áudio mudo daqui em diante");
   };
 
   const desenharVista = () => {
@@ -283,66 +373,39 @@ export function mount(root: HTMLElement): void {
     });
   }
 
-  const desenharGrade = () => {
-    const grade = pega("edGrade");
-    while (grade.firstChild) grade.removeChild(grade.firstChild);
-    const n = resumo?.length ?? duracoes.length;
-    for (let i = 0; i < n; i++) {
-      const r = resumo?.[i];
-      const el = document.createElement("div");
-      el.className = "var";
-      el.setAttribute("role", "button");
-      el.setAttribute("tabindex", "0");
-      el.setAttribute("data-sel", i === sel ? "sim" : "nao");
-      const tom = r ? (r.falaSomeEmS !== null ? "aviso" : "ok") : "";
-      el.innerHTML =
-        `<span class="var-nome">${i + 1}</span>` +
-        `<span class="var-linha">${relogio(r?.duracaoS ?? duracoes[i] ?? 0)}</span>` +
-        `<span class="var-linha">${r ? `${r.brolls.length} B-roll` : "&nbsp;"}</span>` +
-        `<span class="var-cor" data-tom="${tom}"></span>`;
-      const abrir = () => {
-        sel = i;
-        t = 0;
-        parar();
-        desenharGrade();
-        detalhar();
-        desenharVista();
-      };
-      el.addEventListener("click", abrir);
-      el.addEventListener("keydown", (e) => {
-        if ((e as KeyboardEvent).key === "Enter" || (e as KeyboardEvent).key === " ") abrir();
-      });
-      grade.appendChild(el);
-    }
-    const avisos = resumo?.filter((r) => r.falaSomeEmS !== null).length ?? 0;
-    pega("edVarRotulo").textContent = `Variações · ${n}${avisos > 0 ? ` · ${avisos} com aviso` : ""}`;
+  const desenharTudo = () => {
+    desenharEtapas();
+    desenharAndamento();
+    desenharGrade();
+    desenharDetalhe();
   };
 
+  // ---- o que o Editar manda enquanto roda
   const aoVivo: AoVivo = {
-    etapa(id, tom, texto) {
-      marcarEtapa(id, tom === "rodando" ? "rodando…" : `${MARCA[tom]}${texto ?? ""}`, tom);
+    // O resumo da etapa nao vai ao registro: as linhas do proprio Editar ja dizem o mesmo.
+    etapa(id, tom) {
+      tomDa[id] = tom;
       if (tom !== "rodando") feitas++;
-      if (id === "split" && (tom === "ok" || tom === "aviso")) {
-        split = SPLIT_DA_EMPRESA[pega<HTMLSelectElement>("edEmpresa").value as Empresa] ?? null;
-      }
-      barra();
+      if (id === "split" && (tom === "ok" || tom === "aviso")) split = SPLIT_DA_EMPRESA[empresa] ?? null;
+      desenharEtapas();
+      desenharAndamento();
+      desenharGrade();
     },
     variacoes(lista) {
       resumo = lista;
-      // Sem escolha ainda, abre a primeira com aviso (o problema aparece sem
-      // procurar) ou a primeira; o que o Leo clicou fica.
-      if (sel < 0 || sel >= lista.length) {
-        const comAviso = lista.findIndex((r) => r.falaSomeEmS !== null);
-        sel = comAviso >= 0 ? comAviso : lista.length > 0 ? 0 : -1;
-      }
+      // Abre a primeira com aviso (o problema aparece sem procurar); o que o Leo clicou fica.
+      if (sel >= lista.length) sel = 0;
+      const comAviso = lista.findIndex((r) => r.falaSomeEmS !== null);
+      if (comAviso >= 0 && !escolhida) sel = comAviso;
       desenharGrade();
-      numeros();
-      detalhar();
-      desenharVista();
+      desenharDetalhe();
     },
   };
+  pega("edGrade").addEventListener("click", () => {
+    if (ocupado) escolhida = true;
+  });
 
-  // Guarda as 10 ultimas execucoes: o log da tela e o que se ve; o arquivo e o que se le depois.
+  // Guarda as 10 ultimas execucoes: o registro da tela e o que se ve; o arquivo e o que se le depois.
   const guardarLog = async () => {
     const antes = (await readJson(LOG).catch(() => null)) as { execucoes?: unknown[] } | null;
     const execucoes = Array.isArray(antes?.execucoes) ? antes.execucoes : [];
@@ -350,97 +413,80 @@ export function mount(root: HTMLElement): void {
   };
 
   const ler = async () => {
-    estado("lendo", "ativo");
+    pill("lendo", "ativo");
     try {
       const e = await lerEstado();
-      const nome = pega("edSeqNome");
-      nome.textContent = e.nome;
-      nome.setAttribute("data-vazio", "nao");
-      pega("edSeqInfo").textContent =
-        `${relogio(e.duracaoS)} · ${e.clipesV1} clipe(s) na V1 · ${e.variacoes} variação(ões) · ` +
-        `${e.brollsAcimaDaV1} B-roll(s) acima da V1 · ${e.faixasDeLegenda} faixa(s) de legenda`;
+      seqNome = e.nome;
+      pega("edSeq").textContent = `· ${e.nome}`;
       // Reconhecer o que ja foi feito: B-roll e legenda que ja estao la nao entram de novo por padrao.
-      (pega("edBroll") as HTMLElement & { checked?: boolean }).checked = e.brollsAcimaDaV1 === 0;
-      (pega("edLegendas") as HTMLElement & { checked?: boolean }).checked = e.faixasDeLegenda === 0;
-      duracoes = e.duracoesS;
-      resumo = null;
-      sel = -1;
+      ativo.broll = e.brollsAcimaDaV1 === 0;
+      ativo.legendas = e.faixasDeLegenda === 0;
+      resumo = e.resumo;
+      editado = false;
+      sel = 0;
+      t = 0;
+      split = null;
+      for (const id of Object.keys(tomDa) as Etapa[]) delete tomDa[id];
       parar();
-      desenharGrade();
-      numeros();
-      detalhar();
-      desenharVista();
+      pega("edProg").textContent = `${e.variacoes} variação(ões) na sequência · ${relogio(e.duracaoS)}`;
+      desenharTudo();
       if (!e.temChave) registrar("Sem chave do ElevenLabs: salve a chave no Pro Captions antes de editar.", "aviso");
-      estado("pronto", "ok");
+      pill("pronto", "ok");
     } catch (erro) {
-      pega("edSeqNome").textContent = "Não consegui ler a sequência";
-      pega("edSeqInfo").textContent = (erro as Error)?.message ?? String(erro);
-      estado("sem sequência", "aviso");
+      pega("edSeq").textContent = "· sem sequência";
+      pega("edProg").textContent = (erro as Error)?.message ?? String(erro);
+      resumo = [];
+      desenharTudo();
+      pill("sem sequência", "aviso");
     }
   };
 
-  let ocupado = false;
-  pega("edEditar").addEventListener("click", () => {
+  const rodar = () => {
     if (ocupado) return;
     ocupado = true;
+    escolhida = false;
     linhas.length = 0;
-    estado("editando", "ativo");
-    const ids = Object.keys(CAIXA) as Etapa[];
-    for (const id of ids) marcarEtapa(id, marcado(CAIXA[id]) ? "na fila" : "", "");
-    total = ids.filter((id) => marcado(CAIXA[id])).length;
+    curtas.length = 0;
+    desenharFeed();
+    pill("editando", "ativo");
+    for (const id of Object.keys(tomDa) as Etapa[]) delete tomDa[id];
+    total = ETAPAS.filter((e) => ativo[e.id]).length;
     feitas = 0;
-    barra();
     split = null;
-    sel = -1;
     t = 0;
     parar();
+    desenharTudo();
     void editar(
-      {
-        pausas: marcado("edPausas"),
-        broll: marcado("edBroll"),
-        split: marcado("edSplit"),
-        leak: marcado("edLeak"),
-        trilha: marcado("edTrilha"),
-        legendas: marcado("edLegendas"),
-      },
+      { ...ativo },
       registrar,
-      (t) => estado(t, "ativo"),
+      (texto) => {
+        pega("edProg").textContent = `Editando · ${texto}`;
+      },
       aoVivo
     )
-      .then(() => estado("pronto", "ok"))
+      .then(() => pill("pronto", "ok"))
       .catch((erro) => {
         registrar((erro as Error)?.message ?? String(erro), "erro");
-        estado("falhou", "erro");
+        pill("falhou", "erro");
       })
       .finally(() => {
         ocupado = false;
+        editado = true;
+        pega("edProg").textContent = `${resumo.length} variação(ões) editada(s)`;
+        desenharTudo();
         void guardarLog().catch(() => undefined);
       });
+  };
+  clicavel(pega("edEditar"), rodar);
+  clicavel(pega("edRelir"), () => {
+    if (!ocupado) void ler();
   });
-  pega("edRelir").addEventListener("click", () => void ler());
 
-  // Empresa: termos do ElevenLabs e pasta de B-roll de cada uma (perfil.json).
-  const seletor = pega<HTMLSelectElement>("edEmpresa");
-  for (const [id, e] of Object.entries(EMPRESAS)) {
-    const opcao = document.createElement("option");
-    opcao.value = id;
-    opcao.textContent = e.nome;
-    seletor.appendChild(opcao);
-  }
-  seletor.addEventListener("change", () => {
-    void (async () => {
-      const config = parseConfig(await readJson("config.json"));
-      const r = trocarEmpresa(parsePerfil(await readJson(PERFIL)), config.libraryPath, seletor.value as Empresa);
-      await writeJson(PERFIL, r.perfil);
-      await writeJson("config.json", { ...config, libraryPath: r.pasta });
-      const nome = EMPRESAS[r.perfil.empresa].nome;
-      if (r.pasta) registrar(`${nome}: B-roll de ${r.pasta}`, "passo");
-      else registrar(`${nome}: escolha a pasta de B-roll dela no Auto B-roll`, "aviso");
-    })().catch((e) => registrar(`empresa: ${(e as Error)?.message ?? String(e)}`, "erro"));
-  });
+  desenharEmpresas();
+  desenharFeed();
   void readJson(PERFIL).then((p) => {
-    seletor.value = parsePerfil(p).empresa;
+    empresa = parsePerfil(p).empresa;
+    desenharEmpresas();
   });
-
   void ler();
 }
