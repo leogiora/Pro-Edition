@@ -42,6 +42,70 @@ Menopausa: a apresentadora desce com teto de 0,9 da altura. Cópia do
 Aprender provada no original (30/09). Falta só o doutor em pé no Acabamento,
 quando vier bruta em pé.
 
+**01/10, tela do Editar mais visual (passo 1 de 3):** o Leo escolheu, entre
+5 protótipos, uma tela que junta tudo. O passo 1 foi feito:
+- cada etapa mostra o próprio estado e resultado ao lado da caixa ("✓ 7 cortes · 12:10 → 10:30");
+- uma barra mostra o andamento;
+- números grandes: duração, B-rolls com leaks, legendas com preços;
+- uma grade de variações. Clicar numa variação mostra o que entrou nela, e a variação cuja fala acaba mais de 3 s antes do fim acende aviso (áudio mudo).
+
+**Passo 2, timeline viva:** abaixo da grade, a variação escolhida aparece em
+faixas (C2 preço, C1 legenda, V3 leak, V2 B-roll, V1 doutor, A2 trilha).
+- As faixas se redesenham depois de cada etapa, porque o Editar manda o que já está na timeline.
+- Uma tela 9:16 mostra o frame no cursor: o doutor, o B-roll com o nome do conceito, o split depois que a etapa Split rodou, borda âmbar no leak e a legenda ou o preço embaixo.
+- ▶ toca em tempo real, e clicar num pedaço de qualquer faixa pula o cursor para lá.
+- Tudo em flex-grow (`segmentos()` em `shell.ts`), sem largura em %.
+
+**Passo 3, abas:** o Editar tem três abas.
+- **Timeline** é a do passo 2.
+- **Quadros** mostra um quadro 9:16 por pedaço da V1, com o B-roll e o split no meio do pedaço, borda âmbar quando tem leak, o tempo e a legenda.
+- **Fala** mostra a fala da variação palavra por palavra:
+  - barra vermelha onde a imagem corta e cinza onde começa uma legenda nova;
+  - etiqueta com o conceito onde o B-roll começa e fundo roxo nas palavras debaixo dele;
+  - fundo coral no preço e "áudio mudo daqui em diante" no fim.
+- Clicar num quadro ou numa palavra leva a timeline para aquele ponto.
+- As regras são puras, `marcarFala()` e `quadros()` em `editar.ts`.
+
+**Layout do protótipo (01/10):** o Leo abriu os passos 1 a 3 no Premiere e a
+tela ainda tinha o layout antigo (caixas de marcar, lista, seções empilhadas).
+Ela foi refeita igual ao protótipo combinado:
+- **topo:** "Editar · sequência" com a pílula de estado;
+- **seleção:** empresas em botões e as etapas em bolinhas com símbolo que ligam e desligam e acendem quando rodam;
+- **andamento:** a barra e a grade R1…R10;
+- **variação escolhida:** o nome com as primeiras palavras da fala, 4 números (cortes, B-rolls, legendas, preços), o aviso de áudio mudo e as abas;
+- **embaixo:** o registro curto (o completo atrás de um clique) e o rodapé "Editar todas" / "Ler de novo".
+
+A timeline já aparece antes de editar: `lerEstado` devolve a V1, os B-rolls
+e os leaks que já estão na sequência.
+
+O "Só esta" do protótipo ficou de fora, porque o Editar trabalha na sequência
+inteira. Os símbolos das etapas são caracteres (✂ ▣ ▤ ☀ ♪ ≡), porque o UXP não
+tem a fonte de ícones. Conferido no navegador com o código real e um Premiere
+falso. Falta abrir no Premiere.
+
+**Teste de fogo no Premiere 2025 (01/10, Claude no PC do Leo):**
+
+Achados e correções:
+- **Ícones:** o ✂ virava emoji, então todos os ícones viraram caixas de CSS (`icone()` em `shell.ts`), no Editar e no hall.
+- **Etapa desligada:** não mudava nada, porque o UXP ignora `opacity`. Agora fica cinza explícito.
+- **Clique:** todo clique acende o que foi tocado (`data-apertado`).
+- **Etapa da vez:** pulsa por JS (o UXP não garante animação CSS) e fica 0,3 s à vista.
+- **Andamento:** o motivo da parada quebra linha, com a dica "Desligue Pausas" quando a A1 não acompanha a V1.
+- **Registro completo:** rola até aparecer.
+- **Cursor:** virou uma linha vermelha.
+- **O que já estava na sequência:** B-rolls, leaks e música na A2 entram no desenho antes e depois do Editar (`jaNaTimeline`).
+- **Mensagem de áudio mudo:** cita mídia offline.
+
+Rodado na `PROVA Pro Edition` da cópia de teste (Split, Leak e Trilha, sem
+ElevenLabs), fechada sem salvar. O "Projeto Base" do Leo estava com mídia
+offline e A1 separada da V1: o Editar recusou com a mensagem certa, sem mexer
+em nada.
+
+**Tela inicial no mesmo estilo (01/10, pedido do Leo):**
+- o Editar virou um card em destaque, com borda azul, botão "Abrir", as seis etapas em bolinhas e a timeline nas cores da tela dele;
+- as ferramentas avulsas ganharam a bolinha com a cor da etapa delas no Editar;
+- a miniatura pinta cada faixa com a cor da timeline do Editar (`data-faixa` em `desenharTrilhas()`).
+
 - **Legenda (Pro Captions + ElevenLabs):** pronta no código, inclusive a
   segmentação no estilo do Leo (`segmentar.ts` + `maxPalavras: 3` no
   `PRESET_ELEVENLABS`). Sete gravações de tela dele editando o Andro 19.09
@@ -195,6 +259,7 @@ o Leo antes de mexer):
 | Empresa no Editar (lista `<select>`, troca a pasta do Auto B-roll) | **OK** (29/09) |
 | Split da Menopausa (B-roll em cima, `Bottom` do Rounded Crop) no Auto Split | **OK** (29/09): borda de baixo em 45%, Bottom 27,5% no 720×1280 |
 | Quadrado 1:1 (botão do Auto Split) | **OK** (29/09): 697 clipes da V1 a 50%, 100 B-rolls cobrindo o quadrado |
+| Tela nova do Editar (estado por etapa, barra, números, grade de variações, timeline viva com a tela 9:16, abas Quadros e Fala) | falta: abrir o Editar numa edição real e conferir. O B-roll do Editar entra em `pendentes.json` pelo nome da sequência, então o teste não pode ser numa cópia |
 
 Testes de 29/09 feitos por Claude numa cópia: `Andro 19.09\TESTE Pro Edition
 29.09.prproj` (o original não foi tocado; a cópia pode ser apagada). Falta:

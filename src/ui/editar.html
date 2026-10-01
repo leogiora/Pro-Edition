@@ -1,102 +1,748 @@
 <!-- Fragmento: o shell injeta isto em document.body, depois da folha da
-     familia (ferramentas/auto-broll/src/ui/styles.css). Sem CSS Grid, sem gap,
-     sem var(); botoes sao sp-button (ver UXP_ARMADILHAS.md). -->
+     familia (ferramentas/auto-broll/src/ui/styles.css). Layout do prototipo
+     escolhido pelo Leo em 01/10. UXP: sem CSS Grid, sem gap, sem var(), sem
+     largura em %; o que e clicavel e div[role=button] (UXP_ARMADILHAS.md). -->
 <style>
-  .marca-nome::before {
-    background-color: #eceef2;
+  .ed-topo {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    flex: none;
+    padding: 9px 12px;
+    background-color: #1a1e26;
+    border-bottom: 1px solid #232830;
   }
 
-  .cod-editar {
+  .ed-titulo {
+    flex: 1 1 auto;
+    min-width: 0;
+    font-size: 14px;
+    font-weight: 600;
     color: #eceef2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .ed-seq {
+    font-weight: 400;
+    color: #9098a6;
+  }
+
+  .pill {
+    flex: none;
+    padding: 2px 10px;
+    border-radius: 10px;
+    font-size: 11px;
+    background-color: #14301f;
+    color: #4ecb8d;
+  }
+
+  .pill[data-tom="ativo"] {
+    background-color: #1a2440;
+    color: #85b7eb;
+  }
+
+  .pill[data-tom="aviso"] {
+    background-color: #3a2c14;
+    color: #eeab4c;
+  }
+
+  .pill[data-tom="erro"] {
+    background-color: #3a1e1c;
+    color: #ff7d71;
+  }
+
+  .conteudo {
+    padding: 0;
+  }
+
+  .bloco {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    flex: none;
+    padding: 8px 12px 0 12px;
+  }
+
+  /* ---- empresas */
+  .chips {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .chip {
+    flex: none;
+    margin: 0 6px 4px 0;
+    padding: 2px 10px;
+    border: 1px solid #333b47;
+    border-radius: 10px;
+    font-size: 11px;
+    color: #9098a6;
+    cursor: pointer;
+  }
+
+  .chip[data-on="sim"] {
+    background-color: #1a1e26;
+    color: #eceef2;
+    font-weight: 600;
+  }
+
+  .chip[data-on="sim"][data-empresa="androclinic"] { border-color: #3b82f6; }
+  .chip[data-on="sim"][data-empresa="grandcare"] { border-color: #4fc3a1; }
+  .chip[data-on="sim"][data-empresa="menopausa"] { border-color: #e07ba8; }
+
+  /* ---- etapas: bolinha com o simbolo e o nome embaixo */
+  .etapas {
+    display: flex;
+    flex-direction: row;
+    padding-top: 6px;
   }
 
   .etapa {
     display: flex;
     flex-direction: column;
-    align-items: stretch;
-    margin: 0 0 6px 0;
+    align-items: center;
+    flex: 1 1 0px;
+    min-width: 0;
+    cursor: pointer;
   }
 
-  .etapa-nota {
-    margin: 0 0 0 28px;
+  .bola {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    margin-bottom: 3px;
+    border: 1px solid #333b47;
+    border-radius: 13px;
+    background-color: #14171d;
+  }
+
+  .etapa-nome {
+    font-size: 11px;
+    color: #9098a6;
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  /* ---- andamento */
+  .prog-linha {
+    display: flex;
+    flex-direction: row;
+    margin-top: 6px;
+    font-size: 12px;
+    color: #9098a6;
+  }
+
+  /* Quebra linha: e aqui que aparece o motivo quando o Editar para. */
+  .prog-txt {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .prog-cont {
+    flex: none;
+    margin-left: 8px;
+  }
+
+  .barra {
+    display: flex;
+    flex-direction: row;
+    flex: none;
+    height: 4px;
+    margin-top: 5px;
+    border-radius: 2px;
+    overflow: hidden;
+    background-color: #1a1e26;
+  }
+
+  .barra-feito {
+    background-color: #3b82f6;
+  }
+
+  /* ---- grade de variacoes */
+  .grade {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    margin: 4px -3px 0 -3px;
+  }
+
+  .var {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    flex: none;
+    width: 58px;
+    margin: 3px;
+    padding: 5px 6px;
+    background-color: #14171d;
+    border: 1px solid #232830;
+    border-radius: 7px;
+    cursor: pointer;
+  }
+
+  .var[data-sel="sim"] {
+    background-color: #1a1e26;
+    border-color: #3b82f6;
+  }
+
+  .var-cima {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .var-nome {
+    flex: 1 1 auto;
+    font-size: 11px;
+    font-weight: 600;
+    color: #eceef2;
+  }
+
+  .var-st {
+    flex: none;
     font-size: 11px;
     color: #5f6774;
   }
 
+  .var-st[data-tom="ok"] { color: #4ecb8d; }
+  .var-st[data-tom="aviso"] { color: #eeab4c; }
+  .var-st[data-tom="ativo"] { color: #3b82f6; }
+
+  .var-barra {
+    display: flex;
+    flex-direction: row;
+    height: 3px;
+    margin-top: 5px;
+    border-radius: 2px;
+    overflow: hidden;
+    background-color: #101318;
+  }
+
+  .var-feito { background-color: #3b82f6; }
+  .var-feito[data-tom="ok"] { background-color: #4ecb8d; }
+  .var-feito[data-tom="aviso"] { background-color: #eeab4c; }
+
+  /* ---- detalhe da variacao escolhida */
+  .det {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    flex: none;
+    margin-top: 8px;
+    padding: 8px 12px 4px 12px;
+    border-top: 1px solid #232830;
+  }
+
+  .det-cabeca {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: 4px;
+  }
+
+  .det-nome {
+    flex: 1 1 auto;
+    min-width: 0;
+    font-weight: 600;
+    color: #eceef2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .det-dur {
+    flex: none;
+    margin-left: 8px;
+    font-size: 12px;
+    color: #9098a6;
+  }
+
+  .mets {
+    display: flex;
+    flex-direction: row;
+    margin: 0 -3px;
+  }
+
+  .met {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    flex: 1 1 0px;
+    min-width: 0;
+    margin: 3px;
+    padding: 5px 7px;
+    background-color: #14171d;
+    border: 1px solid #232830;
+    border-radius: 7px;
+  }
+
+  .met-rot {
+    font-size: 11px;
+    color: #9098a6;
+  }
+
+  .met-val {
+    font-size: 17px;
+    font-weight: 600;
+    color: #eceef2;
+  }
+
+  .aviso-var {
+    margin-top: 4px;
+    font-size: 12px;
+    color: #eeab4c;
+  }
+
+  /* ---- abas */
+  .abas {
+    display: flex;
+    flex-direction: row;
+    margin: 8px 0 6px 0;
+  }
+
+  .aba {
+    flex: none;
+    padding: 3px 12px;
+    margin-right: 4px;
+    border: 1px solid transparent;
+    border-radius: 11px;
+    font-size: 12px;
+    color: #9098a6;
+    cursor: pointer;
+  }
+
+  .aba[data-on="sim"] {
+    border-color: #333b47;
+    background-color: #1a1e26;
+    color: #eceef2;
+  }
+
+  /* ---- timeline viva + tela 9:16 (faixas em flex-grow, segmentos() em shell.ts) */
+  .tl-caixa {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+  }
+
+  .tl {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .tl-linha {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    margin: 3px 0;
+  }
+
+  .tl-rot {
+    flex: none;
+    width: 20px;
+    font-size: 11px;
+    color: #5f6774;
+  }
+
+  .tl-faixa {
+    display: flex;
+    flex-direction: row;
+    flex: 1 1 auto;
+    min-width: 0;
+    height: 11px;
+    border-radius: 3px;
+    overflow: hidden;
+    background-color: #101318;
+  }
+
+  .tl-seg {
+    flex-basis: 0px;
+    min-width: 0;
+    height: 11px;
+    cursor: pointer;
+  }
+
+  .tl-V1 { background-color: #5f6774; border-right: 1px solid #101318; }
+  .tl-V2 { background-color: #8d82f5; }
+  .tl-V3 { background-color: #eeab4c; }
+  .tl-A2 { background-color: #4fc3a1; }
+  .tl-C1 { background-color: #eceef2; border-right: 1px solid #101318; }
+  .tl-C2 { background-color: #ff7d71; }
+
+  /* Linha vermelha do comeco ate o cursor: no Premiere, so o cursor era um
+     ponto que ninguem via. */
+  .tl-regua {
+    align-items: center;
+    height: 10px;
+    background-color: transparent;
+  }
+
+  #edReguaAntes {
+    height: 3px;
+    border-radius: 2px;
+    background-color: #ff7d71;
+  }
+
+  .tl-cursor {
+    flex: none;
+    width: 3px;
+    height: 10px;
+    border-radius: 1px;
+    background-color: #ff7d71;
+  }
+
+  .tl-ctrl {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    margin-top: 6px;
+    font-size: 11px;
+    color: #9098a6;
+  }
+
+  .tl-play {
+    flex: none;
+    margin-right: 6px;
+    padding: 0 4px;
+    font-size: 13px;
+    color: #eceef2;
+    cursor: pointer;
+  }
+
+  .tl-dica {
+    margin-left: 8px;
+    color: #5f6774;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+
+  .tela {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    flex: none;
+    width: 86px;
+    height: 153px;
+    margin-left: 10px;
+    border: 2px solid #232830;
+    border-radius: 9px;
+    overflow: hidden;
+    background-color: #000000;
+  }
+
+  .tela[data-leak="sim"] {
+    border-color: #eeab4c;
+  }
+
+  .tela-parte {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    flex-basis: 0px;
+    min-height: 0;
+    overflow: hidden;
+    font-size: 11px;
+    text-align: center;
+  }
+
+  .tela-parte[data-tipo="doutor"] {
+    background-color: #262b34;
+    color: #9098a6;
+  }
+
+  .tela-parte[data-tipo="broll"] {
+    background-color: #2b2650;
+    color: #cecbf6;
+  }
+
+  .tela-leg {
+    margin-top: 6px;
+    min-height: 16px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #eceef2;
+    text-align: right;
+  }
+
+  .tela-leg[data-preco="sim"] {
+    color: #ff7d71;
+  }
+
+  /* ---- quadros: um por pedaco da V1 */
+  .quadros {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    margin: 0 -3px;
+  }
+
+  .qd {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    flex: none;
+    width: 46px;
+    margin: 3px;
+    cursor: pointer;
+  }
+
+  .qd-tela {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    height: 82px;
+    border: 1px solid #232830;
+    border-radius: 5px;
+    overflow: hidden;
+    background-color: #000000;
+  }
+
+  .qd-tela[data-leak="sim"] {
+    border-color: #eeab4c;
+  }
+
+  .qd-tempo {
+    margin-top: 2px;
+    font-size: 11px;
+    color: #5f6774;
+    text-align: center;
+  }
+
+  .qd-leg {
+    font-size: 11px;
+    color: #eceef2;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .qd-leg[data-preco="sim"] {
+    color: #ff7d71;
+  }
+
+  /* ---- fala: cada palavra e um item de flex-wrap (sem texto corrido no UXP) */
+  .fala {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .pl {
+    flex: none;
+    margin: 0 4px 6px 0;
+    padding: 0 1px;
+    font-size: 13px;
+    color: #c9ced8;
+    cursor: pointer;
+  }
+
+  .pl[data-coberta="sim"] {
+    background-color: #2b2650;
+    color: #eceef2;
+    border-bottom: 2px solid #8d82f5;
+  }
+
+  .pl[data-preco="sim"] {
+    background-color: #ff7d71;
+    color: #4a1b0c;
+    font-weight: 600;
+  }
+
+  .pl-tag {
+    flex: none;
+    margin: 0 3px 6px 0;
+    padding: 0 5px;
+    border-radius: 4px;
+    font-size: 11px;
+    color: #cecbf6;
+    background-color: #2b2650;
+  }
+
+  .pl-quebra,
+  .pl-corte {
+    flex: none;
+    height: 14px;
+    margin: 0 5px 6px 0;
+  }
+
+  .pl-quebra {
+    width: 1px;
+    background-color: #9098a6;
+  }
+
+  .pl-corte {
+    width: 2px;
+    background-color: #ff7d71;
+  }
+
+  .pl-mudo {
+    flex: none;
+    margin-bottom: 6px;
+    font-size: 12px;
+    color: #eeab4c;
+  }
+
+  .legenda-fala {
+    margin-bottom: 6px;
+    font-size: 11px;
+    color: #5f6774;
+  }
+
+  /* ---- registro curto */
+  .feed {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    margin-top: 8px;
+    padding-top: 6px;
+    border-top: 1px solid #1a1e26;
+    min-height: 60px;
+  }
+
+  .feed-linha {
+    margin: 1px 0;
+    font-size: 12px;
+    color: #9098a6;
+  }
+
+  .feed-linha[data-tom="ok"] { color: #4ecb8d; }
+  .feed-linha[data-tom="aviso"] { color: #eeab4c; }
+  .feed-linha[data-tom="erro"] { color: #ff7d71; }
+
+  .ver-log {
+    margin: 4px 0 8px 0;
+    font-size: 11px;
+    color: #5f6774;
+    cursor: pointer;
+  }
+
   .log {
-    height: 260px;
-    margin: 0;
+    height: 200px;
+    margin: 0 0 8px 0;
+  }
+
+  /* ---- resposta ao clique: o que foi tocado acende por um instante (JS liga
+     data-apertado; o UXP nao garante :active nem transicao). */
+  [data-apertado="sim"] {
+    background-color: #2a3550;
+  }
+
+  .btn-pri[data-apertado="sim"] {
+    background-color: #1d4ed8;
+  }
+
+  .var:hover,
+  .chip:hover,
+  .aba:hover,
+  .btn-sec:hover {
+    border-color: #4a5466;
+  }
+
+  /* ---- rodape */
+  .rodape {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    flex: none;
+    padding: 10px 12px;
+    border-top: 1px solid #232830;
+    background-color: #0d0f13;
+  }
+
+  .btn-pri {
+    flex: none;
+    padding: 6px 18px;
+    border-radius: 16px;
+    background-color: #3b82f6;
+    color: #ffffff;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .btn-sec {
+    flex: none;
+    margin-left: 8px;
+    padding: 5px 14px;
+    border: 1px solid #333b47;
+    border-radius: 16px;
+    color: #9098a6;
+    cursor: pointer;
   }
 </style>
 
-<header class="topo">
-  <div class="marca">
-    <span class="marca-nome">Editar</span>
-  </div>
-  <div id="edEstado" class="badge">carregando</div>
+<header class="ed-topo">
+  <span class="ed-titulo">Editar <span id="edSeq" class="ed-seq">· lendo…</span></span>
+  <span id="edPill" class="pill" data-tom="ativo">lendo</span>
 </header>
 
-<main class="conteudo">
-  <section class="secao">
-    <div class="secao-cabeca">
-      <span class="cod">SEQ</span>
-      <span class="secao-rotulo">Sequência aberta</span>
-    </div>
-    <div class="secao-corpo">
-      <div id="edSeqNome" class="seq-nome" data-vazio="sim">Lendo…</div>
-      <div id="edSeqInfo" class="dica">Abra a sequência com o doutor na V1.</div>
-    </div>
-  </section>
-
-  <section class="secao">
-    <div class="secao-cabeca">
-      <span class="cod cod-editar">1×</span>
-      <span class="secao-rotulo">O que fazer</span>
-    </div>
-    <div class="secao-corpo">
-      <div class="etapa">
-        <select id="edEmpresa"></select>
-        <span class="etapa-nota">empresa: termos do ElevenLabs e pasta de B-roll de cada uma</span>
-      </div>
-      <div class="etapa">
-        <sp-checkbox id="edPausas" checked>Tirar as pausas</sp-checkbox>
-        <span class="etapa-nota">zoom e posição de cada clipe acompanham os pedaços</span>
-      </div>
-      <div class="etapa">
-        <sp-checkbox id="edBroll" checked>Colocar B-roll pela fala</sp-checkbox>
-        <span class="etapa-nota">termina junto com o doutor em cada variação</span>
-      </div>
-      <div class="etapa">
-        <sp-checkbox id="edSplit">Split: doutor em cima, B-roll embaixo</sp-checkbox>
-      </div>
-      <div class="etapa">
-        <sp-checkbox id="edLeak" checked>Light leak nas trocas de B-roll</sp-checkbox>
-        <span class="etapa-nota">o leak do Premiere Composer que já está no projeto</span>
-      </div>
-      <div class="etapa">
-        <sp-checkbox id="edTrilha" checked>Trilha em cada variação</sp-checkbox>
-        <span class="etapa-nota">cópia da música que você pôs na A2, com o mesmo volume</span>
-      </div>
-      <div class="etapa">
-        <sp-checkbox id="edLegendas" checked>Legendas na timeline</sp-checkbox>
-        <span class="etapa-nota">texto e preço em faixas separadas</span>
-      </div>
-      <div class="dica">O áudio vai para o ElevenLabs uma vez só; a mesma fala serve para tudo.</div>
-    </div>
-  </section>
-
-  <div class="acao">
-    <sp-button id="edEditar" variant="cta">Editar</sp-button>
-    <sp-button id="edRelir" variant="secondary" quiet>Ler de novo</sp-button>
+<main id="edRolagem" class="conteudo">
+  <div class="bloco">
+    <div id="edEmpresas" class="chips"></div>
+    <div id="edEtapas" class="etapas"></div>
+    <div class="prog-linha"><span id="edProg" class="prog-txt">lendo a sequência…</span><span id="edCont" class="prog-cont"></span></div>
+    <div class="barra"><span id="edBarraFeito" class="barra-feito" style="flex-grow: 0"></span><span id="edBarraResto" style="flex-grow: 1"></span></div>
+    <div id="edGrade" class="grade"></div>
   </div>
 
-  <section class="secao secao-log">
-    <div class="secao-cabeca">
-      <span class="cod">LOG</span>
-      <span class="secao-rotulo">Registro</span>
+  <div class="det">
+    <div class="det-cabeca"><span id="edVarNome" class="det-nome"></span><span id="edVarDur" class="det-dur"></span></div>
+    <div class="mets">
+      <div class="met"><span class="met-rot">Cortes</span><span id="edMetCortes" class="met-val">–</span></div>
+      <div class="met"><span class="met-rot">B-rolls</span><span id="edMetBroll" class="met-val" style="color: #8d82f5">–</span></div>
+      <div class="met"><span class="met-rot">Legendas</span><span id="edMetLeg" class="met-val">–</span></div>
+      <div class="met"><span class="met-rot">Preços</span><span id="edMetPreco" class="met-val" style="color: #ff7d71">–</span></div>
     </div>
-    <div class="secao-corpo">
-      <pre id="edLog" class="log">…</pre>
+    <div id="edAvisoVar" class="aviso-var" style="display: none"></div>
+
+    <div class="abas">
+      <div id="edAba_tl" class="aba" role="button" tabindex="0" data-on="sim">Timeline</div>
+      <div id="edAba_qd" class="aba" role="button" tabindex="0" data-on="nao">Quadros</div>
+      <div id="edAba_fl" class="aba" role="button" tabindex="0" data-on="nao">Fala</div>
     </div>
-  </section>
+
+    <div id="edVista_tl">
+      <div class="tl-caixa">
+        <div class="tl">
+          <div class="tl-linha"><span class="tl-rot"></span><div class="tl-faixa tl-regua"><span id="edReguaAntes" style="flex-grow: 0"></span><span class="tl-cursor"></span><span id="edReguaDepois" style="flex-grow: 1"></span></div></div>
+          <div class="tl-linha"><span class="tl-rot">C2</span><div id="edTl_C2" class="tl-faixa"></div></div>
+          <div class="tl-linha"><span class="tl-rot">C1</span><div id="edTl_C1" class="tl-faixa"></div></div>
+          <div class="tl-linha"><span class="tl-rot">V3</span><div id="edTl_V3" class="tl-faixa"></div></div>
+          <div class="tl-linha"><span class="tl-rot">V2</span><div id="edTl_V2" class="tl-faixa"></div></div>
+          <div class="tl-linha"><span class="tl-rot">V1</span><div id="edTl_V1" class="tl-faixa"></div></div>
+          <div class="tl-linha"><span class="tl-rot">A2</span><div id="edTl_A2" class="tl-faixa"></div></div>
+          <div class="tl-ctrl"><span id="edPlay" class="tl-play" role="button" tabindex="0">▶</span><span id="edTempo">0:00</span><span class="tl-dica">clique na timeline para pular</span></div>
+        </div>
+        <div id="edTela" class="tela">
+          <div id="edTelaA" class="tela-parte" data-tipo="doutor" style="flex-grow: 1">doutor</div>
+          <div id="edTelaB" class="tela-parte" data-tipo="broll" style="flex-grow: 0"></div>
+        </div>
+      </div>
+      <div id="edTelaLeg" class="tela-leg"></div>
+    </div>
+    <div id="edVista_qd" class="quadros" style="display: none"></div>
+    <div id="edVista_fl" style="display: none">
+      <div class="legenda-fala">vermelho: a imagem corta · cinza: legenda nova · roxo: debaixo do B-roll</div>
+      <div id="edFala" class="fala"></div>
+    </div>
+
+    <div id="edFeed" class="feed"></div>
+    <div id="edVerLog" class="ver-log" role="button" tabindex="0">ver o registro completo</div>
+    <pre id="edLog" class="log" style="display: none"></pre>
+  </div>
 </main>
+
+<footer class="rodape">
+  <div id="edEditar" class="btn-pri" role="button" tabindex="0">Editar todas</div>
+  <div id="edRelir" class="btn-sec" role="button" tabindex="0">Ler de novo</div>
+</footer>
