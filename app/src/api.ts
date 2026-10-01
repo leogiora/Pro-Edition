@@ -55,4 +55,8 @@ export interface ProApi {
   aoAbrir(fn: (caminho: string) => void): void;
   /** O que o plugin conta do Premiere, a cada meio segundo. */
   aoPremiere(fn: (estado: EstadoPremiere) => void): void;
+  /** Pede ao plugin no Premiere (app/src/ponte.ts): lerEstado, editar, lerEmpresa, trocarEmpresa, guardarLog. */
+  pedirPremiere(nome: string, args: readonly unknown[]): Promise<unknown>;
+  /** O que o AutoEdit conta enquanto roda no Premiere (registro, progresso, etapa, variacoes). */
+  aoEventoPremiere(fn: (evento: unknown) => void): void;
 }

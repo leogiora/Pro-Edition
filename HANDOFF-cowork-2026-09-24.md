@@ -261,6 +261,7 @@ o Leo antes de mexer):
 | Quadrado 1:1 (botão do Auto Split) | **OK** (29/09): 697 clipes da V1 a 50%, 100 B-rolls cobrindo o quadrado |
 | Tela nova do Editar (estado por etapa, barra, números, grade de variações, timeline viva com a tela 9:16, abas Quadros e Fala) | falta: abrir o Editar numa edição real e conferir. O B-roll do Editar entra em `pendentes.json` pelo nome da sequência, então o teste não pode ser numa cópia |
 | Ponte plugin → programa (o plugin conta sequência, cursor e seleção a cada 0,5 s por 127.0.0.1:47800; o programa mostra no topo) | **OK ao vivo** (01/10, Premiere 25, projeto Live 30.09): o programa mostrou "Premiere ao vivo · Live · 1:54:43" e acompanhou o cursor quando ele foi movido. O UXP só aceitou o `http://` local com `"domains": "all"` (`UXP_ARMADILHAS.md` 3a). A contagem de selecionados ficou 0 com um clipe clicado: ainda falta conferir |
+| AutoEdit no programa (mesma tela do painel; o plugin atende os pedidos e manda etapa, variações e registro ao vivo) | **OK ao vivo** (01/10, cópia de teste, `PROVA Pro Edition`): o programa leu a sequência (grade, números, timeline com 2 B-rolls e trilha) e rodou Split, Leak e Trilha em 1 s, com cada etapa chegando ao vivo. **Achado, não é da ponte:** o Split reaplicado numa sequência que já tinha split deixou o B-roll "Consulta médica" quase todo fora da tela em 0:04 (faixa fina no pé). É o mesmo Split do painel, a investigar |
 
 Testes de 29/09 feitos por Claude numa cópia: `Andro 19.09\TESTE Pro Edition
 29.09.prproj` (o original não foi tocado; a cópia pode ser apagada). Falta:

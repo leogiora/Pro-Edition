@@ -23,6 +23,8 @@ const api: ProApi = {
   aoAvisar: (fn) => void ipcRenderer.on("aviso", (_e, texto: string) => fn(texto)),
   aoAbrir: (fn) => void ipcRenderer.on("abrir", (_e, caminho: string) => fn(caminho)),
   aoPremiere: (fn) => void ipcRenderer.on("premiere", (_e, estado) => fn(estado)),
+  pedirPremiere: (nome, args) => ipcRenderer.invoke("premiere:pedir", nome, args),
+  aoEventoPremiere: (fn) => void ipcRenderer.on("premiere:evento", (_e, evento) => fn(evento)),
 };
 
 contextBridge.exposeInMainWorld("pro", api);

@@ -26,6 +26,8 @@ const tela = await build({
   format: "iife",
   platform: "browser",
   target: "chrome130",
+  // A tela do AutoEdit vem do painel (src/ui/editar.html e a folha da familia).
+  loader: { ".html": "text", ".css": "text" },
   write: false,
   logLevel: "warning",
 });
