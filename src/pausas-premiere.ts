@@ -701,7 +701,7 @@ export async function aplicarPlano(
   try {
     await colocarEmSequencia(
       pedacos,
-      "Auto Pausas",
+      "SilenceCut",
       (p) => fonteDe(p).clip.createSetInOutPointsAction(tick(p.midiaDeQ), tick(p.midiaAteQ)),
       (editor, p) => editor.createOverwriteItemAction(fonteDe(p).projectItem, tick(p.destinoQ), 0, 0),
       devolverMarcas,
@@ -800,7 +800,7 @@ export async function desfazerPausas(emMaos?: readonly Fonte[]): Promise<string[
   // Mexer na timeline no meio do export que o painel faz sozinho, nao.
   if (lendo) await lendo.catch(() => undefined);
   const estado = (await readJson(ESTADO_DESFAZER)) as EstadoDesfazer | null;
-  if (!estado) throw new Error("Não há corte do Auto Pausas para desfazer.");
+  if (!estado) throw new Error("Não há corte do SilenceCut para desfazer.");
   const { sequence } = await ativa();
   const nome = (sequence as { name: string }).name;
   if (nome !== estado.sequencia) {
@@ -818,7 +818,7 @@ export async function desfazerPausas(emMaos?: readonly Fonte[]): Promise<string[
 
   await colocarEmSequencia(
     estado.clipes,
-    "Auto Pausas: desfazer",
+    "SilenceCut: desfazer",
     (c) => fontes[c.fonte]!.clip.createSetInOutPointsAction(tickDeTexto(c.inTicks), tickDeTexto(c.outTicks)),
     (editor, c) => editor.createOverwriteItemAction(fontes[c.fonte]!.projectItem, tickDeTexto(c.inicioTicks), 0, 0),
     () =>
@@ -850,7 +850,7 @@ async function limparMarcasDaV1(): Promise<string> {
   const [primeiro] = await lerFaixa(true);
   if (!primeiro?.clip) return "sem clipe na V1 para limpar marcas";
   const { project } = await ativa();
-  comTransacao(project as never, "Auto Pausas: limpar marcas do clipe", (adicionar) => {
+  comTransacao(project as never, "SilenceCut: limpar marcas do clipe", (adicionar) => {
     adicionar(primeiro.clip.createClearInOutPointsAction());
   });
   return `marcas de "${primeiro.nome}" limpas`;

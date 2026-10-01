@@ -148,9 +148,9 @@ function mostrar(ferramenta: Ferramenta): void {
   const nav =
     ferramenta === "seletor"
       ? ""
-      : `<div id="peVoltar" class="pe-nav" role="button" tabindex="0" aria-label="Voltar para o Pro Edition">` +
+      : `<div id="peVoltar" class="pe-nav" role="button" tabindex="0" aria-label="Voltar para o Cutline">` +
         `<span class="pe-nav-seta">&larr;</span>` +
-        `<span class="pe-nav-raiz">Pro Edition</span>` +
+        `<span class="pe-nav-raiz">Cutline</span>` +
         `</div>`;
 
   // Substitui o document.body inteiro: elimina o <style> anterior junto com

@@ -381,7 +381,7 @@ export async function escreverTranscricao(nomeDaMidia: string, json: string): Pr
 
   comTransacao(
     project as Parameters<typeof comTransacao>[0],
-    "Pro Captions: escrever transcricao",
+    "Captions: escrever transcricao",
     (adicionar) => {
       // Tudo nasce dentro do lock, inclusive o TextSegments.
       const segmentos = ppro.Transcript.importFromJSON(json);

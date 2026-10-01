@@ -3,13 +3,13 @@
 <head>
   <meta charset="utf-8" />
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'" />
-  <title>Pro Edition</title>
+  <title>Cutline</title>
   <!--STYLE-->
 </head>
 <body>
   <header class="topo">
-    <button id="voltar" class="migalha" hidden>← Pro Edition</button>
-    <span id="marca" class="marca">Pro Edition</span>
+    <button id="voltar" class="migalha" hidden>← Cutline</button>
+    <span id="marca" class="marca">Cutline</span>
     <span id="titulo" class="titulo"></span>
     <button id="abrirConfig" class="icone" title="Configurações" aria-label="Configurações">⚙</button>
   </header>
@@ -19,15 +19,15 @@
       <h2>Pro Ads</h2>
       <div class="cards">
         <button class="card" data-abre="pausas" style="--acento:#4ecb8d">
-          <span class="card-nome">Auto Pausas</span>
+          <span class="card-nome">SilenceCut</span>
           <span class="card-desc">Tira as pausas e os respiros da sequência que você separou e devolve um XML pronto para o Premiere, com a legenda junto.</span>
         </button>
         <button class="card" data-abre="legendas" style="--acento:#eeab4c">
-          <span class="card-nome">Legendas</span>
+          <span class="card-nome">Captions</span>
           <span class="card-desc">Transcreve com o ElevenLabs e gera o .srt no seu padrão, com os preços num arquivo separado.</span>
         </button>
         <button class="card" data-abre="broll" style="--acento:#8d82f5">
-          <span class="card-nome">Auto B-roll</span>
+          <span class="card-nome">B-Roller</span>
           <span class="card-desc">Escolhe o B-roll pelo que o doutor fala, com o que o painel já aprendeu, e coloca na V2.</span>
         </button>
         <button class="card" data-abre="acabamento" style="--acento:#3b82f6">
@@ -40,7 +40,7 @@
       <h2>Podcast</h2>
       <div class="cards">
         <button class="card" data-abre="podcast" style="--acento:#ff7d71">
-          <span class="card-nome">Podcast AutoCut</span>
+          <span class="card-nome">PodCut</span>
           <span class="card-desc">Duas câmeras, dois microfones: corta as quatro trilhas juntas e liga só quem está falando.</span>
         </button>
       </div>
@@ -94,7 +94,7 @@
   <main id="acabamento" class="tela" hidden>
     <div class="soltar" tabindex="0" role="button" data-escolher="xml">
       <strong>Arraste a sequência com B-roll (.xml)</strong>
-      <span>a que o Auto B-roll gerou, ou a sua exportada do Premiere · ou clique para escolher</span>
+      <span>a que o B-Roller gerou, ou a sua exportada do Premiere · ou clique para escolher</span>
     </div>
     <div class="linha-estado">
       <span class="arquivo"></span>

@@ -1,7 +1,15 @@
-# Pro Edition
+# Cutline (antes Pro Edition)
 
 Painel UXP para o Premiere Pro que reúne as ferramentas de edição num lugar só.
-O **programa** `app/` é o Pro Edition fora do Premiere (ver `app/LEIA-ME.md`).
+O **programa** `app/` é o Cutline fora do Premiere (ver `app/LEIA-ME.md`).
+
+**Nomes na tela desde 01/10:** Cutline (o painel), AutoEdit (Editar), SilenceCut
+(Auto Pausas), B-Roller (Auto B-roll), Captions (Pro Captions), SplitScreen
+(Auto Split) e PodCut (Podcast AutoCut). O botão Aprender continua Aprender.
+No código e nos documentos ficam os nomes antigos. Também não mudaram:
+- o ID do plugin (`com.leogi.proedition`), porque mudá-lo apaga a pasta de dados com o aprendizado e a chave;
+- o nome do programa instalado;
+- a pasta "Pro Captions" no painel Projeto.
 
 
 | Grupo   | Ferramenta      | Código                      |

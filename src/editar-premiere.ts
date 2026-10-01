@@ -192,7 +192,7 @@ interface Fala {
 
 async function ouvirSequencia(preset: Preset, registrar: Registrar, progresso: (t: string) => void): Promise<Fala> {
   const chave = await comLimite("chave", lerChaveElevenLabs(), 5000);
-  if (!chave) throw new Error("Sem chave do ElevenLabs. Salve a chave (sk_…) no Pro Captions e clique de novo.");
+  if (!chave) throw new Error("Sem chave do ElevenLabs. Salve a chave (sk_…) no Captions e clique de novo.");
 
   progresso("exportando o áudio");
   const audio = await exportarAudio("editar-audio.wav");
@@ -379,7 +379,7 @@ async function reaplicarMovimentos(
     }
   }
   if (acoes.length > 0) {
-    comTransacao(project as never, "Editar: zoom e posição dos pedaços", (adicionar) => {
+    comTransacao(project as never, "AutoEdit: zoom e posição dos pedaços", (adicionar) => {
       for (const a of acoes) adicionar(a());
     });
     registrar(`zoom devolvido a ${comEscala} e posição a ${comPosicao} de ${pedacos.length} pedaços`, "ok");
@@ -388,7 +388,7 @@ async function reaplicarMovimentos(
     // Experimental: a API aceita anexar um componente; se ela copiar o Lumetri
     // do clipe original, a cor vem junto. Se recusar, so avisa.
     try {
-      comTransacao(project as never, "Editar: cor dos pedaços", (adicionar) => {
+      comTransacao(project as never, "AutoEdit: cor dos pedaços", (adicionar) => {
         for (const a of lumetri) adicionar(a());
       });
       registrar(`cor (Lumetri) copiada para ${lumetri.length} pedaços — confira no Lumetri`, "ok");
@@ -409,7 +409,7 @@ async function colocarBroll(
   progresso: (t: string) => void
 ): Promise<Feito & { trechos: Array<{ inicio: number; fim: number; nome: string }> }> {
   const config = parseConfig(await comLimite("ler config", readJson("config.json"), 5000));
-  if (!config.libraryPath) throw new Error("Pasta de B-rolls não configurada. Abra o Auto B-roll uma vez e escolha a pasta.");
+  if (!config.libraryPath) throw new Error("Pasta de B-rolls não configurada. Abra o B-Roller uma vez e escolha a pasta.");
   usarSinonimos(parseSinonimos(await comLimite("ler sinônimos", readJson("sinonimos.json"), 5000)) ?? SINONIMOS_PADRAO);
   const memoria = parseMemoria(await comLimite("ler aprendizado", readJson("aprendizado.json"), 5000));
   const ligacoes = ligacoesFirmes(parseAssociacoes(await comLimite("ler ligações", readJson("ligacoes.json"), 5000)));
@@ -515,7 +515,7 @@ async function colocarLeaks(vars: readonly Variacao[], fps: number, registrar: R
   const editor = await ppro.SequenceEditor.getEditor(await project.getActiveSequence());
   const tempos = await Promise.all(inicios.map((t) => ppro.TickTime.createWithSeconds(t)));
   // Faixa de audio do B-roll, nunca a A1: o leak nao tem audio, mas se tiver, nao pisa na fala.
-  comTransacao(project, `Editar: ${inicios.length} light leaks`, (adicionar) => {
+  comTransacao(project, `AutoEdit: ${inicios.length} light leaks`, (adicionar) => {
     for (const t of tempos) adicionar(editor.createOverwriteItemAction(item, t, faixa, config.audioTrackIndex));
   });
   registrar(`${inicios.length} light leaks na V${faixa + 1} (${item.name})`, "ok");
@@ -562,7 +562,7 @@ async function colocarTrilha(vars: readonly Variacao[], fps: number, registrar: 
 
   const editor = await ppro.SequenceEditor.getEditor(sequence);
   const deslocamentos = await Promise.all(entram.map((v) => ppro.TickTime.createWithSeconds(v.inicioQ / fps - modelo.inicio)));
-  comTransacao(project, `Editar: trilha em ${entram.length} variações`, (adicionar) => {
+  comTransacao(project, `AutoEdit: trilha em ${entram.length} variações`, (adicionar) => {
     for (const d of deslocamentos) adicionar(editor.createCloneTrackItemAction(modelo.i, d, 0, 0, false, false));
   });
 
@@ -573,7 +573,7 @@ async function colocarTrilha(vars: readonly Variacao[], fps: number, registrar: 
     const c = depois.find((x) => Math.abs(x.inicio - v.inicioQ / fps) < 0.5 / fps);
     if (c) fins.push({ item: c.i as unknown as ComFim, fim: await ppro.TickTime.createWithSeconds(v.fimQ / fps) });
   }
-  comTransacao(project, "Editar: trilha termina com a variação", (adicionar) => {
+  comTransacao(project, "AutoEdit: trilha termina com a variação", (adicionar) => {
     for (const f of fins) adicionar(f.item.createSetEndAction(f.fim));
   });
   registrar(

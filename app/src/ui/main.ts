@@ -39,11 +39,11 @@ const duracao = (s: number): string => {
 type Tela = "hall" | "pausas" | "broll" | "acabamento" | "podcast" | "legendas";
 const TITULOS: Record<Tela, string> = {
   hall: "",
-  pausas: "Auto Pausas",
-  broll: "Auto B-roll",
+  pausas: "SilenceCut",
+  broll: "B-Roller",
   acabamento: "Acabamento",
-  podcast: "Podcast AutoCut",
-  legendas: "Legendas",
+  podcast: "PodCut",
+  legendas: "Captions",
 };
 let tela: Tela = "hall";
 
@@ -469,7 +469,7 @@ const config = $<HTMLDialogElement>("config");
 async function atualizarChave(): Promise<void> {
   const tem = await pro.temChave();
   const dica = $("chaveEstado");
-  dica.textContent = tem ? "Chave salva neste computador (a daqui ou a do Pro Captions no painel)." : "Nenhuma chave salva ainda.";
+  dica.textContent = tem ? "Chave salva neste computador (a daqui ou a do Captions no painel)." : "Nenhuma chave salva ainda.";
   dica.className = `dica${tem ? " ok" : ""}`;
 }
 
