@@ -7,7 +7,7 @@ import { parseConfig, relogio } from "../../ferramentas/auto-broll/src/domain.ts
 import { writeJson, readJson } from "../../ferramentas/auto-broll/src/premiere.ts";
 import { EMPRESAS, type Empresa } from "../../ferramentas/pro-captions/src/preset.ts";
 import { SPLIT_DA_EMPRESA } from "../autosplit.ts";
-import { parsePerfil, trocarEmpresa, type ResumoVariacao, type Trecho } from "../editar.ts";
+import { marcarFala, parsePerfil, quadros, trocarEmpresa, type ResumoVariacao, type Trecho } from "../editar.ts";
 import { editar, lerEstado, type AoVivo, type Etapa, type Registrar } from "../editar-premiere.ts";
 import { segmentos } from "../shell.ts";
 
@@ -116,11 +116,26 @@ export function mount(root: HTMLElement): void {
   let split: { lado: "baixo" | "cima"; divisao: number } | null = null;
   const atual = (): ResumoVariacao | null => (resumo && sel >= 0 ? (resumo[sel] ?? null) : null);
 
-  const parte = (id: string, tipo: string, grow: number, texto: string) => {
-    const el = pega(id);
+  const parte = (el: HTMLElement, tipo: string, grow: number, texto: string) => {
     el.setAttribute("data-tipo", tipo);
     el.setAttribute("style", `flex-grow: ${grow}`);
     el.textContent = texto;
+  };
+  /** A tela 9:16 em duas partes (a de cima e a de baixo), com o split que rodou. */
+  const encher = (a: HTMLElement, b: HTMLElement, broll: string | undefined) => {
+    if (broll === undefined) {
+      parte(a, "doutor", 1, "doutor");
+      parte(b, "broll", 0, "");
+    } else if (!split) {
+      parte(a, "broll", 1, broll);
+      parte(b, "doutor", 0, "");
+    } else if (split.lado === "cima") {
+      parte(a, "broll", split.divisao, broll);
+      parte(b, "doutor", 100 - split.divisao, "doutor");
+    } else {
+      parte(a, "doutor", split.divisao, "doutor");
+      parte(b, "broll", 100 - split.divisao, broll);
+    }
   };
 
   const quadro = () => {
@@ -134,20 +149,7 @@ export function mount(root: HTMLElement): void {
     pega("edReguaDepois").setAttribute("style", `flex-grow: ${Math.max(1, Math.round((r.duracaoS - t) * 100))}`);
     pega("edTempo").textContent = `${relogio(t)} / ${relogio(r.duracaoS)}`;
     const b = r.brolls.find(dentro);
-    const nome = b?.nome ?? "B-roll";
-    if (!b) {
-      parte("edTelaA", "doutor", 1, "doutor");
-      parte("edTelaB", "broll", 0, "");
-    } else if (!split) {
-      parte("edTelaA", "broll", 1, nome);
-      parte("edTelaB", "doutor", 0, "");
-    } else if (split.lado === "cima") {
-      parte("edTelaA", "broll", split.divisao, nome);
-      parte("edTelaB", "doutor", 100 - split.divisao, "doutor");
-    } else {
-      parte("edTelaA", "doutor", split.divisao, "doutor");
-      parte("edTelaB", "broll", 100 - split.divisao, nome);
-    }
+    encher(pega("edTelaA"), pega("edTelaB"), b ? (b.nome ?? "B-roll") : undefined);
     pega("edTela").setAttribute("data-leak", r.leaks.some(dentro) ? "sim" : "nao");
     const preco = r.legendas.find((l) => l.preco && dentro(l));
     const leg = r.legendas.find((l) => !l.preco && dentro(l));
@@ -196,10 +198,90 @@ export function mount(root: HTMLElement): void {
       quadro();
     }, 100);
   };
-  pega("edPlay").addEventListener("click", tocar);
-  pega("edPlay").addEventListener("keydown", (e) => {
-    if ((e as KeyboardEvent).key === "Enter" || (e as KeyboardEvent).key === " ") tocar();
-  });
+  const clicavel = (el: HTMLElement, fazer: () => void) => {
+    el.addEventListener("click", fazer);
+    el.addEventListener("keydown", (e) => {
+      if ((e as KeyboardEvent).key === "Enter" || (e as KeyboardEvent).key === " ") fazer();
+    });
+  };
+  clicavel(pega("edPlay"), tocar);
+
+  // ---- abas: Timeline, Quadros (um por pedaco da V1) e Fala (a fala marcada)
+  type Vista = "tl" | "qd" | "fl";
+  let vista: Vista = "tl";
+  const limpar = (el: HTMLElement) => {
+    while (el.firstChild) el.removeChild(el.firstChild);
+  };
+  const novo = (pai: HTMLElement, classe: string, texto = ""): HTMLElement => {
+    const el = document.createElement(classe.startsWith("tela-parte") ? "div" : "span");
+    el.className = classe;
+    el.textContent = texto;
+    pai.appendChild(el);
+    return el;
+  };
+  /** Clicar num quadro ou numa palavra leva a timeline para aquele ponto. */
+  const irPara = (de: number) => {
+    t = de;
+    vista = "tl";
+    desenharVista();
+  };
+
+  const desenharQuadros = () => {
+    const caixa = pega("edVista_qd");
+    limpar(caixa);
+    const r = atual();
+    if (!r) return;
+    for (const q of quadros(r)) {
+      const el = document.createElement("div");
+      el.className = "qd";
+      el.setAttribute("role", "button");
+      el.setAttribute("tabindex", "0");
+      const tela = document.createElement("div");
+      tela.className = "qd-tela";
+      tela.setAttribute("data-leak", q.leak ? "sim" : "nao");
+      encher(novo(tela, "tela-parte"), novo(tela, "tela-parte"), q.broll);
+      el.appendChild(tela);
+      novo(el, "qd-tempo", relogio(q.de));
+      novo(el, "qd-leg", q.legenda).setAttribute("data-preco", q.preco ? "sim" : "nao");
+      clicavel(el, () => irPara(q.de));
+      caixa.appendChild(el);
+    }
+  };
+
+  const desenharFala = () => {
+    const caixa = pega("edFala");
+    limpar(caixa);
+    const r = atual();
+    if (!r) return;
+    if (r.palavras.length === 0) novo(caixa, "pl-mudo", "sem fala transcrita nesta variação");
+    for (const p of marcarFala(r)) {
+      if (p.corte) novo(caixa, "pl-corte");
+      else if (p.quebra) novo(caixa, "pl-quebra");
+      if (p.broll) novo(caixa, "pl-tag", p.broll);
+      const el = novo(caixa, "pl", p.texto);
+      el.setAttribute("data-coberta", p.coberta ? "sim" : "nao");
+      el.setAttribute("data-preco", p.preco ? "sim" : "nao");
+      el.addEventListener("click", () => irPara(p.de));
+    }
+    if (r.falaSomeEmS !== null && r.palavras.length > 0) novo(caixa, "pl-mudo", "· áudio mudo daqui em diante");
+  };
+
+  const desenharVista = () => {
+    for (const v of ["tl", "qd", "fl"] as const) {
+      pega(`edAba_${v}`).setAttribute("data-on", v === vista ? "sim" : "nao");
+      pega(`edVista_${v}`).setAttribute("style", v === vista ? "" : "display: none");
+    }
+    if (vista !== "tl") parar();
+    if (vista === "tl") desenharTimeline();
+    else if (vista === "qd") desenharQuadros();
+    else desenharFala();
+  };
+  for (const v of ["tl", "qd", "fl"] as const) {
+    clicavel(pega(`edAba_${v}`), () => {
+      vista = v;
+      desenharVista();
+    });
+  }
 
   const desenharGrade = () => {
     const grade = pega("edGrade");
@@ -224,7 +306,7 @@ export function mount(root: HTMLElement): void {
         parar();
         desenharGrade();
         detalhar();
-        desenharTimeline();
+        desenharVista();
       };
       el.addEventListener("click", abrir);
       el.addEventListener("keydown", (e) => {
@@ -256,7 +338,7 @@ export function mount(root: HTMLElement): void {
       desenharGrade();
       numeros();
       detalhar();
-      desenharTimeline();
+      desenharVista();
     },
   };
 
@@ -287,7 +369,7 @@ export function mount(root: HTMLElement): void {
       desenharGrade();
       numeros();
       detalhar();
-      desenharTimeline();
+      desenharVista();
       if (!e.temChave) registrar("Sem chave do ElevenLabs: salve a chave no Pro Captions antes de editar.", "aviso");
       estado("pronto", "ok");
     } catch (erro) {

@@ -140,6 +140,8 @@ export interface ResumoVariacao {
   readonly leaks: readonly Trecho[];
   readonly legendas: readonly Trecho[];
   readonly trilha: boolean;
+  /** A fala da variacao, palavra por palavra (nome = texto). */
+  readonly palavras: readonly Trecho[];
   /** Segundos (do inicio da variacao) onde a fala acaba cedo; 0 = sem fala; null = ok ou sem transcricao. */
   readonly falaSomeEmS: number | null;
 }
@@ -156,7 +158,7 @@ export function resumoPorVariacao(
     readonly brolls: ReadonlyArray<Item & { readonly nome: string }>;
     readonly leaks: readonly number[];
     readonly blocos: ReadonlyArray<Item & { readonly texto: string; readonly estilo: string }>;
-    readonly palavras: readonly Item[];
+    readonly palavras: ReadonlyArray<Item & { readonly text: string }>;
     /** Variacoes que tem musica na faixa da trilha. */
     readonly trilha: readonly Variacao[];
   }
@@ -179,7 +181,76 @@ export function resumoPorVariacao(
         .filter((b) => dentro(b.inicio))
         .map((b) => ({ ...trecho(b.inicio, b.fim), nome: b.texto, preco: b.estilo === "preco" })),
       trilha: feito.trilha.some((t) => t.inicioQ < v.fimQ && v.inicioQ < t.fimQ),
+      palavras: fala.map((p) => ({ ...trecho(p.inicio, p.fim), nome: p.text })),
       falaSomeEmS: feito.palavras.length === 0 || fim - ultima <= FALA_SOME_S ? null : ultima - ini,
+    };
+  });
+}
+
+/** Uma palavra da aba Fala, com o que a edicao fez em volta dela. */
+export interface PalavraMarcada {
+  readonly de: number;
+  readonly texto: string;
+  /** Conceito do B-roll que COMECA nesta palavra. */
+  readonly broll?: string;
+  /** Debaixo de um B-roll. */
+  readonly coberta: boolean;
+  /** Dentro de uma legenda de preco. */
+  readonly preco: boolean;
+  /** Comeca uma legenda nova (a palavra anterior ficou em outra). */
+  readonly quebra: boolean;
+  /** A imagem corta logo antes (pausa tirada ou corte do Leo). */
+  readonly corte: boolean;
+}
+
+const dentroDe = (t: number, x: Trecho): boolean => t >= x.de && t < x.ate;
+
+/** A fala da variacao lida como a edicao: cortes, B-roll, quebra de legenda e preco. */
+export function marcarFala(r: ResumoVariacao): PalavraMarcada[] {
+  const vistos = new Set<Trecho>();
+  let blocoAnterior: Trecho | undefined;
+  return r.palavras.map((p, i) => {
+    const meio = (p.de + p.ate) / 2;
+    const b = r.brolls.find((x) => dentroDe(meio, x));
+    const novo = b !== undefined && !vistos.has(b);
+    if (b) vistos.add(b);
+    const bloco = r.legendas.find((l) => dentroDe(meio, l));
+    const quebra = i > 0 && bloco !== undefined && bloco !== blocoAnterior;
+    if (bloco) blocoAnterior = bloco;
+    const antes = r.palavras[i - 1];
+    return {
+      de: p.de,
+      texto: p.nome ?? "",
+      ...(novo ? { broll: b!.nome ?? "B-roll" } : {}),
+      coberta: b !== undefined,
+      preco: bloco?.preco === true,
+      quebra,
+      corte: antes !== undefined && r.clipes.some((c) => c.de > antes.de && c.de <= p.de),
+    };
+  });
+}
+
+/** Um quadro da aba Quadros: um por pedaco da V1. */
+export interface Quadro {
+  readonly de: number;
+  readonly broll?: string;
+  readonly leak: boolean;
+  readonly legenda: string;
+  readonly preco: boolean;
+}
+
+/** O storyboard da variacao: o que esta na tela no meio de cada pedaco do doutor. */
+export function quadros(r: ResumoVariacao): Quadro[] {
+  return r.clipes.map((c) => {
+    const meio = (c.de + c.ate) / 2;
+    const b = r.brolls.find((x) => dentroDe(meio, x));
+    const leg = r.legendas.find((l) => dentroDe(c.de + 0.05, l)) ?? r.legendas.find((l) => dentroDe(meio, l));
+    return {
+      de: c.de,
+      ...(b ? { broll: b.nome ?? "B-roll" } : {}),
+      leak: r.leaks.some((l) => l.de < c.ate && c.de < l.ate),
+      legenda: leg?.nome ?? "",
+      preco: leg?.preco === true,
     };
   });
 }

@@ -56,8 +56,17 @@ faixas (C2 preço, C1 legenda, V3 leak, V2 B-roll, V1 doutor, A2 trilha).
 - ▶ toca em tempo real, e clicar num pedaço de qualquer faixa pula o cursor para lá.
 - Tudo em flex-grow (`segmentos()` em `shell.ts`), sem largura em %.
 
-Falta testar os dois passos no Premiere. O próximo é o passo 3: as abas
-Quadros e Fala.
+**Passo 3, abas:** o Editar tem três abas.
+- **Timeline** é a do passo 2.
+- **Quadros** mostra um quadro 9:16 por pedaço da V1, com o B-roll e o split no meio do pedaço, borda âmbar quando tem leak, o tempo e a legenda.
+- **Fala** mostra a fala da variação palavra por palavra:
+  - barra vermelha onde a imagem corta e cinza onde começa uma legenda nova;
+  - etiqueta com o conceito onde o B-roll começa e fundo roxo nas palavras debaixo dele;
+  - fundo coral no preço e "áudio mudo daqui em diante" no fim.
+- Clicar num quadro ou numa palavra leva a timeline para aquele ponto.
+- As regras são puras, `marcarFala()` e `quadros()` em `editar.ts`.
+
+A tela nova do Editar está completa, mas falta testar no Premiere.
 
 - **Legenda (Pro Captions + ElevenLabs):** pronta no código, inclusive a
   segmentação no estilo do Leo (`segmentar.ts` + `maxPalavras: 3` no
@@ -212,7 +221,7 @@ o Leo antes de mexer):
 | Empresa no Editar (lista `<select>`, troca a pasta do Auto B-roll) | **OK** (29/09) |
 | Split da Menopausa (B-roll em cima, `Bottom` do Rounded Crop) no Auto Split | **OK** (29/09): borda de baixo em 45%, Bottom 27,5% no 720×1280 |
 | Quadrado 1:1 (botão do Auto Split) | **OK** (29/09): 697 clipes da V1 a 50%, 100 B-rolls cobrindo o quadrado |
-| Tela nova do Editar (estado por etapa, barra, números, grade de variações, timeline viva com a tela 9:16) | falta: abrir o Editar numa edição real e conferir. O B-roll do Editar entra em `pendentes.json` pelo nome da sequência, então o teste não pode ser numa cópia |
+| Tela nova do Editar (estado por etapa, barra, números, grade de variações, timeline viva com a tela 9:16, abas Quadros e Fala) | falta: abrir o Editar numa edição real e conferir. O B-roll do Editar entra em `pendentes.json` pelo nome da sequência, então o teste não pode ser numa cópia |
 
 Testes de 29/09 feitos por Claude numa cópia: `Andro 19.09\TESTE Pro Edition
 29.09.prproj` (o original não foi tocado; a cópia pode ser apagada). Falta:

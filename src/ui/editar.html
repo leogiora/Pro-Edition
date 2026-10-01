@@ -314,6 +314,145 @@
     color: #ff7d71;
   }
 
+  .abas {
+    display: flex;
+    flex-direction: row;
+    margin-top: 8px;
+  }
+
+  .aba {
+    flex: none;
+    padding: 2px 11px;
+    margin-right: 4px;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    font-size: 11px;
+    color: #9098a6;
+    cursor: pointer;
+  }
+
+  .aba[data-on="sim"] {
+    border-color: #333b47;
+    background-color: #1a1e26;
+    color: #eceef2;
+  }
+
+  /* Quadros: um por pedaco da V1, a tela no meio dele. */
+  .quadros {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    margin: 6px -3px 0 -3px;
+  }
+
+  .qd {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    flex: none;
+    width: 54px;
+    margin: 3px;
+    cursor: pointer;
+  }
+
+  .qd-tela {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    height: 96px;
+    border: 1px solid #232830;
+    border-radius: 5px;
+    overflow: hidden;
+    background-color: #000000;
+  }
+
+  .qd-tela[data-leak="sim"] {
+    border-color: #eeab4c;
+  }
+
+  .qd-tempo {
+    margin-top: 2px;
+    font-size: 10px;
+    color: #5f6774;
+    text-align: center;
+  }
+
+  .qd-leg {
+    font-size: 10px;
+    color: #eceef2;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .qd-leg[data-preco="sim"] {
+    color: #ff7d71;
+  }
+
+  /* Fala: cada palavra e um item de flex-wrap (sem texto corrido no UXP). */
+  .fala {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    margin-top: 8px;
+  }
+
+  .pl {
+    flex: none;
+    margin: 0 4px 5px 0;
+    padding: 0 1px;
+    font-size: 12px;
+    color: #c9ced8;
+    cursor: pointer;
+  }
+
+  .pl[data-coberta="sim"] {
+    background-color: #2b2650;
+    color: #eceef2;
+  }
+
+  .pl[data-preco="sim"] {
+    background-color: #ff7d71;
+    color: #4a1b0c;
+    font-weight: 600;
+  }
+
+  .pl-tag {
+    flex: none;
+    margin: 0 3px 5px 0;
+    padding: 0 4px;
+    border-radius: 3px;
+    font-size: 10px;
+    color: #cecbf6;
+    background-color: #3c3489;
+  }
+
+  .pl-quebra,
+  .pl-corte {
+    flex: none;
+    height: 13px;
+    margin: 0 5px 5px 0;
+  }
+
+  .pl-quebra {
+    width: 1px;
+    background-color: #5f6774;
+  }
+
+  .pl-corte {
+    width: 2px;
+    background-color: #ff7d71;
+  }
+
+  .pl-mudo {
+    flex: none;
+    margin-bottom: 5px;
+    font-size: 11px;
+    color: #eeab4c;
+  }
+
   .log {
     height: 160px;
     margin: 0;
@@ -395,6 +534,17 @@
       </div>
       <div id="edGrade" class="grade"></div>
       <div id="edVarDetalhe" class="var-detalhe">Clique numa variação para ver o que entrou nela.</div>
+      <div class="abas">
+        <div id="edAba_tl" class="aba" role="button" tabindex="0" data-on="sim">Timeline</div>
+        <div id="edAba_qd" class="aba" role="button" tabindex="0" data-on="nao">Quadros</div>
+        <div id="edAba_fl" class="aba" role="button" tabindex="0" data-on="nao">Fala</div>
+      </div>
+      <div id="edVista_qd" class="quadros" style="display: none"></div>
+      <div id="edVista_fl" style="display: none">
+        <div class="dica">vermelho: a imagem corta · cinza: legenda nova · roxo: debaixo do B-roll · clique numa palavra para ir à timeline</div>
+        <div id="edFala" class="fala"></div>
+      </div>
+      <div id="edVista_tl">
       <div class="tl-caixa">
         <div class="tl">
           <div class="tl-linha"><span class="tl-rot"></span><div class="tl-faixa tl-regua"><span id="edReguaAntes" style="flex-grow: 0"></span><span class="tl-cursor"></span><span id="edReguaDepois" style="flex-grow: 1"></span></div></div>
@@ -412,6 +562,7 @@
         </div>
       </div>
       <div id="edTelaLeg" class="tela-leg"></div>
+      </div>
     </div>
   </section>
 

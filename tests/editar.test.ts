@@ -6,7 +6,9 @@ import {
   dentroDasVariacoes,
   inicioDosLeaks,
   moverPalavras,
+  marcarFala,
   parsePerfil,
+  quadros,
   resumoPorVariacao,
   trilhaFaltando,
   trocarEmpresa,
@@ -138,4 +140,31 @@ test("resumoPorVariacao: conta o que caiu em cada uma e avisa a fala que acaba c
   const s = resumoPorVariacao(vars, antes.slice(0, 1), FPS, { clipes: [], brolls: [], leaks: [], blocos: [], palavras: [], trilha: [] });
   assert.equal(s[1]!.falaSomeEmS, null);
   assert.equal(s[0]!.antesS, null);
+  assert.deepEqual(r[0]!.palavras[0], { de: 0, ate: 9.5, nome: "a" });
+});
+
+test("marcarFala e quadros: corte, B-roll, quebra de legenda e preco em cada palavra e quadro", () => {
+  const p = (nome: string, de: number) => ({ de, ate: de + 0.4, nome });
+  const r = {
+    duracaoS: 6,
+    antesS: null,
+    clipes: [{ de: 0, ate: 3 }, { de: 3, ate: 6 }],
+    brolls: [{ de: 1, ate: 2.5, nome: "Academia" }],
+    leaks: [{ de: 0.64, ate: 1.48 }],
+    legendas: [{ de: 0, ate: 2 }, { de: 2, ate: 4 }, { de: 4, ate: 6, preco: true }],
+    trilha: false,
+    palavras: [p("você", 0), p("sabia", 1), p("que", 1.5), p("a", 2.2), p("queda", 3.2), p("R$", 4.2)],
+    falaSomeEmS: null,
+  };
+  const f = marcarFala(r);
+  assert.deepEqual(f.map((x) => x.broll), [undefined, "Academia", undefined, undefined, undefined, undefined]); // tag so na primeira
+  assert.deepEqual(f.map((x) => x.coberta), [false, true, true, true, false, false]);
+  assert.deepEqual(f.map((x) => x.quebra), [false, false, false, true, false, true]);
+  assert.deepEqual(f.map((x) => x.corte), [false, false, false, false, true, false]); // pedaco novo em 3 s
+  assert.deepEqual(f.map((x) => x.preco), [false, false, false, false, false, true]);
+  const q = quadros(r);
+  assert.equal(q.length, 2);
+  assert.deepEqual(q[0], { de: 0, broll: "Academia", leak: true, legenda: "", preco: false }); // meio em 1,5 s: B-roll
+  assert.equal(q[1]!.broll, undefined);
+  assert.equal(q[1]!.leak, false);
 });
