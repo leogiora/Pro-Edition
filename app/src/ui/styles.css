@@ -72,6 +72,10 @@ button:disabled { opacity: .45; cursor: default; }
 .icone:hover { background: var(--bg-2); color: var(--txt); }
 
 .tela { flex: 1; overflow: auto; padding: 24px; }
+/* O AutoEdit e a tela do painel num quadro proprio: as classes dela (.tela,
+   .card...) nao batem nas do programa. */
+#autoedit { padding: 0; overflow: hidden; }
+#autoeditQuadro { display: block; width: 100%; height: calc(100vh - 49px); border: 0; background: #0d0f13; }
 
 /* ------------------------------------------------------------------ hall */
 .grupo + .grupo { margin-top: 28px; }

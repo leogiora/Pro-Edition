@@ -19,6 +19,10 @@
     <section class="grupo">
       <h2>Pro Ads</h2>
       <div class="cards">
+        <button class="card" data-abre="autoedit" style="--acento:#3b82f6">
+          <span class="card-nome">AutoEdit</span>
+          <span class="card-desc">A edição inteira no Premiere aberto, em todas as variações: pausas, B-roll, split, leak, trilha e legendas. Precisa do painel Cutline aberto no Premiere.</span>
+        </button>
         <button class="card" data-abre="pausas" style="--acento:#4ecb8d">
           <span class="card-nome">SilenceCut</span>
           <span class="card-desc">Tira as pausas e os respiros da sequência que você separou e devolve um XML pronto para o Premiere, com a legenda junto.</span>
@@ -46,6 +50,10 @@
         </button>
       </div>
     </section>
+  </main>
+
+  <main id="autoedit" class="tela" hidden>
+    <iframe id="autoeditQuadro" title="AutoEdit"></iframe>
   </main>
 
   <main id="pausas" class="tela" hidden>

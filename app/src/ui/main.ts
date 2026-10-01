@@ -4,6 +4,10 @@
 
 import type { BlocoLegenda, Legendas, ProApi } from "../api.ts";
 import { SILENCIO_MS, tempoDoCursor } from "../premiere-ao-vivo.ts";
+import { motorRemoto } from "./motor-remoto.ts";
+import cssFamilia from "../../../ferramentas/auto-broll/src/ui/styles.css";
+import htmlEditar from "../../../src/ui/editar.html";
+import { mount as montarAutoEdit } from "../../../src/ui/editar-mount.ts";
 
 declare global {
   interface Window {
@@ -37,9 +41,10 @@ const duracao = (s: number): string => {
 
 /* ---------------------------------------------------------------- telas */
 
-type Tela = "hall" | "pausas" | "broll" | "acabamento" | "podcast" | "legendas";
+type Tela = "hall" | "autoedit" | "pausas" | "broll" | "acabamento" | "podcast" | "legendas";
 const TITULOS: Record<Tela, string> = {
   hall: "",
+  autoedit: "AutoEdit",
   pausas: "SilenceCut",
   broll: "B-Roller",
   acabamento: "Acabamento",
@@ -54,6 +59,20 @@ function abrir(nova: Tela): void {
   $("voltar").hidden = nova === "hall";
   $("marca").hidden = nova !== "hall";
   $("titulo").textContent = TITULOS[nova];
+  if (nova === "autoedit") abrirAutoEdit();
+}
+
+/**
+ * A mesma tela do AutoEdit do painel, num quadro proprio, com o motor que pede
+ * ao plugin no Premiere. Monta uma vez; voltar e abrir de novo mantem o estado.
+ */
+let autoEditMontado = false;
+function abrirAutoEdit(): void {
+  if (autoEditMontado) return;
+  autoEditMontado = true;
+  const quadro = $<HTMLIFrameElement>("autoeditQuadro");
+  quadro.addEventListener("load", () => montarAutoEdit(quadro.contentDocument!.body, motorRemoto(pro)), { once: true });
+  quadro.srcdoc = `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><style>${cssFamilia}</style></head><body>${htmlEditar}</body></html>`;
 }
 
 for (const card of document.querySelectorAll<HTMLElement>("[data-abre]")) {

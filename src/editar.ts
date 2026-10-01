@@ -187,6 +187,53 @@ export function resumoPorVariacao(
   });
 }
 
+// ------------------------------------------- contrato entre a tela e o motor
+
+export type Registrar = (texto: string, tipo?: "passo" | "ok" | "aviso" | "erro" | "vazio") => void;
+
+export interface OpcoesEditar {
+  readonly pausas: boolean;
+  readonly broll: boolean;
+  readonly split: boolean;
+  readonly leak: boolean;
+  readonly trilha: boolean;
+  readonly legendas: boolean;
+}
+
+export type Etapa = keyof OpcoesEditar;
+
+/** A tela acompanha cada etapa e recebe, depois de cada uma, o que caiu em cada variacao. */
+export interface AoVivo {
+  etapa(id: Etapa, estado: "rodando" | "ok" | "aviso" | "erro", resumo?: string): void;
+  variacoes(lista: readonly ResumoVariacao[]): void;
+}
+
+export interface EstadoSequencia {
+  readonly nome: string;
+  readonly duracaoS: number;
+  readonly clipesV1: number;
+  readonly variacoes: number;
+  /** Cada variacao como ja esta (V1, B-roll e leak que estao la), para a grade e a timeline antes de editar. */
+  readonly resumo: readonly ResumoVariacao[];
+  readonly brollsAcimaDaV1: number;
+  readonly faixasDeLegenda: number;
+  readonly temChave: boolean;
+}
+
+/**
+ * O que a tela do AutoEdit precisa do Premiere. No painel e o motor local
+ * (src/motor-local.ts); no programa, o remoto, que pede ao plugin pela ponte
+ * (app/src/ui/motor-remoto.ts). A tela e a mesma nos dois.
+ */
+export interface MotorEditar {
+  lerEstado(): Promise<EstadoSequencia>;
+  editar(opcoes: OpcoesEditar, registrar: Registrar, progresso: (texto: string) => void, aoVivo: AoVivo): Promise<boolean>;
+  lerEmpresa(): Promise<Empresa>;
+  /** Troca a empresa e devolve o nome dela e a pasta de B-roll ("" se nunca foi escolhida). */
+  trocarEmpresa(nova: Empresa): Promise<{ nome: string; pasta: string }>;
+  guardarLog(linhas: readonly string[]): Promise<void>;
+}
+
 /** Uma palavra da aba Fala, com o que a edicao fez em volta dela. */
 export interface PalavraMarcada {
   readonly de: number;

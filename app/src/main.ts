@@ -15,6 +15,7 @@ import { abrirParaAcabamento, rodarAcabamento, type OpcoesAcabamentoTela } from 
 import { abrirParaBroll, rodarBroll } from "./motor/broll.ts";
 import { abrirParaPausas, rodarPausas } from "./motor/pausas.ts";
 import { abrirParaPodcast, rodarPodcast } from "./motor/podcast.ts";
+import { Ponte } from "./ponte.ts";
 import { lerEstadoPremiere, PORTA_PREMIERE } from "./premiere-ao-vivo.ts";
 
 const cfg = new Config(app.getPath("userData"));
@@ -61,26 +62,45 @@ function criarJanela(): void {
  * segundo; o programa repassa para a tela. So 127.0.0.1: nada de fora do PC.
  * Porta ocupada nao derruba o programa, so tira o "ao vivo".
  */
+const ponte = new Ponte();
+const ROTAS = new Set(["/premiere", "/resposta", "/evento"]);
+/** A timeline de 20 variacoes com a fala inteira passa de alguns MB. */
+const CORPO_MAX = 50_000_000;
+const paraTela = (canal: string, dados: unknown): void => {
+  for (const janela of BrowserWindow.getAllWindows()) janela.webContents.send(canal, dados);
+};
+
 function escutarPremiere(): void {
   const servidor = createServer((req, res) => {
-    if (req.method !== "POST" || req.url !== "/premiere") {
+    if (req.method !== "POST" || !ROTAS.has(req.url ?? "")) {
       res.writeHead(404).end();
       return;
     }
     let corpo = "";
     req.on("data", (pedaco: Buffer) => {
       corpo += pedaco.toString("utf8");
-      if (corpo.length > 10_000) req.destroy();
+      if (corpo.length > CORPO_MAX) req.destroy();
     });
     req.on("end", () => {
-      let estado = null;
+      let dados: unknown = null;
       try {
-        estado = lerEstadoPremiere(JSON.parse(corpo));
+        dados = JSON.parse(corpo);
       } catch {
         // corpo que nao e JSON: recusado abaixo
       }
-      if (estado) for (const janela of BrowserWindow.getAllWindows()) janela.webContents.send("premiere", estado);
-      res.writeHead(estado ? 200 : 400, { "Content-Type": "application/json" }).end("{}");
+      const json = (status: number, resposta: unknown) => res.writeHead(status, { "Content-Type": "application/json" }).end(JSON.stringify(resposta));
+      if (req.url === "/premiere") {
+        // O plugin passou: conta o estado e leva os pedidos da tela.
+        const estado = lerEstadoPremiere(dados);
+        if (estado === null) return json(400, {});
+        paraTela("premiere", estado);
+        return json(200, { pedidos: ponte.sinal() });
+      }
+      if (req.url === "/resposta") return json(ponte.responder(dados) ? 200 : 404, {});
+      // /evento: o que o AutoEdit conta enquanto roda; a tela confere o formato.
+      if (typeof dados !== "object" || dados === null) return json(400, {});
+      paraTela("premiere:evento", dados);
+      return json(200, {});
     });
   });
   servidor.on("error", (e) => console.error(`ponte do Premiere: ${e.message}`));
@@ -116,6 +136,10 @@ ipcMain.handle("escolher", async (evento, tipo: keyof typeof FILTROS) => {
   const r = janela === null ? await dialog.showOpenDialog(opcoes) : await dialog.showOpenDialog(janela, opcoes);
   return r.canceled ? [] : r.filePaths;
 });
+
+/** Prazo de cada pedido ao plugin: o AutoEdit inteiro pode levar mais de uma hora numa sequencia longa. */
+const PRAZO_MS: Readonly<Record<string, number>> = { editar: 3 * 60 * 60 * 1000, lerEstado: 60_000 };
+ipcMain.handle("premiere:pedir", (_e, nome: string, args: unknown[]) => ponte.pedir(nome, args, PRAZO_MS[nome] ?? 15_000));
 
 ipcMain.handle("chave:tem", async () => (await cfg.chave()) !== null);
 

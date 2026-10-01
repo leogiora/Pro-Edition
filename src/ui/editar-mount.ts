@@ -2,20 +2,26 @@
  * Tela do Editar, no layout do prototipo que o Leo escolheu (01/10): empresa,
  * etapas em bolinhas, grade de variacoes, detalhe da escolhida com Timeline,
  * Quadros e Fala, e o registro curto. So orquestra: le o estado, chama o
- * adapter e desenha o que ele manda (AoVivo).
+ * motor e desenha o que ele manda (AoVivo). O motor e o local no painel
+ * (src/motor-local.ts) e o remoto no programa (app/src/ui/motor-remoto.ts):
+ * nada aqui toca no Premiere nem em disco direto.
  * Botoes ligados ANTES de qualquer await (UXP_ARMADILHAS, regra 2).
  */
 
-import { parseConfig, relogio } from "../../ferramentas/auto-broll/src/domain.ts";
-import { writeJson, readJson } from "../../ferramentas/auto-broll/src/premiere.ts";
+import { relogio } from "../../ferramentas/auto-broll/src/domain.ts";
 import { EMPRESAS, type Empresa } from "../../ferramentas/pro-captions/src/preset.ts";
 import { SPLIT_DA_EMPRESA } from "../autosplit.ts";
-import { marcarFala, parsePerfil, quadros, trocarEmpresa, type ResumoVariacao, type Trecho } from "../editar.ts";
-import { editar, lerEstado, type AoVivo, type Etapa, type Registrar } from "../editar-premiere.ts";
+import {
+  marcarFala,
+  quadros,
+  type AoVivo,
+  type Etapa,
+  type MotorEditar,
+  type Registrar,
+  type ResumoVariacao,
+  type Trecho,
+} from "../editar.ts";
 import { icone, segmentos, type Icone } from "../shell.ts";
-
-const LOG = "editar-log.json";
-const PERFIL = "perfil.json";
 
 const ETAPAS: ReadonlyArray<{ readonly id: Etapa & Icone; readonly nome: string; readonly cor: string }> = [
   { id: "pausas", nome: "Pausas", cor: "#4ecb8d" },
@@ -42,7 +48,7 @@ function itensDa(r: ResumoVariacao, faixa: (typeof FAIXAS)[number]): readonly Tr
 
 type Tom = "rodando" | "ok" | "aviso" | "erro";
 
-export function mount(root: HTMLElement): void {
+export function mount(root: HTMLElement, motor: MotorEditar): void {
   const pega = <T extends HTMLElement>(id: string): T => root.querySelector<T>(`#${id}`)!;
   const limpar = (el: HTMLElement) => {
     while (el.firstChild) el.removeChild(el.firstChild);
@@ -138,15 +144,13 @@ export function mount(root: HTMLElement): void {
     if (ocupado || nova === empresa) return;
     empresa = nova;
     desenharEmpresas();
-    void (async () => {
-      const config = parseConfig(await readJson("config.json"));
-      const r = trocarEmpresa(parsePerfil(await readJson(PERFIL)), config.libraryPath, nova);
-      await writeJson(PERFIL, r.perfil);
-      await writeJson("config.json", { ...config, libraryPath: r.pasta });
-      const nome = EMPRESAS[r.perfil.empresa].nome;
-      if (r.pasta) registrar(`${nome}: B-roll de ${r.pasta}`, "passo");
-      else registrar(`${nome}: escolha a pasta de B-roll dela no B-Roller`, "aviso");
-    })().catch((e) => registrar(`empresa: ${(e as Error)?.message ?? String(e)}`, "erro"));
+    motor
+      .trocarEmpresa(nova)
+      .then(({ nome, pasta }) => {
+        if (pasta) registrar(`${nome}: B-roll de ${pasta}`, "passo");
+        else registrar(`${nome}: escolha a pasta de B-roll dela no B-Roller`, "aviso");
+      })
+      .catch((e) => registrar(`empresa: ${(e as Error)?.message ?? String(e)}`, "erro"));
   };
 
   // ---- etapas: bolinhas que ligam e desligam, e acendem quando rodam
@@ -441,17 +445,11 @@ export function mount(root: HTMLElement): void {
     if (ocupado) escolhida = true;
   });
 
-  // Guarda as 10 ultimas execucoes: o registro da tela e o que se ve; o arquivo e o que se le depois.
-  const guardarLog = async () => {
-    const antes = (await readJson(LOG).catch(() => null)) as { execucoes?: unknown[] } | null;
-    const execucoes = Array.isArray(antes?.execucoes) ? antes.execucoes : [];
-    await writeJson(LOG, { execucoes: [...execucoes, { quando: new Date().toISOString(), linhas: [...linhas] }].slice(-10) });
-  };
 
   const ler = async () => {
     pill("lendo", "ativo");
     try {
-      const e = await lerEstado();
+      const e = await motor.lerEstado();
       seqNome = e.nome;
       pega("edSeq").textContent = `· ${e.nome}`;
       // Reconhecer o que ja foi feito: B-roll e legenda que ja estao la nao entram de novo por padrao.
@@ -493,14 +491,11 @@ export function mount(root: HTMLElement): void {
     parar();
     animar(true);
     desenharTudo();
-    void editar(
-      { ...ativo },
-      registrar,
-      (texto) => {
-        pega("edProg").textContent = `Editando · ${texto}`;
-      },
-      aoVivo
-    )
+    const progresso = (texto: string) => {
+      pega("edProg").textContent = `Editando · ${texto}`;
+    };
+    void motor
+      .editar({ ...ativo }, registrar, progresso, aoVivo)
       .then(() => {
         pill("pronto", "ok");
         editado = true;
@@ -518,7 +513,7 @@ export function mount(root: HTMLElement): void {
         ocupado = false;
         animar(false);
         desenharTudo();
-        void guardarLog().catch(() => undefined);
+        void motor.guardarLog(linhas).catch(() => undefined);
       });
   };
   clicavel(pega("edEditar"), rodar);
@@ -527,10 +522,14 @@ export function mount(root: HTMLElement): void {
   });
 
   desenharEmpresas();
+  desenharEtapas();
   desenharFeed();
-  void readJson(PERFIL).then((p) => {
-    empresa = parsePerfil(p).empresa;
-    desenharEmpresas();
-  });
+  void motor
+    .lerEmpresa()
+    .then((e) => {
+      empresa = e;
+      desenharEmpresas();
+    })
+    .catch(() => undefined);
   void ler();
 }

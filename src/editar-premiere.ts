@@ -65,9 +65,15 @@ import {
   resumoPorVariacao,
   trilhaFaltando,
   variacoes,
-  type ResumoVariacao,
+  type AoVivo,
+  type Etapa,
+  type EstadoSequencia,
+  type OpcoesEditar,
+  type Registrar,
   type Variacao,
 } from "./editar.ts";
+
+export type { AoVivo, Etapa, EstadoSequencia, OpcoesEditar, Registrar };
 import {
   apagarArquivo,
   aplicarPlano,
@@ -92,16 +98,6 @@ const JANELA_S = 0.02;
 const MATCH_MOTION = "AE.ADBE Motion";
 const MATCH_LUMETRI = "AE.ADBE Lumetri";
 
-export type Registrar = (texto: string, tipo?: "passo" | "ok" | "aviso" | "erro" | "vazio") => void;
-
-export type Etapa = keyof OpcoesEditar;
-
-/** O painel acompanha cada etapa e recebe, no fim, o que caiu em cada variacao. */
-export interface AoVivo {
-  etapa(id: Etapa, estado: "rodando" | "ok" | "aviso" | "erro", resumo?: string): void;
-  variacoes(lista: readonly ResumoVariacao[]): void;
-}
-
 /** O que cada etapa devolve para o painel: uma frase curta. */
 interface Feito {
   readonly resumo: string;
@@ -109,18 +105,6 @@ interface Feito {
 }
 
 // ------------------------------------------------------------------ estado
-
-export interface EstadoSequencia {
-  readonly nome: string;
-  readonly duracaoS: number;
-  readonly clipesV1: number;
-  readonly variacoes: number;
-  /** Cada variacao como ja esta (V1, B-roll e leak que estao la), para a grade e a timeline antes de editar. */
-  readonly resumo: readonly ResumoVariacao[];
-  readonly brollsAcimaDaV1: number;
-  readonly faixasDeLegenda: number;
-  readonly temChave: boolean;
-}
 
 /**
  * O que ja esta na sequencia acima da V1 e na faixa da trilha, para o painel
@@ -612,15 +596,6 @@ async function colocarLegendas(
 }
 
 // ------------------------------------------------------------------- tudo
-
-export interface OpcoesEditar {
-  readonly pausas: boolean;
-  readonly broll: boolean;
-  readonly split: boolean;
-  readonly leak: boolean;
-  readonly trilha: boolean;
-  readonly legendas: boolean;
-}
 
 export async function editar(
   opcoes: OpcoesEditar,

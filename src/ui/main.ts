@@ -16,6 +16,7 @@ import { mount as mountCaptions } from "../../ferramentas/pro-captions/src/ui/mo
 
 import htmlEditar from "./editar.html";
 import { mount as mountEditar } from "./editar-mount.ts";
+import { motorLocal } from "../motor-local.ts";
 
 import htmlPausas from "./pausas.html";
 import { mount as mountPausas } from "./pausas-mount.ts";
@@ -136,7 +137,7 @@ function montarSeletor(root: HTMLElement): void {
 
 const REGISTRO: Readonly<Record<Ferramenta, Tela>> = {
   seletor: { html: htmlSeletor, css: cssSeletor, montar: montarSeletor },
-  editar: { html: htmlEditar, css: cssBroll, montar: mountEditar },
+  editar: { html: htmlEditar, css: cssBroll, montar: (root) => mountEditar(root, motorLocal) },
   pausas: { html: htmlPausas, css: cssBroll, montar: mountPausas },
   broll: { html: extrairCorpo(htmlBrollBruto), css: cssBroll, montar: mountBroll },
   captions: { html: extrairCorpo(htmlCaptionsBruto), css: cssCaptions, montar: mountCaptions },
