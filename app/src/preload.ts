@@ -22,6 +22,7 @@ const api: ProApi = {
   escolherPastaBroll: () => ipcRenderer.invoke("broll:pasta"),
   aoAvisar: (fn) => void ipcRenderer.on("aviso", (_e, texto: string) => fn(texto)),
   aoAbrir: (fn) => void ipcRenderer.on("abrir", (_e, caminho: string) => fn(caminho)),
+  aoPremiere: (fn) => void ipcRenderer.on("premiere", (_e, estado) => fn(estado)),
 };
 
 contextBridge.exposeInMainWorld("pro", api);

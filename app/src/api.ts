@@ -9,6 +9,7 @@ import type { EntradaBroll, ResultadoBrollSalvo } from "./motor/broll.ts";
 import type { Preferencias } from "./motor/config.ts";
 import type { EntradaAcabamento, OpcoesAcabamentoTela, ResultadoAcabamentoSalvo } from "./motor/acabamento.ts";
 import type { EntradaPodcast, ResultadoPodcastSalvo } from "./motor/podcast.ts";
+import type { EstadoPremiere } from "./premiere-ao-vivo.ts";
 
 export type {
   Legendas,
@@ -52,4 +53,6 @@ export interface ProApi {
   aoAvisar(fn: (texto: string) => void): void;
   /** Arquivo aberto pelo "Abrir com" do Windows. */
   aoAbrir(fn: (caminho: string) => void): void;
+  /** O que o plugin conta do Premiere, a cada meio segundo. */
+  aoPremiere(fn: (estado: EstadoPremiere) => void): void;
 }

@@ -51,3 +51,6 @@ try {
 }
 const extras = [...faltando].filter((k) => !["window", "self", "globalThis"].includes(k));
 if (extras.length) console.log(`globais que o painel leu e nao existem aqui: ${extras.join(", ")}`);
+// A ponte com o programa (src/ponte-app.ts) tenta de novo para sempre sem o
+// programa aberto: 3 s pegam o erro assincrono do comeco e depois encerra.
+setTimeout(() => process.exit(), 3000);

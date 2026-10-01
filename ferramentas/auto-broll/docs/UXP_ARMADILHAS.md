@@ -69,6 +69,19 @@ Nao rejeitam, nao lancam, nao voltam. Matam a execucao inteira sem deixar rastro
   `ComponentParam` as cegas. `displayName` e propriedade, use ela.
 - `importFiles` em certos estados.
 
+## 3a. Rede para o proprio PC (ponte com o programa)
+
+- `fetch` para `http://127.0.0.1:47800` foi **recusado** com
+  `Permission denied ... Manifest entry not found` com o dominio na lista do
+  manifest (`network.domains`), tanto `http://127.0.0.1:47800` quanto
+  `http://127.0.0.1` e `http://localhost` (Premiere 25, 01/10/2026). So passou
+  com `"domains": "all"`. O `https://api.elevenlabs.io` na lista sempre
+  funcionou: o que nao entra e `http://`.
+- O UXP **nao grava log em disco**: erro de rede so aparece se o plugin anotar.
+  A ponte anota o ultimo erro em `ponte-log.json` (PluginData).
+- O codigo do plugin so roda com o **painel aberto** (Window > UXP Plugins >
+  Cutline). Painel fechado, nada conversa.
+
 ## 3b. Globais que o navegador tem e o UXP nao
 
 - **`TextEncoder` nao existe.** Um `new TextEncoder()` no topo de um modulo do

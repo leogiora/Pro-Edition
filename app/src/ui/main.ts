@@ -3,6 +3,7 @@
  */
 
 import type { BlocoLegenda, Legendas, ProApi } from "../api.ts";
+import { SILENCIO_MS, tempoDoCursor } from "../premiere-ao-vivo.ts";
 
 declare global {
   interface Window {
@@ -461,6 +462,24 @@ document.addEventListener("drop", (e) => {
 });
 
 pro.aoAbrir((caminho) => receber([caminho]));
+
+// ---- Premiere ao vivo: o plugin (a extensao) conta, a tela mostra.
+let ultimoPremiere = 0;
+pro.aoPremiere((e) => {
+  ultimoPremiere = Date.now();
+  const el = document.getElementById("premiere")!;
+  el.dataset.on = "sim";
+  el.textContent =
+    e.sequencia === null
+      ? `Premiere ao vivo · ${e.projeto ?? "sem projeto"} · nenhuma sequência aberta`
+      : `Premiere ao vivo · ${e.sequencia} · ${e.cursorS === null ? "--" : tempoDoCursor(e.cursorS)} · ${e.selecionados} selecionado(s)`;
+});
+setInterval(() => {
+  if (Date.now() - ultimoPremiere < SILENCIO_MS) return;
+  const el = document.getElementById("premiere")!;
+  el.dataset.on = "nao";
+  el.textContent = "Premiere: desconectado";
+}, 500);
 
 /* -------------------------------------------------------------- config */
 
