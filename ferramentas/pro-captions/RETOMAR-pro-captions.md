@@ -1,5 +1,70 @@
 # RETOMAR — Pro Captions
 
+## 2026-09-29 (Claude Code) — chave nova, L5 e hibrido provados ao vivo
+
+Com a chave nova, na "Reels" de uma copia do Andro 19.09 (54:25 de audio,
+129 s no ElevenLabs, 1.836 palavras). Medido no `.prproj` (scripts em
+`teste-legendas/`; gabarito `gabarito_reels_ate_1133.srt`, 862 blocos das
+variacoes 1-10 revisadas):
+
+- **L5 OK.** 610 blocos da legenda revisada casados pela primeira palavra: a
+  nova comeca 0,04 s depois (1 quadro a 25 fps), igual nos quatro quartos,
+  sem deriva; 91% ate 0,1 s, 99% ate 0,25 s.
+- **Fala parou em 11:33.** Os clipes de audio das variacoes 11-20 estao mudos
+  na sequencia (`IsMuted`); o export sai em silencio dali. O painel agora avisa
+  quando a fala acaba mais de 60 s antes do ultimo clipe da V1.
+- **"H" sozinho de 20 ms** ("mas na hora" / "H,"): menor que um quadro, o
+  Premiere jogou no 0:00. O `partir` agora aceita uma palavra alem do limite
+  quando toda quebra deixaria palavra curta sozinha ou pendurada (o Leo fez
+  "Mas na hora h" e "Ate que um dia"; 4% dos blocos dele tem 4 palavras).
+  Cortes do Leo repetidos: 69% -> 70%, cortes a mais 150 -> 136.
+- **Legenda colada na seguinte**, como a do Leo (1.685 de 1.722 sem vao):
+  `gerarBlocos` estica o fim ate o proximo bloco quando o vao e menor que 1 s.
+  No Premiere: 728 de 757 vaos zerados (o resto e o preco, na faixa dele).
+- **Reimportar o mesmo `legendas.srt` trazia o texto velho.** A ponte agora
+  importa uma copia com hora no nome (`legendas 14h32m43s.srt`). Provado: a
+  faixa nova veio com os 758 blocos novos.
+- **Hibrido no programa:** audio da variacao 1 + `premiere_antes_da_revisao.srt`,
+  chave lida do painel. 81/84 cortes (96%), 2 palavras diferentes de 176
+  ("a" a mais e "focado"/"focada"), tempo mediano 0 ms.
+
+## 2026-09-28 (Claude Code) — medido sem Premiere: o corte do Premiere ganha
+
+A resposta do ElevenLabs salva (`teste-legendas/elevenlabs.json.json`)
+passou pela cadeia atual (`gerarBlocos` + `PRESET_ELEVENLABS`, script
+`teste-legendas/legenda_offline.mjs`) e foi comparada com a legenda revisada
+da variacao 1. `cortes.py` mede quantos cortes do Leo cada versao repete:
+
+| | palavras erradas | cortes do Leo repetidos | cortes a mais |
+|---|---|---|---|
+| Premiere antes da revisao | 7 | 80/84 (95%) | 3 |
+| Pro Captions atual | 3 | 62/84 (74%) | 15 |
+| Hibrido: bloco do Premiere, palavra do ElevenLabs (`hibrido.py`) | 4* | 80/84 (95%) | 2 |
+
+\* O que falta e o "reais" do "196": o ElevenLabs escreveu so "196.", e a
+cadeia de texto daqui poe de volta. Com ela, o hibrido fica nas mesmas 3 do
+Pro Captions, e duas delas nem sao erro ("focada" e do gabarito de 24/09; o
+projeto de hoje ja diz "focado").
+
+Pausa nao explica o corte (`pausas.py`: metade dos cortes do Leo cai em
+0,02 s), como a sessao de 24/09 ja tinha visto. Imitar a regra do Premiere
+seria chute. **Recomendacao:** nao segmentar, reaproveitar os blocos do
+Premiere. O painel nao le a faixa de legenda (P3.1), entao o hibrido mora no
+programa (`app/`): entra o `.srt` que o Premiere exporta (Arquivo > Exportar >
+Legendas) mais o audio, e sai o `.srt` com as palavras do ElevenLabs e as
+regras de texto daqui, com o preco em faixa propria.
+
+**Feito (ok do Leo, 28/09):** `lerSrt` e `blocosNosCortes` em `pipeline.ts`.
+A palavra vai para o bloco onde comeca. O preco e achado na frase inteira e
+sai em bloco proprio; preco partido entre dois blocos vai para o primeiro.
+Bloco esvaziado pelo vizinho (preco puxado, ou "super-homem" cobrindo "um
+super" / "homem") e absorvido pelo anterior. Bloco onde o ElevenLabs nao
+ouviu nada fica com o texto do Premiere, marcado para revisao. Ponto no meio
+do bloco vira virgula ("hora H, E ela?", como na legenda revisada). No
+programa, a tela Legendas aceita o `.srt` junto com o audio. Pelo caminho
+real: 3 palavras diferentes, 80/84 cortes, 2 a mais, tempo mediano 0 ms.
+Falta rodar com uma sequencia inteira exportada do Premiere.
+
 ## 2026-09-24 (Claude Code) — segmentacao no estilo do Leo
 
 **Achado que muda a meta:** a segmentacao da legenda revisada e quase toda a

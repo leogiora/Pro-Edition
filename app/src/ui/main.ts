@@ -226,6 +226,7 @@ async function abrirAcabamento(caminho: string): Promise<void> {
     mostrarMusica();
     $<HTMLInputElement>("acabComTrilha").checked = musica !== null;
     $<HTMLInputElement>("acabVolume").value = String(e.volumeTrilhaDb);
+    $<HTMLInputElement>("acabDivisao").value = String(e.divisao);
     $("acabEntrada").hidden = false;
     estado("acabamento", e.avisos.length > 0 ? e.avisos.join(" · ") : "pronto", e.avisos.length > 0 ? "" : "ok");
   } catch (erro) {
@@ -262,6 +263,7 @@ $<HTMLButtonElement>("acabRodar").addEventListener("click", async () => {
       ...[
         `${r.aparados} B-roll(s) aparados no fim do doutor`,
         ...(r.enquadrados > 0 ? [`${r.enquadrados} B-roll(s) no Split`] : []),
+        ...(r.subidos > 0 ? [`${r.subidos} trecho(s) do doutor em pé subiram por baixo do B-roll`] : []),
         ...r.avisos,
       ].map((t) => Object.assign(document.createElement("li"), { textContent: t }))
     );
@@ -328,6 +330,8 @@ $<HTMLButtonElement>("podRodar").addEventListener("click", async () => {
 const MAX_CARACTERES = 20;
 
 let atual: { caminho: string; legendas: Legendas } | null = null;
+/** O ultimo audio/video recebido: o .srt do Premiere pode chegar depois dele. */
+let ultimaMidia: string | null = null;
 
 const ORIGEM: Record<Legendas["origem"], string> = {
   "arquivo json": "transcrição lida do arquivo .json",
@@ -335,18 +339,19 @@ const ORIGEM: Record<Legendas["origem"], string> = {
   elevenlabs: "transcrito agora no ElevenLabs",
 };
 
-async function gerar(caminho: string): Promise<void> {
+async function gerar(caminho: string, srtPremiere: string | null = null): Promise<void> {
   abrir("legendas");
   atual = null;
+  ultimaMidia = caminho;
   $("resultado").hidden = true;
-  linha("legendas").arquivo.textContent = nomeDe(caminho);
+  linha("legendas").arquivo.textContent = nomeDe(caminho) + (srtPremiere === null ? "" : ` + ${nomeDe(srtPremiere)}`);
   $("legendas").querySelector(".soltar")?.classList.add("compacto");
   estado("legendas", "começando", "ativo");
   try {
-    const legendas = await pro.gerarLegendas(caminho);
+    const legendas = await pro.gerarLegendas(caminho, srtPremiere);
     atual = { caminho, legendas };
     mostrar(legendas);
-    estado("legendas", ORIGEM[legendas.origem], "ok");
+    estado("legendas", ORIGEM[legendas.origem] + (legendas.cortes === "premiere" ? " · blocos e tempo do Premiere" : ""), "ok");
   } catch (erro) {
     estado("legendas", mensagem(erro), "erro");
   }
@@ -372,9 +377,11 @@ function mostrar(l: Legendas): void {
       texto.setAttribute("aria-label", `Legenda ${i + 1}`);
 
       const conta = document.createElement("span");
+      // No corte do Premiere o bloco ja passou pelo olho do Leo: sem orcamento.
+      const limite = l.cortes === "premiere" ? Infinity : MAX_CARACTERES;
       const contar = (): void => {
         conta.textContent = String(texto.value.length);
-        conta.className = `conta${texto.value.length > MAX_CARACTERES ? " estourou" : ""}`;
+        conta.className = `conta${texto.value.length > limite ? " estourou" : ""}`;
       };
       contar();
       texto.addEventListener("input", () => {
@@ -397,7 +404,7 @@ $<HTMLButtonElement>("salvar").addEventListener("click", async () => {
   if (atual === null) return;
   const blocos: BlocoLegenda[] = atual.legendas.blocos;
   try {
-    mostrarSalvos($("salvos"), await pro.salvarLegendas(atual.caminho, blocos));
+    mostrarSalvos($("salvos"), await pro.salvarLegendas(atual.caminho, blocos, atual.legendas.cortes));
     estado("legendas", "no Premiere: Arquivo > Importar os .srt e arrastar para a timeline", "ok");
   } catch (erro) {
     estado("legendas", mensagem(erro), "erro");
@@ -406,9 +413,24 @@ $<HTMLButtonElement>("salvar").addEventListener("click", async () => {
 
 /* ------------------------------------------------- arquivos que chegam */
 
-/** .xml e brutas vao para o Auto Pausas (ou o B-roll, se aberto); audio, video solto e .json para a Legenda. */
+/**
+ * .xml e brutas vao para o Auto Pausas (ou o B-roll, se aberto); audio, video
+ * solto e .json para a Legenda. A legenda do Premiere em .srt tambem vai para a
+ * Legenda, junto com o audio (no mesmo arraste, ou depois dele).
+ */
 function receber(caminhos: string[]): void {
   if (caminhos.length === 0) return;
+  const srt = caminhos.find((c) => /\.srt$/i.test(c));
+  if (srt !== undefined) {
+    const midia = caminhos.find((c) => c !== srt) ?? ultimaMidia;
+    if (midia === null) {
+      abrir("legendas");
+      estado("legendas", "arraste também o áudio (ou o vídeo) da sequência, junto com o .srt", "erro");
+      return;
+    }
+    void gerar(midia, srt);
+    return;
+  }
   const xml = caminhos.find((c) => /\.xml$/i.test(c));
   if (tela === "broll" && xml !== undefined) void abrirBroll(xml);
   else if (tela === "acabamento" && xml !== undefined) void abrirAcabamento(xml);
@@ -447,7 +469,7 @@ const config = $<HTMLDialogElement>("config");
 async function atualizarChave(): Promise<void> {
   const tem = await pro.temChave();
   const dica = $("chaveEstado");
-  dica.textContent = tem ? "Chave salva neste computador (cifrada)." : "Nenhuma chave salva ainda.";
+  dica.textContent = tem ? "Chave salva neste computador (a daqui ou a do Pro Captions no painel)." : "Nenhuma chave salva ainda.";
   dica.className = `dica${tem ? " ok" : ""}`;
 }
 

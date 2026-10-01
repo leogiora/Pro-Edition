@@ -32,8 +32,9 @@ export interface ProApi {
   caminhoDe(arquivo: File): string;
   temChave(): Promise<boolean>;
   salvarChave(chave: string): Promise<void>;
-  gerarLegendas(caminho: string): Promise<Legendas>;
-  salvarLegendas(caminho: string, blocos: readonly BlocoLegenda[]): Promise<string[]>;
+  /** `srtPremiere`: a legenda do Premiere exportada em .srt, para usar os cortes dela. */
+  gerarLegendas(caminho: string, srtPremiere: string | null): Promise<Legendas>;
+  salvarLegendas(caminho: string, blocos: readonly BlocoLegenda[], cortes: Legendas["cortes"]): Promise<string[]>;
   mostrarNaPasta(caminho: string): Promise<void>;
   /** Le o .xml exportado do Premiere (ou as brutas) e resume o que vai ser cortado. */
   abrirPausas(caminhos: readonly string[]): Promise<EntradaPausas>;

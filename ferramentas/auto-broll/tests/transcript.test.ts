@@ -182,6 +182,12 @@ test("agruparEmFrases: pausa longa quebra mesmo sem eos", () => {
   assert.equal(frases.length, 2);
 });
 
+test("agruparEmFrases: fimDaFala vai ate a pausa longa, atravessando o eos", () => {
+  // A pausa longa separa variacoes: o B-roll pode atravessar o eos, nao ela.
+  const frases = agruparEmFrases([palavra("um", 0, true), palavra("dois", 1, true), palavra("tres", 10)]);
+  assert.deepEqual(frases.map((f) => f.fimDaFala), [1.3, 1.3, 10.3]);
+});
+
 test("agruparEmFrases: guarda a menor confianca para marcar trecho incerto", () => {
   const frases = agruparEmFrases([
     { text: "talvez", inicio: 0, fim: 0.4, confidence: 0.42, eos: false, sourceName: "x" },

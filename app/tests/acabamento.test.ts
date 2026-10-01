@@ -54,9 +54,65 @@ test("Split: B-roll na caixa de baixo, com corte do topo e feather, abaixo do me
   for (const c of r.sequencia.video[1]!) {
     assert.ok((c.deslocamento?.y ?? 0) > 0, "centro do B-roll desce para a metade de baixo");
     assert.ok((c.recorte?.topo ?? 0) > 0);
-    assert.equal(c.recorte?.suavizar, 5);
-    assert.notEqual(c.escala, 150);
+    assert.equal(c.recorte?.suavizar, 7);
+    assert.equal(c.escala, 150, "preenche a largura sem sobra, como o Leo (1080 / 720)");
   }
+  assert.equal(r.subidos, 0, "bruta deitada: o doutor fica como o Leo deixou");
+  assert.deepEqual(r.sequencia.video[0], seq.video[0]);
+});
+
+test("Split: doutor em pe sobe so por baixo do B-roll, e o audio vinculado e cortado junto", () => {
+  const emPe: Midia = { caminho: "C:\\brutas\\vertical.mp4", duracaoQ: 1000, largura: 1080, altura: 1920, canais: 2 };
+  const s: Sequencia = {
+    ...seq,
+    video: [
+      [{ midia: emPe, inicioQ: 0, fimQ: 300, entradaQ: 10, grupo: "p0", deslocamento: { x: 20, y: 0 } }],
+      [
+        { midia: broll, inicioQ: 100, fimQ: 150, entradaQ: 0 },
+        { midia: broll, inicioQ: 150, fimQ: 200, entradaQ: 0 },
+      ],
+    ],
+    audio: [[{ midia: emPe, inicioQ: 0, fimQ: 300, entradaQ: 10, grupo: "p0" }]],
+  };
+  const r = acabar(s, { split: { divisao: 50, perfil, override: {} } });
+  assert.equal(r.subidos, 1, "dois B-rolls colados sao um trecho so");
+  assert.deepEqual(
+    r.sequencia.video[0]!.map((c) => [c.inicioQ, c.fimQ, c.entradaQ, c.grupo, c.deslocamento]),
+    [
+      [0, 100, 10, "p0.0", { x: 20, y: 0 }],
+      [100, 200, 110, "p0.1", { x: 20, y: -144 }], // 960 * 0,85 = 816
+      [200, 300, 210, "p0.2", { x: 20, y: 0 }],
+    ]
+  );
+  assert.deepEqual(
+    r.sequencia.audio[0]!.map((c) => [c.inicioQ, c.fimQ, c.entradaQ, c.grupo]),
+    [
+      [0, 100, 10, "p0.0"],
+      [100, 200, 110, "p0.1"],
+      [200, 300, 210, "p0.2"],
+    ]
+  );
+  assert.deepEqual(validarSequencia(r.sequencia), []);
+});
+
+test("Split com o B-roll em cima (Menopausa): corte embaixo e a pessoa desce so por baixo dele", () => {
+  const emPe: Midia = { caminho: "C:\\brutas\\vertical.mp4", duracaoQ: 1000, largura: 1080, altura: 1920, canais: 2 };
+  const s: Sequencia = {
+    ...seq,
+    video: [
+      [{ midia: emPe, inicioQ: 0, fimQ: 300, entradaQ: 10, grupo: "p0" }],
+      [{ midia: broll, inicioQ: 100, fimQ: 200, entradaQ: 0 }],
+    ],
+    audio: [[{ midia: emPe, inicioQ: 0, fimQ: 300, entradaQ: 10, grupo: "p0" }]],
+  };
+  const r = acabar(s, { split: { divisao: 45, perfil, override: {}, lado: "cima", feather: 5 } });
+  const b = r.sequencia.video[1]![0]!;
+  assert.equal(b.recorte?.topo, 0);
+  assert.ok((b.recorte?.base ?? 0) > 0, "o que passa da caixa de cima e cortado embaixo");
+  assert.equal(b.recorte?.suavizar, 5);
+  assert.ok((b.deslocamento?.y ?? 0) < 0, "centro do B-roll sobe para a caixa de cima");
+  // 1920 * (0,45 - 0,06) + 960 = 1709 -> 749 abaixo do centro
+  assert.deepEqual(r.sequencia.video[0]!.map((c) => c.deslocamento?.y ?? 0), [0, 749, 0]);
 });
 
 test("Trilha: uma por variacao, repetindo a musica curta, terminando com o doutor", () => {

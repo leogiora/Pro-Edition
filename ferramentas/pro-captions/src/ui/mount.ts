@@ -22,6 +22,7 @@ import {
   legendasNaTimeline,
   lerBackup,
   lerChaveElevenLabs,
+  lerEmpresa,
   lerClipes,
   lerCortes,
   lerTranscricaoGuardada,
@@ -30,7 +31,7 @@ import {
   salvarSrt,
   type SequenceInfo,
 } from "../premiere.ts";
-import { PRESET_ELEVENLABS, PRESET_PADRAO, type Preset } from "../preset.ts";
+import { EMPRESAS, PRESET_PADRAO, presetDa, type Preset } from "../preset.ts";
 import { validar } from "../segmentar.ts";
 import {
   parseTranscricao,
@@ -176,6 +177,9 @@ async function lerComElevenLabs(): Promise<Entrada> {
   await mostrarSequencia();
   const cortes = await comLimite("cortes", lerCortes(0));
   registrar(`V1: ${cortes.length} cortes`);
+  const empresa = await comLimite("empresa", lerEmpresa());
+  const preset = presetDa(empresa);
+  registrar(`termos de ${EMPRESAS[empresa].nome} (troca no Editar)`);
 
   estado("exportando áudio", "ativo");
   const audio = await comLimite("exportar o áudio", exportarAudioDaSequencia(), 10 * 60 * 1000);
@@ -200,7 +204,7 @@ async function lerComElevenLabs(): Promise<Entrada> {
       registrar("mesmo áudio de antes: transcrição reaproveitada, sem custo");
     } else {
       estado("ElevenLabs ouvindo", "ativo");
-      const termos = termosChave(PRESET_ELEVENLABS);
+      const termos = termosChave(preset);
       registrar(`enviando ao ElevenLabs (${termos.length} termos-chave)…`);
       const t0 = Date.now();
       json = await comLimite(
@@ -220,7 +224,17 @@ async function lerComElevenLabs(): Promise<Entrada> {
   const palavras = palavrasDoElevenLabs(json);
   if (palavras === null) throw new Error("A resposta do ElevenLabs não é JSON legível.");
   registrar(`${palavras.length} palavras ouvidas pelo ElevenLabs`);
-  return { cortes, palavras, preset: PRESET_ELEVENLABS };
+  // Clipe de audio mudo so silencia o trecho dele (Andro 19.09, 29/09: variacoes
+  // 11-20 mudas, a fala parou em 11:33 de 23:22), e o audioMudo nao pega.
+  const ultimaFala = palavras[palavras.length - 1]?.fim ?? 0;
+  const ultimoClipe = Math.max(0, ...cortes);
+  if (ultimoClipe - ultimaFala > 60) {
+    registrar(
+      `AVISO: a fala acaba em ${relogio(ultimaFala)} e a V1 vai até ${relogio(ultimoClipe)}. ` +
+        "Clipe de áudio mudo nesse trecho? Ali fica sem legenda."
+    );
+  }
+  return { cortes, palavras, preset };
 }
 
 function marcado(id: string): boolean {

@@ -3,11 +3,14 @@
  * Botoes ligados ANTES de qualquer await (UXP_ARMADILHAS, regra 2).
  */
 
-import { relogio } from "../../ferramentas/auto-broll/src/domain.ts";
+import { parseConfig, relogio } from "../../ferramentas/auto-broll/src/domain.ts";
 import { writeJson, readJson } from "../../ferramentas/auto-broll/src/premiere.ts";
+import { EMPRESAS, type Empresa } from "../../ferramentas/pro-captions/src/preset.ts";
+import { parsePerfil, trocarEmpresa } from "../editar.ts";
 import { editar, lerEstado, type Registrar } from "../editar-premiere.ts";
 
 const LOG = "editar-log.json";
+const PERFIL = "perfil.json";
 
 export function mount(root: HTMLElement): void {
   const pega = <T extends HTMLElement>(id: string): T => root.querySelector<T>(`#${id}`)!;
@@ -63,7 +66,14 @@ export function mount(root: HTMLElement): void {
     linhas.length = 0;
     estado("editando", "ativo");
     void editar(
-      { pausas: marcado("edPausas"), broll: marcado("edBroll"), split: marcado("edSplit"), legendas: marcado("edLegendas") },
+      {
+        pausas: marcado("edPausas"),
+        broll: marcado("edBroll"),
+        split: marcado("edSplit"),
+        leak: marcado("edLeak"),
+        trilha: marcado("edTrilha"),
+        legendas: marcado("edLegendas"),
+      },
       registrar,
       (t) => estado(t, "ativo")
     )
@@ -78,6 +88,29 @@ export function mount(root: HTMLElement): void {
       });
   });
   pega("edRelir").addEventListener("click", () => void ler());
+
+  // Empresa: termos do ElevenLabs e pasta de B-roll de cada uma (perfil.json).
+  const seletor = pega<HTMLSelectElement>("edEmpresa");
+  for (const [id, e] of Object.entries(EMPRESAS)) {
+    const opcao = document.createElement("option");
+    opcao.value = id;
+    opcao.textContent = e.nome;
+    seletor.appendChild(opcao);
+  }
+  seletor.addEventListener("change", () => {
+    void (async () => {
+      const config = parseConfig(await readJson("config.json"));
+      const r = trocarEmpresa(parsePerfil(await readJson(PERFIL)), config.libraryPath, seletor.value as Empresa);
+      await writeJson(PERFIL, r.perfil);
+      await writeJson("config.json", { ...config, libraryPath: r.pasta });
+      const nome = EMPRESAS[r.perfil.empresa].nome;
+      if (r.pasta) registrar(`${nome}: B-roll de ${r.pasta}`, "passo");
+      else registrar(`${nome}: escolha a pasta de B-roll dela no Auto B-roll`, "aviso");
+    })().catch((e) => registrar(`empresa: ${(e as Error)?.message ?? String(e)}`, "erro"));
+  });
+  void readJson(PERFIL).then((p) => {
+    seletor.value = parsePerfil(p).empresa;
+  });
 
   void ler();
 }

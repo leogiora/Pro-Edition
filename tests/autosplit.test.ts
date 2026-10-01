@@ -4,9 +4,16 @@ import {
   aprenderEnquadramento,
   calcularEnquadramento,
   conceito,
+  descerPessoaPosY,
+  enquadrarEmCima,
   fracaoDivisao,
   nudgeDoutorPosY,
   resolverPerfil,
+  SPLIT_DA_EMPRESA,
+  cobrirQuadrado,
+  escalaBase,
+  tamanhoNoNome,
+  tamanhoPelaEscala,
   type EntradaGeom,
   type Perfil,
 } from "../src/autosplit.ts";
@@ -74,14 +81,15 @@ test("fracaoDivisao parseia e clampa", () => {
   assert.equal(fracaoDivisao(50), 0.5);
   assert.equal(fracaoDivisao(30), 0.4);
   assert.equal(fracaoDivisao(70), 0.6);
+  assert.equal(fracaoDivisao(Number.NaN), 0.58); // campo vazio: a caixa do Leo
 });
 
 test("geometria: retrato, ancora media — cobre a caixa e nao passa dela", () => {
   const r = calcularEnquadramento(BASE);
   // corte de topo = ancoraY - folga(pessoa .12) + 0 = 0.18
   assert.ok(Math.abs(r.cropTopoPct - 18) < 0.01);
-  // escala cobre a caixa: max(1080/720, 960/(1280*0.82)) * 1.03, em %
-  const esperado = Math.max(1080 / 720, 960 / (1280 * 0.82)) * 1.03 * 100;
+  // escala cobre a caixa sem sobra (o Leo nao usa overscan): max(1080/720, 960/(1280*0.82)), em %
+  const esperado = Math.max(1080 / 720, 960 / (1280 * 0.82)) * 100;
   assert.ok(Math.abs(r.escalaPct - esperado) < 0.5);
   assert.equal(r.posX, 540);
   // o topo da parte visivel nao pode ficar abaixo de yBox (960): sem tarja
@@ -179,4 +187,31 @@ test("aprender: usuario arrastou o clipe pra cima -> ancora do arquivo estava ma
   });
   assert.equal(r.mudou, true);
   assert.ok(r.ancoraY > 0.30);
+});
+
+test("broll em cima (Menopausa): cobre a caixa um pouco maior, corta embaixo; a pessoa desce ate a borda", () => {
+  assert.equal(SPLIT_DA_EMPRESA.menopausa.lado, "cima");
+  assert.deepEqual(tamanhoNoNome("10222557-uhd_2160_4096_25fps.mp4"), { w: 2160, h: 4096 });
+  assert.equal(tamanhoNoNome("senior-woman-portrait-with-gray-hair.mov"), undefined);
+  // Menopausa 28.09: 1920x1080 numa sequencia 720x1280, caixa ate 45%. O Leo: escala 64, borda em 584 px.
+  const r = enquadrarEmCima(720, 1280, 1920, 1080, 0.45);
+  assert.equal(Math.round(r.escalaPct), 64);
+  const borda = r.posY + (1080 * r.escalaPct) / 200 - ((r.cropBasePct ?? 0) / 100) * 1080 * (r.escalaPct / 100);
+  assert.ok(Math.abs(borda - 576) < 1, `borda de baixo em ${borda}`);
+  assert.ok(r.posY - (1080 * r.escalaPct) / 200 <= 0, "cobre o topo do quadro");
+  // Vertical enche a largura (o dele no 18.09: 1080x1920 a 100% numa sequencia 1080x1920).
+  assert.equal(enquadrarEmCima(1080, 1920, 1080, 1920, 0.45).escalaPct, 100);
+  // A apresentadora 720x1280 a 100%: o Leo pos em 1159; a regra da 1139. Sem descer abaixo do meio.
+  assert.equal(Math.round(descerPessoaPosY({ H: 1280, hDoc: 1280, escalaDocPct: 100, fimFrac: 0.45 })), 1139);
+  // Meno 29.09 (Insta): 1080x1920 a 100 numa 720x1280; o Leo pos 1121.
+  assert.equal(Math.round(descerPessoaPosY({ H: 1280, hDoc: 1920, escalaDocPct: 100, fimFrac: 0.45 })), 1152);
+});
+
+test("quadrado: tamanho pela escala-base da Reels, doutor cobre sem sobra, B-roll com 1,2x (Andro 19.09, 29/09)", () => {
+  assert.deepEqual(tamanhoPelaEscala(90), { w: 3840, h: 2160 }); // bruta deitada
+  assert.deepEqual(tamanhoPelaEscala(50), { w: 2160, h: 3840 }); // bruta em pe
+  assert.equal(tamanhoPelaEscala(57), undefined); // doutor subido do split nao e base
+  assert.equal(escalaBase([90, 57, 90, 57, 90]), 90);
+  assert.equal(cobrirQuadrado(1080, 3840, 2160), 50); // o Leo: 50
+  assert.equal(Math.round(cobrirQuadrado(1080, 720, 1280, 1.2)), 180); // o Leo: 180
 });

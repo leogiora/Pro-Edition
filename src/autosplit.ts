@@ -6,6 +6,8 @@
  * autosplit-premiere.ts.
  */
 
+import type { Empresa } from "../ferramentas/pro-captions/src/preset.ts";
+
 export type Assunto = "rosto" | "pessoa" | "dupla" | "aberto";
 export type Orientacao = "retrato" | "paisagem";
 
@@ -63,7 +65,7 @@ export function resolverPerfil(
 
 /*
  * Constantes de calibracao. O modelo minimo nao ve o que so o olho ve (quanta
- * folga de cabeca um close pede, quanto de overscan o feather come), entao
+ * folga de cabeca um close pede), entao
  * estes numeros sao botoes de ajuste — mexer aqui, nao espalhar magic numbers
  * pela conta.
  * ponytail: ajuste fino do mundo real; medir num video de verdade e afinar.
@@ -72,10 +74,17 @@ export const FOLGA: Readonly<Record<Assunto, number>> = {
   rosto: 0.18, pessoa: 0.12, dupla: 0.10, aberto: 0.05,
 };
 export const CROP_TOPO_MAX = 0.60;
-export const OVERSCAN = 1.03;
 export const SUBJ_IN_BOX = 0.40;
-export const FEATHER_PCT = 5;
+/*
+ * Medido nos 70 B-rolls das variacoes 1-6 do Andro 19.09 (perfil AndroClinic
+ * Ads, 29/09): Feather 7 e Roundness 0 em todos; escala = preencher a largura,
+ * sem sobra (67 de 70); borda de cima do B-roll na mediana de 1119 px = 58%.
+ * Com a caixa em 58%, a borda do codigo fica a 21 px da dele (mediana); em 50%,
+ * a 159 px.
+ */
+export const FEATHER_PCT = 7;
 export const ROUNDNESS_PCT = 0;
+export const DIVISAO_PADRAO = 58;
 
 const clamp = (v: number, lo: number, hi: number): number => Math.min(Math.max(v, lo), hi);
 
@@ -95,11 +104,13 @@ export interface Enquadramento {
   readonly posX: number;
   readonly posY: number;
   readonly cropTopoPct: number;
+  /** So no broll de cima: o corte e embaixo (Bottom do Rounded Crop). */
+  readonly cropBasePct?: number;
 }
 
-/** "50" no campo -> 0.5; fora de 40..60 e clampado (o usuario tenta 50/50). */
+/** "58" no campo -> 0.58; fora de 40..60 e clampado. */
 export function fracaoDivisao(valorCampo: number): number {
-  const f = Number.isFinite(valorCampo) ? valorCampo / 100 : 0.5;
+  const f = (Number.isFinite(valorCampo) ? valorCampo : DIVISAO_PADRAO) / 100;
   return clamp(f, 0.40, 0.60);
 }
 
@@ -119,8 +130,7 @@ export function calcularEnquadramento(e: EntradaGeom): Enquadramento {
   const hVis = e.h * (1 - cropTopo);
   const aVis = cropTopo < 1 ? (e.ancoraY - cropTopo) / (1 - cropTopo) : 0;
 
-  const escala = Math.max(Wbox / e.w, Hbox / hVis) * OVERSCAN;
-  const s = escala;
+  const s = Math.max(Wbox / e.w, Hbox / hVis);
 
   const posX = e.W / 2;
   let posY =
@@ -132,7 +142,117 @@ export function calcularEnquadramento(e: EntradaGeom): Enquadramento {
   const posYMax = yBox - (cropTopo - 0.5) * e.h * s;   // topo visivel nao passa de yBox
   posY = posYMin <= posYMax ? clamp(posY, posYMin, posYMax) : posYMin;
 
-  return { escalaPct: escala * 100, posX, posY, cropTopoPct: cropTopo * 100 };
+  return { escalaPct: s * 100, posX, posY, cropTopoPct: cropTopo * 100 };
+}
+
+// ------------------------------------------------------- lado do split
+
+export type LadoSplit = "baixo" | "cima";
+
+/**
+ * O Pexels grava o tamanho no nome ("10222557-uhd_2160_4096_25fps.mp4"), e a
+ * pasta de B-roll da Menopausa e quase toda assim. Sem isso o Auto Split pula
+ * o clipe, porque o UXP nao da o tamanho do quadro.
+ */
+export function tamanhoNoNome(nome: string): { w: number; h: number } | undefined {
+  const m = /(\d{3,4})_(\d{3,4})_\d+fps/.exec(nome);
+  return m ? { w: Number(m[1]), h: Number(m[2]) } : undefined;
+}
+
+/**
+ * Split de cada empresa, medido nos projetos dela (29/09). AndroClinic: os 70
+ * B-rolls das variacoes 1-6 do Andro 19.09. Menopausa: criativos 07.09, 17.09,
+ * 18.09 e 28.09, B-roll EM CIMA com a borda de baixo em 37-52% da altura
+ * (mediana 45%) e Feather de 3 a 11 (mediana 5). GrandCare nao medida: o
+ * PERFIS diz que e igual a AndroClinic.
+ */
+export const SPLIT_DA_EMPRESA: Readonly<Record<Empresa, { lado: LadoSplit; divisao: number; feather: number }>> = {
+  androclinic: { lado: "baixo", divisao: DIVISAO_PADRAO, feather: FEATHER_PCT },
+  grandcare: { lado: "baixo", divisao: DIVISAO_PADRAO, feather: FEATHER_PCT },
+  menopausa: { lado: "cima", divisao: 45, feather: 5 },
+};
+
+/**
+ * Quanto o B-roll de cima passa da altura da caixa. Na Menopausa o 1920x1080
+ * entra a 64% numa caixa de 576 px (1,2x); os outros criativos dao 1,1 a 1,4.
+ * ponytail: media de 4 criativos, afinar se o Leo mexer muito na escala.
+ */
+export const SOBRA_EM_CIMA = 1.2;
+
+/**
+ * B-roll na caixa de cima (Menopausa). Nao e a conta de baixo de ponta-cabeca:
+ * la o Leo enquadra pelo assunto; aqui ele cobre a caixa com o clipe inteiro,
+ * um pouco maior que ela, centrado, e corta embaixo o que passa da borda.
+ * `fimFrac` e onde a caixa termina (a borda de baixo do B-roll).
+ */
+export function enquadrarEmCima(W: number, H: number, w: number, h: number, fimFrac: number): Enquadramento {
+  const caixa = H * fimFrac;
+  const s = Math.max(W / w, (SOBRA_EM_CIMA * caixa) / h);
+  const posY = caixa / 2;
+  const sobraEmbaixo = Math.max(0, posY + (h * s) / 2 - caixa);
+  return { escalaPct: s * 100, posX: W / 2, posY, cropTopoPct: 0, cropBasePct: (sobraEmbaixo / (h * s)) * 100 };
+}
+
+/**
+ * Quanto a pessoa entra por baixo da borda do B-roll: 4% na bruta deitada do
+ * Andro 19.09, 4 a 10% nos criativos da Menopausa.
+ */
+export const SOBREPOSICAO_PESSOA = 0.06;
+
+/**
+ * Pessoa por baixo do B-roll de cima: desce ate a borda de cima dela ficar
+ * SOBREPOSICAO_PESSOA acima da borda do B-roll. Descer so corta o tronco (a
+ * cabeca fica no alto do quadro dela); nunca sobe. Menopausa 28.09: 1139 contra
+ * 1159 do Leo; 17.09: 1722 contra 1691. Teto de 0,9 da altura: com a pessoa
+ * maior que a tela (29.09, escala 100 numa 720x1280) a cabeca nao esta no alto
+ * do quadro e a conta dava 1459; o Leo pos 1121, e o maior dele e 0,905.
+ */
+export function descerPessoaPosY(e: EntradaDoutor & { readonly fimFrac: number }): number {
+  return Math.max(e.H / 2, Math.min(0.9 * e.H, e.H * (e.fimFrac - SOBREPOSICAO_PESSOA) + (e.hDoc * e.escalaDocPct) / 200));
+}
+
+// ------------------------------------------------------- quadrado (1:1)
+
+/** A Reels do Leo, de onde o Quadrado e duplicado. */
+const REELS = { W: 1080, H: 1920 } as const;
+const TAMANHOS_COMUNS: ReadonlyArray<readonly [number, number]> = [
+  [3840, 2160], [2160, 3840], [1920, 1080], [1080, 1920], [1280, 720], [720, 1280],
+];
+
+/**
+ * O tamanho do video pela escala com que ele cobre a Reels. O UXP nao da o
+ * tamanho do clipe, mas a escala-base diz: 4K deitado entra a 90 (cobre os 1920
+ * de altura), 4K em pe a 50, 1080p a 178 ou 100, 720p a 267 ou 150 — valores
+ * que nao se confundem.
+ * ponytail: so tamanhos de camera e celular; fora deles o clipe fica como esta.
+ */
+export function tamanhoPelaEscala(escalaPct: number): { w: number; h: number } | undefined {
+  let melhor: { w: number; h: number; erro: number } | undefined;
+  for (const [w, h] of TAMANHOS_COMUNS) {
+    const cobre = Math.max(REELS.W / w, REELS.H / h) * 100;
+    const erro = Math.abs(escalaPct - cobre) / cobre;
+    if (erro < 0.05 && (melhor === undefined || erro < melhor.erro)) melhor = { w, h, erro };
+  }
+  return melhor && { w: melhor.w, h: melhor.h };
+}
+
+/** A escala que mais aparece: a base do arquivo, sem o doutor subido do split (57). */
+export function escalaBase(escalas: readonly number[]): number | undefined {
+  const vezes = new Map<number, number>();
+  for (const e of escalas) vezes.set(Math.round(e * 10) / 10, (vezes.get(Math.round(e * 10) / 10) ?? 0) + 1);
+  return [...vezes.entries()].sort((a, b) => b[1] - a[1])[0]?.[0];
+}
+
+/**
+ * Quanto o B-roll passa do quadrado. O Leo pos 180% no 720x1280 (29/09), 1,2x
+ * o que cobre; o mesmo 180 colado no 464x832 deixa faixa preta dos lados, entao
+ * a regra e a proporcao, nao o numero.
+ */
+export const SOBRA_QUADRADO = 1.2;
+
+/** Escala (%) que cobre um quadro Q x Q. O doutor vai sem sobra (4K deitado: 50, como o Leo). */
+export function cobrirQuadrado(Q: number, w: number, h: number, sobra = 1): number {
+  return Math.max(Q / w, Q / h) * sobra * 100;
 }
 
 // -------------------------------------------- doutor e back-solve do aprender

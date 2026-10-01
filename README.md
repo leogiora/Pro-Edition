@@ -23,9 +23,47 @@ com o histórico inteiro.
 O primeiro cartão do Pro Ads. Lê a sequência aberta (clipes da V1, variações
 separadas por 1 s ou mais de vão, B-rolls e legendas que já existem) e, num clique:
 manda o áudio uma vez para o ElevenLabs, corta as pausas (zoom, posição e Lumetri
-de cada clipe voltam em cada pedaço), põe os B-rolls, opcionalmente o Split, e
-cria as faixas de legenda e de preço. O registro de cada execução fica em
-`editar-log.json`, na pasta de dados do plugin.
+de cada clipe voltam em cada pedaço), põe os B-rolls, opcionalmente o Split, o
+light leak em cada troca doutor ↔ B-roll, a trilha em cada variação, e cria as
+faixas de legenda e de preço.
+O registro de cada execução fica em `editar-log.json`, na pasta de dados do plugin.
+
+**Quadrado 1:1** (botão no cartão Auto Split): na Reels duplicada e já mudada para
+1080×1080, o doutor cobre o quadrado, centrado na altura e com o mesmo desvio de
+enquadramento na largura, e o B-roll cobre com 20% de sobra, centrado, sem o Rounded
+Crop. O UXP não dá o tamanho do clipe; o da V1 sai da escala-base dele na Reels
+(`tamanhoPelaEscala`: 4K deitado entra a 90, em pé a 50), o do B-roll de onde o Auto
+Split já tira. Cor, legenda e light leak ficam. Provado em 29/09 na cópia do Andro
+19.09: 697 clipes da V1 a 50% (o que o Leo pôs à mão) e 100 B-rolls.
+
+A **empresa** (AndroClinic, GrandCare ou Menopausa Cancelada) é escolhida no topo do
+cartão e fica em `perfil.json`: dá os termos do ElevenLabs e a pasta de B-roll de cada
+uma. Trocar de empresa guarda a pasta em uso na empresa que sai e põe no Auto B-roll a
+pasta da que entra. O split também é da empresa (`SPLIT_DA_EMPRESA`): AndroClinic e
+GrandCare com o B-roll embaixo, Menopausa com o B-roll em cima, cortado embaixo.
+
+O light leak é o do Premiere Composer que já está no projeto (o da timeline, ou o
+primeiro com "Light Leak" no nome), inteiro, começando 0,36 s antes da borda do
+B-roll, na faixa do leak que já existe ou logo acima do B-roll. Não entra entre dois
+B-rolls colados, no começo ou fim da variação, nem onde a faixa já tem algo
+(`inicioDosLeaks` em `src/editar.ts`). Nas 79 bordas das variações 1–6 do Andro
+19.09 a regra põe os 79 leaks que o Leo pôs, no mesmo quadro. Falta provar no
+Premiere que o `.aegraphic` entra pelo overwrite como um clipe comum.
+
+A trilha é a música que o Leo pôs embaixo de uma variação na A2, **clonada**
+(`createCloneTrackItemAction`) para as outras e aparada no fim de cada uma: o clone
+leva o ganho e o trecho da música, e a API não tem como ajustar volume. No Andro
+19.09 as 20 variações têm "stillness.WAV" do 0 da música, começando e terminando com
+a variação (−10 dB de ganho de clipe nas acabadas). Variação que já tem música fica;
+se a cópia, antes de aparada, cairia na música da vizinha, fica de fora com aviso
+(`trilhaFaltando` em `src/editar.ts`).
+
+Light leak e trilha **provados ao vivo** em 29/09, numa cópia do Andro 19.09
+(Premiere 25): 16 leaks nas 16 bordas da variação 10, cada um 0,36 s antes da borda
+(0,80 s: o Premiere arredonda o 0,834 s do arquivo para 20 quadros); a trilha clonada
+na variação 12, do 0, do começo ao fim dela, com o ganho do clipe de origem. Split,
+light leak e trilha rodam sem ElevenLabs: a fala só é pedida com Pausas, B-roll ou
+Legendas marcados.
 
 UXP não cria faixa de legenda. Quem cria é a **ponte**: uma extensão CEP escondida
 (`ferramentas/pro-captions-timeline/ponte.html`) que abre com o Premiere e atende
@@ -33,8 +71,8 @@ o pedido que o Editar grava em `timeline-pedido.txt`. Ela só liga quando a jane
 do Premiere é ativada. O cartão Pro Captions usa a mesma ponte. Sem ela, os .srt vão para o painel
 Projeto e o registro manda arrastar.
 
-Provado no Premiere 25.6.6 (TESTE Editar 3 e 5, 3:00 → 2:27 em 11 s). Ainda
-falta: a trilha e o fim de variação só existem no programa `app/`.
+Provado no Premiere 25.6.6 (TESTE Editar 3 e 5, 3:00 → 2:27 em 11 s); light leak,
+trilha, empresa e split da Menopausa provados em 29/09 (acima).
 
 O estilo da legenda (Pro-Captions 96 / Preço 150) fica à mão, por escolha do Leo
 (2026-09-24). Nenhuma API aplica estilo em faixa de legenda (D-02, reconferido

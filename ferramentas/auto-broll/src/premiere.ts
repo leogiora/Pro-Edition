@@ -240,12 +240,38 @@ export async function listarPastaBrolls(caminho: string): Promise<ArquivoBroll[]
 }
 
 /**
- * Clipes de uma faixa de video, com o nome da midia de origem.
- * V1 (indice 0) e a camera principal: e dela que sai a transcricao.
+ * Nome do ARQUIVO por tras do item do projeto, e nao o nome do item.
+ *
+ * O Leo renomeia o clipe no painel Projeto para etiquetar: no Andro 19.09,
+ * "14.000 mil homens (1).mp4" virou "homens tratados (1).mp4" e o arquivo
+ * ficou como estava. Pelo nome do projeto, o Aprender nao achava o take na
+ * biblioteca e jogava o credito fora (`foraDaBiblioteca`). Sem caminho
+ * (grafico, sequencia aninhada), fica o nome do projeto.
  */
-export async function lerClipes(videoTrackIndex = 0): Promise<
+export async function nomeDoArquivo(projectItem: { name?: string }): Promise<string> {
+  return (await caminhoDoArquivo(projectItem)).split(/[\\/]/).pop() || (projectItem.name ?? "");
+}
+
+/** Caminho do arquivo do item, ou "" se nao ha. Mesmo cast do Auto Pausas (`src/pausas-premiere.ts`, provado ao vivo). */
+async function caminhoDoArquivo(projectItem: unknown): Promise<string> {
+  try {
+    return String((await ppro.ClipProjectItem.cast(projectItem)?.getMediaFilePath()) ?? "");
+  } catch {
+    return "";
+  }
+}
+
+/**
+ * Clipes de uma faixa de video, com o nome da midia de origem.
+ * V1 (indice 0) e a camera principal: e dela que sai a transcricao, casada pelo
+ * nome do item do projeto — por isso `peloArquivo` so liga nas faixas de B-roll.
+ */
+export async function lerClipes(videoTrackIndex = 0, peloArquivo = false): Promise<
   Array<{
     sourceName: string;
+    /** So com `peloArquivo`: caminho do arquivo ("" sem arquivo) e o nome no painel Projeto. */
+    caminho?: string;
+    nomeNoProjeto?: string;
     startSeconds: number;
     endSeconds: number;
     inPointSeconds: number;
@@ -271,12 +297,18 @@ export async function lerClipes(videoTrackIndex = 0): Promise<
 
   const faixa = await seq.getVideoTrack(videoTrackIndex);
   const saida = [];
+  // Chamada UXP em volume pendura o painel (docs/DECISIONS.md): o mesmo item
+  // repetido na faixa (56 light leaks no Andro 19.09) pergunta o caminho uma vez.
+  const caminhoDe = new Map<string, string>();
   for (const it of await faixa.getTrackItems(CLIP, false)) {
     const origem = await it.getProjectItem();
     if (!origem?.name) continue;
     const velocidade = await it.getSpeed();
+    if (peloArquivo && !caminhoDe.has(origem.name)) caminhoDe.set(origem.name, await caminhoDoArquivo(origem));
+    const caminho = caminhoDe.get(origem.name) ?? "";
     saida.push({
-      sourceName: origem.name,
+      sourceName: peloArquivo ? caminho.split(/[\\/]/).pop() || origem.name : origem.name,
+      ...(peloArquivo ? { caminho, nomeNoProjeto: origem.name } : {}),
       startSeconds: (await it.getStartTime()).seconds,
       endSeconds: (await it.getEndTime()).seconds,
       inPointSeconds: (await it.getInPoint()).seconds,
@@ -298,23 +330,30 @@ export async function lerClipes(videoTrackIndex = 0): Promise<
  *
  * Serve tambem para nao contar como apagado o clipe que so foi MOVIDO de faixa.
  */
-export async function lerBrollsAcimaDeV1(): Promise<
-  Array<{ sourceName: string; startSeconds: number; endSeconds: number; videoTrackIndex: number }>
-> {
+export interface BrollNaTimeline {
+  /** Nome do arquivo (ver `nomeDoArquivo`). */
+  readonly sourceName: string;
+  /** Caminho do arquivo; "" quando o item nao tem arquivo. */
+  readonly caminho: string;
+  /** Como o clipe se chama no painel Projeto. */
+  readonly nomeNoProjeto: string;
+  readonly startSeconds: number;
+  readonly endSeconds: number;
+  readonly videoTrackIndex: number;
+}
+
+export async function lerBrollsAcimaDeV1(): Promise<BrollNaTimeline[]> {
   const { sequence } = await handles();
   const total = await (sequence as { getVideoTrackCount: () => Promise<number> }).getVideoTrackCount();
 
-  const saida: Array<{
-    sourceName: string;
-    startSeconds: number;
-    endSeconds: number;
-    videoTrackIndex: number;
-  }> = [];
+  const saida: BrollNaTimeline[] = [];
   for (let i = 1; i < total; i++) {
     try {
-      for (const clipe of await lerClipes(i)) {
+      for (const clipe of await lerClipes(i, true)) {
         saida.push({
           sourceName: clipe.sourceName,
+          caminho: clipe.caminho ?? "",
+          nomeNoProjeto: clipe.nomeNoProjeto ?? clipe.sourceName,
           startSeconds: clipe.startSeconds,
           // O fim define quais palavras este B-roll cobriu — e o que permite
           // aprender a ligacao quando o dicionario nao explica a escolha.
@@ -334,7 +373,7 @@ export async function lerBrollsAcimaDeV1(): Promise<
  * bin (pasta do painel de Projeto) fica de fora. Desce recursivamente pra
  * achar tudo, nao so o que esta solto na raiz.
  */
-async function todosOsItens(pasta: { getItems: () => Promise<unknown[]> }): Promise<Array<{ name: string }>> {
+export async function todosOsItens(pasta: { getItems: () => Promise<unknown[]> }): Promise<Array<{ name: string }>> {
   const filhos = (await pasta.getItems()) as Array<{ name: string }>;
   const saida: Array<{ name: string }> = [];
   for (const filho of filhos) {
@@ -394,7 +433,7 @@ export async function lerTranscricoes(
  * `videoFrameSize` nao vem. Ler os bytes funciona nos 260, verificado contra a
  * metadata do Windows.
  */
-async function dimensoesDoArquivo(caminho: string): Promise<Size | null> {
+export async function dimensoesDoArquivo(caminho: string): Promise<Size | null> {
   try {
     const entrada = (await uxp.storage.localFileSystem.getEntryWithUrl(
       caminhoParaUrl(caminho)
@@ -405,6 +444,33 @@ async function dimensoesDoArquivo(caminho: string): Promise<Size | null> {
   } catch {
     return null;
   }
+}
+
+/**
+ * Copia um arquivo para a pasta de B-rolls com outro nome. O original fica
+ * onde esta: projeto que usa ele nao pode ficar offline.
+ *
+ * Passa pela pasta de dados do plugin: copiar direto na biblioteca e renomear
+ * la deixaria o nome do Envato na pasta se o renome falhasse — e nome de
+ * arquivo na pasta vira conceito. `moveTo` sem `overwrite` nunca pisa num take
+ * que ja existe. API: `Entry.copyTo(folder, { overwrite })` e
+ * `Entry.moveTo(folder, { newName })` (UXP, Persistent File Storage).
+ */
+export async function copiarParaBiblioteca(origem: string, pastaBiblioteca: string, nome: string): Promise<void> {
+  type Entrada = {
+    isFolder?: boolean;
+    copyTo?: (pasta: unknown, o: { overwrite: boolean }) => Promise<Entrada>;
+    moveTo?: (pasta: unknown, o: { newName: string }) => Promise<void>;
+  };
+  const fs = uxp.storage.localFileSystem;
+  const arquivo = (await fs.getEntryWithUrl(caminhoParaUrl(origem))) as Entrada | null;
+  if (!arquivo?.copyTo || arquivo.isFolder) throw new Error(`arquivo nao encontrado: ${origem}`);
+  const pasta = (await fs.getEntryWithUrl(caminhoParaUrl(pastaBiblioteca))) as Entrada | null;
+  if (!pasta?.isFolder) throw new Error(`pasta de B-rolls nao encontrada: ${pastaBiblioteca}`);
+
+  const copia = await arquivo.copyTo(await fs.getDataFolder(), { overwrite: true });
+  if (!copia.moveTo) throw new Error("a copia nao voltou como arquivo");
+  await copia.moveTo(pasta, { newName: nome });
 }
 
 

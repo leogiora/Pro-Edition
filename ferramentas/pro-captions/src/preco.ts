@@ -163,6 +163,9 @@ const CONTEXTO_FRACO: ReadonlySet<string> = new Set([
 
 const MOEDA: ReadonlySet<string> = new Set(["reais", "real"]);
 
+const HORAS: ReadonlySet<string> = new Set(["hora", "horas", "h", "horario"]);
+const PERIODO: ReadonlySet<string> = new Set(["manha", "tarde", "noite", "madrugada"]);
+
 /**
  * Abre o lado "antigo" de uma comparacao de preco: "de X por Y",
  * "era X ... por Y", "custava X ... hoje sai por Y".
@@ -247,6 +250,12 @@ export function detectarPrecos(palavras: readonly string[]): Preco[] {
     const tokensCrus = palavras.slice(num.inicio, num.fim + 1);
     if (tokensCrus.some((t) => /r\$/i.test(t))) {
       saida.push({ ...num, certeza: "alta" });
+      continue;
+    }
+
+    // Horario nao e preco, mesmo com gatilho perto: "ce nao sai de casa, sete e
+    // meia da noite" virou 7 REAIS pelo "sai" (Menopausa, 29/09).
+    if (anterior === "as" || HORAS.has(seguinte) || (seguinte === "e" && depois === "meia") || (seguinte === "da" && PERIODO.has(depois))) {
       continue;
     }
 

@@ -1,4 +1,4 @@
-# Handoff — sessão do Cowork de 23 e 24/09/2026
+# Handoff — sessões do Cowork de 23 a 28/09/2026
 
 Contexto para continuar no Claude Code o que foi feito numa conversa do Claude
 (Cowork). Escrito para o Claude Code ler antes de mexer no repositório.
@@ -11,6 +11,135 @@ Contexto para continuar no Claude Code o que foi feito numa conversa do Claude
 - Objetivo final: um **sistema de edição completo** que entregue o vídeo quase
   no padrão, só para ele revisar. Começamos pela legenda, que é onde ele perde
   mais tempo corrigindo a transcrição do Premiere na mão.
+
+## Estado em 28/09/2026 — por onde continuar
+
+Ler isto antes do resto; as seções "Atualização" no fim são o histórico.
+
+**29/09:** todos os passos abaixo que dão para fazer sem o Premiere estão
+feitos (inclusive split, light leak e trilha no Editar). O Leo deixou os
+testes ao vivo para o final (tabela "Estado dos testes") e autorizou seguir de
+passo em passo, com commit e push ao fim de cada um. O seletor de perfil
+(Plano, item 1, em `PERFIS_DE_EDICAO.md`) foi feito só na parte da empresa:
+termos do ElevenLabs e pasta de B-roll de cada uma. Depois, medido nos
+criativos da Menopausa: o split dela tem o B-roll **em cima**, e o lado do
+split virou da empresa (Auto Split, Editar e Acabamento). O tipo
+(Ads/Instagram) continua sem gabarito. As pastas de B-roll da Menopausa e da
+GrandCare não têm nome de conceito: o Auto B-roll não serve nelas até serem
+renomeadas (decisão do Leo).
+
+**30/09 (Cowork):** uma gravação do Leo montando o broll do `Meno 29.09`,
+que é **orgânico do Instagram** (confirmado por ele) — o primeiro gabarito
+do tipo Instagram. Detalhe em `PERFIS_DE_EDICAO.md`, "Menopausa Instagram —
+ao vivo". A partir de agora, toda gravação do Leo é material de refinamento
+do plugin.
+
+**30/09 (Claude Code), estado atual:** a legenda do Instagram é a mesma dos
+Ads (medido nos 252 blocos do `Meno 29.09`); o tipo Instagram do Editar feito
+em 29/09 foi apagado, e o negrito fica à mão (nenhuma regra acertou mais que
+"sem negrito"). Chave do ElevenLabs, L5 e híbrido provados em 29/09. Split da
+Menopausa: a apresentadora desce com teto de 0,9 da altura. Cópia do
+Aprender provada no original (30/09). Falta só o doutor em pé no Acabamento,
+quando vier bruta em pé.
+
+- **Legenda (Pro Captions + ElevenLabs):** pronta no código, inclusive a
+  segmentação no estilo do Leo (`segmentar.ts` + `maxPalavras: 3` no
+  `PRESET_ELEVENLABS`). Sete gravações de tela dele editando o Andro 19.09
+  confirmaram o estilo sem contradizer nada; achados em
+  `docs/PERFIS_DE_EDICAO.md`, bloco "AndroClinic Ads — confirmado ao vivo".
+  Rodou ao vivo com a chave nova em 29/09.
+- **Auto B-roll e Acabamento:** já existem (painel e programa, ver
+  `app/LEIA-ME.md`). Nas três últimas gravações o Leo monta à mão o broll
+  das variações 1 e 2; o que ele faz diferente do código está no mesmo bloco
+  do `PERFIS_DE_EDICAO.md`, em "Montagem do broll".
+
+Próximos passos, em ordem (recomendação da sessão do Cowork — combinar com
+o Leo antes de mexer):
+1. **Legenda ao vivo.** ~~Tirar "stress" e rodar o verify~~ (feito 28/09).
+   A comparação com o gabarito foi feita **sem Premiere**, com a resposta
+   do ElevenLabs já salva. O texto do Pro Captions é melhor (3 erros contra
+   7), mas a divisão em blocos repete só 74% dos cortes do Leo; a do
+   Premiere repete 95%. **Feito (28/09):** o programa usa o bloco do Premiere
+   com a palavra do ElevenLabs, a partir do `.srt` exportado (tela Legendas:
+   arrastar o `.srt` e o áudio juntos). Pelo caminho real, 3 palavras
+   diferentes e 95% dos cortes. Detalhe em
+   `ferramentas/pro-captions/RETOMAR-pro-captions.md` e `app/LEIA-ME.md`.
+   ~~Falta rodar com a chave `sk_`.~~ **Feito (29/09, chave nova):** L5
+   provado na "Reels" (+0,04 s constante), híbrido no programa com 96% dos
+   cortes, e três achados corrigidos (palavra curta sozinha, legenda colada na
+   seguinte, reimportação do `.srt` trazendo o texto velho). Detalhe em
+   `ferramentas/pro-captions/RETOMAR-pro-captions.md`, 29/09.
+2. ~~**Gabarito de broll.**~~ Feito no Claude Code (28/09): lido do
+   `.prproj` (variações 1–3, save das 11:05). Resultado em
+   `docs/PERFIS_DE_EDICAO.md`, "Montagem do broll". Resumo: o painel acerta
+   onde põe (10 de 14 colocações mantidas), mas põe de menos (6–8 contra
+   8–15 do Leo), e as regras de duração do `plano.ts` cortam listas
+   faladas e clipes longos. Extrator e JSON em
+   `C:\Edição\...\Andro 19.09\teste-broll\` (`gabarito_broll.py`). Rodar de
+   novo quando o Leo acabar mais variações; as que têm light leak são as
+   acabadas. **Rodado de novo às 15:15 (variações 1–6):** a densidade máxima
+   agora deixa o broll ir até o próximo, atravessando a frase (49 → 61
+   brolls contra 70 do Leo; `simular.ts` na mesma pasta mede). **Rodou ao
+   vivo em 29/09 10:14** (variação 11, 11 brolls, o seguinte cortando o
+   anterior). Falta o Aprender dizer o que ele manteve. O conceito (26 de 58
+   iguais ao dele) é gosto e se ensina pelo Aprender; detalhe em
+   `PERFIS_DE_EDICAO.md`, "Conceito".
+3. **Split do Andro no Acabamento.** O broll é constante e dá pra
+   automatizar: preenche a largura, borda de cima em ~1120 px, Feather 7%.
+   **Feito (29/09)** no painel e no `app/` (`src/autosplit.ts`: sem overscan,
+   Feather 7, caixa em 58%), medido nos 70 brolls das variações 1–6.
+   O doutor não tem número fixo. O 540/580 com Escala 57 do Andro 19.09 é
+   de bruta deitada, que muda por trecho; a do Andro costuma vir em pé
+   (Leo, 28/09). Em pé: feito no `app/` em 28/09 (`acabamento.ts`: sobe
+   15% só por baixo do broll, cortando V1 e áudio vinculado nas bordas).
+   Falta provar no Premiere. Deitada: fica manual, é decisão de olho como o
+   crop/flop. Na próxima bruta em pé, medir o split que o Leo fizer à mão
+   (`gabarito_broll.py`) e afinar o `DOCTOR_UP` (0,85) de
+   `src/autosplit.ts`.
+4. ~~**Biblioteca.**~~ Feito em 28/09:
+   - Os 8 clipes do Envato foram copiados pra `Brolls - 2026` com nome de
+     conceito (259 arquivos agora; nomes em `docs/PERFIS_DE_EDICAO.md`,
+     "Buraco na biblioteca") e entraram no `src/autosplit-perfil.json`. O
+     Auto Split do painel pula arquivo que não está lá.
+   - Renome: o Leo renomeia no painel Projeto, não no disco, e o Aprender
+     perdia o crédito desses clipes (`foraDaBiblioteca`). Agora as faixas
+     de broll são lidas pelo nome do arquivo (`nomeDoArquivo`).
+   - Depois, a pedido do Leo: no Aprender, clipe baixado e renomeado no
+     painel Projeto é **copiado** pra pasta com esse nome. Detalhe em
+     `ferramentas/auto-broll/docs/BUILD_STATUS.md`.
+   - Falta provar no Premiere: clicar em Aprender no Andro 19.09. O
+     "homens tratados (1)" deve contar como "14.000 mil homens (1)", e a
+     cópia (API nova) precisa funcionar.
+   - O "stressed-middle-aged-man" da variação 4, ainda em montagem, fica
+     pra próxima leitura do gabarito.
+5. **Provas (conferidas nos logs do painel em 28/09).** Já tinham rodado ao
+   vivo em 24/09, pelo botão Editar, e os docs não registravam: L1–L4 e o
+   ajudante CEP T1–T3 **OK** (evidência em
+   `ferramentas/pro-captions/docs/API_PROOFS.md`). A chave `sk_` certa
+   funcionou naquele dia. O Aprender de hoje (13:59) provou ao vivo a leitura
+   do arquivo por trás do clipe e o `trazidos.json`. Continuam de pé:
+   - **L5:** conferir no olho se a legenda cai em cima da fala.
+   - **Fase 0 do XML:** nunca foi importada. A prova foi regerada com uma
+     trilha que existe (`Confident.wav`; a antiga saiu do Downloads):
+     importar `app/prova/PROVA-Pro-Edition.xml` e conferir os 8 itens de
+     `app/LEIA-ME.md`.
+   - **Cópia do Aprender:** renomear um clipe do Envato no Projeto e clicar
+     em Aprender.
+   - ~~Light leak fica pra fase de animação.~~ **Feito (29/09):** a
+     colocação é regra fixa (79 de 79 bordas nas variações 1–6), e o Editar
+     copia o leak do Premiere Composer que já está no projeto para cada
+     troca doutor ↔ broll. Falta provar no Premiere que o `.aegraphic` entra
+     pelo overwrite. A animação em si (.mogrt, pop) continua no item 3 do
+     Plano.
+7. ~~**Quadrado 1:1.**~~ **Feito e provado (29/09):** o Leo voltou a fazer a
+   versão quadrada (sequência "Quadrado" no Andro 19.09, metade convertida à
+   mão). Botão no Auto Split; regra em `PERFIS_DE_EDICAO.md`, "Quadrado".
+   Clipe do Envato sem tamanho conhecido fica como está.
+6. ~~**Trilha no Editar.**~~ **Feito (29/09):** o README dizia que a trilha
+   só existia no `app/`. Medida nas 20 variações do Andro 19.09 (stillness.WAV
+   do 0, −18 dB, começa e termina com a variação), agora o Editar clona a
+   música que o Leo pôs numa variação para as outras. Falta provar o clone
+   no Premiere.
 
 ## O padrão de legenda que ele segue (visto em duas gravações de tela)
 
@@ -52,9 +181,27 @@ Contexto para continuar no Claude Code o que foi feito numa conversa do Claude
 | Painel Pro Edition carrega depois da correção do TextEncoder | OK (24/09) |
 | Export do áudio da sequência pelo Pro Captions | OK — 27:18 em 6,4 s, 52 MB |
 | `fetch` sai do UXP e chega no ElevenLabs | OK — a API respondeu |
-| Chave do ElevenLabs | **FALHOU por uso errado:** o Leo colou o ID da chave; a chave secreta começa com `sk_`. O painel agora avisa. Refazer com a chave certa |
-| Multipart a mão, keyterms, tempo alinhado com a sequência | a medir (L3–L5 em `docs/API_PROOFS.md`) |
-| Ajudante CEP (T1–T3) | a instalar e medir (`INSTALAR.ps1`) |
+| Chave do ElevenLabs | OK em 24/09; recusada em 29/09 de manhã; **chave nova OK (29/09 14:12)**. O programa usa a do painel quando não tem a sua |
+| Multipart a mão, keyterms, tempo alinhado com a sequência | L3–L4 **OK** (24/09); **L5 OK (29/09)**: 610 blocos casados com a legenda revisada, +0,04 s constante, sem deriva (`docs/API_PROOFS.md`) |
+| Legenda híbrida no programa (`.srt` do Premiere + áudio) | **OK** (29/09): variação 1, 81/84 cortes, 2 de 176 palavras, tempo mediano 0 ms |
+| Legenda colada, 4 palavras contra palavra solta, `.srt` reimportado | **OK** (29/09): faixa nova com os 758 blocos novos, 728 de 757 vãos zerados |
+| Ajudante CEP (T1–T3) | **OK** (24/09): instalado, e criou as faixas legendas.srt e precos.srt numa chamada |
+| Aprender pelo nome do arquivo + `trazidos.json` | **OK** (28/09 13:59): os 8 clipes copiados creditados pelo nome da pasta |
+| Cópia do clipe baixado pelo Aprender | **OK** (30/09, no original): comprimidos renomeado "Medicamento" no Projeto → `Brolls - 2026\Medicamento (3).mp4`, mesmo tamanho, 1080×1920 no `trazidos.json`, colocação creditada. Não rodar Aprender numa cópia do projeto: a pasta de dados é uma só e as pendências vão pelo nome da sequência |
+| B-roll até o próximo (densidade máxima) | **rodou** (29/09 10:14, variação 11); falta o Aprender |
+| Fase 0 do XML | **7 de 8 OK** (29/09); espelho não viaja no XML do FCP, nem o Premiere exporta (`app/LEIA-ME.md`) |
+| Light leak pelo Editar (`.aegraphic` no overwrite) | **OK** (29/09, cópia do Andro 19.09): 16 leaks nas 16 bordas da variação 10 |
+| Trilha pelo Editar (clone do clipe da A2 + fim na variação) | **OK** (29/09): variação 12, do começo ao fim, com o ganho do clipe de origem |
+| Empresa no Editar (lista `<select>`, troca a pasta do Auto B-roll) | **OK** (29/09) |
+| Split da Menopausa (B-roll em cima, `Bottom` do Rounded Crop) no Auto Split | **OK** (29/09): borda de baixo em 45%, Bottom 27,5% no 720×1280 |
+| Quadrado 1:1 (botão do Auto Split) | **OK** (29/09): 697 clipes da V1 a 50%, 100 B-rolls cobrindo o quadrado |
+
+Testes de 29/09 feitos por Claude numa cópia: `Andro 19.09\TESTE Pro Edition
+29.09.prproj` (o original não foi tocado; a cópia pode ser apagada). Falta:
+cópia do Aprender (renomear clipe do Envato: o nome é gosto do Leo) e doutor
+em pé no Acabamento (quando vier bruta em pé). Na "Reels" do Andro 19.09, os
+clipes de áudio das variações 11–20 estão mudos: a legenda pelo ElevenLabs sai
+só até 11:33 (o painel agora avisa).
 
 ## Arquivos de teste fora do repositório
 
@@ -74,9 +221,73 @@ dos 39 preços fora do padrão); "focada" aparece em 6 legendas e "focado" em 13
 
 1. Leo testa com a chave `sk_` certa e instala o ajudante CEP.
 2. Medir L3–L5 e T1–T3 e registrar em `docs/API_PROOFS.md`.
-3. Ajustar a segmentação para ficar mais perto do estilo dele (blocos de 1 a 3
-   palavras, quebrando nas pausas da fala: o ElevenLabs dá o tempo de cada palavra).
-4. Depois: Auto B-roll escolhendo o clipe pelo que o doutor fala (os nomes
-   da pasta `Downloads\Brolls - 2026` já batem com os temas: Consulta médica,
-   Teleconsulta, Viagra, Vasos sanguíneos, Frustrado, Doutor, Corpo do homem),
-   crop/flop, trilha e fim de cada variação — rumo ao sistema completo.
+3. ~~Ajustar a segmentação ao estilo dele~~ — já estava no código
+   (`segmentar.ts`, `maxPalavras: 3`); falta só rodar ao vivo.
+4. ~~Auto B-roll pelo que o doutor fala, trilha e fim de cada variação~~ — já
+   existem (painel e `app/`); crop/flop do doutor continua manual. Ver
+   "Estado em 28/09/2026" no topo.
+
+## Atualização — 25/09/2026 (sessão do Cowork)
+
+Sessão do Cowork retomada depois deste handoff. O Leo gravou **uma nova
+demonstração de tela** (4m30, Premiere em tela cheia) revisando a legenda de
+um trecho mais à frente do Andro 19.09 (por volta de 00:12:47–00:14:10 da
+sequência, blocos de legenda ~950–1048) — provavelmente outra variação, não
+a variação 1 já usada nos testes.
+
+O que dá pra confirmar olhando os blocos antes/depois na gravação:
+- Segmentação real dele: quase todo bloco tem 1 a 4 palavras, cortando nas
+  pausas da fala ("Você" / "tá com medo" / "do quarto" / "do hotel?" —
+  "Porque viagem" / "romântica"). Bate com o pendente #3 abaixo — é ground
+  truth a mais pra calibrar a segmentação por pausa do ElevenLabs.
+- Ele ajusta o limite do bloco arrastando a ponta na faixa de legenda (afinar
+  o tempo) E edita o texto direto em cima do vídeo no Program Monitor, além
+  do painel Captions — os dois editam o mesmo dado, não é um jeito "certo".
+- Uma correção visível: juntou uma palavra do bloco seguinte no anterior
+  ("E se falhar" + "lá" → "E se falhar lá"), com Ctrl+Z no meio — ajuste de
+  julgamento de onde cortar, não erro de transcrição.
+- Tema do trecho (pelo texto legível nos blocos, não é transcrição literal):
+  medo de falhar numa viagem romântica/pousada, ligando com "cuida do plano
+  de saúde, do carro, mas e a sua última consulta?" — candidatas novas pro
+  mapa do Auto B-roll: viagem/pousada/quarto de hotel, plano de saúde, carro.
+
+Limite desta gravação: ela não guarda as teclas digitadas (aparecem como
+"[secure input]" no log), só o estado do bloco antes/depois — dá pra
+confirmar OS PADRÕES (tamanho de bloco, onde corta, fusão de bloco), mas não
+dá pra montar um diff palavra-por-palavra tipo o WER da variação 1. Pra isso,
+precisa exportar áudio + legenda revisada desse trecho como da vez passada.
+
+Os pendentes de "Estado dos testes no Premiere real" continuam de pé (chave
+`sk_` certa no ElevenLabs, instalar e testar o ajudante CEP em
+`ferramentas/pro-captions-timeline/`).
+
+Não existe elo automático entre uma conversa do Cowork e uma sessão do Claude
+Code — cada uma começa sem saber da outra. Este arquivo (lido pelo
+`CLAUDE.md` na raiz) é o elo: qualquer sessão nova que for continuar este
+projeto — Cowork ou Claude Code — deve ler este arquivo primeiro para pegar
+o contexto todo.
+
+## Atualização — 28/09/2026 (mais uma gravação)
+
+Gravação nova (28/09), seguindo direto de onde a de 25/09 parou — mesma
+variação, agora 00:14:37 a 00:18:19 da sequência. Nada novo no padrão de
+segmentação/estilo (mesma coisa: bloco de 1 a 4 palavras, arrasta a borda
+pra ajustar tempo, edita pelo painel Captions ou direto em cima do vídeo).
+O que rendeu de novo:
+
+- O roteiro tem uma estrutura de **5 etapas numeradas** ("Etapa um" a
+  "Etapa cinco"): Consulta (investigação de verdade) → [etapa dois não
+  capturada na gravação] → Diagnóstico (eu leio tudo com você) → Protocolo
+  (do zero, pro seu corpo) → Acompanhamento (equipe médica e de
+  enfermagem do início ao fim). Se um dia o Auto B-roll escolher clipe
+  pelo trecho do roteiro, cada etapa provavelmente pede um broll diferente
+  (consultório, exame, entrega de diagnóstico, remédio/protocolo, ligação
+  de acompanhamento).
+- "Disfunção erétil" aparece escrita por extenso como legenda própria, não
+  só sugerida.
+- "196 reais" / "1.000 reais" / "de 15.000" continuam voltando como âncora
+  de preço em vários pontos do vídeo — não é preço único da variação 1,
+  é recorrente ao longo do roteiro todo.
+- "focada" (não "focado") nesse trecho concorda com "consulta", não com
+  "médico" — não é inconsistência pra corrigir; os dois já apareceram
+  certos dependendo do substantivo que seguem.

@@ -173,6 +173,11 @@ export interface Frase {
    * corte cair junto com "disfuncao eretil" ou seis segundos antes dela.
    */
   readonly termosNoTempo: readonly TermoNoTempo[];
+  /**
+   * Fim da fala continua em que a frase esta (ate a proxima pausa longa). E ate
+   * onde o B-roll pode passar do fim da frase sem cair no espaco entre variacoes.
+   */
+  readonly fimDaFala?: number;
 }
 
 /** Silencio maior que isto quebra a frase mesmo sem `eos`. */
@@ -235,5 +240,13 @@ export function agruparEmFrases(palavras: readonly PalavraEditada[]): Frase[] {
   }
   fechar();
 
+  let fimDaFala = Number.NEGATIVE_INFINITY;
+  for (let i = frases.length - 1; i >= 0; i--) {
+    const f = frases[i];
+    if (!f) continue;
+    const proxima = frases[i + 1];
+    if (!proxima || proxima.inicio - f.fim > PAUSA_QUE_QUEBRA) fimDaFala = f.fim;
+    frases[i] = { ...f, fimDaFala };
+  }
   return frases;
 }

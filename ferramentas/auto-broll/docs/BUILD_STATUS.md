@@ -1,5 +1,83 @@
 # BUILD_STATUS
 
+## 2026-09-28 — Densidade maxima: B-roll vai ate o proximo
+
+**Feito.** `REGRAS_DENSAS.ateOProximo` (`plano.ts`): o B-roll atravessa a frase
+ate o fim da fala continua (`Frase.fimDaFala`, ate a pausa longa em
+`agruparEmFrases`), no maximo 3 s, e o seguinte corta o anterior desde que
+sobre `duracaoMinima` (1,2 s). `REGRAS_PADRAO` nao muda.
+
+Medido contra o gabarito do Leo (Andro 19.09, variacoes 1-6, autosave 15:15,
+fala tirada das legendas dele): 49 -> 61 B-rolls (ele pos 70), 46 -> 55 onde
+ele tambem pos, 51% -> 61% do tempo de broll dele coberto, conceito igual 26
+nas duas. Atravessar sem cortar piorava o conceito (22); piso de 0,5 s (item
+de lista dele) picotava frase normal em 7 de 8 cortes curtos, por isso o piso
+e a `duracaoMinima`. Script: `teste-broll\simular.ts` (fora do repo).
+
+**Testes.** `npm run verify` verde (254 aqui, +2) e fumaca ok.
+
+**Ao vivo (29/09 10:14, `ultimo-log.json`):** o Leo rodou na variacao 11
+(10:32-11:34) com a regra nova: 11 B-rolls, e o Viagra de 10:39 saiu com 1,4 s
+porque o Doppler entrou logo depois e o cortou — o `ateOProximo` rodando. Falta
+o proximo Aprender dizer o que ele manteve e apagou dessa rodada.
+
+## 2026-09-28 — Aprender leva o clipe baixado para a pasta
+
+**Feito.** No Aprender, clipe acima da V1 cujo arquivo nao esta na pasta de
+B-rolls e que o Leo renomeou no painel Projeto e **copiado** para a pasta como
+`<nome no Projeto> (n).<ext>`, com o proximo numero livre (`planejarTrazer` em
+`aprendizado.ts`, puro). A colocacao e creditada na mesma rodada. Sem renome,
+vira aviso no log, sem copia. O que foi levado fica em `trazidos.json`
+(caminho de origem -> nome na pasta + tamanho lido do video) e nunca e copiado
+de novo. O Analisar usa o mapa, mas nao copia. O Auto Split le o tamanho do
+`trazidos.json` para arquivo que o perfil empacotado nao conhece.
+
+Copia: `Entry.copyTo(dataFolder)` + `Entry.moveTo(pasta, { newName })`
+(documentacao UXP, Persistent File Storage). Passa pela pasta de dados para
+nunca deixar o nome do Envato na biblioteca se o renome falhar.
+
+`trazidos.json` do PPRO 25 semeado com os 8 clipes copiados a mao hoje, para o
+Aprender creditar as variacoes 1-3 do Andro 19.09.
+
+**Testes.** `npm run verify` verde (252 aqui, +4 em `aprendizado.test.ts`) e
+fumaca ok.
+
+**Falta ao vivo (API nova, nunca rodada no Premiere):**
+1. `copyTo`/`moveTo` funcionam no Premiere 25 (registrar em `API_PROOFS.md`).
+2. Renomear um clipe do Envato no Projeto, clicar em Aprender e ver no log
+   "Levei ... como ..." e o arquivo na pasta.
+3. ~~Os 8 de hoje nao devem aparecer como "sem nome de conceito".~~ **OK ao
+   vivo** (`ultimo-aprendizado.json`, 28/09 13:59): nenhum dos 8 no aviso, e
+   Separacao, Mulher triste, Desanimado, Medicamento, Celular e Sono
+   creditados pelo nome da pasta. Antes/depois do mesmo Aprender: 0 -> 4
+   aprendidos, 142 -> 133 fora da pasta. O caminho do `getMediaFilePath`
+   bate com o formato gravado. O aviso listou 5 clipes novos do Envato
+   (variacao 4 em diante), nenhum renomeado — a copia ainda nao rodou.
+
+**Depois (mesmo dia):** light leak (`.aegraphic`) saiu das colocacoes
+manuais. Eram 158 acima da V1 no Andro 19.09, contra 68 brolls da pasta e 14
+de fora, e inflavam o "fora da pasta" do log.
+
+## 2026-09-28 — B-roll lido pelo nome do arquivo, nao do item do projeto
+
+**Feito.** O Leo renomeia o clipe no painel Projeto para etiquetar ("14.000 mil
+homens (1)" virou "homens tratados (1)" no Andro 19.09; o arquivo nao mudou). O
+Aprender casava pelo nome do projeto, nao achava o take na biblioteca e contava
+`foraDaBiblioteca`. `lerBrollsAcimaDeV1` agora le o nome do arquivo
+(`nomeDoArquivo`: `ClipProjectItem.cast(...).getMediaFilePath()`, o mesmo do
+Auto Pausas, com o nome do projeto de reserva). A V1 continua pelo nome do
+projeto, que e a chave da transcricao. O Auto Split usa o mesmo nome para achar
+o clipe na timeline. Biblioteca: +8 clipes do Envato (259) e entradas no
+`src/autosplit-perfil.json`.
+
+**Testes.** `npm run verify` verde (248 aqui) e fumaca ok. `premiere.ts` nao tem
+teste unitario (depende do Premiere).
+
+**Falta ao vivo:** reiniciar o Premiere, clicar em Aprender no Andro 19.09 e ver
+no `ultimo-aprendizado.json` o "14.000 mil homens (1)" creditado no lugar do
+"homens tratados (1)". Conferir tambem que a leitura dos B-rolls nao ficou lenta
+(~210 clipes acima da V1).
+
 ## 2026-08-28 — o planejador enxerga os reels vizinhos (D-035)
 
 **Feito.** Analisando a sequencia trecho por trecho com in/out, o mesmo take

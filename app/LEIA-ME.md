@@ -32,7 +32,9 @@ empacotar um build "essentials" em `extraResources` e apontar
 
 A chave do ElevenLabs e as transcrições pagas ficam em
 `%APPDATA%\Pro Edition\` de cada máquina (a chave é cifrada pelo Windows e
-não abre em outro computador).
+não abre em outro computador). Sem chave própria, o programa usa a que foi
+colada no Pro Captions do painel (`elevenlabs-chave.json` na pasta de dados
+dele). Provado em 29/09: híbrido da variação 1 com 96% dos cortes do Leo.
 
 ## Como é feito
 
@@ -45,6 +47,24 @@ src/xml.ts         Sequencia -> XML do Premiere (puro, testado)
 src/xml-ler.ts     XML exportado do Premiere -> Sequencia (puro, testado)
 src/pausas.ts      Auto Pausas sobre a Sequencia (regra de src/pausas.ts da raiz)
 ```
+
+### Legendas
+
+Entra o áudio (ou vídeo, ou o `.json` do ElevenLabs) da sequência, exportado
+desde o começo. Sai `legendas.srt` e `precos.srt`.
+
+**Com a legenda do Premiere junto (recomendado, 28/09):** no Premiere,
+"Criar legendas" como sempre e **Arquivo › Exportar › Legendas** em `.srt`.
+Depois é arrastar o `.srt` e o áudio juntos. O bloco e o tempo são os do
+Premiere, e o texto vem do ElevenLabs com as regras do Pro Captions, com o
+preço em bloco e arquivo próprios (`blocosNosCortes` em
+`ferramentas/pro-captions/src/pipeline.ts`).
+
+Motivo, medido na variação 1 do Andro 19.09 contra a legenda revisada do
+Leo: ele quase não mexe no corte do Premiere (95% ficam), e a segmentação
+daqui repete 74%. Com o corte do Premiere, ficam 3 palavras diferentes (o
+Premiere tem 7), 95% dos cortes e tempo com erro mediano de 0 ms. Sem o `.srt`,
+segue a segmentação própria (blocos de até 20 caracteres).
 
 ### Auto Pausas
 
@@ -85,10 +105,23 @@ B-roll que passa do fim do doutor é aparado; o que começa num espaço sai.
 Split (opcional): a geometria do painel (`src/autosplit.ts`,
 `calcularEnquadramento`) com o perfil empacotado (`src/autosplit-perfil.json`)
 e os ajustes que o Leo ensinou (`autosplit-perfil-override.json` do PluginData)
-→ escala, posição e Cortar (topo + feather 5%) no XML. O "subir o doutor" do
-painel só vale para bruta em pé e ficou de fora (as brutas do Andro são
-deitadas). Trilha (opcional): a música do começo, repetindo se for curta,
-cortada no fim de cada variação, no volume escolhido (padrão −20 dB).
+→ escala, posição e Cortar (topo + feather 7%) no XML, com a caixa de baixo
+em 58% e o B-roll preenchendo a largura sem sobra, como o Leo (medido em 29/09
+nos 70 B-rolls do Andro 19.09). O Leo usa o Rounded Crop do Film Impact; o
+XML leva o Cortar nativo, e se o feather dele suavizar também as laterais
+(sem overscan, elas encostam na borda da tela), aparece na Fase 0. Lado, linha
+e feather seguem a empresa escolhida no Editar do painel: na **Menopausa** o
+B-roll vai **em cima** (caixa até 45%, corte embaixo) e a apresentadora desce
+por baixo dele (`descerPessoaPosY`). Doutor **em pé**: sobe
+enquanto o B-roll está na tela (`nudgeDoutorPosY`, Y 960 → 816 em tela cheia,
+sem mudar a escala). Só o trecho coberto sobe, porque a tela cheia subida abre
+tarja preta embaixo; a V1 é cortada nas bordas do B-roll, com o áudio vinculado
+junto. Doutor **deitado** fica como está: lá a posição muda com o trecho e é o
+Leo quem ajusta. Trilha (opcional): a música do começo, repetindo se for curta,
+cortada no fim de cada variação, no volume escolhido (padrão −10 dB: o ganho
+de clipe do Leo nas variações acabadas do Andro 19.09, save de 29/09 11:55; as
+ainda não mexidas estavam em −18. Todas começam do 0 da música e terminam com
+o doutor).
 
 **Crop/flop do doutor largado na cadeira** é decisão de olho: continua manual.
 Automatizar pede ver o quadro (modelo de visão), fase futura.
@@ -120,7 +153,7 @@ Legenda (é o "Abrir com" do Windows).
 
 | Fase | O quê | Estado |
 |---|---|---|
-| 0 | Prova do XML no Premiere (`scripts/prova-xml.ts`) | **esperando o Leo importar** |
+| 0 | Prova do XML no Premiere (`scripts/prova-xml.ts`) | **7 de 8 OK** (29/09, Premiere 25); espelho não viaja no XML |
 | 1 | Programa + Legendas (arrasta vídeo/áudio → revisa → `.srt`) | feito (2026-09-24) |
 | 2 | Auto Pausas: XML exportado do Premiere (ou brutas) → XML sem pausas + legenda | feito (2026-09-24), falta rodar com a chave |
 | 3 | Auto B-roll: XML → B-roll pela fala na V2, com o aprendizado do painel | feito (2026-09-24); o Aprender ainda é do painel |
@@ -131,7 +164,8 @@ Legenda (é o "Abrir com" do Windows).
 ### Fase 0 — o que a prova precisa mostrar
 
 `node scripts/prova-xml.ts` gera `prova/PROVA-Pro-Edition.xml` com arquivos
-reais (bruta C1639, B-roll "Consulta médica (1)", trilha "The Horror Piano").
+reais (bruta C1639, B-roll "Consulta médica (1)", trilha "Confident" da
+GrandCare — a "The Horror Piano" saiu do Downloads; regerada em 28/09).
 Importar no Premiere 2025 e conferir:
 
 1. sequência 1080×1920, 25 fps, 8,7 s, sem pedir para localizar mídia;
@@ -142,14 +176,25 @@ Importar no Premiere 2025 e conferir:
 5. V2: B-roll com Escala 150 e Cortar Superior 50%;
 6. V3: clipe desativado;
 7. A1 vinculado ao V1, com crossfade nos cortes;
-8. A2: trilha a −12 dB.
+8. A2: trilha (Confident) a −12 dB.
 
 Referência de como o Premiere escreve o mesmo formato: exportar a sequência
 "Reels" do Andro 19.09 por `Arquivo > Exportar > Final Cut Pro XML` para
 `prova/reels.xml`.
 
-**Limite conhecido:** Lumetri não viaja no XML do FCP. O Leo aplica a cor
-depois (um preset em todos os clipes da V1, ou camada de ajuste).
+**Resultado (29/09, importado numa cópia do Andro 19.09 no Premiere 25):**
+itens 1, 2, 3, 5, 6, 7 e 8 OK — 1080×1920, 25 fps, 8,68 s sem pedir mídia;
+Escala 90; o 2º clipe em Posição 810/960 (a convenção do `deslocamento` está
+certa); B-roll com Escala 150 e Crop Top 50%; V3 desativado; A1 vinculado com
+crossfade nos cortes; Confident a −12 dB. O item 4 falhou: o Premiere avisa
+"Effect <Flop> ... not translated". E não é o `xml.ts`: aplicando Horizontal
+Flip no Premiere e exportando o XML, ele também diz "not translated". **Espelho
+não viaja no XML do FCP, em nenhum sentido.** Consequência: clipe que o Leo
+espelhou volta sem espelho depois do Auto Pausas pelo programa.
+
+**Limite conhecido:** Lumetri e espelho não viajam no XML do FCP. O Leo aplica
+a cor depois (um preset em todos os clipes da V1, ou camada de ajuste) e o
+flop à mão.
 
 ### Como a timeline real é (Andro 19.09, lido do .prproj)
 

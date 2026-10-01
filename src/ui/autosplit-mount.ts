@@ -7,7 +7,10 @@
  * telas no mesmo documento. Se isso mudar, este arquivo muda junto.
  */
 
-import { aplicarSplit, diagnostico, getSequenceInfo, type OpcoesSplit } from "../autosplit-premiere.ts";
+import { lerEmpresa } from "../../ferramentas/pro-captions/src/premiere.ts";
+import { EMPRESAS } from "../../ferramentas/pro-captions/src/preset.ts";
+import { aplicarQuadrado, aplicarSplit, diagnostico, getSequenceInfo, type OpcoesSplit } from "../autosplit-premiere.ts";
+import { DIVISAO_PADRAO, SPLIT_DA_EMPRESA } from "../autosplit.ts";
 
 export function mount(root: HTMLElement): void {
   const pega = <T extends HTMLElement>(id: string): T => root.querySelector<T>(`#${id}`)!;
@@ -31,25 +34,36 @@ export function mount(root: HTMLElement): void {
     escrever(`Erro: ${(e as Error)?.message ?? String(e)}`);
   };
 
+  // O lado do B-roll e o feather sao da empresa escolhida no Editar (perfil.json).
+  let split = SPLIT_DA_EMPRESA.androclinic;
+
   /** O campo recebe o numero humano (V2 = 2); o adapter quer indice base 0. */
   const lerOpcoes = (): OpcoesSplit => {
     const bruto = faixa.value.trim();
     const n = Number(bruto);
     return {
       faixa: bruto === "" || !Number.isFinite(n) || n < 1 ? null : n - 1,
-      divisao: Number(divisao.value) || 50,
+      divisao: Number(divisao.value) || DIVISAO_PADRAO,
       subirDoutor: false, // entra junto com o nudge do doutor, ainda nao feito
       refazer: refazer.checked,
+      lado: split.lado,
+      feather: split.feather,
     };
   };
 
   void (async () => {
     try {
+      const empresa = await lerEmpresa();
+      split = SPLIT_DA_EMPRESA[empresa];
+      divisao.value = String(split.divisao);
       const info = await getSequenceInfo();
       const nome = pega("asSeqNome");
       nome.textContent = info.name;
       nome.setAttribute("data-vazio", "nao");
-      escrever(`${info.name} — ${info.width}x${info.height}`);
+      escrever(
+        `${info.name} — ${info.width}x${info.height}`,
+        `${EMPRESAS[empresa].nome}: B-roll ${split.lado === "cima" ? "em cima" : "embaixo"} (troca no Editar)`
+      );
       estado("pronto", "ok");
     } catch (e) {
       mostrarErro(e);
@@ -68,6 +82,21 @@ export function mount(root: HTMLElement): void {
           "",
           r.ok ? "Pronto. Ajuste o que precisar no Premiere." : "Aplicado com problema: veja as linhas acima.",
         );
+      } catch (e) {
+        mostrarErro(e);
+      }
+    })();
+  });
+
+  // Na sequencia duplicada da Reels e ja mudada para 1080x1080 (Sequence Settings).
+  pega("asQuadrado").addEventListener("click", () => {
+    void (async () => {
+      try {
+        estado("quadrado", "ativo");
+        escrever("Montando o quadrado (a V1 inteira leva um tempo)...");
+        const r = await aplicarQuadrado();
+        estado("quadrado pronto", "ok");
+        escrever(...r.linhas, "", "Pronto. Confira no Program e ajuste o que precisar.");
       } catch (e) {
         mostrarErro(e);
       }

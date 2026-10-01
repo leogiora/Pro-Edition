@@ -53,29 +53,91 @@ export interface Preset {
   readonly quebrarEmPontuacao: boolean;
 }
 
+/**
+ * Termos de cada empresa (perfil de edicao, docs/PERFIS_DE_EDICAO.md). Os da
+ * GrandCare e da Menopausa sairam das legendas que o Leo revisou nos projetos
+ * delas (29/09): o Premiere ouviu "Gran" por GrandCare e "Denilson" por Edemilson.
+ */
+export const EMPRESAS = {
+  androclinic: {
+    nome: "AndroClinic",
+    termosProtegidos: ["Androclinic", "Cristiano Estivalet"],
+    termosChave: [
+      "AndroClinic",
+      "Estivalet",
+      "anamnese",
+      "testosterona",
+      "telemedicina",
+      "teleconsulta",
+      "disfunção erétil",
+      "azulzinho",
+      "hora H",
+      "sigilo total",
+      "libido",
+      "ereção",
+      "urologista",
+      "hormônio",
+      "estresse",
+    ],
+  },
+  grandcare: {
+    nome: "GrandCare",
+    termosProtegidos: ["GrandCare", "Edemilson Banach"],
+    termosChave: [
+      "GrandCare",
+      "Edemilson",
+      "Banach",
+      "Florianópolis",
+      "Alzheimer",
+      "Esclerose Lateral Amiotrófica",
+      "home care",
+      "cuidadores",
+      "enfermagem",
+      "internação domiciliar",
+      "readmissão hospitalar",
+      "multidisciplinar",
+      "videochamada",
+    ],
+  },
+  menopausa: {
+    nome: "Menopausa Cancelada",
+    termosProtegidos: ["Menopausa Cancelada", "Femme Healthy"],
+    termosChave: [
+      "Menopausa Cancelada",
+      "Reset 90",
+      "Femme Healthy",
+      "menopausa",
+      "DHA",
+      "ômega 3",
+      "B12",
+      "coenzima Q10",
+      "colágeno",
+      "magnésio",
+      "homocisteína",
+      "metilcobalamina",
+      "metilfolato",
+      "polivitamínico",
+      "LDL",
+      "TPM",
+    ],
+  },
+} as const;
+
+export type Empresa = keyof typeof EMPRESAS;
+
+/** A empresa gravada em `perfil.json`; sem arquivo ou com lixo, AndroClinic (o de sempre). */
+export function empresaDe(raw: unknown): Empresa {
+  const e = (raw as { empresa?: unknown } | null)?.empresa;
+  return typeof e === "string" && Object.prototype.hasOwnProperty.call(EMPRESAS, e) ? (e as Empresa) : "androclinic";
+}
+
 export const PRESET_PADRAO: Preset = {
   maxCaracteres: 20,
   maxPalavras: Infinity,
   pausaQuebraSegundos: 1.5,
   toleranciaCorteSegundos: 0.25,
-  termosProtegidos: ["Androclinic", "Cristiano Estivalet"],
-  termosChave: [
-    "AndroClinic",
-    "Estivalet",
-    "anamnese",
-    "testosterona",
-    "telemedicina",
-    "teleconsulta",
-    "disfunção erétil",
-    "azulzinho",
-    "hora H",
-    "sigilo total",
-    "libido",
-    "ereção",
-    "urologista",
-    "hormônio",
-    "estresse",
-  ],
+  termosProtegidos: EMPRESAS.androclinic.termosProtegidos,
+  termosChave: EMPRESAS.androclinic.termosChave,
   trackDeCortes: 0,
   maiusculas: true,
   confiarNoAcento: false,
@@ -89,3 +151,9 @@ export const PRESET_ELEVENLABS: Preset = {
   quebrarEmPontuacao: true,
   maxPalavras: 3,
 };
+
+/** O preset com os termos da empresa: o resto (bloco, pontuacao) e o dos Ads. */
+export function presetDa(empresa: Empresa, base: Preset = PRESET_ELEVENLABS): Preset {
+  const { termosProtegidos, termosChave } = EMPRESAS[empresa];
+  return { ...base, termosProtegidos, termosChave };
+}

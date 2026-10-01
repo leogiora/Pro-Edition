@@ -27,7 +27,9 @@ A ponte (`ponte.html`) abre escondida quando a janela do Premiere é ativada e,
 a cada 1,5 s, chama `proCaptions_atenderPedido()`. O Pro Edition grava
 `timeline-pedido.txt` na pasta de dados do plugin
 (`%APPDATA%\Adobe\UXP\PluginsStorage\PPRO\<versão>\External\...\PluginData`):
-id, caminho do legendas.srt, caminho do precos.srt. A ponte importa os .srt na
+id, caminho do legendas.srt, caminho do precos.srt. A ponte importa uma cópia
+de cada .srt com a hora no nome (`legendas 14h32m43s.srt`: reimportar o mesmo
+caminho trazia o texto da primeira vez) na
 pasta **Pro Captions** do painel Projeto, cria as faixas e responde em
 `timeline-resposta.txt`. Só olha a pasta da própria versão do Premiere: com o
 2025 e o 2026 abertos juntos, cada um atende o seu.

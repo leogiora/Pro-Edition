@@ -22,7 +22,8 @@
     flex: 2 1 180px;
   }
 
-  .acao sp-button#asDiag {
+  .acao sp-button#asDiag,
+  .acao sp-button#asQuadrado {
     flex: 1 1 110px;
   }
 
@@ -66,7 +67,7 @@
       </label>
       <label class="campo">
         <span class="campo-rotulo">Onde a tela divide (% da altura)</span>
-        <sp-textfield id="asDivisao" value="50"></sp-textfield>
+        <sp-textfield id="asDivisao" value="58"></sp-textfield>
         <span class="campo-nota">50 = meio a meio. Aceita de 40 a 60.</span>
       </label>
       <sp-checkbox id="asRefazer">Refazer do zero (troca o efeito já aplicado)</sp-checkbox>
@@ -75,6 +76,7 @@
 
   <div class="acao">
     <sp-button id="asAplicar" variant="cta">Aplicar Auto Split</sp-button>
+    <sp-button id="asQuadrado" variant="secondary">Quadrado 1:1</sp-button>
     <sp-button id="asDiag" variant="secondary" quiet>Diagnóstico</sp-button>
   </div>
 

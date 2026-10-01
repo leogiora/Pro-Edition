@@ -7,6 +7,7 @@
  * cairem no lugar certo — e isso que mora aqui.
  */
 
+import { empresaDe, type Empresa } from "../ferramentas/pro-captions/src/preset.ts";
 import type { PalavraEditada } from "../ferramentas/pro-captions/src/transcript.ts";
 import type { Pedaco } from "./pausas.ts";
 
@@ -54,6 +55,94 @@ export function moverPalavras(palavras: readonly PalavraEditada[], pedacos: read
 /** Onde a imagem corta depois do Auto Pausas, em segundos: a legenda evita atravessar. */
 export function cortesDosPedacos(pedacos: readonly Pedaco[], fps: number): number[] {
   return pedacos.slice(1).map((p) => p.destinoQ / fps);
+}
+
+/**
+ * Light leak em cada troca doutor <-> B-roll, como o Leo monta: o leak inteiro
+ * (0,84 s no Premiere Composer) comecando 0,36 s antes da borda. Medido nas 79
+ * bordas das variacoes 1-6 do Andro 19.09 (29/09): 77 exatas; nenhum leak entre
+ * dois B-rolls colados (28 de 28) nem no comeco ou fim da variacao (5 de 5).
+ */
+export const LEAK_ANTES_S = 0.36;
+export const LEAK_S = 0.84;
+
+/**
+ * Onde cada leak comeca, em segundos, arredondado para o quadro e em ordem.
+ * Pula a borda cujo leak cairia em cima de algo que ja esta em `ocupado` (a
+ * faixa do leak): o que o Leo ja pos fica, e rodar duas vezes nao duplica. Dois
+ * leaks novos que se encostam entram os dois: inseridos em ordem, o seguinte
+ * come o fim do anterior, como o Leo faz (B-roll que sai e outro entrando 0,8 s
+ * depois).
+ */
+export function inicioDosLeaks(
+  brolls: ReadonlyArray<{ readonly inicio: number; readonly fim: number }>,
+  vars: readonly Variacao[],
+  fps: number,
+  ocupado: ReadonlyArray<{ readonly inicio: number; readonly fim: number }> = []
+): number[] {
+  const meioQuadro = 0.5 / fps;
+  const perto = (a: number, b: number): boolean => Math.abs(a - b) < meioQuadro;
+  const saida: number[] = [];
+  for (const x of brolls.flatMap((b) => [b.inicio, b.fim]).sort((a, b) => a - b)) {
+    const colada = brolls.filter((b) => perto(b.inicio, x) || perto(b.fim, x)).length > 1;
+    const ponta = vars.some((v) => perto(v.inicioQ / fps, x) || perto(v.fimQ / fps, x));
+    const inicio = Math.round((x - LEAK_ANTES_S) * fps) / fps;
+    const fim = inicio + LEAK_S;
+    if (colada || ponta || ocupado.some((o) => inicio < o.fim - meioQuadro && o.inicio < fim - meioQuadro)) continue;
+    saida.push(inicio);
+  }
+  return saida;
+}
+
+/**
+ * Variacoes que ganham a copia da trilha: as que nao tem musica na faixa. O
+ * clone nasce com a duracao do modelo e so depois e aparado no fim da
+ * variacao; se ate la cobrir musica que ja esta na faixa, a variacao pula (o
+ * overwrite apagaria o que o Leo pos).
+ */
+export function trilhaFaltando(
+  vars: readonly Variacao[],
+  fps: number,
+  naFaixa: ReadonlyArray<{ readonly inicio: number; readonly fim: number }>,
+  duracaoModelo: number
+): { entram: Variacao[]; pulam: Variacao[] } {
+  const meioQuadro = 0.5 / fps;
+  const cruza = (ini: number, fim: number): boolean => naFaixa.some((c) => ini < c.fim - meioQuadro && c.inicio < fim - meioQuadro);
+  const entram: Variacao[] = [];
+  const pulam: Variacao[] = [];
+  for (const v of vars) {
+    const ini = v.inicioQ / fps;
+    if (cruza(ini, v.fimQ / fps)) continue;
+    (cruza(ini, ini + duracaoModelo) ? pulam : entram).push(v);
+  }
+  return { entram, pulam };
+}
+
+/**
+ * Perfil de edicao (docs/PERFIS_DE_EDICAO.md): a empresa escolhida no Editar e
+ * a pasta de B-roll de cada uma. Fica em `perfil.json`, fora do `config.json`
+ * do Auto B-roll, que regrava o dele so com os campos dele.
+ */
+export interface PerfilEdicao {
+  readonly empresa: Empresa;
+  readonly bibliotecas: Readonly<Partial<Record<Empresa, string>>>;
+}
+
+export function parsePerfil(raw: unknown): PerfilEdicao {
+  const b = (raw as { bibliotecas?: unknown } | null)?.bibliotecas;
+  const bibliotecas: Partial<Record<Empresa, string>> = {};
+  if (typeof b === "object" && b !== null) {
+    for (const [k, v] of Object.entries(b)) {
+      if (typeof v === "string" && empresaDe({ empresa: k }) === k) bibliotecas[k as Empresa] = v;
+    }
+  }
+  return { empresa: empresaDe(raw), bibliotecas };
+}
+
+/** A pasta em uso fica com a empresa que sai; a da que entra volta (vazia se nunca foi escolhida). */
+export function trocarEmpresa(p: PerfilEdicao, pastaEmUso: string, nova: Empresa): { perfil: PerfilEdicao; pasta: string } {
+  const bibliotecas = pastaEmUso ? { ...p.bibliotecas, [p.empresa]: pastaEmUso } : p.bibliotecas;
+  return { perfil: { empresa: nova, bibliotecas }, pasta: bibliotecas[nova] ?? "" };
 }
 
 /** B-roll mais curto que isto, depois de aparado no fim do doutor, nem entra. */

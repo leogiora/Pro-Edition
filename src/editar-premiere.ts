@@ -7,6 +7,8 @@
  *      original acompanham cada pedaco
  *   4. Auto B-roll pela fala, terminando junto com cada variacao
  *   5. Auto Split (opcional)
+ *   5b. light leak em cada troca doutor <-> B-roll (regra em editar.ts)
+ *   5c. trilha: a musica de uma variacao copiada para as outras
  *   6. legendas: .srt de texto e de preco, e o pedido para o ajudante CEP
  *      criar as faixas de legenda (o UXP nao cria)
  *
@@ -22,7 +24,7 @@ import {
   parseMemoria,
   parsePendentes,
 } from "../ferramentas/auto-broll/src/aprendizado.ts";
-import { parseConfig, relogio } from "../ferramentas/auto-broll/src/domain.ts";
+import { ehVideo, parseConfig, relogio } from "../ferramentas/auto-broll/src/domain.ts";
 import { parseCacheIntensidade, ritmo } from "../ferramentas/auto-broll/src/intensidade.ts";
 import { parseSinonimos, SINONIMOS_PADRAO, usarSinonimos } from "../ferramentas/auto-broll/src/match.ts";
 import { planejar, REGRAS_DENSAS, REGRAS_PADRAO, semSobrepor } from "../ferramentas/auto-broll/src/plano.ts";
@@ -34,7 +36,9 @@ import {
   listarPastaBrolls,
   medirBiblioteca,
   readJson,
+  todosOsItens,
   writeJson,
+  type BrollNaTimeline,
 } from "../ferramentas/auto-broll/src/premiere.ts";
 import { audioMudo } from "../ferramentas/pro-captions/src/audio.ts";
 import { assinaturaDoAudio, palavrasDoElevenLabs, termosChave } from "../ferramentas/pro-captions/src/elevenlabs.ts";
@@ -44,19 +48,30 @@ import {
   guardarTranscricao,
   legendasNaTimeline,
   lerChaveElevenLabs,
+  lerEmpresa,
   lerTranscricaoGuardada,
   salvarSrt,
 } from "../ferramentas/pro-captions/src/premiere.ts";
-import { PRESET_ELEVENLABS } from "../ferramentas/pro-captions/src/preset.ts";
+import { EMPRESAS, presetDa, type Preset } from "../ferramentas/pro-captions/src/preset.ts";
 import { validar } from "../ferramentas/pro-captions/src/segmentar.ts";
 import type { PalavraEditada } from "../ferramentas/pro-captions/src/transcript.ts";
 import { aplicarSplit } from "./autosplit-premiere.ts";
-import { cortesDosPedacos, dentroDasVariacoes, moverPalavras, variacoes, type Variacao } from "./editar.ts";
+import { SPLIT_DA_EMPRESA } from "./autosplit.ts";
+import {
+  cortesDosPedacos,
+  dentroDasVariacoes,
+  inicioDosLeaks,
+  moverPalavras,
+  trilhaFaltando,
+  variacoes,
+  type Variacao,
+} from "./editar.ts";
 import {
   apagarArquivo,
   aplicarPlano,
   clipesEmQuadros,
   exportarAudio,
+  itensDa,
   lerSequencia,
   linhasDoAplicado,
   type ClipeLido,
@@ -120,7 +135,7 @@ interface Fala {
   readonly db: readonly number[];
 }
 
-async function ouvirSequencia(registrar: Registrar, progresso: (t: string) => void): Promise<Fala> {
+async function ouvirSequencia(preset: Preset, registrar: Registrar, progresso: (t: string) => void): Promise<Fala> {
   const chave = await comLimite("chave", lerChaveElevenLabs(), 5000);
   if (!chave) throw new Error("Sem chave do ElevenLabs. Salve a chave (sk_…) no Pro Captions e clique de novo.");
 
@@ -142,7 +157,7 @@ async function ouvirSequencia(registrar: Registrar, progresso: (t: string) => vo
       const t0 = Date.now();
       json = await comLimite(
         "ElevenLabs",
-        transcreverNoElevenLabs(audio.bytes, chave, termosChave(PRESET_ELEVENLABS), (t) => registrar(t, "aviso")),
+        transcreverNoElevenLabs(audio.bytes, chave, termosChave(preset), (t) => registrar(t, "aviso")),
         15 * 60 * 1000
       );
       registrar(`ElevenLabs respondeu em ${((Date.now() - t0) / 1000).toFixed(0)} s`, "passo");
@@ -402,11 +417,120 @@ async function colocarBroll(
   return entram.length;
 }
 
+// -------------------------------------------------------------- light leak
+
+const ehLeak = (c: BrollNaTimeline): boolean => /light leak/i.test(`${c.nomeNoProjeto} ${c.caminho}`);
+
+/**
+ * Light leak do Premiere Composer em cada troca doutor <-> B-roll (regra em
+ * editar.ts). O leak e o que o Leo ja usa: o da timeline, ou o primeiro com
+ * "Light Leak" no nome no painel Projeto; entra inteiro (0,84 s, sem audio).
+ * Vai na faixa do leak que ja esta la, ou logo acima da faixa de B-roll.
+ */
+async function colocarLeaks(vars: readonly Variacao[], fps: number, registrar: Registrar): Promise<void> {
+  const config = parseConfig(await comLimite("ler config", readJson("config.json"), 5000));
+  const naTimeline = await comLimite("ler a timeline", lerBrollsAcimaDeV1(), 10000);
+  const modelo = naTimeline.find(ehLeak);
+  const faixa = modelo?.videoTrackIndex ?? config.videoTrackIndex + 1;
+
+  const project = await ppro.Project.getActiveProject();
+  const itens = await comLimite("ler o projeto", todosOsItens(await project.getRootItem()), 20000);
+  const item = itens.find((i) => (modelo ? i.name === modelo.nomeNoProjeto : /light leak/i.test(i.name)));
+  if (item === undefined) {
+    registrar("light leak: nenhum no projeto. Gere um no Premiere Composer e rode de novo", "aviso");
+    return;
+  }
+
+  const trecho = (c: BrollNaTimeline) => ({ inicio: c.startSeconds, fim: c.endSeconds });
+  const inicios = inicioDosLeaks(
+    naTimeline.filter((c) => ehVideo(c.sourceName)).map(trecho),
+    vars,
+    fps,
+    naTimeline.filter((c) => c.videoTrackIndex === faixa).map(trecho)
+  );
+  if (inicios.length === 0) {
+    registrar("light leak: toda troca de B-roll já tem", "passo");
+    return;
+  }
+
+  const editor = await ppro.SequenceEditor.getEditor(await project.getActiveSequence());
+  const tempos = await Promise.all(inicios.map((t) => ppro.TickTime.createWithSeconds(t)));
+  // Faixa de audio do B-roll, nunca a A1: o leak nao tem audio, mas se tiver, nao pisa na fala.
+  comTransacao(project, `Editar: ${inicios.length} light leaks`, (adicionar) => {
+    for (const t of tempos) adicionar(editor.createOverwriteItemAction(item, t, faixa, config.audioTrackIndex));
+  });
+  registrar(`${inicios.length} light leaks na V${faixa + 1} (${item.name})`, "ok");
+}
+
+// ------------------------------------------------------------------ trilha
+
+/** A2: onde o Leo poe a musica (stillness.WAV nas 20 variacoes do Andro 19.09). */
+const FAIXA_TRILHA = 1;
+
+/**
+ * A musica que o Leo pos embaixo de uma variacao vai para as outras, como ele
+ * faz (copiar/colar): medido nas 20 variacoes do Andro 19.09 (29/09), do
+ * comeco da musica, -18 dB de ganho de clipe, comecando e terminando com a
+ * variacao. E clone, nao overwrite do arquivo: a API nao ajusta volume, e o
+ * clone leva o ganho e o trecho da musica. Depois o fim vai para o fim de cada
+ * variacao.
+ */
+async function colocarTrilha(vars: readonly Variacao[], fps: number, registrar: Registrar): Promise<void> {
+  const project = await ppro.Project.getActiveProject();
+  const sequence = await project.getActiveSequence();
+  const ler = async () =>
+    Promise.all(
+      (await itensDa(sequence, false, FAIXA_TRILHA)).map(async (i) => ({
+        i,
+        inicio: (await i.getStartTime()).seconds,
+        fim: (await i.getEndTime()).seconds,
+      }))
+    );
+  const naFaixa = await ler();
+  const modelo = naFaixa[0];
+  if (modelo === undefined) {
+    registrar(`trilha: ponha a música embaixo de uma variação na A${FAIXA_TRILHA + 1} e o Editar copia para as outras`, "aviso");
+    return;
+  }
+  const { entram, pulam } = trilhaFaltando(vars, fps, naFaixa, modelo.fim - modelo.inicio);
+  for (const v of pulam) registrar(`  trilha: ${relogio(v.inicioQ / fps)} ficou de fora (a cópia cairia na música da variação seguinte)`, "aviso");
+  if (entram.length === 0) {
+    if (pulam.length === 0) registrar("trilha: toda variação já tem", "passo");
+    return;
+  }
+
+  const editor = await ppro.SequenceEditor.getEditor(sequence);
+  const deslocamentos = await Promise.all(entram.map((v) => ppro.TickTime.createWithSeconds(v.inicioQ / fps - modelo.inicio)));
+  comTransacao(project, `Editar: trilha em ${entram.length} variações`, (adicionar) => {
+    for (const d of deslocamentos) adicionar(editor.createCloneTrackItemAction(modelo.i, d, 0, 0, false, false));
+  });
+
+  type ComFim = { createSetEndAction: (t: unknown) => unknown };
+  const depois = await ler();
+  const fins: Array<{ item: ComFim; fim: unknown }> = [];
+  for (const v of entram) {
+    const c = depois.find((x) => Math.abs(x.inicio - v.inicioQ / fps) < 0.5 / fps);
+    if (c) fins.push({ item: c.i as unknown as ComFim, fim: await ppro.TickTime.createWithSeconds(v.fimQ / fps) });
+  }
+  comTransacao(project, "Editar: trilha termina com a variação", (adicionar) => {
+    for (const f of fins) adicionar(f.item.createSetEndAction(f.fim));
+  });
+  registrar(
+    `trilha em ${fins.length} de ${entram.length} variação(ões) na A${FAIXA_TRILHA + 1}, cópia da que já estava`,
+    fins.length === entram.length ? "ok" : "aviso"
+  );
+}
+
 // ---------------------------------------------------------------- legendas
 
-async function colocarLegendas(palavras: readonly PalavraEditada[], cortes: readonly number[], registrar: Registrar): Promise<void> {
-  const blocos = gerarBlocos(palavras, cortes, PRESET_ELEVENLABS);
-  const problemas = validar(blocos, PRESET_ELEVENLABS);
+async function colocarLegendas(
+  palavras: readonly PalavraEditada[],
+  cortes: readonly number[],
+  preset: Preset,
+  registrar: Registrar
+): Promise<void> {
+  const blocos = gerarBlocos(palavras, cortes, preset);
+  const problemas = validar(blocos, preset);
   if (problemas.length > 0) {
     registrar(`legenda reprovada na validação: ${problemas.slice(0, 3).join("; ")}`, "erro");
     return;
@@ -428,6 +552,8 @@ export interface OpcoesEditar {
   readonly pausas: boolean;
   readonly broll: boolean;
   readonly split: boolean;
+  readonly leak: boolean;
+  readonly trilha: boolean;
   readonly legendas: boolean;
 }
 
@@ -438,8 +564,13 @@ export async function editar(opcoes: OpcoesEditar, registrar: Registrar, progres
   const originais = clipesEmQuadros(s);
   registrar(`${s.info.name}: ${s.v1.length} clipe(s) na V1, ${variacoes(originais, fps).length} variação(ões)`, "passo");
 
-  // 1-2. A fala, uma vez so.
-  const fala = await ouvirSequencia(registrar, progresso);
+  // 1-2. A fala, uma vez so. So pausas, B-roll e legendas usam: split, light
+  // leak e trilha rodam sem ElevenLabs (e sem chave).
+  const empresa = await comLimite("empresa", lerEmpresa(), 5000);
+  const preset = presetDa(empresa);
+  registrar(`empresa: ${EMPRESAS[empresa].nome} (termos do ElevenLabs e da legenda)`, "passo");
+  const fala: Fala =
+    opcoes.pausas || opcoes.broll || opcoes.legendas ? await ouvirSequencia(preset, registrar, progresso) : { palavras: [], db: [] };
   let palavras = fala.palavras;
   let cortes = originais.slice(1).map((c) => c.inicioQ / fps);
   let clipesDepois: ReadonlyArray<{ inicioQ: number; fimQ: number }> = originais;
@@ -480,7 +611,8 @@ export async function editar(opcoes: OpcoesEditar, registrar: Registrar, progres
   if (opcoes.split) {
     progresso("split");
     try {
-      const r = await aplicarSplit({ faixa: null, divisao: 50, subirDoutor: false, refazer: false });
+      const { lado, divisao, feather } = SPLIT_DA_EMPRESA[empresa];
+      const r = await aplicarSplit({ faixa: null, divisao, lado, feather, subirDoutor: false, refazer: false });
       for (const l of r.linhas.slice(-4)) registrar(`  ${l}`, "vazio");
       registrar(r.ok ? "split aplicado" : "split com avisos", r.ok ? "ok" : "aviso");
     } catch (e) {
@@ -488,10 +620,22 @@ export async function editar(opcoes: OpcoesEditar, registrar: Registrar, progres
     }
   }
 
+  // 5b. Light leak nas trocas doutor <-> B-roll.
+  if (opcoes.leak) {
+    progresso("light leak");
+    await colocarLeaks(vars, fps, registrar).catch((e) => registrar(`Light leak: ${(e as Error).message}`, "erro"));
+  }
+
+  // 5c. Trilha: a musica de uma variacao copiada para as outras.
+  if (opcoes.trilha) {
+    progresso("trilha");
+    await colocarTrilha(vars, fps, registrar).catch((e) => registrar(`Trilha: ${(e as Error).message}`, "erro"));
+  }
+
   // 6. Legendas por ultimo: a timeline ja esta no formato final.
   if (opcoes.legendas) {
     progresso("legendas");
-    await colocarLegendas(palavras, cortes, registrar).catch((e) => registrar(`Legendas: ${(e as Error).message}`, "erro"));
+    await colocarLegendas(palavras, cortes, preset, registrar).catch((e) => registrar(`Legendas: ${(e as Error).message}`, "erro"));
   }
 
   registrar(`pronto em ${((Date.now() - t0) / 1000).toFixed(0)} s`, "ok");

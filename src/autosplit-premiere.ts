@@ -11,17 +11,27 @@ import {
   comTransacao,
   getSequenceInfo,
   lerBrollsAcimaDeV1,
+  nomeDoArquivo,
   readJson,
   writeJson,
 } from "../ferramentas/auto-broll/src/premiere.ts";
+import { parseTrazidos, type Trazido } from "../ferramentas/auto-broll/src/aprendizado.ts";
 import {
   calcularEnquadramento,
+  cobrirQuadrado,
+  DIVISAO_PADRAO,
+  enquadrarEmCima,
+  escalaBase,
   fracaoDivisao,
   resolverPerfil,
+  SOBRA_QUADRADO,
+  tamanhoNoNome,
+  tamanhoPelaEscala,
   FEATHER_PCT,
   ROUNDNESS_PCT,
   type Enquadramento,
   type EntradaGeom,
+  type LadoSplit,
   type OverridePerfil,
   type Perfil,
 } from "./autosplit.ts";
@@ -49,6 +59,7 @@ const MATCH_MOTION = "AE.ADBE Motion";
  */
 const MATCH_EFEITO = "AE.Impact_Crop_FX";
 const PARAM_TOPO = "Top";
+const PARAM_BASE = "Bottom";
 const PARAM_FEATHER = "Feather";
 const PARAM_ROUNDNESS = "Roundness";
 
@@ -103,6 +114,9 @@ export interface OpcoesSplit {
   readonly divisao: number; // valor do campo, ex. 50
   readonly subirDoutor: boolean;
   readonly refazer: boolean;
+  /** Da empresa (SPLIT_DA_EMPRESA): sem isto, B-roll embaixo e feather da AndroClinic. */
+  readonly lado?: LadoSplit;
+  readonly feather?: number;
 }
 
 export interface ItemPlano {
@@ -129,6 +143,21 @@ async function lerOverride(): Promise<OverridePerfil> {
 }
 
 /**
+ * Tamanho dos clipes que o Aprender levou para a pasta (`trazidos.json`): o
+ * perfil empacotado nao conhece arquivo novo. Achado pelo caminho do original
+ * (o projeto ainda usa o do Downloads) ou pelo nome da copia na pasta.
+ */
+async function lerTrazidos(): Promise<Map<string, Trazido>> {
+  const mapa = new Map<string, Trazido>();
+  for (const [caminho, t] of Object.entries(parseTrazidos(await readJson("trazidos.json")).porCaminho)) {
+    if (!t.w || !t.h) continue;
+    mapa.set(caminho, t);
+    mapa.set(t.nome, t);
+  }
+  return mapa;
+}
+
+/**
  * Le tudo que esta acima da V1, fica so com o que a biblioteca conhece, e
  * calcula o enquadramento de cada um. Nao toca a timeline.
  *
@@ -146,6 +175,7 @@ export async function montarPlano(opcoes: OpcoesSplit): Promise<PlanoSplit> {
     throw new Error("Nao deu pra ler o quadro da sequencia.");
   }
   const override = await lerOverride();
+  const trazidos = await lerTrazidos();
   const brollTopoFrac = fracaoDivisao(opcoes.divisao);
 
   const todos = await lerBrollsAcimaDeV1();
@@ -157,19 +187,25 @@ export async function montarPlano(opcoes: OpcoesSplit): Promise<PlanoSplit> {
 
   for (const b of alvo) {
     const doArquivo = perfil.porArquivo[b.sourceName];
-    if (!doArquivo?.w || !doArquivo?.h) {
+    const trazido = trazidos.get(b.caminho) ?? trazidos.get(b.sourceName);
+    const tam =
+      (doArquivo?.w && doArquivo?.h ? { w: doArquivo.w, h: doArquivo.h } : undefined) ??
+      (trazido?.w && trazido?.h ? trazido : undefined) ??
+      tamanhoNoNome(b.sourceName);
+    if (!tam?.w || !tam?.h) {
       ignorados.set(b.sourceName, (ignorados.get(b.sourceName) ?? 0) + 1);
       continue;
     }
-    const orientacao: "retrato" | "paisagem" = doArquivo.h >= doArquivo.w ? "retrato" : "paisagem";
-    const resolvido = resolverPerfil(perfil, override, b.sourceName, orientacao);
+    const orientacao: "retrato" | "paisagem" = tam.h >= tam.w ? "retrato" : "paisagem";
+    // Original do Downloads enquadra pelo conceito da copia ("Mulher triste"), nao pelo nome do Envato.
+    const resolvido = resolverPerfil(perfil, override, doArquivo ? b.sourceName : (trazido?.nome ?? b.sourceName), orientacao);
 
     const geom: EntradaGeom = {
       W: info.width,
       H: info.height,
       brollTopoFrac,
-      w: doArquivo.w,
-      h: doArquivo.h,
+      w: tam.w,
+      h: tam.h,
       ancoraY: resolvido.ancoraY,
       assunto: resolvido.assunto,
       cropTopoExtra: resolvido.cropTopoExtra,
@@ -181,7 +217,10 @@ export async function montarPlano(opcoes: OpcoesSplit): Promise<PlanoSplit> {
       videoTrackIndex: b.videoTrackIndex,
       orientacao,
       perfilOrigem: resolvido.origem,
-      enquadramento: calcularEnquadramento(geom),
+      enquadramento:
+        opcoes.lado === "cima"
+          ? enquadrarEmCima(info.width, info.height, tam.w, tam.h, brollTopoFrac)
+          : calcularEnquadramento(geom),
       geom,
     });
   }
@@ -206,8 +245,10 @@ async function itensDaFaixa(sequence: unknown, videoTrackIndex: number): Promise
   return faixa.getTrackItems(CLIP, false);
 }
 
+/** O mesmo nome que `lerBrollsAcimaDeV1` devolve: o do arquivo, nao o do item renomeado no projeto. */
 async function nomeDe(it: TrackItemLike): Promise<string | undefined> {
-  return it.name ?? (await it.getProjectItem?.())?.name;
+  const origem = await it.getProjectItem?.();
+  return origem ? nomeDoArquivo(origem) : it.name;
 }
 
 /** O clipe certo: mesmo nome de origem E comecando no tempo planejado. */
@@ -329,7 +370,15 @@ export async function aplicarSplit(opcoes: OpcoesSplit): Promise<ResultadoSplit>
 
   // --- transacao 1: Motion (escala + posicao) e anexar o efeito
   const acoes1: Array<() => unknown> = [];
-  const paraSetar: Array<{ sourceName: string; videoTrackIndex: number; startSeconds: number; topoPct: number }> = [];
+  const paraSetar: Array<{
+    sourceName: string;
+    videoTrackIndex: number;
+    startSeconds: number;
+    topoPct: number;
+    basePct: number;
+  }> = [];
+  const feather = opcoes.feather ?? FEATHER_PCT;
+  const caixa = opcoes.lado === "cima" ? "de cima" : "de baixo";
   const conferidos: string[] = [];
   let jaTinham = 0;
   let posicionados = 0;
@@ -373,6 +422,7 @@ export async function aplicarSplit(opcoes: OpcoesSplit): Promise<ResultadoSplit>
         videoTrackIndex: it.videoTrackIndex,
         startSeconds: it.startSeconds,
         topoPct: e.cropTopoPct,
+        basePct: e.cropBasePct ?? 0,
       });
     }
 
@@ -398,7 +448,7 @@ export async function aplicarSplit(opcoes: OpcoesSplit): Promise<ResultadoSplit>
   comTransacao(project as never, `Auto Split: ${posicionados} B-rolls`, (add) => {
     for (const a of acoes1) add(a());
   });
-  linhas.push(`${posicionados} B-rolls posicionados na caixa de baixo.`);
+  linhas.push(`${posicionados} B-rolls posicionados na caixa ${caixa}.`);
   for (const c of conferidos) linhas.push(`   ${c}`);
   if (jaTinham > 0) linhas.push(`${jaTinham} ja tinham o Rounded Crop (pulados; marque "Refazer do zero" pra refazer).`);
 
@@ -420,7 +470,8 @@ export async function aplicarSplit(opcoes: OpcoesSplit): Promise<ResultadoSplit>
       }
       for (const [nome, valor] of [
         [PARAM_TOPO, alvo.topoPct],
-        [PARAM_FEATHER, FEATHER_PCT],
+        [PARAM_BASE, alvo.basePct],
+        [PARAM_FEATHER, feather],
         [PARAM_ROUNDNESS, ROUNDNESS_PCT],
       ] as const) {
         const par = await acharParam(comp, nome);
@@ -432,7 +483,7 @@ export async function aplicarSplit(opcoes: OpcoesSplit): Promise<ResultadoSplit>
       comTransacao(h2.project as never, "Auto Split: corte de topo e feather", (add) => {
         for (const a of acoes2) add(a());
       });
-      linhas.push(`${paraSetar.length} Rounded Crop aplicados (Top por clipe, feather ${FEATHER_PCT}%).`);
+      linhas.push(`${paraSetar.length} Rounded Crop aplicados (corte ${opcoes.lado === "cima" ? "embaixo" : "em cima"} por clipe, feather ${feather}%).`);
     }
 
     // Conferir o que REALMENTE ficou na timeline, nao o que eu mandei fazer.
@@ -482,6 +533,101 @@ export async function aplicarSplit(opcoes: OpcoesSplit): Promise<ResultadoSplit>
   return { ok, linhas };
 }
 
+// ------------------------------------------------------- quadrado (1:1)
+
+/** x de um Position (fracao do quadro), que volta como PointF ou lista. */
+function xDe(v: unknown): number {
+  if (Array.isArray(v)) return Number(v[0]);
+  const n = Number((v as { x?: unknown } | null)?.x);
+  return Number.isFinite(n) ? n : NaN;
+}
+
+/**
+ * Quadrado a partir da Reels, como o Leo faz no Andro 19.09 (29/09): ele
+ * duplica a Reels e muda para 1080x1080; isto acerta o resto. Doutor (V1)
+ * cobrindo o quadrado, centrado na altura (o split nao existe aqui) e com o
+ * mesmo desvio de enquadramento na largura; B-roll cobrindo com
+ * SOBRA_QUADRADO, centrado, sem o Rounded Crop. Cor (Lumetri), legenda e light
+ * leak ficam como estao. Tres transacoes: V1, B-roll, tirar o corte.
+ */
+export async function aplicarQuadrado(): Promise<ResultadoSplit> {
+  const info = await getSequenceInfo();
+  if (!(info.width > 0) || info.width !== info.height) {
+    throw new Error(
+      `A sequencia ativa e ${info.width}x${info.height}. Duplique a Reels, mude para 1080x1080 (Sequence Settings) e rode de novo.`,
+    );
+  }
+  const Q = info.width;
+  const linhas: string[] = [`${info.name} — ${Q}x${Q}`];
+  const { project, sequence } = await ativa();
+
+  // 1. V1: a escala-base de cada arquivo diz o tamanho dele (tamanhoPelaEscala).
+  const lidos: Array<{ nome: string; escala: ParamLike; pos: ParamLike; s: number; x: number }> = [];
+  for (const it of await itensDaFaixa(sequence, 0)) {
+    const motion = await acharComponente(await it.getComponentChain(), MATCH_MOTION);
+    const escala = motion ? await acharParam(motion, "Scale") : null;
+    const pos = motion ? await acharParam(motion, "Position") : null;
+    if (!escala || !pos) continue;
+    const s = numeroDe(await lerParam(escala));
+    const x = xDe(await lerParam(pos));
+    if (Number.isFinite(s) && s > 0 && Number.isFinite(x)) lidos.push({ nome: (await nomeDe(it)) ?? "", escala, pos, s, x });
+  }
+  const novaDe = new Map<string, number>();
+  for (const nome of new Set(lidos.map((l) => l.nome))) {
+    const base = escalaBase(lidos.filter((l) => l.nome === nome).map((l) => l.s));
+    const tam = base === undefined ? undefined : tamanhoPelaEscala(base);
+    if (tam) novaDe.set(nome, cobrirQuadrado(Q, tam.w, tam.h));
+    else linhas.push(`V1: ${nome} com escala-base ${base} — tamanho desconhecido, ficou como estava`);
+  }
+  const acoesV1: Array<() => unknown> = [];
+  for (const l of lidos) {
+    const nova = novaDe.get(l.nome);
+    if (nova === undefined) continue;
+    const x = Q * (0.5 + (l.x - 0.5) * (nova / l.s));
+    acoesV1.push(() => l.escala.createSetValueAction(l.escala.createKeyframe(nova), true));
+    acoesV1.push(() => l.pos.createSetValueAction(l.pos.createKeyframe(posicaoNormalizada(x, Q / 2, Q, Q).ponto), true));
+  }
+  if (acoesV1.length > 0) {
+    comTransacao(project as never, `Quadrado: ${acoesV1.length / 2} clipes da V1`, (add) => {
+      for (const a of acoesV1) add(a());
+    });
+  }
+  linhas.push(`V1: ${acoesV1.length / 2} de ${lidos.length} clipes cobrindo o quadrado (${[...novaDe.values()].map((v) => Math.round(v)).join(", ")}%).`);
+
+  // 2. B-roll: o tamanho vem de onde o Auto Split tira (perfil, trazidos, nome do Pexels).
+  const plano = await montarPlano({ faixa: null, divisao: DIVISAO_PADRAO, subirDoutor: false, refazer: false });
+  const acoesB: Array<() => unknown> = [];
+  const semCorte: Array<() => unknown> = [];
+  for (const b of plano.itens) {
+    const item = await acharItem(await itensDaFaixa(sequence, b.videoTrackIndex), b.sourceName, b.startSeconds);
+    const chain = item ? await item.getComponentChain() : null;
+    const motion = chain ? await acharComponente(chain, MATCH_MOTION) : null;
+    const escala = motion ? await acharParam(motion, "Scale") : null;
+    const pos = motion ? await acharParam(motion, "Position") : null;
+    if (!chain || !escala || !pos) continue;
+    const nova = cobrirQuadrado(Q, b.geom.w, b.geom.h, SOBRA_QUADRADO);
+    acoesB.push(() => escala.createSetValueAction(escala.createKeyframe(nova), true));
+    acoesB.push(() => pos.createSetValueAction(pos.createKeyframe(posicaoNormalizada(Q / 2, Q / 2, Q, Q).ponto), true));
+    const corte = await acharComponente(chain, MATCH_EFEITO);
+    if (corte) semCorte.push(() => chain.createRemoveComponentAction(corte));
+  }
+  if (acoesB.length > 0) {
+    comTransacao(project as never, `Quadrado: ${acoesB.length / 2} B-rolls`, (add) => {
+      for (const a of acoesB) add(a());
+    });
+  }
+  if (semCorte.length > 0) {
+    comTransacao(project as never, "Quadrado: tirar o corte do split", (add) => {
+      for (const a of semCorte) add(a());
+    });
+  }
+  linhas.push(`B-roll: ${acoesB.length / 2} cobrindo o quadrado com ${Math.round((SOBRA_QUADRADO - 1) * 100)}% de sobra, ${semCorte.length} sem o Rounded Crop.`);
+  linhas.push(...plano.linhas.filter((l) => /intocados|^\s{3}/.test(l)));
+
+  await writeJson("ultimo-log-autosplit.json", { quando: Date.now(), linhas });
+  return { ok: true, linhas };
+}
+
 // ------------------------------------------------------- diagnostico do efeito
 
 /**
@@ -508,7 +654,7 @@ export async function diagnostico(): Promise<string[]> {
     candidato ? `candidato: "${candidato.display}" (${candidato.match})` : "nenhum candidato obvio — ver a lista no JSON",
   );
 
-  const plano = await montarPlano({ faixa: null, divisao: 50, subirDoutor: false, refazer: false });
+  const plano = await montarPlano({ faixa: null, divisao: DIVISAO_PADRAO, subirDoutor: false, refazer: false });
   if (plano.itens.length === 0) {
     linhas.push("sem B-roll acima da V1 — nao deu pra testar Motion/efeito no clipe");
     await writeJson("diag-autosplit.json", saida);
@@ -521,8 +667,7 @@ export async function diagnostico(): Promise<string[]> {
   const itens = await faixa.getTrackItems(CLIP, false);
   let item: TrackItemLike | undefined;
   for (const it of itens) {
-    const nome = it.name ?? (await it.getProjectItem?.())?.name;
-    if (nome === alvo.sourceName) {
+    if ((await nomeDe(it)) === alvo.sourceName) {
       item = it;
       break;
     }

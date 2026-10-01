@@ -81,7 +81,7 @@ async function ativa(): Promise<{ project: unknown; sequence: unknown }> {
 }
 
 /** Itens de uma faixa, em ordem de tempo — `getTrackItems` nao promete ordem. */
-async function itensDa(sequence: unknown, video: boolean, indice: number): Promise<ItemLike[]> {
+export async function itensDa(sequence: unknown, video: boolean, indice: number): Promise<ItemLike[]> {
   const seq = sequence as SeqFaixas;
   const faixa = video ? await seq.getVideoTrack(indice) : await seq.getAudioTrack(indice);
   if (!faixa) return [];

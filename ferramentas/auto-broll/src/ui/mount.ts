@@ -5,6 +5,7 @@
 
 import {
   DEFAULT_CONFIG,
+  ehVideo,
   formatTimecode,
   parseConfig,
   recorte,
@@ -17,6 +18,7 @@ import {
   pareceUndoEmLote,
   aprender,
   comPendente,
+  comTrazido,
   creditarManuais,
   foiOPlugin,
   LIGACAO_MINIMA,
@@ -24,12 +26,15 @@ import {
   parseAssociacoes,
   parseMemoria,
   parsePendentes,
+  parseTrazidos,
+  planejarTrazer,
   type Memoria,
   type Pendentes,
 } from "../aprendizado.ts";
 import { aplicarMerge, parseCanonico } from "../mesclar-canonico.ts";
 import { CACHE_VAZIO, parseCacheIntensidade, ritmo } from "../intensidade.ts";
 import {
+  conceitosDeArquivos,
   parseSinonimos,
   rotuloDoArquivo,
   sinonimosParaJson,
@@ -41,6 +46,8 @@ import { planejar, REGRAS_DENSAS, REGRAS_PADRAO, semSobrepor, type Ocupado } fro
 import type { Frase } from "../transcript.ts";
 import {
   comLimite,
+  copiarParaBiblioteca,
+  dimensoesDoArquivo,
   getSequenceInfo,
   inserirPlano,
   lerBrollsAcimaDeV1,
@@ -52,6 +59,7 @@ import {
   readJson,
   writeJson,
   type ArquivoBroll,
+  type BrollNaTimeline,
   type SequenceInfo,
 } from "../premiere.ts";
 
@@ -65,6 +73,8 @@ const CANONICO_FILE = "aprendizado-canonico.json";
 const CANONICO_BASE_FILE = "aprendizado-canonico.base.json";
 const LOG_ANALISE = "ultimo-log.json";
 const LOG_APRENDER = "ultimo-aprendizado.json";
+/** Clipes baixados que o Aprender levou para a pasta (o Auto Split le o tamanho daqui). */
+const TRAZIDOS_FILE = "trazidos.json";
 
 // ------------------------------------------------------------------ util
 
@@ -288,7 +298,9 @@ interface Julgamento {
 async function julgarFaixa(
   sequencia: string,
   frases: readonly Frase[],
-  conceitos: readonly Conceito[]
+  conceitos: readonly Conceito[],
+  biblioteca: { readonly pasta: string; readonly nomes: readonly string[] },
+  trazer: boolean
 ): Promise<Julgamento> {
   const memoria = parseMemoria(await comLimite("ler aprendizado", readJson(MEMORIA_FILE), 5000));
   const pendentes = parsePendentes(await comLimite("ler pendentes", readJson(PENDENTES_FILE), 5000));
@@ -300,14 +312,60 @@ async function julgarFaixa(
     const naTimeline = await comLimite("ler B-rolls da timeline", lerBrollsAcimaDeV1(), 30000);
     const resumo: Linha[] = [];
 
+    // 0. Clipe baixado (fora da pasta) e renomeado no painel Projeto vai para a
+    // pasta com esse nome — so no Aprender, que e onde o Leo pede. O que ja foi
+    // levado antes passa a contar pelo nome na pasta, nos dois botoes.
+    const nomesNaPasta = new Set(biblioteca.nomes);
+    const trazidosAntes = parseTrazidos(await comLimite("ler trazidos", readJson(TRAZIDOS_FILE), 5000).catch(() => null));
+    const plano = planejarTrazer(
+      naTimeline
+        .filter((c) => c.caminho !== "" && ehVideo(c.sourceName) && !nomesNaPasta.has(c.sourceName))
+        .map((c) => ({ caminho: c.caminho, nomeNoProjeto: c.nomeNoProjeto })),
+      biblioteca.nomes,
+      trazidosAntes
+    );
+    const naPasta = new Map(plano.jaNaPasta);
+    const levados: string[] = [];
+    if (trazer) {
+      let trazidos = trazidosAntes;
+      for (const c of plano.copiar) {
+        const origem = c.caminho.split(/[\\/]/).pop() ?? c.caminho;
+        try {
+          // 10 min: e disco local, mas o Envato manda .mov de 500 MB.
+          await comLimite(`copiar ${c.nome}`, copiarParaBiblioteca(c.caminho, biblioteca.pasta, c.nome), 600000);
+          // O Auto Split precisa do tamanho, e o perfil empacotado nao conhece arquivo novo.
+          const tam = await comLimite(`medir ${c.nome}`, dimensoesDoArquivo(c.caminho), 120000).catch(() => null);
+          trazidos = comTrazido(trazidos, c.caminho, { nome: c.nome, ...(tam ? { w: tam.width, h: tam.height } : {}) });
+          naPasta.set(c.caminho, c.nome);
+          levados.push(c.nome);
+          resumo.push({ texto: `Levei "${origem}" para a pasta de B-rolls como "${c.nome}".`, tipo: "ok" });
+        } catch (e) {
+          resumo.push({ texto: `Nao consegui levar "${origem}" para a pasta: ${mensagemDeErro(e)}`, tipo: "aviso" });
+        }
+      }
+      if (trazidos !== trazidosAntes) await writeJson(TRAZIDOS_FILE, trazidos);
+      if (plano.semNome.length > 0) {
+        resumo.push({
+          texto: `${plano.semNome.length} clipe(s) de fora da pasta sem nome de conceito: ${plano.semNome.join(", ")}. Renomeie no painel Projeto (ex.: "Mulher triste") e clique em Aprender de novo.`,
+          tipo: "aviso",
+        });
+      }
+    }
+    const nomeNaPasta = (c: BrollNaTimeline): string => naPasta.get(c.caminho) ?? c.sourceName;
+    // Arquivo recem-levado ainda nao estava na lista que a analise montou.
+    const conceitosDoCredito = levados.length > 0 ? conceitosDeArquivos([...biblioteca.nomes, ...levados]) : conceitos;
+
     // Tudo que veio do plugin — o que espera julgamento e o que ja foi julgado.
     // Sem a segunda parte, o proprio trabalho do plugin vira "colocacao sua".
     // Por POSICAO (D-033): so por nome, colocacao manual sua com arquivo que o
     // plugin ja usou era engolida como trabalho dele e nunca creditada.
     const presentes = new Set(naTimeline.map((c) => c.sourceName));
     const manuais = naTimeline
+      // Light leak (.aegraphic) e grafico nao sao B-roll: no Andro 19.09 eram a
+      // maior parte dos 133 "fora da pasta" do log, escondendo o que importa.
+      .filter((c) => ehVideo(c.sourceName))
       .filter((c) => !foiOPlugin({ arquivo: c.sourceName, inicio: c.startSeconds }, pendente))
-      .map((c) => ({ arquivo: c.sourceName, inicio: c.startSeconds, fim: c.endSeconds }));
+      .map((c) => ({ arquivo: nomeNaPasta(c), inicio: c.startSeconds, fim: c.endSeconds }));
 
     // Nada apagado e nada colocado desde o plano anterior significa que ninguem
     // editou — provavelmente foi so um segundo clique em Analisar. Contar isso
@@ -364,7 +422,7 @@ async function julgarFaixa(
         const antes = parseAssociacoes(
           await comLimite("ler ligacoes", readJson(ASSOCIACOES_FILE), 5000)
         );
-        const credito = creditarManuais(atual, sequencia, manuais, frases, conceitos, antes);
+        const credito = creditarManuais(atual, sequencia, manuais, frases, conceitosDoCredito, antes);
         atual = credito.memoria;
 
         if (credito.associacoes !== antes) {
@@ -425,8 +483,8 @@ async function julgarFaixa(
       ocupado: naTimeline.map((c) => ({
         inicio: c.startSeconds,
         fim: c.endSeconds,
-        arquivo: c.sourceName,
-        conceito: rotuloDoArquivo(c.sourceName),
+        arquivo: nomeNaPasta(c),
+        conceito: rotuloDoArquivo(nomeNaPasta(c)),
       })),
     };
   } catch (e) {
@@ -446,6 +504,7 @@ function trecho(texto: string, limite = 70): string {
  * corte de V1, a transcricao reconstruida e as ligacoes ja aprendidas.
  */
 async function lerContexto(aindaValido: () => boolean): Promise<{
+  pasta: string;
   arquivos: ArquivoBroll[];
   resultado: Analise;
   nomeSequencia: string;
@@ -502,7 +561,7 @@ async function lerContexto(aindaValido: () => boolean): Promise<{
     "passo"
   );
 
-  return { arquivos, resultado, nomeSequencia, duracaoDaSequencia: info.durationSeconds };
+  return { pasta, arquivos, resultado, nomeSequencia, duracaoDaSequencia: info.durationSeconds };
 }
 
 /**
@@ -521,8 +580,9 @@ async function aprenderDaTimeline(aindaValido: () => boolean): Promise<void> {
 
   let resumoAprendizado: Julgamento["resumo"] = [];
   try {
-    const { resultado, nomeSequencia } = await lerContexto(aindaValido);
-    const { resumo } = await julgarFaixa(nomeSequencia, resultado.frases, resultado.conceitos);
+    const { pasta, arquivos, resultado, nomeSequencia } = await lerContexto(aindaValido);
+    const biblioteca = { pasta, nomes: arquivos.map((a) => a.name) };
+    const { resumo } = await julgarFaixa(nomeSequencia, resultado.frases, resultado.conceitos, biblioteca, true);
     checarMontado(aindaValido);
     resumoAprendizado = resumo;
     // Este botao nao insere nada, entao o log dele e curto e some no clique
@@ -560,7 +620,7 @@ async function analisarSequencia(aindaValido: () => boolean): Promise<void> {
 
   try {
     const config = lerFormulario();
-    const { arquivos, resultado, nomeSequencia, duracaoDaSequencia } = await lerContexto(aindaValido);
+    const { pasta, arquivos, resultado, nomeSequencia, duracaoDaSequencia } = await lerContexto(aindaValido);
 
     for (const aviso of resultado.avisos.slice(0, 6)) registrar(aviso, "aviso");
 
@@ -579,10 +639,13 @@ async function analisarSequencia(aindaValido: () => boolean): Promise<void> {
 
     // Depois da analise, de proposito: creditar o que voce colocou na mao exige
     // saber o que estava sendo dito naquele instante, e isso so existe agora.
+    // Analisar nao copia arquivo: isso e so no Aprender.
     const { memoria, pendentes, resumo, ocupado } = await julgarFaixa(
       nomeSequencia,
       resultado.frases,
-      resultado.conceitos
+      resultado.conceitos,
+      { pasta, nomes: arquivos.map((a) => a.name) },
+      false
     );
     checarMontado(aindaValido);
     resumoAprendizado = resumo;

@@ -76,6 +76,18 @@ export interface RegrasPlano {
    * se entrar take fora de clima; afrouxar se muita colocacao cair no fallback.
    */
   readonly toleranciaIntensidade: number;
+  /**
+   * O B-roll vai ate o proximo comecar (ou o fim da fala), nao ate o fim da frase.
+   *
+   * E como o Leo monta (gabarito do Andro 19.09, 6 variacoes, 28/09): um clipe
+   * atravessa frases e o seguinte corta o anterior. Preso a frase, o planejador
+   * punha 49 contra 70 dele e cobria 51% do tempo de broll dele; assim, 61 e
+   * 61%, com o mesmo acerto de conceito. As duas metades so funcionam juntas:
+   * atravessar sem cortar tira o lugar do proximo (22 conceitos certos, nao 26).
+   * O que sobra do anterior nunca fica abaixo de `duracaoMinima`: com piso de
+   * 0,5 s (item de lista do Leo), 7 de 8 cortes curtos cairam fora de lista.
+   */
+  readonly ateOProximo: boolean;
 }
 
 export const REGRAS_PADRAO: RegrasPlano = {
@@ -95,6 +107,7 @@ export const REGRAS_PADRAO: RegrasPlano = {
   janelaMesmoArquivo: 180,
   antecipacao: 0.3,
   toleranciaIntensidade: 0.35,
+  ateOProximo: false,
 };
 
 /**
@@ -121,6 +134,7 @@ export const REGRAS_DENSAS: RegrasPlano = {
   duracaoMaxima: 3,
   intervaloMinimo: 0,
   janelaSemRepetir: 8,
+  ateOProximo: true,
 };
 
 /**
@@ -322,7 +336,13 @@ export function planejar(
   for (const c of candidatos) {
     const onde = `${relogio(c.ancoraEm)} ${c.conceito}`;
 
-    if (c.ancoraEm < fimDoAnterior + regras.intervaloMinimo) {
+    const anteriorNaTela = colocacoes[colocacoes.length - 1];
+    const cortaAnterior =
+      regras.ateOProximo &&
+      anteriorNaTela !== undefined &&
+      c.ancoraEm < fimDoAnterior &&
+      c.ancoraEm - anteriorNaTela.inicio >= regras.duracaoMinima;
+    if (!cortaAnterior && c.ancoraEm < fimDoAnterior + regras.intervaloMinimo) {
       descartes.push(`${onde}: muito perto do B-roll anterior`);
       continue;
     }
@@ -363,14 +383,16 @@ export function planejar(
       continue;
     }
 
-    // O B-roll nao passa do fim da frase que o justificou.
-    const espaco = Math.max(0, c.frase.fim - c.ancoraEm);
+    // O B-roll nao passa do fim da frase que o justificou (ou da fala, se vai ate o proximo).
+    const limite = regras.ateOProximo ? (c.frase.fimDaFala ?? c.frase.fim) : c.frase.fim;
+    const espaco = Math.max(0, limite - c.ancoraEm);
     if (espaco < regras.duracaoMinima) {
-      descartes.push(`${onde}: sobra so ${espaco.toFixed(1)}s ate o fim da frase`);
+      descartes.push(`${onde}: sobra so ${espaco.toFixed(1)}s ate o fim da ${regras.ateOProximo ? "fala" : "frase"}`);
       continue;
     }
     const duracao = Math.min(regras.duracaoMaxima, espaco);
 
+    if (cortaAnterior) colocacoes[colocacoes.length - 1] = { ...anteriorNaTela, duracao: c.ancoraEm - anteriorNaTela.inicio };
     colocacoes.push({
       arquivo,
       caminho,

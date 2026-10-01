@@ -9,7 +9,7 @@ import { writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
 import { Config } from "./motor/config.ts";
-import { gerarLegendas, salvarSrts, type BlocoLegenda } from "./motor/legendas.ts";
+import { gerarLegendas, salvarSrts, type BlocoLegenda, type Legendas } from "./motor/legendas.ts";
 import { abrirParaAcabamento, rodarAcabamento, type OpcoesAcabamentoTela } from "./motor/acabamento.ts";
 import { abrirParaBroll, rodarBroll } from "./motor/broll.ts";
 import { abrirParaPausas, rodarPausas } from "./motor/pausas.ts";
@@ -56,9 +56,9 @@ function criarJanela(): void {
 
 const FILTROS = {
   midia: {
-    title: "Vídeo ou áudio da sequência",
-    properties: ["openFile"] as Array<"openFile" | "multiSelections">,
-    filters: [{ name: "Vídeo, áudio ou transcrição", extensions: MIDIA }],
+    title: "Vídeo ou áudio da sequência (e a legenda do Premiere em .srt, se quiser os cortes dela)",
+    properties: ["openFile", "multiSelections"] as Array<"openFile" | "multiSelections">,
+    filters: [{ name: "Vídeo, áudio, transcrição ou legenda", extensions: [...MIDIA, "srt"] }],
   },
   xml: {
     title: "Sequência exportada do Premiere (.xml)",
@@ -95,11 +95,13 @@ ipcMain.handle("chave:salvar", async (_e, chave: string) => {
   await cfg.salvarChave(limpa);
 });
 
-ipcMain.handle("legendas:gerar", (evento, caminho: string) =>
-  gerarLegendas(caminho, cfg, (texto) => evento.sender.send("aviso", texto))
+ipcMain.handle("legendas:gerar", (evento, caminho: string, srtPremiere: string | null) =>
+  gerarLegendas(caminho, cfg, (texto) => evento.sender.send("aviso", texto), srtPremiere)
 );
 
-ipcMain.handle("legendas:salvar", (_e, caminho: string, blocos: BlocoLegenda[]) => salvarSrts(caminho, blocos));
+ipcMain.handle("legendas:salvar", (_e, caminho: string, blocos: BlocoLegenda[], cortes: Legendas["cortes"]) =>
+  salvarSrts(caminho, blocos, cortes)
+);
 
 ipcMain.handle("mostrar", (_e, caminho: string) => shell.showItemInFolder(caminho));
 

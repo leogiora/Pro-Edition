@@ -3,6 +3,14 @@ import assert from "node:assert/strict";
 
 import { detectarPrecos, formatarBRL, porExtenso, textoDoPreco } from "../src/preco.ts";
 
+test("horario nao e preco, mesmo com 'sai' perto (Menopausa, 29/09)", () => {
+  const w = (frase: string) => frase.split(" ");
+  assert.deepEqual(detectarPrecos(w("cê não sai de casa, sete e meia da noite,")), []);
+  assert.deepEqual(detectarPrecos(w("sai de casa às oito")), []);
+  assert.deepEqual(detectarPrecos(w("sai de casa sete da manhã")), []);
+  assert.equal(detectarPrecos(w("hoje sai por cento e noventa e sete reais")).length, 1); // preco continua
+});
+
 test("porExtenso resolve valores abaixo de mil", () => {
   assert.equal(porExtenso(["cento", "e", "noventa", "e", "sete"]), 197);
   assert.equal(porExtenso(["quinhentos"]), 500);

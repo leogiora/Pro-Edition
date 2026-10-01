@@ -10,6 +10,8 @@ import { safeStorage } from "electron";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
+import { jsonDe, pastaDoPainel } from "./broll.ts";
+
 export interface Preferencias {
   /** Pasta da biblioteca de B-rolls. */
   readonly pastaBroll?: string;
@@ -53,11 +55,13 @@ export class Config {
     return join(this.pasta, "elevenlabs-chave.bin");
   }
 
+  /** A do programa; sem ela, a que o Leo colou no Pro Captions do painel (mesmo usuario, texto puro la). */
   async chave(): Promise<string | null> {
     try {
       return safeStorage.decryptString(await readFile(this.arquivoChave));
     } catch {
-      return null;
+      const doPainel = ((await jsonDe(await pastaDoPainel(), "elevenlabs-chave.json")) as { chave?: unknown } | null)?.chave;
+      return typeof doPainel === "string" && doPainel.trim() !== "" ? doPainel.trim() : null;
     }
   }
 
