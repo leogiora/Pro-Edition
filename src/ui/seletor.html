@@ -1,77 +1,89 @@
 <header class="topo">
   <span class="marca-nome">Pro Edition</span>
+  <span class="topo-sub">AndroClinic · GrandCare · Menopausa</span>
 </header>
 
 <main class="conteudo">
-  <!-- Agrupado por produto, nao por ferramenta: Pro Ads e Podcast sao o que a
-       editora compra e reconhece. Dentro de Pro Ads a ordem e a da edicao.
+  <!-- O Editar e o botao do dia a dia: card grande no alto, com as etapas em
+       bolinhas e a timeline nas cores da tela dele. As ferramentas avulsas vem
+       embaixo, na ordem da edicao.
 
        data-trilhas: miniatura da timeline, desenhada por desenharTrilhas()
        em shell.ts. # = o que a ferramenta cria ou ajusta, = = o que ja estava
-       na sequencia, - = vazio. -->
-  <div class="grupo">
-    <p class="grupo-nome">Pro Ads</p>
-
-    <div id="cardEditar" class="card card-editar" role="button" tabindex="0" aria-label="Abrir Editar">
-      <span class="card-texto">
-        <span class="card-nome">Editar</span>
-        <span class="card-desc">Um clique na sequência aberta: tira as pausas, põe o B-roll e as legendas. Transcreve uma vez só.</span>
-      </span>
-      <span class="mapa" aria-hidden="true"
-        data-trilhas="C1 ##-###-##-####-##-###-|V2 --###-----##----###---|V1 ###-###-##-####-###-##"></span>
-    </div>
-
-    <div id="cardPausas" class="card card-pausas" role="button" tabindex="0" aria-label="Abrir Auto Pausas">
-      <span class="card-texto">
-        <span class="card-nome">Auto Pausas</span>
-        <span class="card-desc">Tira as pausas e os respiros da gravação bruta, sempre com a mesma margem.</span>
-      </span>
-      <span class="mapa" aria-hidden="true"
-        data-trilhas="V1 ###-###-##-####-###-##|A1 ###-###-##-####-###-##"></span>
-    </div>
-
-    <div id="cardBroll" class="card card-broll" role="button" tabindex="0" aria-label="Abrir Auto B-roll">
-      <span class="card-texto">
-        <span class="card-nome">Auto B-roll</span>
-        <span class="card-desc">Coloca B-rolls da biblioteca onde a fala pede e aprende com o que você mantém.</span>
-      </span>
-      <span class="mapa" aria-hidden="true"
-        data-trilhas="V2 --###-----##----###---|V1 ======================|A3 --###-----##----###---"></span>
-    </div>
-
-    <div id="cardCaptions" class="card card-captions" role="button" tabindex="0" aria-label="Abrir Pro Captions">
-      <span class="card-texto">
-        <span class="card-nome">Pro Captions</span>
-        <span class="card-desc">Gera as legendas a partir da fala, com os preços numa faixa separada.</span>
-      </span>
-      <span class="mapa" aria-hidden="true"
-        data-trilhas="C2 -------##------##-----|C1 ##-###-##-####-##-###-|V1 ======================"></span>
-    </div>
-
-    <div id="cardAutosplit" class="card card-autosplit" role="button" tabindex="0" aria-label="Abrir Auto Split">
-      <span class="card-texto">
-        <span class="card-nome">Auto Split</span>
-        <span class="card-desc">Fecha a edição com a tela dividida: cada B-roll enquadrado na metade de baixo.</span>
-      </span>
-      <span class="mapa" aria-hidden="true"
-        data-trilhas="V2 --###-----##----###---|V1 ======================"></span>
-    </div>
+       na sequencia, - = vazio. A cor vem da faixa (data-faixa) ou do card. -->
+  <div id="cardEditar" class="heroi" role="button" tabindex="0" aria-label="Abrir Editar">
+    <span class="heroi-cima">
+      <span class="heroi-nome">Editar</span>
+      <span class="heroi-cta">Abrir</span>
+    </span>
+    <span class="heroi-desc">Um clique na sequência aberta faz a edição inteira, em todas as variações. A fala é transcrita uma vez só.</span>
+    <span class="bolas">
+      <span class="bola-item"><span class="bola" style="background-color: #4ecb8d">✂</span><span class="bola-nome">Pausas</span></span>
+      <span class="bola-item"><span class="bola" style="background-color: #8d82f5">▣</span><span class="bola-nome">B-roll</span></span>
+      <span class="bola-item"><span class="bola" style="background-color: #67c7e2">▤</span><span class="bola-nome">Split</span></span>
+      <span class="bola-item"><span class="bola" style="background-color: #eeab4c">☀</span><span class="bola-nome">Leak</span></span>
+      <span class="bola-item"><span class="bola" style="background-color: #4fc3a1">♪</span><span class="bola-nome">Trilha</span></span>
+      <span class="bola-item"><span class="bola" style="background-color: #eceef2">≡</span><span class="bola-nome">Legendas</span></span>
+    </span>
+    <span class="mapa mapa-heroi" aria-hidden="true"
+      data-trilhas="C2 -------------##---------|C1 ##-###-##-####-##-###-##|V3 -#--#----#---#----#--#--|V2 --###-----###----###----|V1 ========================|A2 ########################"></span>
   </div>
 
-  <div class="grupo">
-    <p class="grupo-nome">Podcast</p>
+  <p class="grupo-nome">Ferramentas avulsas</p>
 
-    <div id="cardAutocut" class="card card-autocut" role="button" tabindex="0" aria-label="Abrir Podcast AutoCut">
-      <span class="card-texto">
-        <span class="card-nome">Podcast AutoCut</span>
-        <span class="card-desc">Corta pela voz, trocando para a câmera e o microfone de quem está falando.</span>
-      </span>
-      <span class="mapa" aria-hidden="true"
-        data-trilhas="V2 #####-----###----#####|V1 -----#####---####-----|A2 #####-----###----#####|A1 -----#####---####-----"></span>
-    </div>
+  <div id="cardPausas" class="card card-pausas" role="button" tabindex="0" aria-label="Abrir Auto Pausas">
+    <span class="card-ico" style="background-color: #4ecb8d">✂</span>
+    <span class="card-texto">
+      <span class="card-nome">Auto Pausas</span>
+      <span class="card-desc">Tira as pausas e os respiros da gravação bruta, sempre com a mesma margem.</span>
+    </span>
+    <span class="mapa" aria-hidden="true"
+      data-trilhas="V1 ###-###-##-####-###-##|A1 ###-###-##-####-###-##"></span>
+  </div>
+
+  <div id="cardBroll" class="card card-broll" role="button" tabindex="0" aria-label="Abrir Auto B-roll">
+    <span class="card-ico" style="background-color: #8d82f5">▣</span>
+    <span class="card-texto">
+      <span class="card-nome">Auto B-roll</span>
+      <span class="card-desc">Coloca B-rolls da biblioteca onde a fala pede e aprende com o que você mantém.</span>
+    </span>
+    <span class="mapa" aria-hidden="true"
+      data-trilhas="V2 --###-----##----###---|V1 ======================|A3 --###-----##----###---"></span>
+  </div>
+
+  <div id="cardCaptions" class="card card-captions" role="button" tabindex="0" aria-label="Abrir Pro Captions">
+    <span class="card-ico" style="background-color: #eceef2">≡</span>
+    <span class="card-texto">
+      <span class="card-nome">Pro Captions</span>
+      <span class="card-desc">Gera as legendas a partir da fala, com os preços numa faixa separada.</span>
+    </span>
+    <span class="mapa" aria-hidden="true"
+      data-trilhas="C2 -------##------##-----|C1 ##-###-##-####-##-###-|V1 ======================"></span>
+  </div>
+
+  <div id="cardAutosplit" class="card card-autosplit" role="button" tabindex="0" aria-label="Abrir Auto Split">
+    <span class="card-ico" style="background-color: #67c7e2">▤</span>
+    <span class="card-texto">
+      <span class="card-nome">Auto Split</span>
+      <span class="card-desc">Fecha a edição com a tela dividida, cada B-roll enquadrado na sua metade. Também faz o quadrado 1:1.</span>
+    </span>
+    <span class="mapa" aria-hidden="true"
+      data-trilhas="V2 --###-----##----###---|V1 ======================"></span>
+  </div>
+
+  <p class="grupo-nome">Podcast</p>
+
+  <div id="cardAutocut" class="card card-autocut" role="button" tabindex="0" aria-label="Abrir Podcast AutoCut">
+    <span class="card-ico" style="background-color: #4fc3a1">◉</span>
+    <span class="card-texto">
+      <span class="card-nome">Podcast AutoCut</span>
+      <span class="card-desc">Corta pela voz, trocando para a câmera e o microfone de quem está falando.</span>
+    </span>
+    <span class="mapa" aria-hidden="true"
+      data-trilhas="V2 #####-----###----#####|V1 -----#####---####-----|A2 #####-----###----#####|A1 -----#####---####-----"></span>
   </div>
 
   <p class="hall-nota">
-    As miniaturas mostram a sequência aberta no Premiere: em cinza o que já está nela, em cor o que a ferramenta faz.
+    As miniaturas mostram o que cada ferramenta faz na sequência: em cinza o que já está nela, em cor o que ela coloca.
   </p>
 </main>

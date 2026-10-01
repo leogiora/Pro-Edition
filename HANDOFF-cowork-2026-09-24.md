@@ -83,6 +83,11 @@ inteira. Os símbolos das etapas são caracteres (✂ ▣ ▤ ☀ ♪ ≡), porq
 tem a fonte de ícones. Conferido no navegador com o código real e um Premiere
 falso. Falta abrir no Premiere.
 
+**Tela inicial no mesmo estilo (01/10, pedido do Leo):**
+- o Editar virou um card em destaque, com borda azul, botão "Abrir", as seis etapas em bolinhas e a timeline nas cores da tela dele;
+- as ferramentas avulsas ganharam a bolinha com a cor da etapa delas no Editar;
+- a miniatura pinta cada faixa com a cor da timeline do Editar (`data-faixa` em `desenharTrilhas()`).
+
 - **Legenda (Pro Captions + ElevenLabs):** pronta no código, inclusive a
   segmentação no estilo do Leo (`segmentar.ts` + `maxPalavras: 3` no
   `PRESET_ELEVENLABS`). Sete gravações de tela dele editando o Andro 19.09

@@ -45,7 +45,7 @@ export function desenharTrilhas(notacao: string): string {
         return `<span class="seg seg-${tipo}" style="flex-grow: ${trecho.length}"></span>`;
       });
       return (
-        `<span class="trilha"><span class="trilha-rotulo">${rotulo}</span>` +
+        `<span class="trilha" data-faixa="${rotulo}"><span class="trilha-rotulo">${rotulo}</span>` +
         `<span class="trilha-faixa">${segmentos.join("")}</span></span>`
       );
     })
