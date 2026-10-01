@@ -58,6 +58,12 @@ const MATCH_MOTION = "AE.ADBE Motion";
  *    isso aplicar sao DUAS transacoes: anexar, depois setar.
  */
 const MATCH_EFEITO = "AE.Impact_Crop_FX";
+/**
+ * O Crop nativo do Premiere. Um split antigo (escala 150, centro, Crop Top 50)
+ * fica nele; somado ao Rounded Crop novo, o B-roll virava uma faixa fina no pe
+ * da tela (PROVA Pro Edition, 01/10). O enquadramento novo substitui o velho.
+ */
+const MATCH_CROP_NATIVO = "AE.ADBE AECrop";
 const PARAM_TOPO = "Top";
 const PARAM_BASE = "Bottom";
 const PARAM_FEATHER = "Feather";
@@ -382,6 +388,7 @@ export async function aplicarSplit(opcoes: OpcoesSplit): Promise<ResultadoSplit>
   const conferidos: string[] = [];
   let jaTinham = 0;
   let posicionados = 0;
+  let cropsTirados = 0;
 
   for (const it of plano.itens) {
     const item = await acharItem(await itensDaFaixa(sequence, it.videoTrackIndex), it.sourceName, it.startSeconds);
@@ -409,6 +416,12 @@ export async function aplicarSplit(opcoes: OpcoesSplit): Promise<ResultadoSplit>
       }
       return pos.createSetValueAction(pos.createKeyframe(ponto), true);
     });
+
+    const cropVelho = await acharComponente(chain, MATCH_CROP_NATIVO);
+    if (cropVelho) {
+      acoes1.push(() => chain.createRemoveComponentAction(cropVelho));
+      cropsTirados++;
+    }
 
     const existente = await acharComponente(chain, MATCH_EFEITO);
     if (existente && !opcoes.refazer) {
@@ -451,6 +464,7 @@ export async function aplicarSplit(opcoes: OpcoesSplit): Promise<ResultadoSplit>
   linhas.push(`${posicionados} B-rolls posicionados na caixa ${caixa}.`);
   for (const c of conferidos) linhas.push(`   ${c}`);
   if (jaTinham > 0) linhas.push(`${jaTinham} ja tinham o Rounded Crop (pulados; marque "Refazer do zero" pra refazer).`);
+  if (cropsTirados > 0) linhas.push(`${cropsTirados} tinham o Crop do Premiere de um split antigo: tirado, senao os dois cortes somam.`);
 
   // --- transacao 2: setar Top/Feather/Roundness dos efeitos recem-anexados
   if (paraSetar.length > 0) {
@@ -608,8 +622,10 @@ export async function aplicarQuadrado(): Promise<ResultadoSplit> {
     const nova = cobrirQuadrado(Q, b.geom.w, b.geom.h, SOBRA_QUADRADO);
     acoesB.push(() => escala.createSetValueAction(escala.createKeyframe(nova), true));
     acoesB.push(() => pos.createSetValueAction(pos.createKeyframe(posicaoNormalizada(Q / 2, Q / 2, Q, Q).ponto), true));
-    const corte = await acharComponente(chain, MATCH_EFEITO);
-    if (corte) semCorte.push(() => chain.createRemoveComponentAction(corte));
+    for (const match of [MATCH_EFEITO, MATCH_CROP_NATIVO]) {
+      const corte = await acharComponente(chain, match);
+      if (corte) semCorte.push(() => chain.createRemoveComponentAction(corte));
+    }
   }
   if (acoesB.length > 0) {
     comTransacao(project as never, `Quadrado: ${acoesB.length / 2} B-rolls`, (add) => {
@@ -621,7 +637,7 @@ export async function aplicarQuadrado(): Promise<ResultadoSplit> {
       for (const a of semCorte) add(a());
     });
   }
-  linhas.push(`B-roll: ${acoesB.length / 2} cobrindo o quadrado com ${Math.round((SOBRA_QUADRADO - 1) * 100)}% de sobra, ${semCorte.length} sem o Rounded Crop.`);
+  linhas.push(`B-roll: ${acoesB.length / 2} cobrindo o quadrado com ${Math.round((SOBRA_QUADRADO - 1) * 100)}% de sobra, ${semCorte.length} corte(s) do split tirado(s).`);
   linhas.push(...plano.linhas.filter((l) => /intocados|^\s{3}/.test(l)));
 
   await writeJson("ultimo-log-autosplit.json", { quando: Date.now(), linhas });
