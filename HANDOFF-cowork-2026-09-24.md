@@ -83,6 +83,24 @@ inteira. Os símbolos das etapas são caracteres (✂ ▣ ▤ ☀ ♪ ≡), porq
 tem a fonte de ícones. Conferido no navegador com o código real e um Premiere
 falso. Falta abrir no Premiere.
 
+**Teste de fogo no Premiere 2025 (01/10, Claude no PC do Leo):**
+
+Achados e correções:
+- **Ícones:** o ✂ virava emoji, então todos os ícones viraram caixas de CSS (`icone()` em `shell.ts`), no Editar e no hall.
+- **Etapa desligada:** não mudava nada, porque o UXP ignora `opacity`. Agora fica cinza explícito.
+- **Clique:** todo clique acende o que foi tocado (`data-apertado`).
+- **Etapa da vez:** pulsa por JS (o UXP não garante animação CSS) e fica 0,3 s à vista.
+- **Andamento:** o motivo da parada quebra linha, com a dica "Desligue Pausas" quando a A1 não acompanha a V1.
+- **Registro completo:** rola até aparecer.
+- **Cursor:** virou uma linha vermelha.
+- **O que já estava na sequência:** B-rolls, leaks e música na A2 entram no desenho antes e depois do Editar (`jaNaTimeline`).
+- **Mensagem de áudio mudo:** cita mídia offline.
+
+Rodado na `PROVA Pro Edition` da cópia de teste (Split, Leak e Trilha, sem
+ElevenLabs), fechada sem salvar. O "Projeto Base" do Leo estava com mídia
+offline e A1 separada da V1: o Editar recusou com a mensagem certa, sem mexer
+em nada.
+
 **Tela inicial no mesmo estilo (01/10, pedido do Leo):**
 - o Editar virou um card em destaque, com borda azul, botão "Abrir", as seis etapas em bolinhas e a timeline nas cores da tela dele;
 - as ferramentas avulsas ganharam a bolinha com a cor da etapa delas no Editar;

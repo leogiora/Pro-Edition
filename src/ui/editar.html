@@ -138,12 +138,10 @@
     color: #9098a6;
   }
 
+  /* Quebra linha: e aqui que aparece o motivo quando o Editar para. */
   .prog-txt {
     flex: 1 1 auto;
     min-width: 0;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
   }
 
   .prog-cont {
@@ -379,9 +377,18 @@
   .tl-C1 { background-color: #eceef2; border-right: 1px solid #101318; }
   .tl-C2 { background-color: #ff7d71; }
 
+  /* Linha vermelha do comeco ate o cursor: no Premiere, so o cursor era um
+     ponto que ninguem via. */
   .tl-regua {
+    align-items: center;
     height: 10px;
     background-color: transparent;
+  }
+
+  #edReguaAntes {
+    height: 3px;
+    border-radius: 2px;
+    background-color: #ff7d71;
   }
 
   .tl-cursor {

@@ -122,6 +122,33 @@ export interface EstadoSequencia {
   readonly temChave: boolean;
 }
 
+/**
+ * O que ja esta na sequencia acima da V1 e na faixa da trilha, para o painel
+ * desenhar junto com o que o Editar poe. Falhar aqui so tira o desenho.
+ */
+async function jaNaTimeline(
+  vars: readonly Variacao[],
+  fps: number
+): Promise<{ acima: number; brolls: Array<{ inicio: number; fim: number; nome: string }>; leaks: number[]; trilha: Variacao[] }> {
+  try {
+    const acima = await comLimite("B-rolls", lerBrollsAcimaDeV1(), 10000);
+    const sequence = await (await ppro.Project.getActiveProject()).getActiveSequence();
+    const musica = await Promise.all(
+      (await itensDa(sequence, false, FAIXA_TRILHA)).map(async (i) => ({ inicio: (await i.getStartTime()).seconds, fim: (await i.getEndTime()).seconds }))
+    );
+    return {
+      acima: acima.length,
+      brolls: acima
+        .filter((c) => !ehLeak(c) && ehVideo(c.sourceName))
+        .map((c) => ({ inicio: c.startSeconds, fim: c.endSeconds, nome: conceito(c.sourceName) })),
+      leaks: acima.filter(ehLeak).map((c) => c.startSeconds),
+      trilha: vars.filter((v) => musica.some((m) => m.inicio < v.fimQ / fps && v.inicioQ / fps < m.fim)),
+    };
+  } catch {
+    return { acima: 0, brolls: [], leaks: [], trilha: [] };
+  }
+}
+
 /** O que o painel mostra ao abrir: le a sequencia, nao mexe em nada. */
 export async function lerEstado(): Promise<EstadoSequencia> {
   const s = await comLimite("ler a sequência", lerSequencia(false), 20000);
@@ -135,7 +162,7 @@ export async function lerEstado(): Promise<EstadoSequencia> {
     // Contar legenda e enfeite: sem isto o estado continua valendo.
   }
   const vars = variacoes(clipes, s.fps);
-  const acima = await comLimite("B-rolls", lerBrollsAcimaDeV1(), 10000);
+  const ja = await jaNaTimeline(vars, s.fps);
   return {
     nome: s.info.name,
     duracaoS: Math.max(...clipes.map((c) => c.fimQ)) / s.fps,
@@ -143,15 +170,13 @@ export async function lerEstado(): Promise<EstadoSequencia> {
     variacoes: vars.length,
     resumo: resumoPorVariacao(vars, [], s.fps, {
       clipes: clipes.map((c) => ({ inicio: c.inicioQ / s.fps, fim: c.fimQ / s.fps })),
-      brolls: acima
-        .filter((c) => !ehLeak(c) && ehVideo(c.sourceName))
-        .map((c) => ({ inicio: c.startSeconds, fim: c.endSeconds, nome: conceito(c.sourceName) })),
-      leaks: acima.filter(ehLeak).map((c) => c.startSeconds),
+      brolls: ja.brolls,
+      leaks: ja.leaks,
       blocos: [],
       palavras: [],
-      trilha: [],
+      trilha: ja.trilha,
     }),
-    brollsAcimaDaV1: acima.length,
+    brollsAcimaDaV1: ja.acima,
     faixasDeLegenda,
     temChave: (await comLimite("chave", lerChaveElevenLabs(), 5000)) !== null,
   };
@@ -609,9 +634,11 @@ export async function editar(
   const originais = clipesEmQuadros(s);
   registrar(`${s.info.name}: ${s.v1.length} clipe(s) na V1, ${variacoes(originais, fps).length} variação(ões)`, "passo");
 
-  // O que ja esta na timeline, para o painel redesenhar a cada etapa.
+  // O que ja estava (base) mais o que o Editar poe, para o painel redesenhar a
+  // cada etapa. Sem a base, o B-roll que o Leo ja tinha sumia do desenho.
   let palavras: readonly PalavraEditada[] = [];
   let clipesDepois: ReadonlyArray<{ inicioQ: number; fimQ: number }> = originais;
+  let base = await jaNaTimeline(variacoes(originais, fps), fps);
   let brolls: Array<{ inicio: number; fim: number; nome: string }> = [];
   let leaks: number[] = [];
   let comTrilha: Variacao[] = [];
@@ -620,11 +647,11 @@ export async function editar(
     aoVivo?.variacoes(
       resumoPorVariacao(variacoes(clipesDepois, fps), variacoes(originais, fps), fps, {
         clipes: clipesDepois.map((c) => ({ inicio: c.inicioQ / fps, fim: c.fimQ / fps })),
-        brolls,
-        leaks,
+        brolls: [...base.brolls, ...brolls],
+        leaks: [...base.leaks, ...leaks],
         blocos,
         palavras,
-        trilha: comTrilha,
+        trilha: [...base.trilha, ...comTrilha],
       })
     );
 
@@ -643,6 +670,8 @@ export async function editar(
       return null;
     } finally {
       mostrar();
+      // Etapa que roda num piscar (split, trilha) passava sem o Leo ver: 0,3 s de vitrine.
+      await new Promise((r) => setTimeout(r, 300));
     }
   };
 
@@ -681,6 +710,7 @@ export async function editar(
         palavras = moverPalavras(palavras, r.pedacos, fps);
         cortes = cortesDosPedacos(r.pedacos, fps);
         clipesDepois = r.pedacos.map((p) => ({ inicioQ: p.destinoQ, fimQ: p.destinoQ + p.midiaAteQ - p.midiaDeQ }));
+        base = await jaNaTimeline(variacoes(clipesDepois, fps), fps); // o corte mexeu no tempo de tudo
         aoVivo?.etapa("pausas", certo ? "ok" : "aviso", `${plano.cortes.length} cortes · ${relogio(duracaoQ / fps)} → ${relogio(r.totalQ / fps)}`);
       }
     } catch (e) {

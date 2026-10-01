@@ -510,7 +510,9 @@ export function mount(root: HTMLElement): void {
         const m = (erro as Error)?.message ?? String(erro);
         registrar(m, "erro");
         pill("falhou", "erro");
-        pega("edProg").textContent = `Parou: ${m}`;
+        // O Auto Pausas recusa audio separado do video; o resto do Editar roda sem ele.
+        const dica = ativo.pausas && /clipe a clipe/.test(m) ? " Desligue Pausas para editar o resto." : "";
+        pega("edProg").textContent = `Parou: ${m}${dica}`;
       })
       .finally(() => {
         ocupado = false;
