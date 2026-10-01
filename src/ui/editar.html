@@ -174,6 +174,146 @@
     color: #9098a6;
   }
 
+  /* Timeline viva da variacao escolhida + a tela 9:16 do cursor. Tudo flex:
+     cada faixa e uma fileira de pedacos com flex-grow (segmentos() em shell.ts). */
+  .tl-caixa {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    margin-top: 8px;
+  }
+
+  .tl {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .tl-linha {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    margin: 2px 0;
+  }
+
+  .tl-rot {
+    flex: none;
+    width: 20px;
+    font-size: 10px;
+    color: #5f6774;
+  }
+
+  .tl-faixa {
+    display: flex;
+    flex-direction: row;
+    flex: 1 1 auto;
+    min-width: 0;
+    height: 9px;
+    border-radius: 2px;
+    overflow: hidden;
+    background-color: #101318;
+  }
+
+  .tl-seg {
+    flex-basis: 0px;
+    min-width: 0;
+    height: 9px;
+    cursor: pointer;
+  }
+
+  .tl-V1 { background-color: #5f6774; border-right: 1px solid #101318; }
+  .tl-V2 { background-color: #8d82f5; }
+  .tl-V3 { background-color: #eeab4c; }
+  .tl-A2 { background-color: #4fc3a1; }
+  .tl-C1 { background-color: #eceef2; border-right: 1px solid #101318; }
+  .tl-C2 { background-color: #ff7d71; }
+
+  .tl-regua {
+    height: 6px;
+    background-color: transparent;
+  }
+
+  .tl-cursor {
+    flex: none;
+    width: 2px;
+    height: 6px;
+    background-color: #ff7d71;
+  }
+
+  .tl-ctrl {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    margin-top: 5px;
+    font-size: 11px;
+    color: #9098a6;
+  }
+
+  .tl-play {
+    flex: none;
+    padding: 2px 9px;
+    margin-right: 8px;
+    border: 1px solid #333b47;
+    border-radius: 10px;
+    color: #eceef2;
+    cursor: pointer;
+  }
+
+  .tela {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    flex: none;
+    width: 72px;
+    height: 128px;
+    margin-left: 10px;
+    border: 2px solid #232830;
+    border-radius: 8px;
+    overflow: hidden;
+    background-color: #000000;
+  }
+
+  .tela[data-leak="sim"] {
+    border-color: #eeab4c;
+  }
+
+  .tela-parte {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    flex-basis: 0px;
+    min-height: 0;
+    overflow: hidden;
+    font-size: 10px;
+    text-align: center;
+  }
+
+  .tela-parte[data-tipo="doutor"] {
+    background-color: #262b34;
+    color: #9098a6;
+  }
+
+  .tela-parte[data-tipo="broll"] {
+    background-color: #2b2650;
+    color: #cecbf6;
+  }
+
+  .tela-leg {
+    margin-top: 6px;
+    min-height: 16px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #eceef2;
+    text-align: center;
+  }
+
+  .tela-leg[data-preco="sim"] {
+    color: #ff7d71;
+  }
+
   .log {
     height: 160px;
     margin: 0;
@@ -255,6 +395,23 @@
       </div>
       <div id="edGrade" class="grade"></div>
       <div id="edVarDetalhe" class="var-detalhe">Clique numa variação para ver o que entrou nela.</div>
+      <div class="tl-caixa">
+        <div class="tl">
+          <div class="tl-linha"><span class="tl-rot"></span><div class="tl-faixa tl-regua"><span id="edReguaAntes" style="flex-grow: 0"></span><span class="tl-cursor"></span><span id="edReguaDepois" style="flex-grow: 1"></span></div></div>
+          <div class="tl-linha"><span class="tl-rot">C2</span><div id="edTl_C2" class="tl-faixa"></div></div>
+          <div class="tl-linha"><span class="tl-rot">C1</span><div id="edTl_C1" class="tl-faixa"></div></div>
+          <div class="tl-linha"><span class="tl-rot">V3</span><div id="edTl_V3" class="tl-faixa"></div></div>
+          <div class="tl-linha"><span class="tl-rot">V2</span><div id="edTl_V2" class="tl-faixa"></div></div>
+          <div class="tl-linha"><span class="tl-rot">V1</span><div id="edTl_V1" class="tl-faixa"></div></div>
+          <div class="tl-linha"><span class="tl-rot">A2</span><div id="edTl_A2" class="tl-faixa"></div></div>
+          <div class="tl-ctrl"><span id="edPlay" class="tl-play" role="button" tabindex="0">▶</span><span id="edTempo">a timeline aparece quando o Editar rodar</span></div>
+        </div>
+        <div id="edTela" class="tela">
+          <div id="edTelaA" class="tela-parte" data-tipo="doutor" style="flex-grow: 1">doutor</div>
+          <div id="edTelaB" class="tela-parte" data-tipo="broll" style="flex-grow: 0"></div>
+        </div>
+      </div>
+      <div id="edTelaLeg" class="tela-leg"></div>
     </div>
   </section>
 

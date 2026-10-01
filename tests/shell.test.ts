@@ -1,7 +1,18 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
-import { desenharTrilhas, escolherTela, extrairCorpo, type Tela } from "../src/shell.ts";
+import { desenharTrilhas, escolherTela, extrairCorpo, segmentos, type Tela } from "../src/shell.ts";
+
+test("segmentos: vazio e item alternam; sobreposto comeca onde o anterior acaba; passa do fim e aparado", () => {
+  assert.deepEqual(segmentos([{ de: 2, ate: 4 }, { de: 1, ate: 1.5 }, { de: 3.5, ate: 12 }], 10), [
+    { grow: 100, de: 0, item: -1 },
+    { grow: 50, de: 1, item: 1 },
+    { grow: 50, de: 1.5, item: -1 },
+    { grow: 200, de: 2, item: 0 },
+    { grow: 600, de: 4, item: 2 },
+  ]);
+  assert.deepEqual(segmentos([], 3), [{ grow: 300, de: 0, item: -1 }]);
+});
 
 test("escolherTela devolve a tela certa do registro", () => {
   const semAcao = () => {};

@@ -372,7 +372,7 @@ async function colocarBroll(
   nomeSequencia: string,
   registrar: Registrar,
   progresso: (t: string) => void
-): Promise<Feito & { inicios: number[] }> {
+): Promise<Feito & { trechos: Array<{ inicio: number; fim: number; nome: string }> }> {
   const config = parseConfig(await comLimite("ler config", readJson("config.json"), 5000));
   if (!config.libraryPath) throw new Error("Pasta de B-rolls não configurada. Abra o Auto B-roll uma vez e escolha a pasta.");
   usarSinonimos(parseSinonimos(await comLimite("ler sinônimos", readJson("sinonimos.json"), 5000)) ?? SINONIMOS_PADRAO);
@@ -406,7 +406,7 @@ async function colocarBroll(
   if (aparados > 0) registrar(`${aparados} B-roll(s) aparados para terminar junto com o vídeo`, "passo");
   if (entram.length === 0) {
     registrar("nenhum B-roll bom o bastante para entrar sozinho", "aviso");
-    return { resumo: "nenhum entrou", aviso: true, inicios: [] };
+    return { resumo: "nenhum entrou", aviso: true, trechos: [] };
   }
 
   progresso(`colocando ${entram.length} B-rolls`);
@@ -434,7 +434,11 @@ async function colocarBroll(
     })
   );
   registrar(`${entram.length} B-rolls na V${config.videoTrackIndex + 1}`, "ok");
-  return { resumo: `${entram.length} na V${config.videoTrackIndex + 1}`, aviso: feito.avisos.length > 0, inicios: entram.map((c) => c.inicio) };
+  return {
+    resumo: `${entram.length} na V${config.videoTrackIndex + 1}`,
+    aviso: feito.avisos.length > 0,
+    trechos: entram.map((c) => ({ inicio: c.inicio, fim: c.inicio + c.duracao, nome: c.conceito || c.arquivo })),
+  };
 }
 
 // -------------------------------------------------------------- light leak
@@ -496,7 +500,7 @@ const FAIXA_TRILHA = 1;
  * clone leva o ganho e o trecho da musica. Depois o fim vai para o fim de cada
  * variacao.
  */
-async function colocarTrilha(vars: readonly Variacao[], fps: number, registrar: Registrar): Promise<Feito> {
+async function colocarTrilha(vars: readonly Variacao[], fps: number, registrar: Registrar): Promise<Feito & { com: Variacao[] }> {
   const project = await ppro.Project.getActiveProject();
   const sequence = await project.getActiveSequence();
   const ler = async () =>
@@ -511,13 +515,14 @@ async function colocarTrilha(vars: readonly Variacao[], fps: number, registrar: 
   const modelo = naFaixa[0];
   if (modelo === undefined) {
     registrar(`trilha: ponha a música embaixo de uma variação na A${FAIXA_TRILHA + 1} e o Editar copia para as outras`, "aviso");
-    return { resumo: `sem música na A${FAIXA_TRILHA + 1}`, aviso: true };
+    return { resumo: `sem música na A${FAIXA_TRILHA + 1}`, aviso: true, com: [] };
   }
   const { entram, pulam } = trilhaFaltando(vars, fps, naFaixa, modelo.fim - modelo.inicio);
+  const com = vars.filter((v) => !pulam.includes(v));
   for (const v of pulam) registrar(`  trilha: ${relogio(v.inicioQ / fps)} ficou de fora (a cópia cairia na música da variação seguinte)`, "aviso");
   if (entram.length === 0) {
     if (pulam.length === 0) registrar("trilha: toda variação já tem", "passo");
-    return pulam.length === 0 ? { resumo: "toda variação já tem" } : { resumo: `${pulam.length} ficaram de fora`, aviso: true };
+    return pulam.length === 0 ? { resumo: "toda variação já tem", com } : { resumo: `${pulam.length} ficaram de fora`, aviso: true, com };
   }
 
   const editor = await ppro.SequenceEditor.getEditor(sequence);
@@ -540,7 +545,7 @@ async function colocarTrilha(vars: readonly Variacao[], fps: number, registrar: 
     `trilha em ${fins.length} de ${entram.length} variação(ões) na A${FAIXA_TRILHA + 1}, cópia da que já estava`,
     fins.length === entram.length ? "ok" : "aviso"
   );
-  return { resumo: `${fins.length} variações`, aviso: fins.length < entram.length || pulam.length > 0 };
+  return { resumo: `${fins.length} variações`, aviso: fins.length < entram.length || pulam.length > 0, com };
 }
 
 // ---------------------------------------------------------------- legendas
@@ -594,6 +599,25 @@ export async function editar(
   const originais = clipesEmQuadros(s);
   registrar(`${s.info.name}: ${s.v1.length} clipe(s) na V1, ${variacoes(originais, fps).length} variação(ões)`, "passo");
 
+  // O que ja esta na timeline, para o painel redesenhar a cada etapa.
+  let palavras: readonly PalavraEditada[] = [];
+  let clipesDepois: ReadonlyArray<{ inicioQ: number; fimQ: number }> = originais;
+  let brolls: Array<{ inicio: number; fim: number; nome: string }> = [];
+  let leaks: number[] = [];
+  let comTrilha: Variacao[] = [];
+  let blocos: ReturnType<typeof gerarBlocos> = [];
+  const mostrar = () =>
+    aoVivo?.variacoes(
+      resumoPorVariacao(variacoes(clipesDepois, fps), variacoes(originais, fps), fps, {
+        clipes: clipesDepois.map((c) => ({ inicio: c.inicioQ / fps, fim: c.fimQ / fps })),
+        brolls,
+        leaks,
+        blocos,
+        palavras,
+        trilha: comTrilha,
+      })
+    );
+
   // Cada etapa avisa o painel; a que falha fica marcada e as outras seguem.
   const etapa = async <T extends Feito>(id: Etapa, rotulo: string, fazer: () => Promise<T>): Promise<T | null> => {
     progresso(rotulo.toLowerCase());
@@ -607,6 +631,8 @@ export async function editar(
       registrar(`${rotulo}: ${m}`, "erro");
       aoVivo?.etapa(id, "erro", m);
       return null;
+    } finally {
+      mostrar();
     }
   };
 
@@ -617,9 +643,9 @@ export async function editar(
   registrar(`empresa: ${EMPRESAS[empresa].nome} (termos do ElevenLabs e da legenda)`, "passo");
   const fala: Fala =
     opcoes.pausas || opcoes.broll || opcoes.legendas ? await ouvirSequencia(preset, registrar, progresso) : { palavras: [], db: [] };
-  let palavras = fala.palavras;
+  palavras = fala.palavras;
   let cortes = originais.slice(1).map((c) => c.inicioQ / fps);
-  let clipesDepois: ReadonlyArray<{ inicioQ: number; fimQ: number }> = originais;
+  mostrar();
 
   // 3. Auto Pausas. Erro aqui para tudo: as outras etapas dependem do corte.
   if (opcoes.pausas) {
@@ -651,13 +677,14 @@ export async function editar(
       aoVivo?.etapa("pausas", "erro", (e as Error)?.message ?? String(e));
       throw e;
     }
+    mostrar();
   }
   const vars = variacoes(clipesDepois, fps);
 
   // 4. Auto B-roll.
-  const broll = opcoes.broll
-    ? await etapa("broll", "B-roll", () => colocarBroll(palavras, vars, fps, s.info.name, registrar, progresso))
-    : null;
+  if (opcoes.broll) {
+    brolls = (await etapa("broll", "B-roll", () => colocarBroll(palavras, vars, fps, s.info.name, registrar, progresso)))?.trechos ?? [];
+  }
 
   // 5. Auto Split.
   if (opcoes.split) {
@@ -670,23 +697,33 @@ export async function editar(
     });
   }
 
-  // 5b. Light leak nas trocas doutor <-> B-roll.
-  const leaks = opcoes.leak ? await etapa("leak", "Light leak", () => colocarLeaks(vars, fps, registrar)) : null;
+  // 5b. Light leak nas trocas doutor <-> B-roll. Etapa grava antes do finally redesenhar.
+  if (opcoes.leak) {
+    await etapa("leak", "Light leak", async () => {
+      const r = await colocarLeaks(vars, fps, registrar);
+      leaks = r.inicios;
+      return r;
+    });
+  }
 
   // 5c. Trilha: a musica de uma variacao copiada para as outras.
-  if (opcoes.trilha) await etapa("trilha", "Trilha", () => colocarTrilha(vars, fps, registrar));
+  if (opcoes.trilha) {
+    await etapa("trilha", "Trilha", async () => {
+      const r = await colocarTrilha(vars, fps, registrar);
+      comTrilha = r.com;
+      return r;
+    });
+  }
 
   // 6. Legendas por ultimo: a timeline ja esta no formato final.
-  const legendas = opcoes.legendas ? await etapa("legendas", "Legendas", () => colocarLegendas(palavras, cortes, preset, registrar)) : null;
+  if (opcoes.legendas) {
+    await etapa("legendas", "Legendas", async () => {
+      const r = await colocarLegendas(palavras, cortes, preset, registrar);
+      blocos = r.blocos;
+      return r;
+    });
+  }
 
-  aoVivo?.variacoes(
-    resumoPorVariacao(vars, variacoes(originais, fps), fps, {
-      brolls: broll?.inicios ?? [],
-      leaks: leaks?.inicios ?? [],
-      blocos: legendas?.blocos ?? [],
-      palavras,
-    })
-  );
   registrar(`pronto em ${((Date.now() - t0) / 1000).toFixed(0)} s`, "ok");
   return true;
 }

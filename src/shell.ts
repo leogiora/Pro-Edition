@@ -52,6 +52,35 @@ export function desenharTrilhas(notacao: string): string {
     .join("");
 }
 
+/** Pedaco de uma faixa da timeline viva: `item` -1 e vazio. */
+export interface Segmento {
+  readonly grow: number;
+  readonly de: number;
+  readonly item: number;
+}
+
+/**
+ * A faixa da timeline viva como a miniatura do hall: pedacos com flex-grow,
+ * sem largura em %. `grow` em centesimos de segundo, inteiro como no hall. O
+ * que encosta no anterior comeca onde ele acaba; o que passa de `dur` e aparado.
+ */
+export function segmentos(itens: ReadonlyArray<{ readonly de: number; readonly ate: number }>, dur: number): Segmento[] {
+  const saida: Segmento[] = [];
+  const cs = (s: number): number => Math.round(s * 100);
+  let t = 0;
+  const ordem = itens.map((x, item) => ({ ...x, item })).sort((a, b) => a.de - b.de);
+  for (const x of ordem) {
+    const de = Math.max(x.de, t);
+    const ate = Math.min(x.ate, dur);
+    if (cs(ate) <= cs(de)) continue;
+    if (cs(de) > cs(t)) saida.push({ grow: cs(de) - cs(t), de: t, item: -1 });
+    saida.push({ grow: cs(ate) - cs(de), de, item: x.item });
+    t = ate;
+  }
+  if (cs(dur) > cs(t)) saida.push({ grow: cs(dur) - cs(t), de: t, item: -1 });
+  return saida;
+}
+
 /**
  * Extrai o miolo do <body> de um painel standalone (ferramentas/auto-broll ou
  * ferramentas/pro-captions) para injetar em document.body do shell — nunca o documento

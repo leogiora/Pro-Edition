@@ -121,44 +121,64 @@ export function trilhaFaltando(
 /** Fala que acaba isto antes do fim da variacao vira aviso (audio mudo no Andro 19.09, variacoes 11-20). */
 export const FALA_SOME_S = 3;
 
-/** O que o painel mostra de cada variacao depois do Editar. */
+/** Um item da timeline, em segundos desde o inicio da variacao. */
+export interface Trecho {
+  readonly de: number;
+  readonly ate: number;
+  /** Conceito do B-roll ou texto da legenda. */
+  readonly nome?: string;
+  readonly preco?: boolean;
+}
+
+/** O que o painel mostra de cada variacao: a timeline dela e os avisos. */
 export interface ResumoVariacao {
   readonly duracaoS: number;
   /** Duracao antes do Auto Pausas; null quando o corte mudou o numero de variacoes. */
   readonly antesS: number | null;
-  readonly brolls: number;
-  readonly leaks: number;
-  readonly legendas: number;
-  readonly precos: number;
+  readonly clipes: readonly Trecho[];
+  readonly brolls: readonly Trecho[];
+  readonly leaks: readonly Trecho[];
+  readonly legendas: readonly Trecho[];
+  readonly trilha: boolean;
   /** Segundos (do inicio da variacao) onde a fala acaba cedo; 0 = sem fala; null = ok ou sem transcricao. */
   readonly falaSomeEmS: number | null;
 }
 
+type Item = { readonly inicio: number; readonly fim: number };
+
+/** Tudo em segundos da sequencia; cada item vai para a variacao onde comeca. */
 export function resumoPorVariacao(
   vars: readonly Variacao[],
   antes: readonly Variacao[],
   fps: number,
   feito: {
-    readonly brolls: readonly number[];
+    readonly clipes: readonly Item[];
+    readonly brolls: ReadonlyArray<Item & { readonly nome: string }>;
     readonly leaks: readonly number[];
-    readonly blocos: ReadonlyArray<{ readonly inicio: number; readonly estilo: string }>;
-    readonly palavras: ReadonlyArray<{ readonly inicio: number; readonly fim: number }>;
+    readonly blocos: ReadonlyArray<Item & { readonly texto: string; readonly estilo: string }>;
+    readonly palavras: readonly Item[];
+    /** Variacoes que tem musica na faixa da trilha. */
+    readonly trilha: readonly Variacao[];
   }
 ): ResumoVariacao[] {
   return vars.map((v, i) => {
     const ini = v.inicioQ / fps;
     const fim = v.fimQ / fps;
     const dentro = (t: number): boolean => t >= ini && t < fim;
+    const trecho = (de: number, ate: number): Trecho => ({ de: de - ini, ate: Math.min(ate, fim) - ini });
     const fala = feito.palavras.filter((p) => dentro(p.inicio));
     const ultima = Math.max(ini, ...fala.map((p) => p.fim));
     const a = antes.length === vars.length ? antes[i]! : null;
     return {
       duracaoS: fim - ini,
       antesS: a ? (a.fimQ - a.inicioQ) / fps : null,
-      brolls: feito.brolls.filter(dentro).length,
-      leaks: feito.leaks.filter(dentro).length,
-      legendas: feito.blocos.filter((b) => b.estilo !== "preco" && dentro(b.inicio)).length,
-      precos: feito.blocos.filter((b) => b.estilo === "preco" && dentro(b.inicio)).length,
+      clipes: feito.clipes.filter((c) => dentro(c.inicio)).map((c) => trecho(c.inicio, c.fim)),
+      brolls: feito.brolls.filter((b) => dentro(b.inicio)).map((b) => ({ ...trecho(b.inicio, b.fim), nome: b.nome })),
+      leaks: feito.leaks.filter(dentro).map((t) => trecho(t, t + LEAK_S)),
+      legendas: feito.blocos
+        .filter((b) => dentro(b.inicio))
+        .map((b) => ({ ...trecho(b.inicio, b.fim), nome: b.texto, preco: b.estilo === "preco" })),
+      trilha: feito.trilha.some((t) => t.inicioQ < v.fimQ && v.inicioQ < t.fimQ),
       falaSomeEmS: feito.palavras.length === 0 || fim - ultima <= FALA_SOME_S ? null : ultima - ini,
     };
   });
