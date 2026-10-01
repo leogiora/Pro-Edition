@@ -191,21 +191,36 @@ export function resumoPorVariacao(
 
 export type Registrar = (texto: string, tipo?: "passo" | "ok" | "aviso" | "erro" | "vazio") => void;
 
-export interface OpcoesEditar {
-  readonly pausas: boolean;
-  readonly broll: boolean;
-  readonly split: boolean;
-  readonly leak: boolean;
-  readonly trilha: boolean;
-  readonly legendas: boolean;
-}
+export type Etapa = "pausas" | "broll" | "split" | "leak" | "trilha" | "legendas";
 
-export type Etapa = keyof OpcoesEditar;
+export type OpcoesEditar = Readonly<Record<Etapa, boolean>> & {
+  /** So as variacoes com algum clipe selecionado na timeline; as outras ficam como estao. */
+  readonly soSelecao?: boolean;
+};
 
 /** A tela acompanha cada etapa e recebe, depois de cada uma, o que caiu em cada variacao. */
 export interface AoVivo {
   etapa(id: Etapa, estado: "rodando" | "ok" | "aviso" | "erro", resumo?: string): void;
   variacoes(lista: readonly ResumoVariacao[]): void;
+  /** Quais variacoes esta edicao vai mexer (indices na grade); todas, se nao for so a selecao. */
+  alvo(indices: readonly number[]): void;
+}
+
+/** Indices das variacoes que tem algum clipe selecionado (tempo em segundos da sequencia). */
+export function variacoesDaSelecao(
+  vars: readonly Variacao[],
+  fps: number,
+  selecao: ReadonlyArray<{ readonly inicio: number; readonly fim: number }>
+): number[] {
+  return vars.flatMap((v, i) => (selecao.some((s) => s.inicio < v.fimQ / fps && v.inicioQ / fps < s.fim) ? [i] : []));
+}
+
+/**
+ * Uma "fala" do tamanho de cada variacao fora da selecao: o Auto Pausas nao
+ * corta dentro de fala, entao essas variacoes passam inteiras pelo corte.
+ */
+export function protegerFora(vars: readonly Variacao[], fps: number, escolhidas: readonly number[]): Array<{ texto: string; inicio: number; fim: number }> {
+  return vars.flatMap((v, i) => (escolhidas.includes(i) ? [] : [{ texto: "", inicio: v.inicioQ / fps, fim: v.fimQ / fps }]));
 }
 
 export interface EstadoSequencia {

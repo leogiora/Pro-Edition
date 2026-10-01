@@ -12,7 +12,7 @@ test("marca: o simbolo do Cutline so com caixas, no tamanho pedido", () => {
 });
 
 test("icone: todo icone e caixa na cor pedida, sem caractere (nada de emoji no UXP)", () => {
-  for (const t of ["pausas", "broll", "split", "leak", "trilha", "legendas", "podcast"] as Icone[]) {
+  for (const t of ["pausas", "broll", "split", "leak", "trilha", "legendas", "podcast", "todas", "selecao", "reler"] as Icone[]) {
     const html = icone(t, "#123456");
     assert.match(html, /#123456/);
     assert.equal(html.replace(/<[^>]*>/g, ""), ""); // so tags, nenhum texto

@@ -52,7 +52,7 @@ export function desenharTrilhas(notacao: string): string {
     .join("");
 }
 
-export type Icone = "pausas" | "broll" | "split" | "leak" | "trilha" | "legendas" | "podcast";
+export type Icone = "pausas" | "broll" | "split" | "leak" | "trilha" | "legendas" | "podcast" | "todas" | "selecao" | "reler";
 
 /**
  * Icones desenhados com caixas, sem fonte nem emoji: o UXP trocava o ✂ por um
@@ -82,6 +82,12 @@ export function icone(tipo: Icone, cor: string): string {
       return coluna(barra(13, 2, "0 0 3px 0") + barra(9, 2, "0"));
     case "podcast": // duas cameras
       return linha(caixa(4, 8, "0 1px") + caixa(4, 8, "0 1px"));
+    case "todas": // as variacoes empilhadas
+      return coluna(barra(12, 3, "0 0 2px 0") + barra(12, 3, "0 0 2px 0") + barra(12, 3, "0"));
+    case "selecao": // uma so, dentro da selecao tracejada
+      return linha(`<span style="display: flex; align-items: center; justify-content: center; width: 9px; height: 9px; border: 1.5px dashed ${cor}; border-radius: 2px">${barra(4, 4, "0")}</span>`);
+    case "reler": // volta: anel aberto
+      return linha(c(`width: 8px; height: 8px; border: 2px solid ${cor}; border-top-color: transparent; border-radius: 6px`));
   }
 }
 

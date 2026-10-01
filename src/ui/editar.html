@@ -640,6 +640,7 @@
 
   .btn-pri[data-apertado="sim"] {
     background-color: #1d4ed8;
+    border-color: #1d4ed8;
   }
 
   .var:hover,
@@ -660,24 +661,70 @@
     background-color: #0d0f13;
   }
 
-  .btn-pri {
+  /* Botoes com icone de caixa (icone() em shell.ts), sem fonte nem emoji. */
+  .btn-pri,
+  .btn-sec {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
     flex: none;
-    padding: 6px 18px;
-    border-radius: 16px;
-    background-color: #3b82f6;
-    color: #ffffff;
+    border-radius: 18px;
     font-weight: 600;
     cursor: pointer;
   }
 
+  .btn-pri {
+    padding: 8px 16px;
+    border: 1px solid #3b82f6;
+    background-color: #3b82f6;
+    color: #ffffff;
+  }
+
   .btn-sec {
-    flex: none;
     margin-left: 8px;
-    padding: 5px 14px;
+    padding: 8px 14px;
     border: 1px solid #333b47;
-    border-radius: 16px;
-    color: #9098a6;
+    background-color: #14171d;
+    color: #c9ced8;
+  }
+
+  .btn-selecao {
+    border-color: #3b82f6;
+    color: #85b7eb;
+  }
+
+  .btn-ico {
+    display: flex;
+    flex: none;
+    margin-right: 8px;
+  }
+
+  .btn-redondo {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    width: 34px;
+    height: 34px;
+    margin-left: auto;
+    border: 1px solid #333b47;
+    border-radius: 17px;
+    background-color: #14171d;
     cursor: pointer;
+  }
+
+  .btn-ico-so {
+    display: flex;
+  }
+
+  .btn-sec:hover,
+  .btn-redondo:hover {
+    border-color: #4a5466;
+  }
+
+  .btn-selecao:hover {
+    border-color: #85b7eb;
   }
 </style>
 
@@ -743,6 +790,7 @@
 </main>
 
 <footer class="rodape">
-  <div id="edEditar" class="btn-pri" role="button" tabindex="0">Editar todas</div>
-  <div id="edRelir" class="btn-sec" role="button" tabindex="0">Ler de novo</div>
+  <div id="edEditar" class="btn-pri" role="button" tabindex="0"><span id="edIcoTodas" class="btn-ico"></span>Editar todas</div>
+  <div id="edSelecao" class="btn-sec btn-selecao" role="button" tabindex="0"><span id="edIcoSel" class="btn-ico"></span>Só a seleção</div>
+  <div id="edRelir" class="btn-redondo" role="button" tabindex="0" title="Ler a sequência de novo" aria-label="Ler a sequência de novo"><span id="edIcoReler" class="btn-ico-so"></span></div>
 </footer>

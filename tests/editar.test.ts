@@ -8,11 +8,13 @@ import {
   moverPalavras,
   marcarFala,
   parsePerfil,
+  protegerFora,
   quadros,
   resumoPorVariacao,
   trilhaFaltando,
   trocarEmpresa,
   variacoes,
+  variacoesDaSelecao,
 } from "../src/editar.ts";
 import { presetDa } from "../ferramentas/pro-captions/src/preset.ts";
 import type { Pedaco } from "../src/pausas.ts";
@@ -167,4 +169,19 @@ test("marcarFala e quadros: corte, B-roll, quebra de legenda e preco em cada pal
   assert.deepEqual(q[0], { de: 0, broll: "Academia", leak: true, legenda: "", preco: false }); // meio em 1,5 s: B-roll
   assert.equal(q[1]!.broll, undefined);
   assert.equal(q[1]!.leak, false);
+});
+
+test("so a selecao: acha a variacao do clipe selecionado e protege as outras do corte de pausas", async () => {
+  const { planejarCortes } = await import("../src/pausas.ts");
+  const vars = [{ inicioQ: 0, fimQ: 250 }, { inicioQ: 300, fimQ: 550 }, { inicioQ: 600, fimQ: 850 }]; // 0-10, 12-22, 24-34 s
+  assert.deepEqual(variacoesDaSelecao(vars, FPS, [{ inicio: 13, fim: 15 }]), [1]);
+  assert.deepEqual(variacoesDaSelecao(vars, FPS, [{ inicio: 9, fim: 12.5 }]), [0, 1]); // clipe na divisa
+  assert.deepEqual(variacoesDaSelecao(vars, FPS, []), []);
+
+  // Fala com pausas nas tres; so a do meio esta escolhida: so ela perde pausas.
+  const fala = [w("a", 1, 2), w("b", 6, 7), w("c", 13, 14), w("d", 18, 19), w("e", 25, 26), w("f", 30, 31)].map((p) => ({ texto: p.text, inicio: p.inicio, fim: p.fim }));
+  const plano = planejarCortes([...fala, ...protegerFora(vars, FPS, [1])], { fps: FPS, duracaoQ: 850, margemS: 0.2 });
+  const dentro = (c: { inicioQ: number; fimQ: number }, v: { inicioQ: number; fimQ: number }) => c.inicioQ >= v.inicioQ && c.fimQ <= v.fimQ;
+  assert.ok(plano.cortes.some((c) => dentro(c, vars[1]!)), "a escolhida perde a pausa do meio");
+  assert.ok(!plano.cortes.some((c) => dentro(c, vars[0]!) || dentro(c, vars[2]!)), "as outras ficam inteiras");
 });
