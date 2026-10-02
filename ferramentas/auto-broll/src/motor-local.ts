@@ -208,16 +208,29 @@ async function julgarFaixa(
   frases: readonly Frase[],
   conceitos: readonly Conceito[],
   biblioteca: { readonly pasta: string; readonly nomes: readonly string[] },
-  trazer: boolean
+  trazer: boolean,
+  /**
+   * In/out marcados no Aprender: so o que comeca dentro ensina. O que o plugin
+   * pos fora continua esperando julgamento (nao vira "apagado"), e o que voce
+   * pos fora nao e creditado. Null = a sequencia inteira.
+   */
+  trecho: { readonly inicio: number; readonly fim: number } | null = null
 ): Promise<Julgamento> {
   const memoria = parseMemoria(await comLimite("ler aprendizado", readJson(MEMORIA_FILE), 5000));
   const pendentes = parsePendentes(await comLimite("ler pendentes", readJson(PENDENTES_FILE), 5000));
   const pendente = pendentes.porSequencia[sequencia];
+  const dentro = (t: number | undefined): boolean => trecho === null || (t !== undefined && t >= trecho.inicio && t < trecho.fim);
+  // Pendente antigo sem posicao nao tem como cair no trecho: fica para quando o Aprender olhar a sequencia toda.
+  const julgarAgora = pendente && { ...pendente, itens: pendente.itens.filter((i) => dentro(i.inicio)) };
+  const esperando = pendente?.itens.filter((i) => !dentro(i.inicio)) ?? [];
+  const depoisDeJulgar = (): Pendentes =>
+    comPendente(pendentes, sequencia, esperando.length > 0 && pendente ? { ...pendente, itens: esperando } : null);
 
   try {
     // Qualquer faixa acima de V1, nao so a de destino: empilhar na V3 e o que
     // o editor faz quando nao quer sobrescrever.
     const naTimeline = await comLimite("ler B-rolls da timeline", lerBrollsAcimaDeV1(), 30000);
+    const noTrecho = naTimeline.filter((c) => dentro(c.startSeconds));
     const resumo: Linha[] = [];
 
     // 0. Clipe baixado (fora da pasta) e renomeado no painel Projeto vai para a
@@ -226,7 +239,7 @@ async function julgarFaixa(
     const nomesNaPasta = new Set(biblioteca.nomes);
     const trazidosAntes = parseTrazidos(await comLimite("ler trazidos", readJson(TRAZIDOS_FILE), 5000).catch(() => null));
     const plano = planejarTrazer(
-      naTimeline
+      noTrecho
         .filter((c) => c.caminho !== "" && ehVideo(c.sourceName) && !nomesNaPasta.has(c.sourceName))
         .map((c) => ({ caminho: c.caminho, nomeNoProjeto: c.nomeNoProjeto })),
       biblioteca.nomes,
@@ -268,7 +281,7 @@ async function julgarFaixa(
     // Por POSICAO (D-033): so por nome, colocacao manual sua com arquivo que o
     // plugin ja usou era engolida como trabalho dele e nunca creditada.
     const presentes = new Set(naTimeline.map((c) => c.sourceName));
-    const manuais = naTimeline
+    const manuais = noTrecho
       // Light leak (.aegraphic) e grafico nao sao B-roll: no Andro 19.09 eram a
       // maior parte dos 133 "fora da pasta" do log, escondendo o que importa.
       .filter((c) => ehVideo(c.sourceName))
@@ -281,20 +294,22 @@ async function julgarFaixa(
     // acertos, e af afogou as exclusoes de verdade.
     // So o que espera julgamento conta como "apagado". Os `postos` de rodadas
     // ja julgadas sumiram ha muito tempo e nao sao noticia.
-    const apagou = (pendente?.itens ?? []).some((i) => !presentes.has(i.arquivo));
-    const semEdicao = pendente !== undefined && !apagou && manuais.length === 0;
+    const apagou = (julgarAgora?.itens ?? []).some((i) => !presentes.has(i.arquivo));
+    const semEdicao = julgarAgora !== undefined && !apagou && manuais.length === 0;
 
     let atual = memoria;
     let julgado = pendentes;
 
     if (semEdicao) {
       resumo.push({
-        texto: "Nada mudou na timeline desde a ultima analise: nao havia o que aprender.",
+        texto: trecho
+          ? "Nada mudou no trecho marcado desde a ultima analise: nao havia o que aprender nele."
+          : "Nada mudou na timeline desde a ultima analise: nao havia o que aprender.",
         tipo: "aviso",
       });
     } else {
       // 1. Sobrevivencia do que o plugin inseriu.
-      if (pendente !== undefined && pendente.itens.length > 0) {
+      if (julgarAgora !== undefined && julgarAgora.itens.length > 0) {
         // Quase nada do lote sobrou: mais provavel Ctrl+Z ou varrida da faixa
         // (o proprio painel sugere "Tres Ctrl+Z desfazem tudo") do que voce ter
         // apagado um por um. Contar isso como erro puniria os conceitos por um
@@ -303,21 +318,21 @@ async function julgarFaixa(
         // "Sobreviver" aqui e POR POSICAO (D-032): nome sozinho colide com
         // B-roll manual e sobra de rodada antiga, e ja furou esta trava.
         const sobreviventes = quantosNoLugar(
-          pendente.itens,
+          julgarAgora.itens,
           naTimeline.map((c) => ({ arquivo: c.sourceName, inicio: c.startSeconds })),
           presentes
         );
-        if (pareceUndoEmLote(pendente.itens.length, sobreviventes)) {
-          julgado = comPendente(pendentes, sequencia, null);
+        if (pareceUndoEmLote(julgarAgora.itens.length, sobreviventes)) {
+          julgado = depoisDeJulgar();
           resumo.push({
-            texto: `Sobrou ${sobreviventes} de ${pendente.itens.length} B-rolls da rodada anterior — parece o lote desfeito, nao rejeicao item a item. Nao contei como erro.`,
+            texto: `Sobrou ${sobreviventes} de ${julgarAgora.itens.length} B-rolls da rodada anterior — parece o lote desfeito, nao rejeicao item a item. Nao contei como erro.`,
             tipo: "aviso",
           });
         } else {
-          const r = aprender(atual, pendente, presentes);
+          const r = aprender(atual, julgarAgora, presentes);
           atual = r.memoria;
-          // O pendente sai da lista na mesma rodada em que e contado.
-          julgado = comPendente(pendentes, sequencia, null);
+          // O pendente sai da lista na mesma rodada em que e contado (o de fora do trecho fica).
+          julgado = depoisDeJulgar();
           resumo.push({
             texto: `Aprendi da rodada anterior: voce manteve ${r.acertos} e apagou ${r.erros}.`,
             tipo: "ok",
@@ -478,9 +493,18 @@ async function aprenderDaTimeline(config: Config, para: RegistrarBroll): Promise
   comecar(para);
   let resumoAprendizado: Julgamento["resumo"] = [];
   try {
-    const { pasta, arquivos, resultado, nomeSequencia } = await lerContexto(config);
+    const { pasta, arquivos, resultado, nomeSequencia, duracaoDaSequencia } = await lerContexto(config);
     const biblioteca = { pasta, nomes: arquivos.map((a) => a.name) };
-    const { resumo } = await julgarFaixa(nomeSequencia, resultado.frases, resultado.conceitos, biblioteca, true);
+    // In/out marcados: aprende so com o que esta entre eles (pedido do Leo, 02/10).
+    const marcado = await comLimite("ler in/out", lerInOut(), 5000);
+    const trecho = marcado === null ? null : recorte(marcado.inicio, marcado.fim, duracaoDaSequencia);
+    registrar(
+      trecho === null
+        ? "Sem in/out marcados: aprendendo com a sequencia inteira."
+        : `In/out marcados: aprendendo so de ${relogio(trecho.inicio)} a ${relogio(trecho.fim)}.`,
+      "passo"
+    );
+    const { resumo } = await julgarFaixa(nomeSequencia, resultado.frases, resultado.conceitos, biblioteca, true, trecho);
     resumoAprendizado = resumo;
     // Este botao nao insere nada, entao o log dele e curto e some no clique
     // seguinte. Vale dizer que terminou.
@@ -896,6 +920,7 @@ export const motorBrollLocal: MotorBroll = {
       : null;
     const clipes = await comLimite("ler clipes de V1", lerClipes(0), 30000).catch(() => []);
     const nomes = [...new Set(clipes.map((c) => c.sourceName))];
+    const marcado = await comLimite("ler in/out", lerInOut(), 5000).catch(() => null);
     const comTranscricao =
       nomes.length === 0
         ? 0
@@ -910,6 +935,7 @@ export const motorBrollLocal: MotorBroll = {
       clipesV1: clipes.length,
       midias: nomes.length,
       comTranscricao,
+      inOut: marcado === null ? null : recorte(marcado.inicio, marcado.fim, info.durationSeconds),
       aprendizado: await somarAprendizado().catch(() => ({ mantidos: 0, apagados: 0, ligacoes: 0 })),
     };
   },

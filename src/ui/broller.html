@@ -4,6 +4,9 @@
      (conferencia antes da analise), analisando, resultado (cartoes) e erro.
      UXP: sem grid, sem gap, sem var(), sem %, sem opacity; clicavel e div[role=button]. -->
 <style>
+  /* Filho direto da coluna de rolagem: sem flex none o UXP encolhe o bloco e o
+     de baixo sobe por cima (o registro em cima da conferencia, 02/10). */
+  .br-bloco { flex: none; }
   .br-sec { padding: 10px 12px; border-bottom: 1px solid #1a1e26; }
   .br-sub { margin-top: 2px; font-size: 11px; color: #9098a6; }
   .br-linha { display: flex; flex-direction: row; align-items: center; }
@@ -86,7 +89,7 @@
 </header>
 
 <main id="brRolagem" class="conteudo">
-  <div class="br-sec">
+  <div class="br-sec br-bloco">
     <div id="brSub" class="br-sub" style="margin: 0 0 8px 0">lendo a sequência…</div>
     <div class="br-pasta-linha">
       <span class="br-pasta-ico"></span>
@@ -96,14 +99,14 @@
   </div>
 
   <!-- pronto: o que ele vai fazer e o que confere antes -->
-  <div id="brVazio" class="br-vazio">
+  <div id="brVazio" class="br-vazio br-bloco">
     <div class="br-vazio-titulo">Pronto para escolher B-rolls</div>
     <div class="br-vazio-texto">Ele lê a fala da V1, acha os B-rolls da pasta que combinam e coloca na V2. O que você apagar depois ensina a próxima.</div>
     <div id="brConfere" class="br-confere"></div>
   </div>
 
   <!-- analisando -->
-  <div id="brAndamento" style="display: none">
+  <div id="brAndamento" class="br-bloco" style="display: none">
     <div class="br-sec">
       <div id="brEtapas" class="br-etapas"></div>
       <div id="brAndamentoTxt" class="br-sub">começando…</div>
@@ -115,7 +118,7 @@
   </div>
 
   <!-- resultado -->
-  <div id="brResultado" style="display: none">
+  <div id="brResultado" class="br-bloco" style="display: none">
     <div class="br-sec">
       <div class="br-linha"><span class="br-mudo br-num">Aprendizado</span><span class="br-esp"></span><span id="brRodada" class="br-apagado br-num"></span></div>
       <div class="br-barra"><span id="brBarraVerde" class="br-verde" style="flex-grow: 1"></span><span id="brBarraCoral" class="br-coral" style="flex-grow: 0"></span></div>
@@ -137,7 +140,7 @@
   </div>
 
   <!-- erro: causa e como resolver -->
-  <div id="brErro" class="br-erro" style="display: none">
+  <div id="brErro" class="br-erro br-bloco" style="display: none">
     <div id="brErroTitulo" class="br-erro-titulo">Parou</div>
     <div id="brErroTexto" class="br-erro-texto"></div>
     <div id="brErroComo" class="br-erro-como"></div>
@@ -147,7 +150,7 @@
     </div>
   </div>
 
-  <div style="padding: 0 12px 10px 12px">
+  <div class="br-bloco" style="padding: 0 12px 10px 12px">
     <div id="brFeed" class="feed"></div>
     <div id="brVerLog" class="ver-log" role="button" tabindex="0">ver o registro completo</div>
     <pre id="brLog" class="log" style="display: none"></pre>

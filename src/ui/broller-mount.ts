@@ -162,6 +162,7 @@ export function mount(root: HTMLElement, motor: MotorBroll): void {
       e.comTranscricao === 0 ? false : todas ? true : null,
       e.midias === 0 ? "Sem mídia na V1 para transcrever" : `Transcrição do Premiere em ${e.comTranscricao} de ${e.midias} mídia(s)`
     );
+    if (e.inOut) item(null, `IN/OUT de ${tempo(e.inOut.inicio)} a ${tempo(e.inOut.fim)}: a análise e o Aprender ficam só nesse trecho`);
     item(true, `Já aprendeu: ${e.aprendizado.mantidos} mantidos, ${e.aprendizado.apagados} apagados, ${e.aprendizado.ligacoes} ligações`);
   };
 

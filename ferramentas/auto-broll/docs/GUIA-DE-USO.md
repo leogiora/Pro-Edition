@@ -43,7 +43,7 @@ dicionário de sinônimos) contra o texto da fala.
 | **Densidade máxima** | (botão de ligar) Afrouxa as regras de *espaçamento* entre B-rolls (não a qualidade do match) pra caber mais na timeline. Ligue quando achar que ficou "espaçado demais". Ligado, cada B-roll vai até o próximo começar (no máximo 3 s), atravessando a frase como o Leo monta, e nunca passa do fim da fala. |
 | **Sem o áudio do B-roll** | (botão de ligar) Tira o som original do clipe de B-roll ao inserir (a trilha/voz principal nunca é tocada, isso é só o áudio que vem junto do arquivo de vídeo). |
 | **Analisar e inserir** | O botão principal: faz tudo — lê, casa, planeja e insere. |
-| **Aprender** | Só ensina, não insere nada. Use depois de editar a timeline na mão (apagar o que não serviu, adicionar B-roll seu) sem rodar uma análise nova. |
+| **Aprender** | Só ensina, não insere nada. Use depois de editar a timeline na mão (apagar o que não serviu, adicionar B-roll seu) sem rodar uma análise nova. **Com IN e OUT marcados, aprende só com o trecho entre eles** (desde 02/10/2026): o que o plugin pôs fora continua esperando, e o que você pôs fora não conta. |
 | **Botão redondo** | Lê a sequência de novo (depois de trocar de sequência no Premiere). |
 
 **Tela no layout do AutoEdit (02/10/2026).** No topo, o nome da sequência e
