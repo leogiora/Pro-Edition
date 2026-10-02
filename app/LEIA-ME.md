@@ -20,10 +20,15 @@ Electron). O ffmpeg precisa estar no PATH (`winget install ffmpeg`).
 
 ### Instalar em outra máquina (Felipe)
 
-`npm run instalador` dentro de `app/` gera `release/Pro Edition Setup <versão>.exe`
+`npm run instalador` dentro de `app/` gera `release/Cutline Setup <versão>.exe`
 (~110 MB, instala por usuário e cria o atalho). O instalador não é assinado: o
 Windows mostra "O Windows protegeu o computador" → **Mais informações →
 Executar assim mesmo**. Na máquina nova, uma vez: `winget install ffmpeg`.
+
+A versão é `0.2.<commits do repo>` (`scripts/versao.mjs`): sobe sozinha a cada
+commit e aparece ao lado do nome, no topo do programa. Para a abertura em vídeo,
+coloque `src/ui/abertura.mp4` e rode o build: ela toca ao abrir e some no fim
+(ou num clique). Sem o arquivo, o programa abre direto.
 
 O ffmpeg não vai dentro do instalador de propósito: o build completo tem
 222 MB por executável (ffmpeg + ffprobe = 444 MB). Se isso virar problema,
