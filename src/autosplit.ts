@@ -255,10 +255,9 @@ export function cobrirQuadrado(Q: number, w: number, h: number, sobra = 1): numb
   return Math.max(Q / w, Q / h) * sobra * 100;
 }
 
-// -------------------------------------------- doutor e back-solve do aprender
+// -------------------------------------------- doutor
 
 export const DOCTOR_UP = 0.85;
-export const PASSO_APRENDER = 0.30;
 
 export interface EntradaDoutor {
   readonly H: number;
@@ -274,72 +273,4 @@ export interface EntradaDoutor {
 export function nudgeDoutorPosY(e: EntradaDoutor): number {
   const meiaAltura = 0.5 * e.hDoc * (e.escalaDocPct / 100);
   return Math.min((e.H / 2) * DOCTOR_UP, meiaAltura);
-}
-
-export interface EntradaAprender {
-  readonly guardado: Pick<PerfilEntrada, "assunto" | "ancoraY" | "cropTopoExtra">;
-  readonly geomUsada: EntradaGeom;
-  readonly usado: Enquadramento;
-  readonly finalPosY: number;
-  readonly finalEscalaPct: number;
-  readonly finalCropTopoPct: number;
-  readonly passo?: number;
-}
-
-export interface Aprendido {
-  readonly ancoraY: number;
-  readonly cropTopoExtra: number;
-  readonly mudou: boolean;
-}
-
-/**
- * Inverte a geometria a partir do que o usuario deixou na timeline (Position.y,
- * Scale, Top do efeito) e move o valor guardado nessa direcao por, no maximo,
- * um passo. Duas observacoes (posY, Top), duas incognitas (ancoraY,
- * cropTopoExtra).
- *
- * ponytail: quando `usado.posY` saiu clampado (o pedido de enquadramento nao
- * cabia sem abrir tarja), a inversao trabalha a partir do valor clampado; o
- * primeiro "Aprender" desse clipe pode dar um pulo ate o teto do passo. Se
- * incomodar, aprender pelo delta em vez do absoluto.
- */
-export function aprenderEnquadramento(e: EntradaAprender): Aprendido {
-  const passo = e.passo ?? PASSO_APRENDER;
-  const eps = 0.5; // px / pontos percentuais: abaixo disso e "nao mexeu"
-
-  const mexeu =
-    Math.abs(e.finalPosY - e.usado.posY) > eps ||
-    Math.abs(e.finalCropTopoPct - e.usado.cropTopoPct) > eps ||
-    Math.abs(e.finalEscalaPct - e.usado.escalaPct) > eps;
-
-  if (!mexeu) {
-    return { ancoraY: e.guardado.ancoraY, cropTopoExtra: e.guardado.cropTopoExtra, mudou: false };
-  }
-
-  const g = e.geomUsada;
-  const yBox = g.H * g.brollTopoFrac;
-  const Hbox = g.H - yBox;
-  const folga = FOLGA[e.guardado.assunto];
-
-  const cropTopoF = clamp(e.finalCropTopoPct / 100, 0, CROP_TOPO_MAX);
-  const hVisF = g.h * (1 - cropTopoF);
-  const sF = e.finalEscalaPct / 100;
-
-  // inverte posY = yBox + SUBJ_IN_BOX*Hbox - (cropTopoF-0.5)*h*sF - aVisF*hVisF*sF
-  const aVisF =
-    (yBox + SUBJ_IN_BOX * Hbox - (cropTopoF - 0.5) * g.h * sF - e.finalPosY) / (hVisF * sF);
-  const ancoraYF = clamp(cropTopoF + aVisF * (1 - cropTopoF), 0, 1);
-  const cropTopoExtraF = clamp(cropTopoF - ancoraYF + folga, 0, CROP_TOPO_MAX);
-
-  const passoLimitado = (alvo: number, base: number): number =>
-    base + clamp(alvo - base, -passo, passo);
-
-  const ancoraY = clamp(passoLimitado(ancoraYF, e.guardado.ancoraY), 0, 1);
-  const cropTopoExtra = clamp(passoLimitado(cropTopoExtraF, e.guardado.cropTopoExtra), 0, CROP_TOPO_MAX);
-
-  const mudou =
-    Math.abs(ancoraY - e.guardado.ancoraY) > 1e-6 ||
-    Math.abs(cropTopoExtra - e.guardado.cropTopoExtra) > 1e-6;
-
-  return { ancoraY, cropTopoExtra, mudou };
 }

@@ -532,6 +532,31 @@ async function outrosCanais(nomes: ReadonlySet<string>): Promise<ItemLike[][]> {
 }
 
 /**
+ * O arquivo volta com todos os canais (A1, A2...) e o overwrite apaga o que
+ * estiver embaixo: a trilha na A2 sumiu num corte + desfazer (02/10). Antes de
+ * mexer, o corte recusa se as faixas de audio da A2 em diante tem clipe de
+ * outro arquivo.
+ *
+ * ponytail: recusa mesmo quando o clipe alheio esta depois da fala ou numa
+ * faixa que o arquivo nao ocupa; refinar por tempo e canais se atrapalhar.
+ */
+async function recusarSeTemAudioAlheio(nomes: ReadonlySet<string>): Promise<void> {
+  const { sequence } = await ativa();
+  const total = await (sequence as { getAudioTrackCount: () => Promise<number> }).getAudioTrackCount();
+  const alheios: string[] = [];
+  for (let f = 1; f < total; f++) {
+    for (const nome of await Promise.all((await itensDa(sequence, false, f)).map(nomeDoItem))) {
+      if (!nomes.has(nome)) alheios.push(`"${nome}" na A${f + 1}`);
+    }
+  }
+  if (alheios.length === 0) return;
+  const lista = [...new Set(alheios)].slice(0, 3).join(", ");
+  throw new Error(
+    `Tem ${lista} embaixo da fala. O SilenceCut recoloca a bruta com todos os canais e apagaria isso: rode antes da trilha e do B-roll, ou tire esses clipes e tente de novo. Nada foi mexido.`
+  );
+}
+
+/**
  * Esvazia a V1 e a A1 e coloca uma lista de pedacos, um por transacao, da
  * esquerda para a direita. Esvaziar antes e o que deixa os espacos entre os
  * videos vazios de verdade — sem sobra da sequencia antiga dentro deles.
@@ -656,6 +681,8 @@ export async function aplicarPlano(
   const clipesQ = s.v1.map((c) => ({ inicioQ: quadro(c.inicio), fimQ: quadro(c.fim), midiaQ: quadro(c.entrada), fonte: indice.get(c.nome)! }));
   const { pedacos, totalQ } = pedacosDoPlano(trechos, clipesQ);
   if (pedacos.length === 0) throw new Error("O plano não deixou nenhum trecho de fala. Nada foi mexido.");
+
+  await recusarSeTemAudioAlheio(new Set(s.fontes.map((f) => f.nome)));
 
   // O que o Desfazer precisa, gravado ANTES de mexer em qualquer coisa.
   const VIDEO = ppro.Constants.MediaType.VIDEO;
@@ -806,6 +833,8 @@ export async function desfazerPausas(emMaos?: readonly Fonte[]): Promise<string[
   if (nome !== estado.sequencia) {
     throw new Error(`O último corte foi na sequência "${estado.sequencia}". Abra ela e clique em Desfazer de novo.`);
   }
+
+  await recusarSeTemAudioAlheio(new Set(estado.fontes.map((f) => f.nome)));
 
   // Os itens do projeto saem da timeline ANTES de esvazia-la: depois nao ha de onde pegar.
   const atuais: ReadonlyArray<{ nome: string; projectItem: unknown; clip: any }> = emMaos ?? (await lerFaixa(true));

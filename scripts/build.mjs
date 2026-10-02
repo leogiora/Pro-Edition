@@ -42,7 +42,9 @@ const html = await readFile(join(raiz, "src", "ui", "index.html"), "utf8");
 
 if (!html.includes("<!--SCRIPT-->")) throw new Error("index.html perdeu a marca <!--SCRIPT-->");
 // Fechar a tag dentro de uma string do bundle encerraria o <script> antes da hora.
-const saida = html.replace("<!--SCRIPT-->", `<script>\n${js.replace(/<\/script/gi, "<\\/script")}\n</script>`);
+// Funcao, nao texto: num texto de substituicao "$&", "$'" e "$`" sao especiais, e o
+// minificador gerou "$&&" (variavel $ e um &&): o build colava <!--SCRIPT--> no meio do JS.
+const saida = html.replace("<!--SCRIPT-->", () => `<script>\n${js.replace(/<\/script/gi, "<\\/script")}\n</script>`);
 
 await writeFile(join(dist, "index.html"), saida, "utf8");
 

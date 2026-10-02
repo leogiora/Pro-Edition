@@ -1,0 +1,479 @@
+/*
+ * Estilo comum das telas novas (AutoEdit e SilenceCut), no painel e no
+ * programa: topo com pilula, empresas, andamento, numeros, faixas da
+ * timeline, tela 9:16, registro curto e rodape com botoes de icone. Vem
+ * depois da folha da familia (ferramentas/auto-broll/src/ui/styles.css).
+ * UXP: sem grid, sem gap, sem var(), sem largura em % (UXP_ARMADILHAS.md).
+ */
+
+.ed-topo {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex: none;
+  padding: 9px 12px;
+  background-color: #1a1e26;
+  border-bottom: 1px solid #232830;
+}
+
+.ed-titulo {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #eceef2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ed-seq {
+  font-weight: 400;
+  color: #9098a6;
+}
+
+.pill {
+  flex: none;
+  padding: 2px 10px;
+  border-radius: 10px;
+  font-size: 11px;
+  background-color: #14301f;
+  color: #4ecb8d;
+}
+
+.pill[data-tom="ativo"] {
+  background-color: #1a2440;
+  color: #85b7eb;
+}
+
+.pill[data-tom="aviso"] {
+  background-color: #3a2c14;
+  color: #eeab4c;
+}
+
+.pill[data-tom="erro"] {
+  background-color: #3a1e1c;
+  color: #ff7d71;
+}
+
+.conteudo {
+  padding: 0;
+}
+
+.bloco {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  flex: none;
+  padding: 8px 12px 0 12px;
+}
+
+/* ---- empresas */
+.chips {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+
+.chip {
+  flex: none;
+  margin: 0 6px 4px 0;
+  padding: 2px 10px;
+  border: 1px solid #333b47;
+  border-radius: 10px;
+  font-size: 11px;
+  color: #9098a6;
+  cursor: pointer;
+}
+
+.chip[data-on="sim"] {
+  background-color: #1a1e26;
+  color: #eceef2;
+  font-weight: 600;
+}
+
+.chip[data-on="sim"][data-empresa="androclinic"] { border-color: #3b82f6; }
+.chip[data-on="sim"][data-empresa="grandcare"] { border-color: #4fc3a1; }
+.chip[data-on="sim"][data-empresa="menopausa"] { border-color: #e07ba8; }
+
+/* ---- andamento */
+.prog-linha {
+  display: flex;
+  flex-direction: row;
+  margin-top: 6px;
+  font-size: 12px;
+  color: #9098a6;
+}
+
+/* Quebra linha: e aqui que aparece o motivo quando o Editar para. */
+.prog-txt {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.prog-cont {
+  flex: none;
+  margin-left: 8px;
+}
+
+.barra {
+  display: flex;
+  flex-direction: row;
+  flex: none;
+  height: 4px;
+  margin-top: 5px;
+  border-radius: 2px;
+  overflow: hidden;
+  background-color: #1a1e26;
+}
+
+.barra-feito {
+  background-color: #3b82f6;
+}
+
+/* ---- detalhe da variacao escolhida */
+.det {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  flex: none;
+  margin-top: 8px;
+  padding: 8px 12px 4px 12px;
+  border-top: 1px solid #232830;
+}
+
+.det-cabeca {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.det-nome {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-weight: 600;
+  color: #eceef2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.det-dur {
+  flex: none;
+  margin-left: 8px;
+  font-size: 12px;
+  color: #9098a6;
+}
+
+.mets {
+  display: flex;
+  flex-direction: row;
+  margin: 0 -3px;
+}
+
+.met {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  flex: 1 1 0px;
+  min-width: 0;
+  margin: 3px;
+  padding: 5px 7px;
+  background-color: #14171d;
+  border: 1px solid #232830;
+  border-radius: 7px;
+}
+
+.met-rot {
+  font-size: 11px;
+  color: #9098a6;
+}
+
+.met-val {
+  font-size: 17px;
+  font-weight: 600;
+  color: #eceef2;
+}
+
+/* ---- timeline viva + tela 9:16 (faixas em flex-grow, segmentos() em shell.ts) */
+.tl-caixa {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+}
+
+.tl {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.tl-linha {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  margin: 3px 0;
+}
+
+.tl-rot {
+  flex: none;
+  width: 20px;
+  font-size: 11px;
+  color: #5f6774;
+}
+
+.tl-faixa {
+  display: flex;
+  flex-direction: row;
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 11px;
+  border-radius: 3px;
+  overflow: hidden;
+  background-color: #101318;
+}
+
+.tl-seg {
+  flex-basis: 0px;
+  min-width: 0;
+  height: 11px;
+  cursor: pointer;
+}
+
+.tl-V1 { background-color: #5f6774; border-right: 1px solid #101318; }
+.tl-V2 { background-color: #8d82f5; }
+.tl-V3 { background-color: #eeab4c; }
+.tl-A2 { background-color: #4fc3a1; }
+.tl-C1 { background-color: #eceef2; border-right: 1px solid #101318; }
+.tl-C2 { background-color: #ff7d71; }
+
+/* Linha vermelha do comeco ate o cursor: no Premiere, so o cursor era um
+   ponto que ninguem via. */
+.tl-regua {
+  align-items: center;
+  height: 10px;
+  background-color: transparent;
+}
+
+.tl-cursor {
+  flex: none;
+  width: 3px;
+  height: 10px;
+  border-radius: 1px;
+  background-color: #ff7d71;
+}
+
+.tl-ctrl {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  margin-top: 6px;
+  font-size: 11px;
+  color: #9098a6;
+}
+
+.tl-play {
+  flex: none;
+  margin-right: 6px;
+  padding: 0 4px;
+  font-size: 13px;
+  color: #eceef2;
+  cursor: pointer;
+}
+
+.tl-dica {
+  margin-left: 8px;
+  color: #5f6774;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.tela {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  flex: none;
+  width: 86px;
+  height: 153px;
+  margin-left: 10px;
+  border: 2px solid #232830;
+  border-radius: 9px;
+  overflow: hidden;
+  background-color: #000000;
+}
+
+.tela[data-leak="sim"] {
+  border-color: #eeab4c;
+}
+
+.tela-parte {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  flex-basis: 0px;
+  min-height: 0;
+  overflow: hidden;
+  font-size: 11px;
+  text-align: center;
+}
+
+.tela-parte[data-tipo="doutor"] {
+  background-color: #262b34;
+  color: #9098a6;
+}
+
+.tela-parte[data-tipo="broll"] {
+  background-color: #2b2650;
+  color: #cecbf6;
+}
+
+.tela-leg {
+  margin-top: 6px;
+  min-height: 16px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #eceef2;
+  text-align: right;
+}
+
+.tela-leg[data-preco="sim"] {
+  color: #ff7d71;
+}
+
+.legenda-fala {
+  margin-bottom: 6px;
+  font-size: 11px;
+  color: #5f6774;
+}
+
+/* ---- registro curto */
+.feed {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  margin-top: 8px;
+  padding-top: 6px;
+  border-top: 1px solid #1a1e26;
+  min-height: 60px;
+}
+
+.feed-linha {
+  margin: 1px 0;
+  font-size: 12px;
+  color: #9098a6;
+}
+
+.feed-linha[data-tom="ok"] { color: #4ecb8d; }
+.feed-linha[data-tom="aviso"] { color: #eeab4c; }
+.feed-linha[data-tom="erro"] { color: #ff7d71; }
+
+.ver-log {
+  margin: 4px 0 8px 0;
+  font-size: 11px;
+  color: #5f6774;
+  cursor: pointer;
+}
+
+.log {
+  height: 200px;
+  margin: 0 0 8px 0;
+}
+
+/* ---- resposta ao clique: o que foi tocado acende por um instante (JS liga
+   data-apertado; o UXP nao garante :active nem transicao). */
+[data-apertado="sim"] {
+  background-color: #2a3550;
+}
+
+.btn-pri[data-apertado="sim"] {
+  background-color: #1d4ed8;
+  border-color: #1d4ed8;
+}
+
+.var:hover,
+.chip:hover,
+.aba:hover,
+.btn-sec:hover {
+  border-color: #4a5466;
+}
+
+/* ---- rodape */
+.rodape {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex: none;
+  padding: 10px 12px;
+  border-top: 1px solid #232830;
+  background-color: #0d0f13;
+}
+
+/* Botoes com icone de caixa (icone() em shell.ts), sem fonte nem emoji. */
+.btn-pri,
+.btn-sec {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex: none;
+  border-radius: 18px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-pri {
+  padding: 8px 16px;
+  border: 1px solid #3b82f6;
+  background-color: #3b82f6;
+  color: #ffffff;
+}
+
+.btn-sec {
+  margin-left: 8px;
+  padding: 8px 14px;
+  border: 1px solid #333b47;
+  background-color: #14171d;
+  color: #c9ced8;
+}
+
+.btn-selecao {
+  border-color: #3b82f6;
+  color: #85b7eb;
+}
+
+.btn-ico {
+  display: flex;
+  flex: none;
+  margin-right: 8px;
+}
+
+.btn-redondo {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 34px;
+  height: 34px;
+  margin-left: auto;
+  border: 1px solid #333b47;
+  border-radius: 17px;
+  background-color: #14171d;
+  cursor: pointer;
+}
+
+.btn-ico-so {
+  display: flex;
+}
+
+.btn-sec:hover,
+.btn-redondo:hover {
+  border-color: #4a5466;
+}
+
+.btn-selecao:hover {
+  border-color: #85b7eb;
+}

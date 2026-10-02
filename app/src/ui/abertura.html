@@ -1,0 +1,15 @@
+<!doctype html>
+<!-- A abertura do Cutline: toca o video e fecha (no fim, num erro ou num clique). -->
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <title>Cutline</title>
+  <style>
+    html, body { margin: 0; height: 100%; overflow: hidden; background: #0d0f13; }
+    video { width: 100%; height: 100%; object-fit: contain; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <video src="abertura.mp4" autoplay playsinline onended="window.close()" onerror="window.close()" onclick="window.close()"></video>
+</body>
+</html>

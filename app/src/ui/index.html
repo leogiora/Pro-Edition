@@ -9,7 +9,7 @@
 <body>
   <header class="topo">
     <button id="voltar" class="migalha" hidden>← Cutline</button>
-    <span id="marca" class="marca"><span id="marcaSimbolo" class="marca-simbolo" aria-hidden="true"></span>Cutline</span>
+    <span id="marca" class="marca"><span id="marcaSimbolo" class="marca-simbolo" aria-hidden="true"></span>Cutline<span class="versao" title="Sobe a cada atualização que vai para o GitHub">v<!--VERSAO--></span></span>
     <span id="titulo" class="titulo"></span>
     <span id="premiere" class="premiere" data-on="nao" title="O plugin Cutline no Premiere conta o que esta aberto">Premiere: desconectado</span>
     <button id="abrirConfig" class="icone" title="Configurações" aria-label="Configurações">⚙</button>
@@ -29,13 +29,13 @@
         data-trilhas="C2 -------------##---------|C1 ##-###-##-####-##-###-##|V3 -#--#----#---#----#--#--|V2 --###-----###----###----|V1 ========================|A2 ########################"></span>
     </button>
 
-    <p class="h-grupo">Ferramentas avulsas · trabalham com o XML exportado do Premiere</p>
+    <p class="h-grupo">Ferramentas avulsas · o SilenceCut usa o Premiere aberto; as outras, o XML exportado</p>
     <div class="h-cards">
-      <button class="h-card" data-abre="pausas" style="--c:#4ecb8d">
+      <button class="h-card" data-abre="silencecut" style="--c:#4ecb8d">
         <span class="h-ico" data-icone="pausas" style="background-color:#4ecb8d"></span>
         <span class="h-texto">
           <span class="h-nome">SilenceCut</span>
-          <span class="h-desc">Tira as pausas e os respiros da sequência que você separou e devolve um XML pronto para o Premiere, com a legenda junto.</span>
+          <span class="h-desc">Tira as pausas e os respiros da bruta aberta no Premiere, com prévia de cada corte antes de cortar. Precisa do painel Cutline aberto.</span>
         </span>
         <span class="h-mapa" aria-hidden="true" data-trilhas="V1 ###-###-##-####-###-##|A1 ###-###-##-####-###-##"></span>
       </button>
@@ -77,11 +77,16 @@
       </button>
     </div>
 
+    <p class="h-nota">Premiere fechado? <button class="h-link" data-abre="pausas">SilenceCut por XML</button>: exporte a sequência e importe o resultado.</p>
     <p class="h-nota">As miniaturas mostram o que cada ferramenta faz na sequência: em cinza o que já está nela, em cor o que ela coloca.</p>
   </main>
 
   <main id="autoedit" class="tela" hidden>
     <iframe id="autoeditQuadro" title="AutoEdit"></iframe>
+  </main>
+
+  <main id="silencecut" class="tela tela-quadro" hidden>
+    <iframe id="silencecutQuadro" class="quadro" title="SilenceCut"></iframe>
   </main>
 
   <main id="pausas" class="tela" hidden>

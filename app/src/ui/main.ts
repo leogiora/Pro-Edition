@@ -4,7 +4,10 @@
 
 import type { BlocoLegenda, Legendas, ProApi } from "../api.ts";
 import { SILENCIO_MS, tempoDoCursor } from "../premiere-ao-vivo.ts";
-import { motorRemoto } from "./motor-remoto.ts";
+import { motorPausasRemoto, motorRemoto } from "./motor-remoto.ts";
+import cssTelas from "../../../src/ui/telas.css";
+import htmlSilenceCut from "../../../src/ui/pausas.html";
+import { mount as montarSilenceCut } from "../../../src/ui/pausas-mount.ts";
 import { desenharTrilhas, icone, marca, type Icone } from "../../../src/shell.ts";
 import cssFamilia from "../../../ferramentas/auto-broll/src/ui/styles.css";
 import htmlEditar from "../../../src/ui/editar.html";
@@ -42,11 +45,12 @@ const duracao = (s: number): string => {
 
 /* ---------------------------------------------------------------- telas */
 
-type Tela = "hall" | "autoedit" | "pausas" | "broll" | "acabamento" | "podcast" | "legendas";
+type Tela = "hall" | "autoedit" | "silencecut" | "pausas" | "broll" | "acabamento" | "podcast" | "legendas";
 const TITULOS: Record<Tela, string> = {
   hall: "",
   autoedit: "AutoEdit",
-  pausas: "SilenceCut",
+  silencecut: "SilenceCut",
+  pausas: "SilenceCut por XML",
   broll: "B-Roller",
   acabamento: "Acabamento",
   podcast: "PodCut",
@@ -60,20 +64,22 @@ function abrir(nova: Tela): void {
   $("voltar").hidden = nova === "hall";
   $("marca").hidden = nova !== "hall";
   $("titulo").textContent = TITULOS[nova];
-  if (nova === "autoedit") abrirAutoEdit();
+  if (nova === "autoedit") montarQuadro("autoeditQuadro", htmlEditar, (corpo) => montarAutoEdit(corpo, motorRemoto(pro)));
+  if (nova === "silencecut") montarQuadro("silencecutQuadro", htmlSilenceCut, (corpo) => montarSilenceCut(corpo, motorPausasRemoto(pro)));
 }
 
 /**
- * A mesma tela do AutoEdit do painel, num quadro proprio, com o motor que pede
- * ao plugin no Premiere. Monta uma vez; voltar e abrir de novo mantem o estado.
+ * As telas do painel (AutoEdit, SilenceCut), cada uma num quadro proprio, com
+ * o motor que pede ao plugin no Premiere. Monta uma vez; voltar e abrir de
+ * novo mantem o estado.
  */
-let autoEditMontado = false;
-function abrirAutoEdit(): void {
-  if (autoEditMontado) return;
-  autoEditMontado = true;
-  const quadro = $<HTMLIFrameElement>("autoeditQuadro");
-  quadro.addEventListener("load", () => montarAutoEdit(quadro.contentDocument!.body, motorRemoto(pro)), { once: true });
-  quadro.srcdoc = `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><style>${cssFamilia}</style></head><body>${htmlEditar}</body></html>`;
+const montados = new Set<string>();
+function montarQuadro(id: string, html: string, montar: (corpo: HTMLElement) => void): void {
+  if (montados.has(id)) return;
+  montados.add(id);
+  const quadro = $<HTMLIFrameElement>(id);
+  quadro.addEventListener("load", () => montar(quadro.contentDocument!.body), { once: true });
+  quadro.srcdoc = `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><style>${cssFamilia}\n${cssTelas}</style></head><body>${html}</body></html>`;
 }
 
 // Tela inicial: simbolo, icones e miniaturas, os mesmos do painel.

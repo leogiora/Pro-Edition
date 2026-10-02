@@ -1,10 +1,10 @@
 {
   "name": "pro-edition-app",
-  "productName": "Pro Edition",
-  "version": "0.1.0",
+  "productName": "Cutline",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
-  "description": "Pro Edition fora do Premiere: um programa que gera legendas e sequencias (XML) que o Premiere abre prontas.",
+  "description": "Cutline fora do Premiere: a tela das ferramentas que editam no Premiere aberto.",
   "main": "dist/main.cjs",
   "scripts": {
     "build": "node scripts/build.mjs",
@@ -12,7 +12,7 @@
     "check": "tsc --noEmit",
     "test": "node --test \"tests/*.test.ts\"",
     "verify": "npm run check && npm test && npm run build",
-    "instalador": "npm run verify && electron-builder --win nsis"
+    "instalador": "npm run verify && node scripts/instalador.mjs"
   },
   "devDependencies": {
     "@types/node": "^24.13.6",
@@ -23,7 +23,7 @@
   },
   "build": {
     "appId": "com.leogi.proedition.app",
-    "productName": "Pro Edition",
+    "productName": "Cutline",
     "directories": {
       "output": "release"
     },
@@ -39,7 +39,7 @@
       "oneClick": true,
       "perMachine": false,
       "createDesktopShortcut": true,
-      "shortcutName": "Pro Edition"
+      "shortcutName": "Cutline"
     }
   }
 }

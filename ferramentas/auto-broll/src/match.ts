@@ -146,11 +146,6 @@ export function usarSinonimos(novos: ReadonlyMap<string, readonly string[]>): vo
   sinonimosEmUso = novos;
 }
 
-/** O dicionario ativo, para gravar de volta ou mostrar. */
-export function sinonimosAtuais(): ReadonlyMap<string, readonly string[]> {
-  return sinonimosEmUso;
-}
-
 /**
  * Le o `sinonimos.json` editado pelo usuario.
  *

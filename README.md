@@ -100,8 +100,8 @@ Pro-Edition/                 raiz = o plugin que o Premiere carrega (manifest.js
 ├─ tests/
 ├─ app/                      o programa (Electron): gera .srt e sequências XML
 ├─ ferramentas/
-│  ├─ auto-broll/            também continua funcionando como plugin sozinho
-│  └─ pro-captions/          idem
+│  ├─ auto-broll/            lógica e tela do B-Roller (só dentro do Cutline)
+│  └─ pro-captions/          lógica e tela do Captions (idem)
 └─ instalar/                 pacote pronto para instalar em outra máquina
 ```
 

@@ -20,10 +20,15 @@ Electron). O ffmpeg precisa estar no PATH (`winget install ffmpeg`).
 
 ### Instalar em outra máquina (Felipe)
 
-`npm run instalador` dentro de `app/` gera `release/Pro Edition Setup <versão>.exe`
+`npm run instalador` dentro de `app/` gera `release/Cutline Setup <versão>.exe`
 (~110 MB, instala por usuário e cria o atalho). O instalador não é assinado: o
 Windows mostra "O Windows protegeu o computador" → **Mais informações →
 Executar assim mesmo**. Na máquina nova, uma vez: `winget install ffmpeg`.
+
+A versão é `0.2.<commits do repo>` (`scripts/versao.mjs`): sobe sozinha a cada
+commit e aparece ao lado do nome, no topo do programa. Para a abertura em vídeo,
+coloque `src/ui/abertura.mp4` e rode o build: ela toca ao abrir e some no fim
+(ou num clique). Sem o arquivo, o programa abre direto.
 
 O ffmpeg não vai dentro do instalador de propósito: o build completo tem
 222 MB por executável (ffmpeg + ffprobe = 444 MB). Se isso virar problema,
@@ -153,7 +158,7 @@ Legenda (é o "Abrir com" do Windows).
 
 | Fase | O quê | Estado |
 |---|---|---|
-| 0 | Prova do XML no Premiere (`scripts/prova-xml.ts`) | **7 de 8 OK** (29/09, Premiere 25); espelho não viaja no XML |
+| 0 | Prova do XML no Premiere (script removido na refatoração de 02/10; está no git) | **7 de 8 OK** (29/09, Premiere 25); espelho não viaja no XML |
 | 1 | Programa + Legendas (arrasta vídeo/áudio → revisa → `.srt`) | feito (2026-09-24) |
 | 2 | Auto Pausas: XML exportado do Premiere (ou brutas) → XML sem pausas + legenda | feito (2026-09-24), falta rodar com a chave |
 | 3 | Auto B-roll: XML → B-roll pela fala na V2, com o aprendizado do painel | feito (2026-09-24); o Aprender ainda é do painel |
@@ -163,7 +168,7 @@ Legenda (é o "Abrir com" do Windows).
 
 ### Fase 0 — o que a prova precisa mostrar
 
-`node scripts/prova-xml.ts` gera `prova/PROVA-Pro-Edition.xml` com arquivos
+O script `scripts/prova-xml.ts` (no histórico do git) gerava `prova/PROVA-Pro-Edition.xml` com arquivos
 reais (bruta C1639, B-roll "Consulta médica (1)", trilha "Confident" da
 GrandCare — a "The Horror Piano" saiu do Downloads; regerada em 28/09).
 Importar no Premiere 2025 e conferir:

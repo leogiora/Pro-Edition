@@ -12,14 +12,6 @@ export interface Tela {
   readonly montar: (root: HTMLElement) => void;
 }
 
-/** Dado o registro de telas e a ferramenta escolhida, qual tela mostrar. */
-export function escolherTela(
-  registro: Readonly<Record<Ferramenta, Tela>>,
-  ferramenta: Ferramenta
-): Tela {
-  return registro[ferramenta];
-}
-
 const SEGMENTO: Readonly<Record<string, string>> = { "#": "novo", "=": "base", "-": "vazio" };
 
 /**

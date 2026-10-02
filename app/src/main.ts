@@ -18,6 +18,9 @@ import { abrirParaPodcast, rodarPodcast } from "./motor/podcast.ts";
 import { Ponte } from "./ponte.ts";
 import { lerEstadoPremiere, PORTA_PREMIERE } from "./premiere-ao-vivo.ts";
 
+// O nome mudou para Cutline; a pasta continua a do Pro Edition (preferencias e
+// transcricoes ja pagas ao ElevenLabs).
+app.setPath("userData", join(app.getPath("appData"), "Pro Edition"));
 const cfg = new Config(app.getPath("userData"));
 
 const MIDIA = ["mp4", "mov", "mxf", "m4v", "wav", "mp3", "m4a", "aac", "flac", "json"];
@@ -27,7 +30,11 @@ const arquivoDaLinha = (): string | undefined =>
   process.argv.slice(1).find((a) => !a.startsWith("-") && a !== "." && existsSync(a) && /\.[a-z0-9]+$/i.test(a));
 
 function criarJanela(): void {
+  // A abertura em video, quando o build achou uma (src/ui/abertura.mp4); a janela
+  // principal aparece quando ela termina, com um clique, ou em 15 s no maximo.
+  const comAbertura = existsSync(join(__dirname, "abertura.mp4")) && process.env.PRO_EDITION_PRINT === undefined;
   const janela = new BrowserWindow({
+    show: !comAbertura,
     width: 1120,
     height: 760,
     minWidth: 760,
@@ -39,6 +46,21 @@ function criarJanela(): void {
   });
   janela.removeMenu();
   void janela.loadFile(join(__dirname, "index.html"));
+  if (comAbertura) {
+    const abertura = new BrowserWindow({
+      width: 960,
+      height: 540,
+      frame: false,
+      resizable: false,
+      backgroundColor: "#0d0f13",
+      icon: join(__dirname, "icon.png"),
+      webPreferences: { sandbox: true, autoplayPolicy: "no-user-gesture-required" },
+    });
+    abertura.on("closed", () => janela.show());
+    abertura.webContents.on("did-fail-load", () => abertura.close());
+    setTimeout(() => abertura.isDestroyed() || abertura.close(), 15_000);
+    void abertura.loadFile(join(__dirname, "abertura.html"));
+  }
 
   janela.webContents.once("did-finish-load", async () => {
     // So para conferir a tela sem clicar (ex.: abrir um card antes do arquivo chegar).
@@ -138,7 +160,14 @@ ipcMain.handle("escolher", async (evento, tipo: keyof typeof FILTROS) => {
 });
 
 /** Prazo de cada pedido ao plugin: o AutoEdit inteiro pode levar mais de uma hora numa sequencia longa. */
-const PRAZO_MS: Readonly<Record<string, number>> = { editar: 3 * 60 * 60 * 1000, lerEstado: 60_000 };
+const PRAZO_MS: Readonly<Record<string, number>> = {
+  editar: 3 * 60 * 60 * 1000,
+  lerEstado: 60_000,
+  "pausas:cortar": 60 * 60 * 1000,
+  "pausas:previa": 10 * 60 * 1000,
+  "pausas:preparar": 10 * 60 * 1000,
+  "pausas:ler": 60_000,
+};
 ipcMain.handle("premiere:pedir", (_e, nome: string, args: unknown[]) => ponte.pedir(nome, args, PRAZO_MS[nome] ?? 15_000));
 
 ipcMain.handle("chave:tem", async () => (await cfg.chave()) !== null);
