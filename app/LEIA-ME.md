@@ -158,7 +158,7 @@ Legenda (é o "Abrir com" do Windows).
 
 | Fase | O quê | Estado |
 |---|---|---|
-| 0 | Prova do XML no Premiere (`scripts/prova-xml.ts`) | **7 de 8 OK** (29/09, Premiere 25); espelho não viaja no XML |
+| 0 | Prova do XML no Premiere (script removido na refatoração de 02/10; está no git) | **7 de 8 OK** (29/09, Premiere 25); espelho não viaja no XML |
 | 1 | Programa + Legendas (arrasta vídeo/áudio → revisa → `.srt`) | feito (2026-09-24) |
 | 2 | Auto Pausas: XML exportado do Premiere (ou brutas) → XML sem pausas + legenda | feito (2026-09-24), falta rodar com a chave |
 | 3 | Auto B-roll: XML → B-roll pela fala na V2, com o aprendizado do painel | feito (2026-09-24); o Aprender ainda é do painel |
@@ -168,7 +168,7 @@ Legenda (é o "Abrir com" do Windows).
 
 ### Fase 0 — o que a prova precisa mostrar
 
-`node scripts/prova-xml.ts` gera `prova/PROVA-Pro-Edition.xml` com arquivos
+O script `scripts/prova-xml.ts` (no histórico do git) gerava `prova/PROVA-Pro-Edition.xml` com arquivos
 reais (bruta C1639, B-roll "Consulta médica (1)", trilha "Confident" da
 GrandCare — a "The Horror Piano" saiu do Downloads; regerada em 28/09).
 Importar no Premiere 2025 e conferir:

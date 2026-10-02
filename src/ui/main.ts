@@ -4,7 +4,7 @@
  * IDs e classes entre os dois plugins, documentada no spec).
  */
 
-import { desenharTrilhas, escolherTela, extrairCorpo, icone, marca, type Ferramenta, type Icone, type Tela } from "../shell.ts";
+import { desenharTrilhas, extrairCorpo, icone, marca, type Ferramenta, type Icone, type Tela } from "../shell.ts";
 
 import htmlBrollBruto from "../../ferramentas/auto-broll/src/ui/index.html";
 import cssBroll from "../../ferramentas/auto-broll/src/ui/styles.css";
@@ -150,7 +150,7 @@ const REGISTRO: Readonly<Record<Ferramenta, Tela>> = {
 };
 
 function mostrar(ferramenta: Ferramenta): void {
-  const tela = escolherTela(REGISTRO, ferramenta);
+  const tela = REGISTRO[ferramenta];
   const nav =
     ferramenta === "seletor"
       ? ""

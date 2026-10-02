@@ -5,8 +5,7 @@
  * um global que o UXP nao tem sendo usado no topo de um modulo (ex.:
  * `new TextEncoder()`, 2026-09-24) — sem precisar reiniciar o Premiere.
  *
- *   node scripts/fumaca-uxp.cjs                      (painel do Pro Edition)
- *   node scripts/fumaca-uxp.cjs ferramentas/pro-captions/dist/index.html
+ *   node scripts/fumaca-uxp.cjs                      (painel do Cutline)
  */
 const vm = require("node:vm");
 const fs = require("node:fs");

@@ -51,6 +51,10 @@ Requer **Premiere Pro 25.0+** e Node 24+. Testado nas séries 25 e 26; algumas
 APIs mudam de nome entre versões — o plugin trata isso com fallback (ver
 `docs/GUIA-DE-USO.md`).
 
+Desde 02/10 o Auto B-roll não é mais um plugin sozinho: a tela roda dentro do
+Cutline (raiz do repo), e o `install-link.ps1` que vale é o da raiz. O que
+segue é histórico.
+
 ```bash
 npm install
 npm run build

@@ -465,8 +465,7 @@ escrita; a fonte não é mensurável. Ver a seção 1 do desenho.
 
 ```bash
 cd C:\Users\leogi\Desktop\Pro-Captions
-npm run verify        # tipos + 78 testes + build. Gate de tudo.
-node demo.ts          # roda o pipeline num exemplo e imprime os blocos
+npm run verify        # tipos + testes. O painel é o Cutline: build e fumaça na raiz.
 ```
 
 **Não há hot reload.** Toda alteração exige reiniciar o Premiere.
@@ -475,6 +474,10 @@ node demo.ts          # roda o pipeline num exemplo e imprime os blocos
 `C:\Program Files\Common Files\Adobe\UXP\Plugins\External\com.leogi.procaptions`
 apontando para o repositório. Não precisa reinstalar; o `id` do plugin não mudou
 com o rename.
+
+**Desde 02/10 não existe mais o plugin Pro Captions sozinho** (manifest, build,
+preview e demo saíram na refatoração; estão no git). A tela roda dentro do
+Cutline. O parágrafo abaixo é histórico.
 
 **Preview no navegador** (útil porque não há hot reload): `npm run preview`
 sobe `scripts/preview.mjs` em `http://localhost:8778`. Ele serve
@@ -513,13 +516,8 @@ src/
   preset.ts       toda config: orçamento, tolerâncias, termos
   premiere.ts     única porta para a API do Premiere
   ui/             painel
-scripts/
-  build.mjs       empacota o painel em dist/
-  preview.mjs     dublê de premierepro/uxp no navegador, npm run preview
 docs/
   API_PROOFS.md                    tabela E1..E6 — E5 é o portão, ainda vazia
-  superpowers/specs/...design.md   o desenho, com D-01 a D-10
-  superpowers/plans/...fases-0-2.md o plano das 13 tarefas
 CLAUDE_START_HERE_LEO_CAPTIONS.md  briefing original do usuário (nome antigo
                                    de propósito: é documento recebido)
 ```

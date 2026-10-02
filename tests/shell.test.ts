@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
-import { desenharTrilhas, escolherTela, extrairCorpo, icone, marca, segmentos, type Icone, type Tela } from "../src/shell.ts";
+import { desenharTrilhas, extrairCorpo, icone, marca, segmentos, type Icone, type Tela } from "../src/shell.ts";
 
 test("marca: o simbolo do Cutline so com caixas, no tamanho pedido", () => {
   const html = marca(256);
@@ -28,27 +28,6 @@ test("segmentos: vazio e item alternam; sobreposto comeca onde o anterior acaba;
     { grow: 600, de: 4, item: 2 },
   ]);
   assert.deepEqual(segmentos([], 3), [{ grow: 300, de: 0, item: -1 }]);
-});
-
-test("escolherTela devolve a tela certa do registro", () => {
-  const semAcao = () => {};
-  const registro = {
-    seletor: { html: "<a>seletor</a>", css: "s", montar: semAcao } satisfies Tela,
-    editar: { html: "<g>editar</g>", css: "g", montar: semAcao } satisfies Tela,
-    pausas: { html: "<f>pausas</f>", css: "f", montar: semAcao } satisfies Tela,
-    broll: { html: "<b>broll</b>", css: "b", montar: semAcao } satisfies Tela,
-    captions: { html: "<c>captions</c>", css: "c", montar: semAcao } satisfies Tela,
-    autocut: { html: "<d>autocut</d>", css: "d", montar: semAcao } satisfies Tela,
-    autosplit: { html: "<e>autosplit</e>", css: "e", montar: semAcao } satisfies Tela,
-  };
-
-  assert.equal(escolherTela(registro, "seletor").html, "<a>seletor</a>");
-  assert.equal(escolherTela(registro, "editar").html, "<g>editar</g>");
-  assert.equal(escolherTela(registro, "pausas").html, "<f>pausas</f>");
-  assert.equal(escolherTela(registro, "broll").html, "<b>broll</b>");
-  assert.equal(escolherTela(registro, "captions").html, "<c>captions</c>");
-  assert.equal(escolherTela(registro, "autocut").html, "<d>autocut</d>");
-  assert.equal(escolherTela(registro, "autosplit").html, "<e>autosplit</e>");
 });
 
 test("extrairCorpo pega so o miolo entre <body> e a marca de script", () => {

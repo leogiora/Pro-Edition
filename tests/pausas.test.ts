@@ -7,7 +7,6 @@ import {
   deslocamentos,
   desenhoDoAudio,
   FALA_PADRAO,
-  fonteDoTrecho,
   guardarNaMidia,
   lacunas,
   MARGEM_PADRAO_S,
@@ -232,13 +231,6 @@ test("lacunas conta os espacos que a transcricao marca entre palavras", () => {
     { start: 4, duration: 1 }, // 0,7 s
   ]);
   assert.deepEqual(r, { total: 4, acima02: 2, acima05: 1 });
-});
-
-test("fonteDoTrecho devolve o instante da midia que cada trecho tem de mostrar", () => {
-  // Clipe comeca na timeline em 0s, mostrando a midia a partir de 10s.
-  assert.equal(fonteDoTrecho({ baseInicioQ: 0, baseFonteQ: 300 }, 90), 390);
-  // Clipe que comeca em 1s na timeline: o trecho em 91 esta 90 quadros adiante.
-  assert.equal(fonteDoTrecho({ baseInicioQ: 30, baseFonteQ: 300 }, 120), 390);
 });
 
 const J = 0.02;
