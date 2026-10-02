@@ -2,7 +2,7 @@
  * ffprobe e ffmpeg: o que o Premiere fazia por dentro (ler a midia, exportar
  * o audio) e que fora dele vira um processo externo.
  *
- * O ffmpeg vem do PATH (winget, na maquina do Leo). `PRO_EDITION_FFMPEG`
+ * O ffmpeg vem do PATH (winget no Windows, brew no Mac). `PRO_EDITION_FFMPEG`
  * aponta para outro, quando o programa for instalado em maquina sem ele.
  */
 
@@ -21,7 +21,7 @@ function rodar(exe: string, args: readonly string[]): Promise<Buffer> {
     execFile(exe, args, { encoding: "buffer", maxBuffer: 1024 * 1024 * 1024, windowsHide: true }, (erro, saida, stderr) => {
       if (erro === null) return ok(saida);
       if ((erro as NodeJS.ErrnoException).code === "ENOENT") {
-        return falha(new Error(`${exe} nao encontrado. Instale o ffmpeg (winget install ffmpeg) e abra o programa de novo.`));
+        return falha(new Error(`${exe} nao encontrado. Instale o ffmpeg (${process.platform === "darwin" ? "brew install ffmpeg" : "winget install ffmpeg"}) e abra o programa de novo.`));
       }
       falha(new Error(`${exe} falhou: ${stderr.toString("utf8").trim().split("\n").slice(-3).join(" | ")}`));
     });

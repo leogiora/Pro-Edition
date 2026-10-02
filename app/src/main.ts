@@ -23,6 +23,10 @@ import { lerEstadoPremiere, PORTA_PREMIERE } from "./premiere-ao-vivo.ts";
 app.setPath("userData", join(app.getPath("appData"), "Pro Edition"));
 const cfg = new Config(app.getPath("userData"));
 
+// No Mac, o programa aberto pelo Finder nao herda o PATH do Terminal: o ffmpeg
+// do brew (Apple Silicon ou Intel) nao seria achado.
+if (process.platform === "darwin") process.env.PATH = `/opt/homebrew/bin:/usr/local/bin:${process.env.PATH ?? ""}`;
+
 const MIDIA = ["mp4", "mov", "mxf", "m4v", "wav", "mp3", "m4a", "aac", "flac", "json"];
 
 /** Arquivo passado pelo "Abrir com" do Windows (ou arrastado no icone). */
