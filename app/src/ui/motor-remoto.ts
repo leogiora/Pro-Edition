@@ -8,6 +8,8 @@
 import type { Empresa } from "../../../ferramentas/pro-captions/src/preset.ts";
 import type { AoVivo, Etapa, EstadoSequencia, MotorEditar, Registrar, ResumoVariacao } from "../../../src/editar.ts";
 import type { MotorPausas, Previa, Sequencia } from "../../../src/silencecut.ts";
+import type { Config } from "../../../ferramentas/auto-broll/src/domain.ts";
+import type { EstadoBroll, MotorBroll, RegistrarBroll, ResultadoBroll, TomBroll } from "../../../ferramentas/auto-broll/src/broller.ts";
 import type { ProApi } from "../api.ts";
 
 type Evento =
@@ -84,5 +86,32 @@ export function motorPausasRemoto(pro: ProApi): MotorPausas {
     guardarLog: async (linhas) => {
       await pedir("pausas:guardarLog", [linhas]);
     },
+  };
+}
+
+/** O B-Roller visto do programa: a leitura, a insercao e o aprendizado sao do plugin; o registro volta como evento. */
+export function motorBrollRemoto(pro: ProApi): MotorBroll {
+  let ouvinte: RegistrarBroll | null = null;
+  pro.aoEventoPremiere((e) => {
+    const ev = e as { tipo?: unknown; texto?: unknown; tom?: unknown } | null;
+    if (ev?.tipo === "registro" && typeof ev.texto === "string") ouvinte?.(ev.texto, ev.tom as TomBroll);
+  });
+  const pedir = (nome: string, args: readonly unknown[]): Promise<unknown> =>
+    pro.pedirPremiere(nome, args).catch((e) => {
+      throw limpa(e);
+    });
+  const comRegistro = async <T>(registrar: RegistrarBroll, nome: string, args: readonly unknown[]): Promise<T> => {
+    ouvinte = registrar;
+    try {
+      return (await pedir(nome, args)) as T;
+    } finally {
+      ouvinte = null;
+    }
+  };
+  return {
+    iniciar: (registrar) => comRegistro<Config>(registrar, "broll:iniciar", []),
+    ler: () => pedir("broll:ler", []) as Promise<EstadoBroll>,
+    analisar: (config, registrar) => comRegistro<ResultadoBroll>(registrar, "broll:analisar", [config]),
+    aprender: (config, registrar) => comRegistro<void>(registrar, "broll:aprender", [config]),
   };
 }

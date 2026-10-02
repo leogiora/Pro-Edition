@@ -4,10 +4,12 @@
 
 import type { BlocoLegenda, Legendas, ProApi } from "../api.ts";
 import { SILENCIO_MS, tempoDoCursor } from "../premiere-ao-vivo.ts";
-import { motorPausasRemoto, motorRemoto } from "./motor-remoto.ts";
+import { motorBrollRemoto, motorPausasRemoto, motorRemoto } from "./motor-remoto.ts";
 import cssTelas from "../../../src/ui/telas.css";
 import htmlSilenceCut from "../../../src/ui/pausas.html";
 import { mount as montarSilenceCut } from "../../../src/ui/pausas-mount.ts";
+import htmlBroller from "../../../src/ui/broller.html";
+import { mount as montarBroller } from "../../../src/ui/broller-mount.ts";
 import { desenharTrilhas, icone, marca, type Icone } from "../../../src/shell.ts";
 import cssFamilia from "../../../ferramentas/auto-broll/src/ui/styles.css";
 import htmlEditar from "../../../src/ui/editar.html";
@@ -45,13 +47,14 @@ const duracao = (s: number): string => {
 
 /* ---------------------------------------------------------------- telas */
 
-type Tela = "hall" | "autoedit" | "silencecut" | "pausas" | "broll" | "acabamento" | "podcast" | "legendas";
+type Tela = "hall" | "autoedit" | "silencecut" | "pausas" | "broller" | "broll" | "acabamento" | "podcast" | "legendas";
 const TITULOS: Record<Tela, string> = {
   hall: "",
   autoedit: "AutoEdit",
   silencecut: "SilenceCut",
   pausas: "SilenceCut por XML",
-  broll: "B-Roller",
+  broller: "B-Roller",
+  broll: "B-Roller por XML",
   acabamento: "Acabamento",
   podcast: "PodCut",
   legendas: "Captions",
@@ -65,11 +68,12 @@ function abrir(nova: Tela): void {
   $("marca").hidden = nova !== "hall";
   $("titulo").textContent = TITULOS[nova];
   if (nova === "autoedit") montarQuadro("autoeditQuadro", htmlEditar, (corpo) => montarAutoEdit(corpo, motorRemoto(pro)));
+  if (nova === "broller") montarQuadro("brollerQuadro", htmlBroller, (corpo) => montarBroller(corpo, motorBrollRemoto(pro)));
   if (nova === "silencecut") montarQuadro("silencecutQuadro", htmlSilenceCut, (corpo) => montarSilenceCut(corpo, motorPausasRemoto(pro)));
 }
 
 /**
- * As telas do painel (AutoEdit, SilenceCut), cada uma num quadro proprio, com
+ * As telas do painel (AutoEdit, SilenceCut, B-Roller), cada uma num quadro proprio, com
  * o motor que pede ao plugin no Premiere. Monta uma vez; voltar e abrir de
  * novo mantem o estado.
  */

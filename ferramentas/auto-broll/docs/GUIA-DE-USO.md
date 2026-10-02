@@ -39,40 +39,23 @@ dicionário de sinônimos) contra o texto da fala.
 | Controle | O que faz |
 |---|---|
 | **Pasta de B-rolls** | Onde ficam os arquivos `.mp4` que ele pode inserir. Fica salvo depois da primeira vez. |
-| **Preencher a tela** | Escala o B-roll pra cobrir o quadro inteiro, mesmo que a proporção não bata exatamente. |
-| **Densidade máxima** | Afrouxa as regras de *espaçamento* entre B-rolls (não a qualidade do match) pra caber mais na timeline. Ligue quando achar que ficou "espaçado demais". Ligado, cada B-roll vai até o próximo começar (no máximo 3 s), atravessando a frase como o Leo monta, e nunca passa do fim da fala. |
-| **Remover o áudio** | Tira o som original do clipe de B-roll ao inserir (a trilha/voz principal nunca é tocada, isso é só o áudio que vem junto do arquivo de vídeo). |
+| **Preencher a tela** | (botão de ligar) Escala o B-roll pra cobrir o quadro inteiro, mesmo que a proporção não bata exatamente. |
+| **Densidade máxima** | (botão de ligar) Afrouxa as regras de *espaçamento* entre B-rolls (não a qualidade do match) pra caber mais na timeline. Ligue quando achar que ficou "espaçado demais". Ligado, cada B-roll vai até o próximo começar (no máximo 3 s), atravessando a frase como o Leo monta, e nunca passa do fim da fala. |
+| **Sem o áudio do B-roll** | (botão de ligar) Tira o som original do clipe de B-roll ao inserir (a trilha/voz principal nunca é tocada, isso é só o áudio que vem junto do arquivo de vídeo). |
 | **Analisar e inserir** | O botão principal: faz tudo — lê, casa, planeja e insere. |
 | **Aprender** | Só ensina, não insere nada. Use depois de editar a timeline na mão (apagar o que não serviu, adicionar B-roll seu) sem rodar uma análise nova. |
+| **Botão redondo** | Lê a sequência de novo (depois de trocar de sequência no Premiere). |
 
-**O botão diz em que pé está.** "Analisar e inserir" vira "Analisando..."
-enquanto trabalha e, quando termina, confirma por alguns segundos com
-"✓ N B-rolls inseridos" antes de voltar ao normal. O distintivo no canto
-superior direito conta a mesma história em uma palavra, com um símbolo antes
-do texto (✓ pronto, ◌ analisando, ! atenção, × falhou) — dá pra ler sem
-depender de enxergar a cor.
+**Tela no layout do AutoEdit (02/10/2026).** No topo, o nome da sequência e
+uma etiqueta com o estado (lendo, analisando, N inseridos, falhou). Os números:
+quantos vídeos há na pasta, quantos B-rolls já estavam na timeline e quantos
+entraram agora. A faixa **V2** mostra em cinza o que já estava e em roxo o que
+entrou, e embaixo vem a lista de cada B-roll inserido com a fala daquele
+ponto. As últimas linhas do registro ficam no pé; o completo abre em "ver o
+registro completo" (e vai para `ultimo-log.json` / `ultimo-aprendizado.json`).
 
-**O registro (log) pode ser recolhido.** No cabeçalho dele, à direita, tem
-"Recolher" / "Mostrar". Ele nasce sempre aberto de propósito: é o único canal
-em que o plugin conta o que fez.
-
-**Quando não há sequência aberta**, o painel diz o que fazer em vez de só
-dizer que está vazio. A instrução some sozinha assim que você abre uma
-sequência.
-
-**Trabalhando num trecho só (in/out):** marque o in e o out na timeline (teclas
-`I` e `O` do Premiere) e clique em Analisar — os B-rolls entram **só dentro do
-trecho marcado**. É o jeito de tratar um reel de cada vez numa sequência que
-tem vários. O log avisa: *"In/out marcados: inserindo só de X a Y"*. Sem
-in/out (ou com o in/out cobrindo a sequência toda), ele analisa tudo, como
-sempre. O **Aprender ignora o in/out de propósito**: edição sua ensina em
-qualquer ponto da timeline.
-
-Ao analisar trecho por trecho, ele **enxerga o que já entrou nos reels
-vizinhos**: um take que já está na timeline fora do trecho não é repetido, e um
-conceito que apareceu há menos de 60s no reel anterior não volta. Antes, cada
-trecho era planejado no escuro e o mesmo take reaparecia na virada de um reel
-para o outro.
+A mesma tela abre no **programa Cutline** (card B-Roller), com o painel
+Cutline aberto no Premiere: quem lê e insere é o plugin.
 
 ---
 
