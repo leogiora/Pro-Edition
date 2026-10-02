@@ -57,7 +57,8 @@
       "hardenedRuntime": false
     },
     "dmg": {
-      "title": "Cutline"
+      "title": "Cutline",
+      "artifactName": "${productName}-${version}-${arch}.${ext}"
     }
   }
 }
