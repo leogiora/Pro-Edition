@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
-import { desenharTrilhas, extrairCorpo, icone, marca, segmentos, type Icone, type Tela } from "../src/shell.ts";
+import { desenharTrilhas, icone, marca, segmentos, type Icone, type Tela } from "../src/shell.ts";
 
 test("marca: o simbolo do Cutline so com caixas, no tamanho pedido", () => {
   const html = marca(256);
@@ -28,18 +28,6 @@ test("segmentos: vazio e item alternam; sobreposto comeca onde o anterior acaba;
     { grow: 600, de: 4, item: 2 },
   ]);
   assert.deepEqual(segmentos([], 3), [{ grow: 300, de: 0, item: -1 }]);
-});
-
-test("extrairCorpo pega so o miolo entre <body> e a marca de script", () => {
-  const doc =
-    `<!DOCTYPE html><html><head><!--ESTILOS--></head>` +
-    `<body class="x">  <div>ola</div>  <!--SCRIPT--></body></html>`;
-
-  assert.equal(extrairCorpo(doc), "<div>ola</div>");
-});
-
-test("extrairCorpo lanca quando o HTML nao tem a marca esperada", () => {
-  assert.throws(() => extrairCorpo("<html><body>sem marca</body></html>"));
 });
 
 test("desenharTrilhas junta caracteres iguais num segmento e rejeita notacao errada", () => {

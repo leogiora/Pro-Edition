@@ -142,18 +142,3 @@ export function segmentos(itens: ReadonlyArray<{ readonly de: number; readonly a
   if (cs(dur) > cs(t)) saida.push({ grow: cs(dur) - cs(t), de: t, item: -1 });
   return saida;
 }
-
-/**
- * Extrai o miolo do <body> de um painel standalone (ferramentas/auto-broll ou
- * ferramentas/pro-captions) para injetar em document.body do shell — nunca o documento
- * inteiro, que tem DOCTYPE/head/tag <body> proprios.
- *
- * Corta ate a marca <!--SCRIPT-->: o que vem depois (o bundle JS do plugin
- * standalone) nao interessa aqui, quem roda a logica e o mount() importado
- * direto, nao o script embutido no HTML original.
- */
-export function extrairCorpo(htmlCompleto: string): string {
-  const m = /<body[^>]*>([\s\S]*?)<!--SCRIPT-->/.exec(htmlCompleto);
-  if (!m) throw new Error("HTML sem <body>...<!--SCRIPT--> no formato esperado");
-  return m[1]!.trim();
-}

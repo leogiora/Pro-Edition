@@ -1,0 +1,97 @@
+<!-- Captions, no layout das telas novas (estilo comum em telas.css: os estados
+     e cartoes nasceram no B-Roller). A mesma tela no painel e no programa; o
+     motor e que muda (ferramentas/pro-captions/src/captions.ts). Quatro estados
+     no corpo: pronto, gerando, resultado e erro.
+     UXP: sem grid, sem gap, sem var(), sem %, sem opacity; clicavel e div[role=button]. -->
+<style>
+  .cp-linha { display: flex; flex-direction: row; align-items: center; padding: 6px 4px; border-bottom: 1px solid #1a1e26; cursor: pointer; }
+  .cp-tempo { flex: none; width: 44px; font-size: 11px; color: #9098a6; }
+  .cp-texto { flex: 1 1 auto; min-width: 0; color: #c9ced8; }
+  .cp-motivo { margin-top: 2px; font-size: 10px; color: #eeab4c; }
+  .cp-ir { flex: none; margin-left: 6px; font-size: 10px; color: #5f6774; }
+  .cp-aviso { margin: 8px 0 0 0; padding: 7px 9px; border-radius: 8px; background-color: #3a2c14; color: #eeab4c; line-height: 1.45; }
+  .tl-seg.cp-preco { background-color: #ff7d71; }
+  .tl-seg.cp-normal { background-color: #eceef2; border-right: 1px solid #101318; }
+</style>
+
+<header class="ed-topo">
+  <span class="ed-titulo">Captions <span id="cpSeq" class="ed-seq">· lendo…</span></span>
+  <span id="cpPill" class="pill" data-tom="ativo">lendo</span>
+</header>
+
+<main id="cpRolagem" class="conteudo">
+  <div class="br-sec br-bloco">
+    <div id="cpSub" class="br-sub" style="margin: 0 0 8px 0">lendo a sequência…</div>
+    <div id="cpFontes" class="chips"></div>
+    <div id="cpChaveSalva" class="br-linha br-num" style="display: none; margin-top: 2px">
+      <span id="cpChaveTxt" class="br-mudo"></span><span class="br-esp"></span>
+      <span id="cpChaveTrocar" role="button" tabindex="0" style="color: #85b7eb; cursor: pointer">trocar</span>
+    </div>
+    <div id="cpChaveNova" class="br-pasta-linha" style="display: none; margin-top: 4px">
+      <span class="br-pasta-ico"></span>
+      <input id="cpChave" class="br-pasta" type="text" placeholder="cole a chave do ElevenLabs (sk_…)" />
+      <div id="cpSalvarChave" class="bc-acao" role="button" tabindex="0" style="flex: none; margin: 0 0 0 6px; padding: 4px 10px">Salvar</div>
+    </div>
+  </div>
+
+  <!-- pronto -->
+  <div id="cpVazio" class="br-vazio br-bloco">
+    <div class="br-vazio-titulo">Pronto para legendar</div>
+    <div class="br-vazio-texto">Ele ouve a fala da sequência, monta as legendas no padrão (uma linha, preço em faixa própria) e põe nas faixas C1 e C2.</div>
+    <div id="cpConfere" class="br-confere"></div>
+  </div>
+
+  <!-- gerando -->
+  <div id="cpAndamento" class="br-bloco" style="display: none">
+    <div class="br-sec">
+      <div id="cpEtapas" class="br-etapas"></div>
+      <div id="cpAndamentoTxt" class="br-sub">começando…</div>
+    </div>
+    <div class="br-cartoes">
+      <div class="br-sk"><div class="br-sk-l" style="width: 220px"></div><div class="br-sk-l" style="width: 160px; margin-bottom: 0"></div></div>
+      <div class="br-sk"><div class="br-sk-l" style="width: 190px"></div><div class="br-sk-l" style="width: 120px; margin-bottom: 0"></div></div>
+    </div>
+  </div>
+
+  <!-- resultado -->
+  <div id="cpResultado" class="br-bloco" style="display: none">
+    <div class="br-sec">
+      <div class="mets">
+        <div class="met"><span class="met-rot">Legendas</span><span id="cpMetLeg" class="met-val">–</span></div>
+        <div class="met"><span class="met-rot">Preços</span><span id="cpMetPreco" class="met-val" style="color: #ff7d71">–</span></div>
+        <div class="met"><span class="met-rot">Para revisar</span><span id="cpMetRev" class="met-val" style="color: #eeab4c">–</span></div>
+      </div>
+      <div class="tl-linha"><span class="tl-rot">C2</span><div id="cpFaixaC2" class="tl-faixa"></div></div>
+      <div class="tl-linha"><span class="tl-rot">C1</span><div id="cpFaixaC1" class="tl-faixa"></div></div>
+      <div id="cpFonteTxt" class="br-sub" style="margin-top: 6px"></div>
+      <div id="cpAvisos"></div>
+    </div>
+    <div class="br-cartoes">
+      <div id="cpFiltros" class="br-filtros"></div>
+      <div id="cpLista"></div>
+      <div id="cpRodapeLista" class="br-rodape-lista"></div>
+    </div>
+  </div>
+
+  <!-- erro: causa e como resolver -->
+  <div id="cpErro" class="br-erro br-bloco" style="display: none">
+    <div id="cpErroTitulo" class="br-erro-titulo">Parou</div>
+    <div id="cpErroTexto" class="br-erro-texto"></div>
+    <div id="cpErroComo" class="br-erro-como"></div>
+    <div class="bc-acoes" style="margin-top: 0">
+      <div id="cpErroDeNovo" class="bc-acao" role="button" tabindex="0" style="border-color: #ff7d71; color: #ffd7d3">Tentar de novo</div>
+      <div id="cpErroLog" class="bc-acao" role="button" tabindex="0">Ver registro</div>
+    </div>
+  </div>
+
+  <div class="br-bloco" style="padding: 0 12px 10px 12px">
+    <div id="cpFeed" class="feed"></div>
+    <div id="cpVerLog" class="ver-log" role="button" tabindex="0">ver o registro completo</div>
+    <pre id="cpLog" class="log" style="display: none"></pre>
+  </div>
+</main>
+
+<footer class="rodape">
+  <div id="cpGerar" class="btn-pri" role="button" tabindex="0"><span id="cpIcoGerar" class="btn-ico"></span><span id="cpGerarTxt">Gerar legendas</span></div>
+  <div id="cpReler" class="btn-redondo" role="button" tabindex="0" title="Ler a sequência de novo" aria-label="Ler a sequência de novo"><span id="cpIcoReler" class="btn-ico-so"></span></div>
+</footer>

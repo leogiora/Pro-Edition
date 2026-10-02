@@ -10,6 +10,7 @@ import type { AoVivo, Etapa, EstadoSequencia, MotorEditar, Registrar, ResumoVari
 import type { MotorPausas, Previa, Sequencia } from "../../../src/silencecut.ts";
 import type { Config } from "../../../ferramentas/auto-broll/src/domain.ts";
 import type { AndamentoBroll, EstadoBroll, Inserido, MotorBroll, RegistrarBroll, ResultadoBroll, TomBroll } from "../../../ferramentas/auto-broll/src/broller.ts";
+import type { EstadoCaptions, MotorCaptions, RegistrarCaptions, ResultadoCaptions, TomCaptions } from "../../../ferramentas/pro-captions/src/captions.ts";
 import type { ProApi } from "../api.ts";
 
 type Evento =
@@ -129,5 +130,37 @@ export function motorBrollRemoto(pro: ProApi): MotorBroll {
       await pedir("broll:tirar", [b, config]);
     },
     trocar: (b, config) => pedir("broll:trocar", [b, config]) as Promise<Inserido>,
+  };
+}
+
+/** O Captions visto do programa: ouvir, montar e por na timeline sao do plugin; o registro volta como evento. */
+export function motorCaptionsRemoto(pro: ProApi): MotorCaptions {
+  let ouvinte: RegistrarCaptions | null = null;
+  let etapas: ((etapa: number, texto: string) => void) | null = null;
+  pro.aoEventoPremiere((e) => {
+    const ev = e as { tipo?: unknown; texto?: unknown; tom?: unknown; etapa?: unknown } | null;
+    if (ev?.tipo === "registro" && typeof ev.texto === "string") ouvinte?.(ev.texto, ev.tom as TomCaptions);
+    if (ev?.tipo === "captions:andamento" && typeof ev.etapa === "number") etapas?.(ev.etapa, String(ev.texto ?? ""));
+  });
+  const pedir = (nome: string, args: readonly unknown[]): Promise<unknown> =>
+    pro.pedirPremiere(nome, args).catch((e) => {
+      throw limpa(e);
+    });
+  return {
+    ler: () => pedir("captions:ler", []) as Promise<EstadoCaptions>,
+    gerar: async (usarEleven, registrar, andamento) => {
+      ouvinte = registrar;
+      etapas = andamento;
+      try {
+        return (await pedir("captions:gerar", [usarEleven])) as ResultadoCaptions;
+      } finally {
+        ouvinte = null;
+        etapas = null;
+      }
+    },
+    salvarChave: (chave) => pedir("captions:salvarChave", [chave]) as Promise<string>,
+    irPara: async (segundos) => {
+      await pedir("captions:irPara", [segundos]);
+    },
   };
 }

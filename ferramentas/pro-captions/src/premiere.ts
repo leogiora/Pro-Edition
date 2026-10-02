@@ -238,23 +238,6 @@ function comTransacao(
   if (erro !== null) throw new Error(erro);
 }
 
-const seguro = (nome: string): string => nome.replace(/[^a-zA-Z0-9._-]/g, "_");
-
-// salvarBackup morreu com a rota de escrita (D-13): gerar legendas nao toca
-// mais no transcript do clipe, entao nao ha o que proteger. lerBackup fica
-// porque "Restaurar original" ainda desfaz escritas de versoes antigas.
-
-/** Devolve o transcript original guardado, ou `null` se nao houver. */
-export async function lerBackup(nome: string): Promise<string | null> {
-  const pasta = await uxp.storage.localFileSystem.getDataFolder();
-  try {
-    const arquivo = await pasta.getEntry(`original-${seguro(nome)}.json`);
-    return (await arquivo.read()) as string;
-  } catch {
-    return null;
-  }
-}
-
 /**
  * Grava o que aconteceu, com as dez execucoes mais recentes.
  *
@@ -368,26 +351,6 @@ export async function legendasNaTimeline(legendas: string, precos: string | null
     { texto: feito || "legendas na timeline", tipo: "ok" },
     ...lembretes.filter((l) => l.trim()).map((texto) => ({ texto, tipo: "aviso" as const })),
   ];
-}
-
-/** Escreve o transcript de volta no ClipProjectItem da midia. */
-export async function escreverTranscricao(nomeDaMidia: string, json: string): Promise<void> {
-  const { project, rootItem } = await handles();
-  const raiz = rootItem as { getItems: () => Promise<Array<{ name: string }>> };
-  const item = (await raiz.getItems()).find((i) => i.name === nomeDaMidia);
-  if (!item) throw new Error(`midia nao encontrada no projeto: ${nomeDaMidia}`);
-
-  const clip = ppro.ClipProjectItem.cast(item) ?? item;
-
-  comTransacao(
-    project as Parameters<typeof comTransacao>[0],
-    "Captions: escrever transcricao",
-    (adicionar) => {
-      // Tudo nasce dentro do lock, inclusive o TextSegments.
-      const segmentos = ppro.Transcript.importFromJSON(json);
-      adicionar(ppro.Transcript.createImportTextSegmentsAction(segmentos, clip));
-    }
-  );
 }
 
 /* ---------------------------------------------- audio para o ElevenLabs */

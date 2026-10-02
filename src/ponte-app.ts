@@ -19,6 +19,7 @@ import { motorPausasLocal } from "./motor-pausas-local.ts";
 import { motorBrollLocal } from "../ferramentas/auto-broll/src/motor-local.ts";
 import type { Config } from "../ferramentas/auto-broll/src/domain.ts";
 import type { Inserido } from "../ferramentas/auto-broll/src/broller.ts";
+import { motorCaptionsLocal } from "../ferramentas/pro-captions/src/motor-local.ts";
 
 declare function require(id: string): unknown;
 
@@ -94,6 +95,15 @@ async function atender(p: Pedido): Promise<unknown> {
       return motorBrollLocal.trocar(p.args[0] as Inserido, p.args[1] as Config);
     case "broll:aprender":
       return motorBrollLocal.aprender(p.args[0] as Config, registro);
+    // Captions
+    case "captions:ler":
+      return motorCaptionsLocal.ler();
+    case "captions:gerar":
+      return motorCaptionsLocal.gerar(p.args[0] as boolean, registro, (etapa, texto) => evento({ tipo: "captions:andamento", etapa, texto }));
+    case "captions:salvarChave":
+      return motorCaptionsLocal.salvarChave(p.args[0] as string);
+    case "captions:irPara":
+      return motorCaptionsLocal.irPara(p.args[0] as number);
     default:
       throw new Error(`pedido desconhecido: ${p.nome}`);
   }
