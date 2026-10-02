@@ -43,15 +43,17 @@ import {
   usarSinonimos,
   type Conceito,
 } from "./match.ts";
-import { planejar, REGRAS_DENSAS, REGRAS_PADRAO, semSobrepor, type Ocupado } from "./plano.ts";
+import { planejar, REGRAS_DENSAS, REGRAS_PADRAO, semSobrepor, type Colocacao, type Ocupado } from "./plano.ts";
 import type { Frase } from "./transcript.ts";
-import type { Inserido, MotorBroll, RegistrarBroll, ResultadoBroll, TomBroll, TrechoBroll } from "./broller.ts";
+import type { AndamentoBroll, Aprendizado, Inserido, MotorBroll, RegistrarBroll, ResultadoBroll, TomBroll, TrechoBroll } from "./broller.ts";
 import {
   comLimite,
   copiarParaBiblioteca,
   dimensoesDoArquivo,
   getSequenceInfo,
   inserirPlano,
+  irPara,
+  tirarBroll,
   lerBrollsAcimaDeV1,
   lerClipes,
   lerInOut,
@@ -90,10 +92,43 @@ function registrar(texto: string, tipo: TomBroll = "passo"): void {
   saida(texto, tipo);
 }
 
+/** Em que etapa a analise esta (a tela acende as bolinhas). */
+let andamento: AndamentoBroll = () => undefined;
+
 /** Uma acao por vez: as linhas dela, do comeco, para a tela que pediu. */
-function comecar(para: RegistrarBroll): void {
+function comecar(para: RegistrarBroll, etapas: AndamentoBroll = () => undefined): void {
   linhas = [];
   saida = para;
+  andamento = etapas;
+}
+
+/** O aprendizado somado: o que a tela mostra na barra de mantidos e apagados. */
+async function somarAprendizado(memoria?: Memoria): Promise<Aprendizado> {
+  const m = memoria ?? parseMemoria(await comLimite("ler aprendizado", readJson(MEMORIA_FILE), 5000));
+  const ligacoes = ligacoesFirmes(parseAssociacoes(await comLimite("ler ligacoes", readJson(ASSOCIACOES_FILE), 5000))).size;
+  let mantidos = 0;
+  let apagados = 0;
+  for (const saldo of Object.values(m.arquivos)) {
+    mantidos += saldo.acertos;
+    apagados += saldo.erros;
+  }
+  return { mantidos: Math.round(mantidos), apagados: Math.round(apagados), ligacoes };
+}
+
+/** Uma colocacao virada no cartao da tela. */
+function paraCartao(c: Colocacao, memoria: Memoria): Inserido {
+  return {
+    inicio: c.inicio,
+    fim: c.inicio + c.duracao,
+    arquivo: c.arquivo,
+    frase: c.textoDaFrase,
+    conceito: c.conceito,
+    nota: c.score,
+    termos: c.termosCasados,
+    motivo: c.motivo,
+    ensinado: c.motivo.startsWith("voce ensinou"),
+    mantidoVezes: Math.round(memoria.arquivos[c.arquivo]?.acertos ?? 0),
+  };
 }
 
 /**
@@ -385,6 +420,7 @@ async function lerContexto(config: Config): Promise<{
 }> {
   const pasta = config.libraryPath.trim();
   if (!pasta) throw new Error("Informe a pasta de B-rolls.");
+  andamento(0, "Lendo a fala da V1");
 
   const arquivos = await comLimite("listar pasta de B-rolls", listarPastaBrolls(pasta), 30000);
   if (arquivos.length === 0) throw new Error(`Nenhum video em ${pasta}.`);
@@ -415,6 +451,7 @@ async function lerContexto(config: Config): Promise<{
     registrar(`${ligacoes.size} conceitos com ligacao que voce ensinou`, "passo");
   }
 
+  andamento(1, "Casando a fala com a pasta");
   const resultado = analisar({
     clipes,
     transcricoesJson,
@@ -457,8 +494,8 @@ async function aprenderDaTimeline(config: Config, para: RegistrarBroll): Promise
   }
 }
 
-async function analisarSequencia(config: Config, para: RegistrarBroll): Promise<ResultadoBroll> {
-  comecar(para);
+async function analisarSequencia(config: Config, para: RegistrarBroll, etapas: AndamentoBroll): Promise<ResultadoBroll> {
+  comecar(para, etapas);
   // Sai no `finally`: assim aparece por ultimo — visivel — em qualquer saida,
   // inclusive quando a analise nao acha oportunidade ou falha no meio.
   let resumoAprendizado: Julgamento["resumo"] = [];
@@ -467,12 +504,21 @@ async function analisarSequencia(config: Config, para: RegistrarBroll): Promise<
     const { pasta, arquivos, resultado, nomeSequencia, duracaoDaSequencia } = await lerContexto(config);
     // A tela desenha a timeline com o que ja estava e o que entrou.
     let antes: readonly TrechoBroll[] = [];
+    let semBroll = 0;
+    const aprendidoAntes = await somarAprendizado();
+    let aprendido = aprendidoAntes;
     const resultado_ = (inseridos: readonly Inserido[]): ResultadoBroll => ({
       nome: nomeSequencia,
       duracaoS: duracaoDaSequencia,
       naPasta: arquivos.length,
       naTimeline: antes,
       inseridos,
+      semBroll,
+      aprendizado: aprendido,
+      nestaRodada: {
+        mantidos: Math.max(0, aprendido.mantidos - aprendidoAntes.mantidos),
+        apagados: Math.max(0, aprendido.apagados - aprendidoAntes.apagados),
+      },
     });
 
     for (const aviso of resultado.avisos.slice(0, 6)) registrar(aviso, "aviso");
@@ -501,6 +547,7 @@ async function analisarSequencia(config: Config, para: RegistrarBroll): Promise<
     );
     resumoAprendizado = resumo;
     antes = ocupado.map((o) => ({ inicio: o.inicio, fim: o.fim, arquivo: o.arquivo ?? "" }));
+    aprendido = await somarAprendizado(memoria);
 
     // Frases que nem encostam no trecho marcado ficam de fora ANTES do
     // planejamento: espacamento e janela de repeticao valem dentro do trecho,
@@ -523,6 +570,7 @@ async function analisarSequencia(config: Config, para: RegistrarBroll): Promise<
     // Medir a biblioteca: a primeira vez custa dezenas de segundos, as
     // seguintes nao custam nada. Falhar aqui so tira a escolha de take pelo
     // momento; nao pode tirar a insercao.
+    andamento(2, "Escolhendo o take");
     const cache = parseCacheIntensidade(
       await comLimite("ler intensidade", readJson(INTENSIDADE_FILE), 5000)
     );
@@ -578,6 +626,7 @@ async function analisarSequencia(config: Config, para: RegistrarBroll): Promise<
       })),
     }).catch(() => undefined);
 
+    semBroll = plano.descartes.length;
     for (const descarte of plano.descartes) registrar(`  ${descarte}`, "vazio");
 
     // Uma frase que atravessa o in ou o out ainda pode ancorar fora do trecho.
@@ -616,6 +665,7 @@ async function analisarSequencia(config: Config, para: RegistrarBroll): Promise<
       registrar(`        "${trecho(c.textoDaFrase)}"`, "vazio");
     }
 
+    andamento(3, `Inserindo ${entram.length} B-rolls`);
     const feito = await comLimite(
       "inserir plano",
       inserirPlano(entram, {
@@ -650,9 +700,7 @@ async function analisarSequencia(config: Config, para: RegistrarBroll): Promise<
       registrar(`Plano nao ficou guardado, esta rodada nao vai ensinar nada. ${mensagemDeErro(e)}`, "aviso");
     }
 
-    return resultado_(
-      entram.map((c) => ({ inicio: c.inicio, fim: c.inicio + c.duracao, arquivo: c.arquivo, frase: c.textoDaFrase }))
-    );
+    return resultado_(entram.map((c) => paraCartao(c, memoria)));
 
   } catch (e) {
     registrar(mensagemDeErro(e), "erro");
@@ -768,6 +816,61 @@ async function carregarSinonimos(): Promise<void> {
   }
 }
 
+/**
+ * Troca um B-roll pelo proximo take do mesmo conceito: primeiro o que ainda nao
+ * esta na timeline, entre eles o que voce mais manteve. O novo entra no plano
+ * pendente; o rejeitado continua la e, como sumiu da timeline, a proxima
+ * analise conta como apagado — o mesmo que apagar na mao.
+ */
+async function trocarTake(b: Inserido, config: Config): Promise<Inserido> {
+  const pasta = config.libraryPath.trim();
+  if (!pasta) throw new Error("Informe a pasta de B-rolls.");
+  const arquivos = await comLimite("listar pasta de B-rolls", listarPastaBrolls(pasta), 30000);
+  const naTimeline = new Set((await comLimite("ler B-rolls da timeline", lerBrollsAcimaDeV1(), 30000)).map((c) => c.sourceName));
+  const memoria = parseMemoria(await comLimite("ler aprendizado", readJson(MEMORIA_FILE), 5000));
+  const saldo = (nome: string): number => (memoria.arquivos[nome]?.acertos ?? 0) - (memoria.arquivos[nome]?.erros ?? 0);
+  const outros = arquivos
+    .filter((a) => a.name !== b.arquivo && rotuloDoArquivo(a.name) === b.conceito)
+    .sort(
+      (x, y) =>
+        Number(naTimeline.has(x.name)) - Number(naTimeline.has(y.name)) || saldo(y.name) - saldo(x.name) || x.name.localeCompare(y.name)
+    );
+  const novo = outros[0];
+  if (!novo) throw new Error(`Não há outro take de "${b.conceito}" na pasta.`);
+
+  if (!(await comLimite("tirar B-roll", tirarBroll(b, config.videoTrackIndex, config.audioTrackIndex), 30000))) {
+    throw new Error("Não achei esse B-roll na timeline: ele já foi apagado ou mexido.");
+  }
+  await comLimite(
+    "inserir take",
+    inserirPlano([{ arquivo: novo.name, caminho: novo.nativePath, inicio: b.inicio, duracao: b.fim - b.inicio }], {
+      videoTrackIndex: config.videoTrackIndex,
+      audioTrackIndex: config.audioTrackIndex,
+      removerAudio: config.removeAudio,
+      preencherTela: config.fillScreen,
+    }),
+    120000
+  );
+
+  const sequencia = (await comLimite("ler sequencia", getSequenceInfo())).name;
+  const pendentes = parsePendentes(await comLimite("ler pendentes", readJson(PENDENTES_FILE), 5000));
+  const atual = pendentes.porSequencia[sequencia];
+  await writeJson(
+    PENDENTES_FILE,
+    comPendente(pendentes, sequencia, {
+      quando: atual?.quando || new Date().toISOString(),
+      itens: [...(atual?.itens ?? []), { arquivo: novo.name, conceito: b.conceito, termosCasados: b.termos, inicio: b.inicio }],
+    })
+  );
+  return {
+    ...b,
+    arquivo: novo.name,
+    motivo: `troca de "${b.arquivo}"`,
+    ensinado: false,
+    mantidoVezes: Math.round(memoria.arquivos[novo.name]?.acertos ?? 0),
+  };
+}
+
 // ---------------------------------------------------------------- motor
 
 export const motorBrollLocal: MotorBroll = {
@@ -784,18 +887,39 @@ export const motorBrollLocal: MotorBroll = {
     await carregarSinonimos();
     return config;
   },
-  ler: async () => {
+  ler: async (pasta) => {
     const info = await comLimite("ler sequencia", getSequenceInfo());
-    // So enfeite da tela: sem a leitura, a faixa aparece vazia.
+    // O resto e o que a tela confere antes da analise: sem cada leitura, so mostra menos.
     const acima = await comLimite("ler B-rolls da timeline", lerBrollsAcimaDeV1(), 30000).catch(() => []);
+    const naPasta = pasta.trim()
+      ? await comLimite("listar pasta de B-rolls", listarPastaBrolls(pasta.trim()), 30000).then((a) => a.length, () => null)
+      : null;
+    const clipes = await comLimite("ler clipes de V1", lerClipes(0), 30000).catch(() => []);
+    const nomes = [...new Set(clipes.map((c) => c.sourceName))];
+    const comTranscricao =
+      nomes.length === 0
+        ? 0
+        : await comLimite("ler transcricoes", lerTranscricoes(nomes), 60000).then((t) => t.transcricoes.size, () => 0);
     return {
       nome: info.name,
       duracaoS: info.durationSeconds,
       formato: `${info.width}x${info.height}`,
       fps: info.fps,
       naTimeline: acima.map((c) => ({ inicio: c.startSeconds, fim: c.endSeconds, arquivo: c.sourceName })),
+      naPasta,
+      clipesV1: clipes.length,
+      midias: nomes.length,
+      comTranscricao,
+      aprendizado: await somarAprendizado().catch(() => ({ mantidos: 0, apagados: 0, ligacoes: 0 })),
     };
   },
   analisar: analisarSequencia,
   aprender: aprenderDaTimeline,
+  irPara: (segundos) => comLimite("ir para", irPara(segundos), 5000),
+  tirar: async (b, config) => {
+    if (!(await comLimite("tirar B-roll", tirarBroll(b, config.videoTrackIndex, config.audioTrackIndex), 30000))) {
+      throw new Error("Não achei esse B-roll na timeline: ele já foi apagado ou mexido.");
+    }
+  },
+  trocar: trocarTake,
 };

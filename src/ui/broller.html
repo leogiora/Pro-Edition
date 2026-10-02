@@ -1,66 +1,83 @@
-<!-- B-Roller, no layout das telas novas (estilo comum em telas.css). A
-     mesma tela no painel e no programa; o motor e que muda
-     (ferramentas/auto-broll/src/broller.ts). UXP: sem grid, sem gap, sem var(); clicavel e div[role=button]. -->
+<!-- B-Roller, no layout das telas novas (estilo comum em telas.css). A mesma
+     tela no painel e no programa; o motor e que muda
+     (ferramentas/auto-broll/src/broller.ts). Quatro estados no corpo: pronto
+     (conferencia antes da analise), analisando, resultado (cartoes) e erro.
+     UXP: sem grid, sem gap, sem var(), sem %, sem opacity; clicavel e div[role=button]. -->
 <style>
-  .br-rotulo {
-    margin-bottom: 5px;
-    font-size: 11px;
-    color: #9098a6;
-  }
+  .br-sec { padding: 10px 12px; border-bottom: 1px solid #1a1e26; }
+  .br-sub { margin-top: 2px; font-size: 11px; color: #9098a6; }
+  .br-linha { display: flex; flex-direction: row; align-items: center; }
+  .br-esp { flex: 1 1 auto; }
+  .br-mudo { color: #9098a6; }
+  .br-apagado { color: #5f6774; }
 
-  .br-pasta {
-    align-self: stretch;
-    margin-bottom: 8px;
-    padding: 5px 8px;
-    border: 1px solid #333b47;
-    border-radius: 6px;
-    background-color: #101318;
-    color: #eceef2;
-    font-size: 12px;
-  }
+  .br-pasta-linha { display: flex; flex-direction: row; align-items: center; margin-bottom: 8px; }
+  .br-pasta-ico { flex: none; width: 12px; height: 9px; margin-right: 8px; border: 2px solid #9098a6; border-radius: 2px; }
+  .br-pasta { flex: 1 1 auto; min-width: 0; padding: 4px 8px; border: 1px solid #333b47; border-radius: 6px; background-color: #101318; color: #eceef2; font-size: 12px; }
 
-  .tl-seg.br-antes { background-color: #5f6774; }
+  .br-tg { display: flex; flex-direction: row; align-items: center; flex: none; margin: 0 4px 4px 0; padding: 3px 9px; border: 1px solid #333b47; border-radius: 12px; font-size: 11px; color: #9098a6; cursor: pointer; }
+  .br-tg[data-on="sim"] { border-color: #8d82f5; background-color: #1d1a33; color: #d9d5ff; }
+  .br-ck { flex: none; width: 8px; height: 8px; margin-right: 6px; border: 2px solid #5f6774; border-radius: 3px; }
+  .br-tg[data-on="sim"] .br-ck { border-color: #8d82f5; background-color: #8d82f5; }
 
-  .br-lista {
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    margin-top: 8px;
-  }
+  .br-barra { display: flex; flex-direction: row; height: 6px; margin: 6px 0; border-radius: 3px; overflow: hidden; background-color: #1a1e26; }
+  .br-verde { background-color: #4ecb8d; }
+  .br-coral { background-color: #ff7d71; }
+  .br-num { font-size: 11px; }
 
-  .br-item {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    padding: 4px 6px;
-    border-bottom: 1px solid #1a1e26;
-    font-size: 12px;
-    color: #c9ced8;
-  }
+  .br-filtros { display: flex; flex-direction: row; flex-wrap: wrap; margin-bottom: 8px; }
+  .br-filtro { flex: none; margin-right: 4px; padding: 3px 9px; border-radius: 7px; font-size: 11px; color: #9098a6; cursor: pointer; }
+  .br-filtro[data-on="sim"] { background-color: #1a1e26; color: #eceef2; font-weight: 600; }
 
-  .br-item-tempo {
-    flex: none;
-    width: 44px;
-    color: #9098a6;
-  }
+  .br-cartoes { padding: 10px 12px 4px 12px; }
+  .bc { margin-bottom: 7px; padding: 10px 11px; border: 1px solid #232830; border-radius: 10px; background-color: #14171d; cursor: pointer; }
+  .bc[data-aberto="sim"] { border-color: #8d82f5; }
+  .bc[data-situacao="tirado"] { border-color: #2a1f22; background-color: #110f12; }
+  .bc-topo { display: flex; flex-direction: row; align-items: center; margin-bottom: 6px; }
+  .bc-tempo { font-size: 11px; color: #9098a6; }
+  .bc-tag { flex: none; margin-left: 4px; padding: 1px 7px; border-radius: 8px; font-size: 10px; }
+  .bc-tag-verde { background-color: #1c2a22; color: #4ecb8d; }
+  .bc-tag-ambar { background-color: #3a2c14; color: #eeab4c; }
+  .bc-tag-coral { background-color: #2a1618; color: #ff9a90; }
+  .bc-tag-roxo { background-color: #1d1a33; color: #c9c4ff; }
+  .bc-frase { margin-bottom: 8px; line-height: 1.45; color: #c9ced8; }
+  .bc-termo { color: #d9d5ff; border-bottom: 2px solid #8d82f5; }
+  .bc-arq { display: flex; flex-direction: row; align-items: center; }
+  .bc-dur { display: flex; flex: none; align-items: center; justify-content: center; width: 36px; height: 22px; margin-right: 8px; border-radius: 4px; background-color: #2a2650; color: #c9c4ff; font-size: 10px; }
+  .bc-arq-txt { flex: 1 1 auto; min-width: 0; }
+  .bc-nome { color: #c9c4ff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bc[data-situacao="tirado"] .bc-nome { color: #5f6774; text-decoration: line-through; }
+  .bc-conc { font-size: 10px; color: #5f6774; }
+  .bc-nota { flex: none; margin-left: 8px; text-align: right; }
+  .bc-nota-barra { display: flex; flex-direction: row; width: 44px; height: 3px; margin-top: 2px; border-radius: 2px; overflow: hidden; background-color: #232830; }
+  .bc-nota-cheia { background-color: #8d82f5; }
+  .bc-acoes { display: flex; flex-direction: row; margin-top: 9px; }
+  .bc-acao { flex: 1 1 auto; margin-right: 6px; padding: 5px 0; border: 1px solid #333b47; border-radius: 7px; text-align: center; font-size: 11px; color: #c9ced8; cursor: pointer; }
+  .bc-acao:last-child { margin-right: 0; }
+  .bc-acao-tirar { color: #ff9a90; }
+  .br-rodape-lista { padding: 4px 0 10px 0; text-align: center; font-size: 11px; color: #5f6774; }
 
-  .br-item-arquivo {
-    flex: none;
-    width: 120px;
-    color: #8d82f5;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
+  .br-etapas { display: flex; flex-direction: row; margin-bottom: 8px; }
+  .br-etapa { display: flex; flex-direction: column; align-items: center; flex: 1 1 auto; }
+  .br-bola { width: 16px; height: 16px; border: 2px solid #333b47; border-radius: 10px; }
+  .br-etapa[data-estado="feito"] .br-bola { border-color: #4ecb8d; background-color: #4ecb8d; }
+  .br-etapa[data-estado="agora"] .br-bola { border-color: #8d82f5; background-color: #8d82f5; }
+  .br-etapa-rot { margin-top: 4px; font-size: 10px; color: #5f6774; }
+  .br-etapa[data-estado="feito"] .br-etapa-rot, .br-etapa[data-estado="agora"] .br-etapa-rot { color: #eceef2; }
+  .br-sk { margin-bottom: 7px; padding: 10px 11px; border: 1px solid #1a1e26; border-radius: 10px; background-color: #14171d; }
+  .br-sk-l { height: 9px; margin-bottom: 7px; border-radius: 4px; background-color: #1a1e26; }
 
-  .br-item-frase {
-    flex: 1 1 auto;
-    min-width: 0;
-    margin-left: 8px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
+  .br-vazio { padding: 20px 16px; }
+  .br-vazio-titulo { margin-bottom: 6px; font-size: 13px; font-weight: 600; text-align: center; }
+  .br-vazio-texto { margin-bottom: 12px; line-height: 1.5; text-align: center; color: #9098a6; }
+  .br-confere { padding: 8px 12px; border-radius: 10px; background-color: #14171d; }
+  .br-confere-linha { display: flex; flex-direction: row; align-items: center; padding: 3px 0; color: #c9ced8; }
+  .br-marca { flex: none; width: 16px; font-weight: 700; }
+
+  .br-erro { margin: 12px; padding: 11px 12px; border: 1px solid #5c2a2c; border-radius: 10px; background-color: #2a1618; }
+  .br-erro-titulo { margin-bottom: 6px; font-weight: 600; color: #ff9a90; }
+  .br-erro-texto { margin-bottom: 8px; line-height: 1.5; color: #e6c4c1; }
+  .br-erro-como { margin-bottom: 10px; line-height: 1.5; color: #c9ced8; }
 </style>
 
 <header class="ed-topo">
@@ -69,25 +86,68 @@
 </header>
 
 <main id="brRolagem" class="conteudo">
-  <div class="bloco">
-    <div class="br-rotulo">Pasta de B-rolls (fica salva depois da primeira análise que der certo)</div>
-    <input id="brPasta" class="br-pasta" type="text" placeholder="cole o caminho da pasta" />
+  <div class="br-sec">
+    <div id="brSub" class="br-sub" style="margin: 0 0 8px 0">lendo a sequência…</div>
+    <div class="br-pasta-linha">
+      <span class="br-pasta-ico"></span>
+      <input id="brPasta" class="br-pasta" type="text" placeholder="cole o caminho da pasta de B-rolls" />
+    </div>
     <div id="brOpcoes" class="chips"></div>
-    <div class="prog-linha"><span id="brProg" class="prog-txt">lendo a sequência…</span></div>
   </div>
 
-  <div class="det">
-    <div class="mets">
-      <div class="met"><span class="met-rot">Na pasta</span><span id="brMetPasta" class="met-val">–</span></div>
-      <div class="met"><span class="met-rot">Já na timeline</span><span id="brMetAntes" class="met-val">–</span></div>
-      <div class="met"><span class="met-rot">Inseridos</span><span id="brMetNovos" class="met-val" style="color: #8d82f5">–</span></div>
+  <!-- pronto: o que ele vai fazer e o que confere antes -->
+  <div id="brVazio" class="br-vazio">
+    <div class="br-vazio-titulo">Pronto para escolher B-rolls</div>
+    <div class="br-vazio-texto">Ele lê a fala da V1, acha os B-rolls da pasta que combinam e coloca na V2. O que você apagar depois ensina a próxima.</div>
+    <div id="brConfere" class="br-confere"></div>
+  </div>
+
+  <!-- analisando -->
+  <div id="brAndamento" style="display: none">
+    <div class="br-sec">
+      <div id="brEtapas" class="br-etapas"></div>
+      <div id="brAndamentoTxt" class="br-sub">começando…</div>
     </div>
+    <div class="br-cartoes">
+      <div class="br-sk"><div class="br-sk-l" style="width: 40px"></div><div class="br-sk-l" style="width: 230px"></div><div class="br-sk-l" style="width: 150px; margin-bottom: 0"></div></div>
+      <div class="br-sk"><div class="br-sk-l" style="width: 40px"></div><div class="br-sk-l" style="width: 200px"></div><div class="br-sk-l" style="width: 170px; margin-bottom: 0"></div></div>
+    </div>
+  </div>
 
-    <div class="tl-linha"><span class="tl-rot">V2</span><div id="brFaixa" class="tl-faixa"></div></div>
-    <div class="tl-linha"><span class="tl-rot">V1</span><div class="tl-faixa"><span class="tl-seg tl-V1" style="flex-grow: 1"></span></div></div>
+  <!-- resultado -->
+  <div id="brResultado" style="display: none">
+    <div class="br-sec">
+      <div class="br-linha"><span class="br-mudo br-num">Aprendizado</span><span class="br-esp"></span><span id="brRodada" class="br-apagado br-num"></span></div>
+      <div class="br-barra"><span id="brBarraVerde" class="br-verde" style="flex-grow: 1"></span><span id="brBarraCoral" class="br-coral" style="flex-grow: 0"></span></div>
+      <div class="br-linha br-num">
+        <span id="brMantidos" style="color: #4ecb8d">–</span><span class="br-esp"></span>
+        <span id="brApagados" style="color: #ff7d71">–</span><span class="br-esp"></span>
+        <span id="brLigacoes" class="br-mudo">–</span>
+      </div>
+    </div>
+    <div class="br-sec">
+      <div class="tl-linha"><span class="tl-rot">V2</span><div id="brFaixa" class="tl-faixa"></div></div>
+      <div id="brLegenda" class="br-linha br-apagado br-num" style="margin-top: 4px"></div>
+    </div>
+    <div class="br-cartoes">
+      <div id="brFiltros" class="br-filtros"></div>
+      <div id="brLista"></div>
+      <div id="brRodapeLista" class="br-rodape-lista"></div>
+    </div>
+  </div>
 
-    <div id="brLista" class="br-lista"></div>
+  <!-- erro: causa e como resolver -->
+  <div id="brErro" class="br-erro" style="display: none">
+    <div id="brErroTitulo" class="br-erro-titulo">Parou</div>
+    <div id="brErroTexto" class="br-erro-texto"></div>
+    <div id="brErroComo" class="br-erro-como"></div>
+    <div class="bc-acoes" style="margin-top: 0">
+      <div id="brErroDeNovo" class="bc-acao" role="button" tabindex="0" style="border-color: #ff7d71; color: #ffd7d3">Tentar de novo</div>
+      <div id="brErroLog" class="bc-acao" role="button" tabindex="0">Ver registro</div>
+    </div>
+  </div>
 
+  <div style="padding: 0 12px 10px 12px">
     <div id="brFeed" class="feed"></div>
     <div id="brVerLog" class="ver-log" role="button" tabindex="0">ver o registro completo</div>
     <pre id="brLog" class="log" style="display: none"></pre>
@@ -95,7 +155,7 @@
 </main>
 
 <footer class="rodape">
-  <div id="brAnalisar" class="btn-pri" role="button" tabindex="0"><span id="brIcoAnalisar" class="btn-ico"></span>Analisar e inserir</div>
+  <div id="brAnalisar" class="btn-pri" role="button" tabindex="0"><span id="brIcoAnalisar" class="btn-ico"></span><span id="brAnalisarTxt">Analisar e inserir</span></div>
   <div id="brAprender" class="btn-sec btn-selecao" role="button" tabindex="0"><span id="brIcoAprender" class="btn-ico"></span>Aprender</div>
   <div id="brReler" class="btn-redondo" role="button" tabindex="0" title="Ler a sequência de novo" aria-label="Ler a sequência de novo"><span id="brIcoReler" class="btn-ico-so"></span></div>
 </footer>

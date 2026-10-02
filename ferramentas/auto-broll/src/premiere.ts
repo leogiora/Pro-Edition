@@ -674,6 +674,49 @@ export async function inserirPlano(
   return { inseridos: colocacoes.length, passos, avisos };
 }
 
+/** Leva o cursor do Premiere ate o segundo pedido (o "Ir para" de cada cartao). */
+export async function irPara(segundos: number): Promise<void> {
+  const { sequence } = await handles();
+  await (sequence as { setPlayerPosition: (t: unknown) => Promise<boolean> }).setPlayerPosition(
+    await ppro.TickTime.createWithSeconds(segundos)
+  );
+}
+
+/**
+ * Tira um B-roll da timeline pelo nome e pelo inicio, o video e o audio dele
+ * (se o audio ainda estiver la), sem ripple. Falso quando nao acha: o clipe ja
+ * foi apagado ou mexido na mao.
+ */
+export async function tirarBroll(
+  c: { arquivo: string; inicio: number },
+  videoTrackIndex: number,
+  audioTrackIndex: number
+): Promise<boolean> {
+  const { project, sequence } = await handles();
+  const seq = sequence as SequenceParaAjuste & {
+    getAudioTrack: (i: number) => Promise<{ getTrackItems: (t: number, e: boolean) => Promise<unknown[]> }>;
+  };
+  const video = await acharClipe((await (await seq.getVideoTrack(videoTrackIndex)).getTrackItems(CLIP, false)) as ItemNaFaixa[], c);
+  if (!video) return false;
+  const audio = await acharClipe(
+    (await (await seq.getAudioTrack(audioTrackIndex)).getTrackItems(CLIP, false)) as ItemNaFaixa[],
+    c
+  ).catch(() => null);
+  const editor = await ppro.SequenceEditor.getEditor(sequence);
+  comTransacao(project as never, `B-Roller: tirar ${c.arquivo}`, (adicionar) => {
+    let selecao: { addItem: (i: unknown, d: boolean) => boolean } | null = null;
+    ppro.TrackItemSelection.createEmptySelection((s: typeof selecao) => {
+      selecao = s;
+    });
+    if (!selecao) throw new Error("createEmptySelection nao devolveu selecao");
+    const sel = selecao as { addItem: (i: unknown, d: boolean) => boolean };
+    sel.addItem(video, false);
+    if (audio) sel.addItem(audio, false);
+    adicionar(editor.createRemoveItemsAction(sel, false, ppro.Constants.MediaType.ANY, false));
+  });
+  return true;
+}
+
 /** Um clipe ja na faixa de destino, com o que a etapa de ajuste precisa dele. */
 interface ItemNaFaixa {
   getName: () => Promise<string>;

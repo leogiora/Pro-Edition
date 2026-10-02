@@ -176,6 +176,8 @@ const PRAZO_MS: Readonly<Record<string, number>> = {
   "broll:ler": 60_000,
   "broll:analisar": 30 * 60 * 1000,
   "broll:aprender": 60 * 60 * 1000,
+  "broll:tirar": 60_000,
+  "broll:trocar": 5 * 60 * 1000,
 };
 ipcMain.handle("premiere:pedir", (_e, nome: string, args: unknown[]) => ponte.pedir(nome, args, PRAZO_MS[nome] ?? 15_000));
 

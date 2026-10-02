@@ -18,6 +18,7 @@ import { motorLocal } from "./motor-local.ts";
 import { motorPausasLocal } from "./motor-pausas-local.ts";
 import { motorBrollLocal } from "../ferramentas/auto-broll/src/motor-local.ts";
 import type { Config } from "../ferramentas/auto-broll/src/domain.ts";
+import type { Inserido } from "../ferramentas/auto-broll/src/broller.ts";
 
 declare function require(id: string): unknown;
 
@@ -82,9 +83,15 @@ async function atender(p: Pedido): Promise<unknown> {
     case "broll:iniciar":
       return motorBrollLocal.iniciar(registro);
     case "broll:ler":
-      return motorBrollLocal.ler();
+      return motorBrollLocal.ler(p.args[0] as string);
     case "broll:analisar":
-      return motorBrollLocal.analisar(p.args[0] as Config, registro);
+      return motorBrollLocal.analisar(p.args[0] as Config, registro, (etapa, texto) => evento({ tipo: "broll:andamento", etapa, texto }));
+    case "broll:irPara":
+      return motorBrollLocal.irPara(p.args[0] as number);
+    case "broll:tirar":
+      return motorBrollLocal.tirar(p.args[0] as Inserido, p.args[1] as Config);
+    case "broll:trocar":
+      return motorBrollLocal.trocar(p.args[0] as Inserido, p.args[1] as Config);
     case "broll:aprender":
       return motorBrollLocal.aprender(p.args[0] as Config, registro);
     default:
