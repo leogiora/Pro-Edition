@@ -171,6 +171,13 @@ const PRAZO_MS: Readonly<Record<string, number>> = {
   "pausas:previa": 10 * 60 * 1000,
   "pausas:preparar": 10 * 60 * 1000,
   "pausas:ler": 60_000,
+  // Medir a biblioteca nova e copiar .mov grandes do Envato levam minutos.
+  "broll:iniciar": 60_000,
+  "broll:ler": 60_000,
+  "broll:analisar": 30 * 60 * 1000,
+  "broll:aprender": 60 * 60 * 1000,
+  "broll:tirar": 60_000,
+  "broll:trocar": 5 * 60 * 1000,
 };
 ipcMain.handle("premiere:pedir", (_e, nome: string, args: unknown[]) => ponte.pedir(nome, args, PRAZO_MS[nome] ?? 15_000));
 

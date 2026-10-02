@@ -6,9 +6,10 @@
 
 import { desenharTrilhas, extrairCorpo, icone, marca, type Ferramenta, type Icone, type Tela } from "../shell.ts";
 
-import htmlBrollBruto from "../../ferramentas/auto-broll/src/ui/index.html";
 import cssBroll from "../../ferramentas/auto-broll/src/ui/styles.css";
-import { mount as mountBroll } from "../../ferramentas/auto-broll/src/ui/mount.ts";
+import htmlBroller from "./broller.html";
+import { mount as mountBroll } from "./broller-mount.ts";
+import { motorBrollLocal } from "../../ferramentas/auto-broll/src/motor-local.ts";
 
 import htmlCaptionsBruto from "../../ferramentas/pro-captions/src/ui/index.html";
 import cssCaptions from "../../ferramentas/pro-captions/src/ui/styles.css";
@@ -141,7 +142,8 @@ const REGISTRO: Readonly<Record<Ferramenta, Tela>> = {
   seletor: { html: htmlSeletor, css: cssSeletor, montar: montarSeletor },
   editar: { html: htmlEditar, css: `${cssBroll}\n${cssTelas}`, montar: (root) => mountEditar(root, motorLocal) },
   pausas: { html: htmlPausas, css: `${cssBroll}\n${cssTelas}`, montar: (root) => mountPausas(root, motorPausasLocal) },
-  broll: { html: extrairCorpo(htmlBrollBruto), css: cssBroll, montar: mountBroll },
+  broll: { html: htmlBroller, css: `${cssBroll}
+${cssTelas}`, montar: (root) => mountBroll(root, motorBrollLocal) },
   captions: { html: extrairCorpo(htmlCaptionsBruto), css: cssCaptions, montar: mountCaptions },
   // Telas nossas usam a folha da familia do Auto B-roll (topo, secao, badge,
   // log) e so trazem no proprio <style> o acento e o que for so delas.

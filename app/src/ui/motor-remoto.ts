@@ -8,6 +8,8 @@
 import type { Empresa } from "../../../ferramentas/pro-captions/src/preset.ts";
 import type { AoVivo, Etapa, EstadoSequencia, MotorEditar, Registrar, ResumoVariacao } from "../../../src/editar.ts";
 import type { MotorPausas, Previa, Sequencia } from "../../../src/silencecut.ts";
+import type { Config } from "../../../ferramentas/auto-broll/src/domain.ts";
+import type { AndamentoBroll, EstadoBroll, Inserido, MotorBroll, RegistrarBroll, ResultadoBroll, TomBroll } from "../../../ferramentas/auto-broll/src/broller.ts";
 import type { ProApi } from "../api.ts";
 
 type Evento =
@@ -84,5 +86,48 @@ export function motorPausasRemoto(pro: ProApi): MotorPausas {
     guardarLog: async (linhas) => {
       await pedir("pausas:guardarLog", [linhas]);
     },
+  };
+}
+
+/** O B-Roller visto do programa: a leitura, a insercao e o aprendizado sao do plugin; o registro volta como evento. */
+export function motorBrollRemoto(pro: ProApi): MotorBroll {
+  let ouvinte: RegistrarBroll | null = null;
+  let etapas: AndamentoBroll | null = null;
+  pro.aoEventoPremiere((e) => {
+    const ev = e as { tipo?: unknown; texto?: unknown; tom?: unknown; etapa?: unknown } | null;
+    if (ev?.tipo === "registro" && typeof ev.texto === "string") ouvinte?.(ev.texto, ev.tom as TomBroll);
+    if (ev?.tipo === "broll:andamento" && typeof ev.etapa === "number") etapas?.(ev.etapa, String(ev.texto ?? ""));
+  });
+  const pedir = (nome: string, args: readonly unknown[]): Promise<unknown> =>
+    pro.pedirPremiere(nome, args).catch((e) => {
+      throw limpa(e);
+    });
+  const comRegistro = async <T>(registrar: RegistrarBroll, nome: string, args: readonly unknown[]): Promise<T> => {
+    ouvinte = registrar;
+    try {
+      return (await pedir(nome, args)) as T;
+    } finally {
+      ouvinte = null;
+    }
+  };
+  return {
+    iniciar: (registrar) => comRegistro<Config>(registrar, "broll:iniciar", []),
+    ler: (pasta) => pedir("broll:ler", [pasta]) as Promise<EstadoBroll>,
+    analisar: async (config, registrar, andamento) => {
+      etapas = andamento;
+      try {
+        return await comRegistro<ResultadoBroll>(registrar, "broll:analisar", [config]);
+      } finally {
+        etapas = null;
+      }
+    },
+    aprender: (config, registrar) => comRegistro<void>(registrar, "broll:aprender", [config]),
+    irPara: async (segundos) => {
+      await pedir("broll:irPara", [segundos]);
+    },
+    tirar: async (b, config) => {
+      await pedir("broll:tirar", [b, config]);
+    },
+    trocar: (b, config) => pedir("broll:trocar", [b, config]) as Promise<Inserido>,
   };
 }

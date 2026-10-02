@@ -16,6 +16,9 @@ import type { Empresa } from "../ferramentas/pro-captions/src/preset.ts";
 import type { OpcoesEditar } from "./editar.ts";
 import { motorLocal } from "./motor-local.ts";
 import { motorPausasLocal } from "./motor-pausas-local.ts";
+import { motorBrollLocal } from "../ferramentas/auto-broll/src/motor-local.ts";
+import type { Config } from "../ferramentas/auto-broll/src/domain.ts";
+import type { Inserido } from "../ferramentas/auto-broll/src/broller.ts";
 
 declare function require(id: string): unknown;
 
@@ -39,6 +42,8 @@ const evento = (dados: unknown): void => {
   filaEventos = filaEventos.then(() => enviar("/evento", dados)).catch(() => undefined);
 };
 
+const registro = (texto: string, tom?: string): void => evento({ tipo: "registro", texto, tom: tom ?? "passo" });
+
 /** Faz o pedido com o motor local, o mesmo do painel. */
 async function atender(p: Pedido): Promise<unknown> {
   switch (p.nome) {
@@ -53,7 +58,7 @@ async function atender(p: Pedido): Promise<unknown> {
     case "editar":
       return motorLocal.editar(
         p.args[0] as OpcoesEditar,
-        (texto, tom) => evento({ tipo: "registro", texto, tom: tom ?? "passo" }),
+        registro,
         (texto) => evento({ tipo: "progresso", texto }),
         {
           etapa: (id, estado, resumo) => evento({ tipo: "etapa", id, estado, resumo }),
@@ -74,6 +79,21 @@ async function atender(p: Pedido): Promise<unknown> {
       return motorPausasLocal.preparar();
     case "pausas:guardarLog":
       return motorPausasLocal.guardarLog(p.args[0] as string[]);
+    // B-Roller: o registro vai como no AutoEdit
+    case "broll:iniciar":
+      return motorBrollLocal.iniciar(registro);
+    case "broll:ler":
+      return motorBrollLocal.ler(p.args[0] as string);
+    case "broll:analisar":
+      return motorBrollLocal.analisar(p.args[0] as Config, registro, (etapa, texto) => evento({ tipo: "broll:andamento", etapa, texto }));
+    case "broll:irPara":
+      return motorBrollLocal.irPara(p.args[0] as number);
+    case "broll:tirar":
+      return motorBrollLocal.tirar(p.args[0] as Inserido, p.args[1] as Config);
+    case "broll:trocar":
+      return motorBrollLocal.trocar(p.args[0] as Inserido, p.args[1] as Config);
+    case "broll:aprender":
+      return motorBrollLocal.aprender(p.args[0] as Config, registro);
     default:
       throw new Error(`pedido desconhecido: ${p.nome}`);
   }

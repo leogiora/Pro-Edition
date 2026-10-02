@@ -1,18 +1,19 @@
 /*
- * Painel. So orquestra: le a configuracao, desenha, e chama o adapter.
- * Nenhuma chamada a `premierepro` mora aqui.
+ * Motor do B-Roller dentro do plugin: le a timeline, analisa, insere e
+ * aprende. Era o corpo do painel antigo (ui/mount.ts); a tela agora so pede
+ * (motor local no painel, remoto pela ponte no programa) e desenha.
+ * Nada aqui toca no DOM.
  */
 
 import {
   DEFAULT_CONFIG,
   ehVideo,
-  formatTimecode,
   parseConfig,
   recorte,
   relogio,
   type Config,
-} from "../domain.ts";
-import { analisar, type Analise } from "../analise.ts";
+} from "./domain.ts";
+import { analisar, type Analise } from "./analise.ts";
 import {
   quantosNoLugar,
   pareceUndoEmLote,
@@ -30,9 +31,9 @@ import {
   planejarTrazer,
   type Memoria,
   type Pendentes,
-} from "../aprendizado.ts";
-import { aplicarMerge, parseCanonico } from "../mesclar-canonico.ts";
-import { CACHE_VAZIO, parseCacheIntensidade, ritmo } from "../intensidade.ts";
+} from "./aprendizado.ts";
+import { aplicarMerge, parseCanonico } from "./mesclar-canonico.ts";
+import { CACHE_VAZIO, parseCacheIntensidade, ritmo } from "./intensidade.ts";
 import {
   conceitosDeArquivos,
   parseSinonimos,
@@ -41,15 +42,18 @@ import {
   SINONIMOS_PADRAO,
   usarSinonimos,
   type Conceito,
-} from "../match.ts";
-import { planejar, REGRAS_DENSAS, REGRAS_PADRAO, semSobrepor, type Ocupado } from "../plano.ts";
-import type { Frase } from "../transcript.ts";
+} from "./match.ts";
+import { planejar, REGRAS_DENSAS, REGRAS_PADRAO, semSobrepor, type Colocacao, type Ocupado } from "./plano.ts";
+import type { Frase } from "./transcript.ts";
+import type { AndamentoBroll, Aprendizado, Inserido, MotorBroll, RegistrarBroll, ResultadoBroll, TomBroll, TrechoBroll } from "./broller.ts";
 import {
   comLimite,
   copiarParaBiblioteca,
   dimensoesDoArquivo,
   getSequenceInfo,
   inserirPlano,
+  irPara,
+  tirarBroll,
   lerBrollsAcimaDeV1,
   lerClipes,
   lerInOut,
@@ -61,7 +65,7 @@ import {
   type ArquivoBroll,
   type BrollNaTimeline,
   type SequenceInfo,
-} from "../premiere.ts";
+} from "./premiere.ts";
 
 const CONFIG_FILE = "config.json";
 const MEMORIA_FILE = "aprendizado.json";
@@ -76,40 +80,55 @@ const LOG_APRENDER = "ultimo-aprendizado.json";
 /** Clipes baixados que o Aprender levou para a pasta (o Auto Split le o tamanho daqui). */
 const TRAZIDOS_FILE = "trazidos.json";
 
-// ------------------------------------------------------------------ util
 
-function el<T extends HTMLElement>(id: string): T {
-  const node = document.getElementById(id);
-  if (!node) throw new Error(`elemento ausente no HTML: #${id}`);
-  return node as T;
-}
+/** Para onde vai cada linha da acao em curso (a tela do painel ou a ponte). */
+let saida: RegistrarBroll = () => undefined;
 
-/** sp-textfield e sp-checkbox expoem value/checked como propriedade. */
-interface Campo extends HTMLElement {
-  value: string;
-}
-interface Caixa extends HTMLElement {
-  checked: boolean;
-}
-
-let log: HTMLElement;
-
-/** Espelho do log em texto. O painel e curto e nem sempre da para rolar ate
- *  o fim, entao tudo tambem vai para arquivo. */
+/** Espelho do registro em texto: tudo tambem vai para arquivo (salvarLog). */
 let linhas: string[] = [];
 
-function registrar(texto: string, tipo: "passo" | "ok" | "erro" | "aviso" | "vazio" = "passo"): void {
+function registrar(texto: string, tipo: TomBroll = "passo"): void {
   linhas.push(texto);
-  const linha = document.createElement("div");
-  linha.className = `l-${tipo}`;
-  linha.textContent = texto;
-  log.appendChild(linha);
-  log.scrollTop = log.scrollHeight;
+  saida(texto, tipo);
 }
 
-function limparLog(): void {
+/** Em que etapa a analise esta (a tela acende as bolinhas). */
+let andamento: AndamentoBroll = () => undefined;
+
+/** Uma acao por vez: as linhas dela, do comeco, para a tela que pediu. */
+function comecar(para: RegistrarBroll, etapas: AndamentoBroll = () => undefined): void {
   linhas = [];
-  log.textContent = "";
+  saida = para;
+  andamento = etapas;
+}
+
+/** O aprendizado somado: o que a tela mostra na barra de mantidos e apagados. */
+async function somarAprendizado(memoria?: Memoria): Promise<Aprendizado> {
+  const m = memoria ?? parseMemoria(await comLimite("ler aprendizado", readJson(MEMORIA_FILE), 5000));
+  const ligacoes = ligacoesFirmes(parseAssociacoes(await comLimite("ler ligacoes", readJson(ASSOCIACOES_FILE), 5000))).size;
+  let mantidos = 0;
+  let apagados = 0;
+  for (const saldo of Object.values(m.arquivos)) {
+    mantidos += saldo.acertos;
+    apagados += saldo.erros;
+  }
+  return { mantidos: Math.round(mantidos), apagados: Math.round(apagados), ligacoes };
+}
+
+/** Uma colocacao virada no cartao da tela. */
+function paraCartao(c: Colocacao, memoria: Memoria): Inserido {
+  return {
+    inicio: c.inicio,
+    fim: c.inicio + c.duracao,
+    arquivo: c.arquivo,
+    frase: c.textoDaFrase,
+    conceito: c.conceito,
+    nota: c.score,
+    termos: c.termosCasados,
+    motivo: c.motivo,
+    ensinado: c.motivo.startsWith("voce ensinou"),
+    mantidoVezes: Math.round(memoria.arquivos[c.arquivo]?.acertos ?? 0),
+  };
 }
 
 /**
@@ -135,121 +154,10 @@ async function salvarLog(arquivo: string): Promise<void> {
   }
 }
 
-function estado(texto: string, tom: "" | "ativo" | "ok" | "aviso" | "erro" = ""): void {
-  const node = el("estado");
-  node.textContent = texto;
-  node.setAttribute("data-tom", tom);
-}
-
-// Rotulos padrao dos dois botoes. Ficam aqui porque o botao troca de texto
-// enquanto a acao roda, e precisa de para onde voltar.
-const ROTULO_ANALISAR = "Analisar e inserir";
-const ROTULO_APRENDER = "Aprender";
-
-/**
- * Troca o texto de um botao. Puramente cosmetico — nunca lanca e nunca
- * interrompe nada.
- *
- * `aindaValido` nao e opcional de proposito: um rotulo tardio (o `setTimeout`
- * de sucesso, por exemplo) escreveria no botao do painel que estiver na tela
- * agora, que pode ser o do outro plugin dentro do shell. Mesma classe de bug
- * que o guard do log resolve.
- */
-function rotular(id: string, texto: string, aindaValido: () => boolean): void {
-  if (!aindaValido()) return;
-  const botao = document.getElementById(id);
-  if (botao) botao.textContent = texto;
-}
-
 function mensagemDeErro(e: unknown): string {
   const err = e as Error;
   return err?.message ?? String(e);
 }
-
-/**
- * Sinaliza que o painel foi desmontado (troca de tela no shell) enquanto uma
- * operacao assincrona ainda rodava. Nunca deve virar log nem mudar `estado`:
- * o #log e o #estado atuais, se existirem, pertencem a um mount() diferente
- * — escrever neles corromperia o log/status do painel que esta na tela agora.
- */
-class PainelDesmontado extends Error {}
-
-function checarMontado(aindaValido: () => boolean): void {
-  if (!aindaValido()) throw new PainelDesmontado();
-}
-
-// --------------------------------------------------------------- config
-
-/**
- * V2 e A3 sao requisito fixo, nao preferencia: o B-roll sempre entra em V2 e o
- * audio dele nunca pode encostar em A1. Campos editaveis so davam a chance de
- * apontar para a faixa errada — e o `sp-textfield type="number"` ainda exibia
- * "nan". Sem campo, sem erro.
- */
-function lerFormulario(): Config {
-  return {
-    schema: 1,
-    videoTrackIndex: DEFAULT_CONFIG.videoTrackIndex,
-    audioTrackIndex: DEFAULT_CONFIG.audioTrackIndex,
-    removeAudio: el<Caixa>("removeAudio").checked,
-    fillScreen: el<Caixa>("fillScreen").checked,
-    densidadeMaxima: el<Caixa>("densidadeMaxima").checked,
-    libraryPath: el<Campo>("libraryPath").value.trim(),
-  };
-}
-
-function preencherFormulario(c: Config): void {
-  el<Caixa>("removeAudio").checked = c.removeAudio;
-  el<Caixa>("fillScreen").checked = c.fillScreen;
-  el<Caixa>("densidadeMaxima").checked = c.densidadeMaxima;
-  el<Campo>("libraryPath").value = c.libraryPath;
-}
-
-// ------------------------------------------------------------- sequencia
-
-/**
- * Preenche o cabecalho com a sequencia.
- *
- * Separado porque toda acao ja le a sequencia de qualquer forma: pintar o
- * cabecalho junto custa nada e mantem o painel sempre falando da sequencia em
- * que ele esta trabalhando de verdade. Foi isto que tornou o botao "Reler"
- * dispensavel.
- */
-function mostrarSequencia(info: SequenceInfo): void {
-  const nome = el("seqNome");
-  nome.textContent = info.name;
-  nome.setAttribute("data-vazio", "nao");
-  // A dica do estado vazio some assim que ha sequencia de verdade: instrucao
-  // que continua na tela depois de cumprida vira ruido.
-  el("seqDica").style.display = "none";
-  el("seqFormato").textContent = `${info.width}x${info.height}`;
-  el("seqFps").textContent = info.fps.toFixed(3).replace(".", ",");
-  el("seqDuracao").textContent = formatTimecode(info.durationSeconds, info.fps);
-  el("seqFaixas").textContent = `${info.videoTracks}V · ${info.audioTracks}A`;
-}
-
-async function relerSequencia(aindaValido: () => boolean): Promise<void> {
-  estado("lendo", "ativo");
-  try {
-    const info = await comLimite("ler sequencia", getSequenceInfo());
-    if (!aindaValido()) return;
-    mostrarSequencia(info);
-    estado("pronto", "ok");
-  } catch (e) {
-    if (!aindaValido()) return;
-    const nome = el("seqNome");
-    nome.textContent = "Nenhuma sequência selecionada";
-    nome.setAttribute("data-vazio", "sim");
-    el("seqDica").style.display = "";
-    for (const id of ["seqFormato", "seqFps", "seqDuracao", "seqFaixas"]) {
-      el(id).textContent = "—";
-    }
-    estado("sem sequência", "aviso");
-    registrar(mensagemDeErro(e), "erro");
-  }
-}
-
-// -------------------------------------------------------------- analisar
 
 interface Linha {
   readonly texto: string;
@@ -503,26 +411,25 @@ function trecho(texto: string, limite = 70): string {
  * Tudo o que os dois botoes precisam antes de divergir: a biblioteca no disco, o
  * corte de V1, a transcricao reconstruida e as ligacoes ja aprendidas.
  */
-async function lerContexto(aindaValido: () => boolean): Promise<{
+async function lerContexto(config: Config): Promise<{
   pasta: string;
   arquivos: ArquivoBroll[];
   resultado: Analise;
   nomeSequencia: string;
   duracaoDaSequencia: number;
 }> {
-  const pasta = el<Campo>("libraryPath").value.trim();
+  const pasta = config.libraryPath.trim();
   if (!pasta) throw new Error("Informe a pasta de B-rolls.");
+  andamento(0, "Lendo a fala da V1");
 
   const arquivos = await comLimite("listar pasta de B-rolls", listarPastaBrolls(pasta), 30000);
-  checarMontado(aindaValido);
   if (arquivos.length === 0) throw new Error(`Nenhum video em ${pasta}.`);
   registrar(`${arquivos.length} B-rolls na pasta`, "passo");
 
   // Pasta que funcionou fica gravada: digitar uma vez basta.
-  void writeJson(CONFIG_FILE, lerFormulario()).catch(() => undefined);
+  void writeJson(CONFIG_FILE, { ...config, libraryPath: pasta }).catch(() => undefined);
 
   const clipes = await comLimite("ler clipes de V1", lerClipes(0), 30000);
-  checarMontado(aindaValido);
   if (clipes.length === 0) throw new Error("V1 esta vazia. Nao ha o que analisar.");
   registrar(`${clipes.length} clipes em V1`, "passo");
 
@@ -532,23 +439,19 @@ async function lerContexto(aindaValido: () => boolean): Promise<{
     lerTranscricoes(nomes),
     60000
   );
-  checarMontado(aindaValido);
   registrar(`${transcricoesJson.size} de ${nomes.length} midias com transcricao`, "passo");
   for (const f of falhas) registrar(`"${f.nome}": ${f.motivo}`, "aviso");
 
   const info = await comLimite("ler sequencia", getSequenceInfo());
-  checarMontado(aindaValido);
-  mostrarSequencia(info);
-  const nomeSequencia = info.name;
 
   const ligacoes = ligacoesFirmes(
     parseAssociacoes(await comLimite("ler ligacoes", readJson(ASSOCIACOES_FILE), 5000))
   );
-  checarMontado(aindaValido);
   if (ligacoes.size > 0) {
     registrar(`${ligacoes.size} conceitos com ligacao que voce ensinou`, "passo");
   }
 
+  andamento(1, "Casando a fala com a pasta");
   const resultado = analisar({
     clipes,
     transcricoesJson,
@@ -561,7 +464,7 @@ async function lerContexto(aindaValido: () => boolean): Promise<{
     "passo"
   );
 
-  return { pasta, arquivos, resultado, nomeSequencia, duracaoDaSequencia: info.durationSeconds };
+  return { pasta, arquivos, resultado, nomeSequencia: info.name, duracaoDaSequencia: info.durationSeconds };
 }
 
 /**
@@ -571,56 +474,52 @@ async function lerContexto(aindaValido: () => boolean): Promise<{
  * e clique aqui. O plugin le a timeline, entende o que voce fez e guarda. Antes
  * disto, a unica forma de ensinar era deixar ele inserir de novo.
  */
-async function aprenderDaTimeline(aindaValido: () => boolean): Promise<void> {
-  const botao = el<HTMLButtonElement & { disabled: boolean }>("aprender");
-  botao.disabled = true;
-  rotular("aprender", "Aprendendo...", aindaValido);
-  estado("aprendendo", "ativo");
-  limparLog();
-
+async function aprenderDaTimeline(config: Config, para: RegistrarBroll): Promise<void> {
+  comecar(para);
   let resumoAprendizado: Julgamento["resumo"] = [];
   try {
-    const { pasta, arquivos, resultado, nomeSequencia } = await lerContexto(aindaValido);
+    const { pasta, arquivos, resultado, nomeSequencia } = await lerContexto(config);
     const biblioteca = { pasta, nomes: arquivos.map((a) => a.name) };
     const { resumo } = await julgarFaixa(nomeSequencia, resultado.frases, resultado.conceitos, biblioteca, true);
-    checarMontado(aindaValido);
     resumoAprendizado = resumo;
     // Este botao nao insere nada, entao o log dele e curto e some no clique
     // seguinte. Vale dizer que terminou.
     registrar("Aprendizado gravado. Nada foi inserido na timeline.", "ok");
-    estado("pronto", "ok");
   } catch (e) {
-    if (!(e instanceof PainelDesmontado)) {
-      registrar(mensagemDeErro(e), "erro");
-      estado("falhou", "erro");
-    }
+    registrar(mensagemDeErro(e), "erro");
+    throw e;
   } finally {
-    if (aindaValido()) {
-      for (const linha of resumoAprendizado) registrar(linha.texto, linha.tipo);
-    }
-    rotular("aprender", ROTULO_APRENDER, aindaValido);
-    botao.disabled = false;
+    for (const linha of resumoAprendizado) registrar(linha.texto, linha.tipo);
     await salvarLog(LOG_APRENDER);
   }
 }
 
-async function analisarSequencia(aindaValido: () => boolean): Promise<void> {
-  const botao = el<HTMLButtonElement & { disabled: boolean }>("analisar");
-  botao.disabled = true;
-  rotular("analisar", "Analisando...", aindaValido);
-  estado("analisando", "ativo");
-  limparLog();
-
+async function analisarSequencia(config: Config, para: RegistrarBroll, etapas: AndamentoBroll): Promise<ResultadoBroll> {
+  comecar(para, etapas);
   // Sai no `finally`: assim aparece por ultimo — visivel — em qualquer saida,
   // inclusive quando a analise nao acha oportunidade ou falha no meio.
   let resumoAprendizado: Julgamento["resumo"] = [];
-  // Quantos entraram de verdade na timeline: e o que o rotulo do botao anuncia
-  // no fim. Zero e uma resposta legitima (nada a inserir), nao um sucesso.
-  let inseridos = 0;
 
   try {
-    const config = lerFormulario();
-    const { pasta, arquivos, resultado, nomeSequencia, duracaoDaSequencia } = await lerContexto(aindaValido);
+    const { pasta, arquivos, resultado, nomeSequencia, duracaoDaSequencia } = await lerContexto(config);
+    // A tela desenha a timeline com o que ja estava e o que entrou.
+    let antes: readonly TrechoBroll[] = [];
+    let semBroll = 0;
+    const aprendidoAntes = await somarAprendizado();
+    let aprendido = aprendidoAntes;
+    const resultado_ = (inseridos: readonly Inserido[]): ResultadoBroll => ({
+      nome: nomeSequencia,
+      duracaoS: duracaoDaSequencia,
+      naPasta: arquivos.length,
+      naTimeline: antes,
+      inseridos,
+      semBroll,
+      aprendizado: aprendido,
+      nestaRodada: {
+        mantidos: Math.max(0, aprendido.mantidos - aprendidoAntes.mantidos),
+        apagados: Math.max(0, aprendido.apagados - aprendidoAntes.apagados),
+      },
+    });
 
     for (const aviso of resultado.avisos.slice(0, 6)) registrar(aviso, "aviso");
 
@@ -628,7 +527,6 @@ async function analisarSequencia(aindaValido: () => boolean): Promise<void> {
     // Analisar respeita o recorte — o Aprender continua lendo a sequencia
     // inteira, senao colocacao sua fora do trecho deixaria de ensinar.
     const marcado = await comLimite("ler in/out", lerInOut(), 5000);
-    checarMontado(aindaValido);
     const selecao = marcado === null ? null : recorte(marcado.inicio, marcado.fim, duracaoDaSequencia);
     if (selecao !== null) {
       registrar(
@@ -647,8 +545,9 @@ async function analisarSequencia(aindaValido: () => boolean): Promise<void> {
       { pasta, nomes: arquivos.map((a) => a.name) },
       false
     );
-    checarMontado(aindaValido);
     resumoAprendizado = resumo;
+    antes = ocupado.map((o) => ({ inicio: o.inicio, fim: o.fim, arquivo: o.arquivo ?? "" }));
+    aprendido = await somarAprendizado(memoria);
 
     // Frases que nem encostam no trecho marcado ficam de fora ANTES do
     // planejamento: espacamento e janela de repeticao valem dentro do trecho,
@@ -665,31 +564,27 @@ async function analisarSequencia(aindaValido: () => boolean): Promise<void> {
           : "Nenhuma oportunidade de B-roll no trecho marcado.",
         "vazio"
       );
-      estado("nada a inserir", "ok");
-      return;
+      return resultado_([]);
     }
 
     // Medir a biblioteca: a primeira vez custa dezenas de segundos, as
     // seguintes nao custam nada. Falhar aqui so tira a escolha de take pelo
     // momento; nao pode tirar a insercao.
-    checarMontado(aindaValido);
+    andamento(2, "Escolhendo o take");
     const cache = parseCacheIntensidade(
       await comLimite("ler intensidade", readJson(INTENSIDADE_FILE), 5000)
     );
-    checarMontado(aindaValido);
     let medido = cache;
     try {
       medido = await comLimite(
         "medir intensidade",
         medirBiblioteca(arquivos, cache, (feitos, total) => {
-          if (aindaValido()) registrar(`  medindo intensidade: ${feitos} de ${total}`, "passo");
+          registrar(`  medindo intensidade: ${feitos} de ${total}`, "passo");
         }),
         300000
       );
-      checarMontado(aindaValido);
       if (medido !== cache) await writeJson(INTENSIDADE_FILE, medido);
     } catch (e) {
-      if (e instanceof PainelDesmontado) throw e;
       registrar(`Intensidade nao medida, seguindo sem ela. ${mensagemDeErro(e)}`, "aviso");
       medido = CACHE_VAZIO;
     }
@@ -731,6 +626,7 @@ async function analisarSequencia(aindaValido: () => boolean): Promise<void> {
       })),
     }).catch(() => undefined);
 
+    semBroll = plano.descartes.length;
     for (const descarte of plano.descartes) registrar(`  ${descarte}`, "vazio");
 
     // Uma frase que atravessa o in ou o out ainda pode ancorar fora do trecho.
@@ -750,14 +646,12 @@ async function analisarSequencia(aindaValido: () => boolean): Promise<void> {
 
     if (entram.length === 0 && bloqueadas.length > 0) {
       registrar("Tudo o que eu sugeriria ja esta na timeline. Nada a fazer.", "ok");
-      estado("nada a inserir", "ok");
-      return;
+      return resultado_([]);
     }
 
     if (entram.length === 0) {
       registrar("Nenhuma sugestao boa o bastante para entrar sozinha.", "aviso");
-      estado("nada a inserir", "ok");
-      return;
+      return resultado_([]);
     }
 
     registrar(`${entram.length} B-rolls a inserir:`, "ok");
@@ -771,7 +665,7 @@ async function analisarSequencia(aindaValido: () => boolean): Promise<void> {
       registrar(`        "${trecho(c.textoDaFrase)}"`, "vazio");
     }
 
-    estado("inserindo", "ativo");
+    andamento(3, `Inserindo ${entram.length} B-rolls`);
     const feito = await comLimite(
       "inserir plano",
       inserirPlano(entram, {
@@ -782,8 +676,6 @@ async function analisarSequencia(aindaValido: () => boolean): Promise<void> {
       }),
       120000
     );
-    checarMontado(aindaValido);
-    inseridos = entram.length;
     for (const passo of feito.passos) registrar(`  ${passo}`, "ok");
     for (const aviso of feito.avisos) registrar(`  ${aviso}`, "aviso");
     registrar("Tres Ctrl+Z desfazem tudo.", "vazio");
@@ -803,33 +695,18 @@ async function analisarSequencia(aindaValido: () => boolean): Promise<void> {
           })),
         })
       );
-      checarMontado(aindaValido);
       registrar("Apague os que nao serviram: a proxima analise aprende com isso.", "vazio");
     } catch (e) {
-      if (e instanceof PainelDesmontado) throw e;
       registrar(`Plano nao ficou guardado, esta rodada nao vai ensinar nada. ${mensagemDeErro(e)}`, "aviso");
     }
 
-    estado("pronto", "ok");
+    return resultado_(entram.map((c) => paraCartao(c, memoria)));
+
   } catch (e) {
-    if (!(e instanceof PainelDesmontado)) {
-      registrar(mensagemDeErro(e), "erro");
-      estado("falhou", "erro");
-    }
+    registrar(mensagemDeErro(e), "erro");
+    throw e;
   } finally {
-    if (aindaValido()) {
-      for (const linha of resumoAprendizado) registrar(linha.texto, linha.tipo);
-    }
-    if (inseridos > 0) {
-      // Confirmacao curta no proprio botao, e depois ele volta a convidar o
-      // clique seguinte. Um botao que fica "✓ inserido" para sempre deixa de
-      // dizer o que faz.
-      rotular("analisar", `✓ ${inseridos} B-rolls inseridos`, aindaValido);
-      setTimeout(() => rotular("analisar", ROTULO_ANALISAR, aindaValido), 2500);
-    } else {
-      rotular("analisar", ROTULO_ANALISAR, aindaValido);
-    }
-    botao.disabled = false;
+    for (const linha of resumoAprendizado) registrar(linha.texto, linha.tipo);
     await salvarLog(LOG_ANALISE);
   }
 }
@@ -842,10 +719,9 @@ async function analisarSequencia(aindaValido: () => boolean): Promise<void> {
  * Nunca lanca e nunca toca `vistos`: se algo der errado, o aprendizado da
  * editora fica exatamente como estava.
  */
-async function mesclarCanonicoNoDisco(aindaValido: () => boolean): Promise<void> {
+async function mesclarCanonicoNoDisco(): Promise<void> {
   try {
     const bruto = await comLimite("ler canonico", readJson(CANONICO_FILE), 5000);
-    if (!aindaValido()) return;
     if (bruto === null) return; // nenhum snapshot para fundir
 
     const canonico = parseCanonico(bruto);
@@ -857,7 +733,6 @@ async function mesclarCanonicoNoDisco(aindaValido: () => boolean): Promise<void>
     const base = parseCanonico(
       await comLimite("ler base do canonico", readJson(CANONICO_BASE_FILE), 5000)
     );
-    if (!aindaValido()) return;
     if (base !== null && base.version === canonico.version) return; // ja fundido
 
     const memoria = parseMemoria(
@@ -868,7 +743,6 @@ async function mesclarCanonicoNoDisco(aindaValido: () => boolean): Promise<void>
     );
     const sinBruto = await comLimite("ler sinonimos", readJson(SINONIMOS_FILE), 5000);
     const sinDisco = parseSinonimos(sinBruto);
-    if (!aindaValido()) return;
 
     const fundido = aplicarMerge(
       { memoria, associacoes, sinonimos: sinDisco ?? SINONIMOS_PADRAO },
@@ -905,7 +779,6 @@ async function mesclarCanonicoNoDisco(aindaValido: () => boolean): Promise<void>
       "ok"
     );
   } catch (e) {
-    if (!aindaValido()) return;
     registrar(`Merge do canonico falhou. ${mensagemDeErro(e)}`, "aviso");
   }
 }
@@ -920,14 +793,12 @@ async function mesclarCanonicoNoDisco(aindaValido: () => boolean): Promise<void>
  * Arquivo quebrado nunca vira dicionario vazio: cai no padrao e avisa. Um
  * dicionario vazio degradaria o casamento inteiro em silencio.
  */
-async function carregarSinonimos(aindaValido: () => boolean): Promise<void> {
+async function carregarSinonimos(): Promise<void> {
   try {
     const bruto = await comLimite("ler sinonimos", readJson(SINONIMOS_FILE), 5000);
-    if (!aindaValido()) return;
     if (bruto === null) {
       // Primeira vez: grava o padrao para o usuario ter o que editar.
       await writeJson(SINONIMOS_FILE, sinonimosParaJson(SINONIMOS_PADRAO));
-      if (!aindaValido()) return;
       registrar(`Dicionario criado em ${SINONIMOS_FILE}, na pasta de dados do plugin.`, "vazio");
       return;
     }
@@ -941,103 +812,114 @@ async function carregarSinonimos(aindaValido: () => boolean): Promise<void> {
     usarSinonimos(doDisco);
     registrar(`Dicionario: ${doDisco.size} entradas de ${SINONIMOS_FILE}`, "vazio");
   } catch (e) {
-    if (!aindaValido()) return;
     registrar(`Dicionario nao carregou, usando o padrao. ${mensagemDeErro(e)}`, "aviso");
   }
 }
 
-// ------------------------------------------------------------ log panel
-
 /**
- * Liga um `div[role="button"]` — clique E teclado.
- *
- * Um `<button>` nativo daria o teclado de graca, mas o UXP o renderiza como
- * controle do host: ignora o CSS do proprio elemento e achata os filhos numa
- * linha so (foi assim que os cards do Pro Edition viraram pilula cinza). Com
- * div o visual e nosso, e o Enter/Espaco volta a ser responsabilidade nossa.
+ * Troca um B-roll pelo proximo take do mesmo conceito: primeiro o que ainda nao
+ * esta na timeline, entre eles o que voce mais manteve. O novo entra no plano
+ * pendente; o rejeitado continua la e, como sumiu da timeline, a proxima
+ * analise conta como apagado — o mesmo que apagar na mao.
  */
-function ligarAcao(node: HTMLElement, acao: () => void): void {
-  node.addEventListener("click", acao);
-  node.addEventListener("keydown", (evento) => {
-    const tecla = (evento as KeyboardEvent).key;
-    if (tecla !== "Enter" && tecla !== " ") return;
-    evento.preventDefault();
-    acao();
-  });
+async function trocarTake(b: Inserido, config: Config): Promise<Inserido> {
+  const pasta = config.libraryPath.trim();
+  if (!pasta) throw new Error("Informe a pasta de B-rolls.");
+  const arquivos = await comLimite("listar pasta de B-rolls", listarPastaBrolls(pasta), 30000);
+  const naTimeline = new Set((await comLimite("ler B-rolls da timeline", lerBrollsAcimaDeV1(), 30000)).map((c) => c.sourceName));
+  const memoria = parseMemoria(await comLimite("ler aprendizado", readJson(MEMORIA_FILE), 5000));
+  const saldo = (nome: string): number => (memoria.arquivos[nome]?.acertos ?? 0) - (memoria.arquivos[nome]?.erros ?? 0);
+  const outros = arquivos
+    .filter((a) => a.name !== b.arquivo && rotuloDoArquivo(a.name) === b.conceito)
+    .sort(
+      (x, y) =>
+        Number(naTimeline.has(x.name)) - Number(naTimeline.has(y.name)) || saldo(y.name) - saldo(x.name) || x.name.localeCompare(y.name)
+    );
+  const novo = outros[0];
+  if (!novo) throw new Error(`Não há outro take de "${b.conceito}" na pasta.`);
+
+  if (!(await comLimite("tirar B-roll", tirarBroll(b, config.videoTrackIndex, config.audioTrackIndex), 30000))) {
+    throw new Error("Não achei esse B-roll na timeline: ele já foi apagado ou mexido.");
+  }
+  await comLimite(
+    "inserir take",
+    inserirPlano([{ arquivo: novo.name, caminho: novo.nativePath, inicio: b.inicio, duracao: b.fim - b.inicio }], {
+      videoTrackIndex: config.videoTrackIndex,
+      audioTrackIndex: config.audioTrackIndex,
+      removerAudio: config.removeAudio,
+      preencherTela: config.fillScreen,
+    }),
+    120000
+  );
+
+  const sequencia = (await comLimite("ler sequencia", getSequenceInfo())).name;
+  const pendentes = parsePendentes(await comLimite("ler pendentes", readJson(PENDENTES_FILE), 5000));
+  const atual = pendentes.porSequencia[sequencia];
+  await writeJson(
+    PENDENTES_FILE,
+    comPendente(pendentes, sequencia, {
+      quando: atual?.quando || new Date().toISOString(),
+      itens: [...(atual?.itens ?? []), { arquivo: novo.name, conceito: b.conceito, termosCasados: b.termos, inicio: b.inicio }],
+    })
+  );
+  return {
+    ...b,
+    arquivo: novo.name,
+    motivo: `troca de "${b.arquivo}"`,
+    ensinado: false,
+    mantidoVezes: Math.round(memoria.arquivos[novo.name]?.acertos ?? 0),
+  };
 }
 
-/**
- * Recolhe/mostra o registro.
- *
- * Nasce SEMPRE aberto: o log e o unico canal de resposta do painel, e um log
- * escondido por padrao repete o erro que ja fez este plugin parecer morto duas
- * vezes (docs/UXP_ARMADILHAS.md §8). Recolher e escolha de quem ja sabe o que
- * esta acontecendo.
- */
-function alternarLog(): void {
-  const secao = el("secaoLog");
-  const alternador = el("logToggle");
-  const aberto = secao.getAttribute("data-aberto") !== "nao";
-  secao.setAttribute("data-aberto", aberto ? "nao" : "sim");
-  alternador.textContent = aberto ? "Mostrar" : "Recolher";
-  alternador.setAttribute("aria-expanded", aberto ? "false" : "true");
-  alternador.setAttribute("aria-label", aberto ? "Mostrar o registro" : "Recolher o registro");
-}
+// ---------------------------------------------------------------- motor
 
-// ---------------------------------------------------------------- inicio
-
-/**
- * `root` nao e usado no corpo: el() busca por id em `document` inteiro, nao
- * escopado a `root`. So e seguro porque o shell (Pro Edition) nunca monta
- * duas ferramentas ao mesmo tempo — troca document.body.innerHTML inteiro
- * antes de cada mount() (contrato documentado no spec do Pro Edition). Se
- * isso mudar (montagem parcial, mount() chamado 2x sem substituir o DOM),
- * el() precisa passar a escopar a busca a partir de `root`.
- */
-export function mount(root: HTMLElement): void {
-  log = el("log");
-  const meuLog = log; // snapshot desta chamada — log e reatribuido a cada mount()
-  // Vale para QUALQUER operacao assincrona disparada por este mount: boot e
-  // cliques nos botoes. Sem isto, uma Analise ainda em andamento quando o
-  // shell troca de tela (Pro Edition) escreve seu resultado tardio no #log
-  // e no #estado do painel que esta na tela agora, nao mais no seu.
-  const aindaValido = () => document.body.contains(meuLog);
-
-  // Primeira coisa visivel: se o distintivo continuar dizendo "carregando",
-  // o script nao rodou, e o problema esta no carregamento — nao na logica.
-  estado("ligando", "ativo");
-
-  // Os botoes sao ligados PRIMEIRO e de forma sincrona. Qualquer I/O do UXP
-  // pode pendurar para sempre; se a ligacao viesse depois, um `await` travado
-  // deixaria o painel inteiro inerte — sem log, sem erro, sem reacao ao clique.
-  el("analisar").addEventListener("click", () => {
-    void analisarSequencia(aindaValido);
-  });
-  el("aprender").addEventListener("click", () => {
-    void aprenderDaTimeline(aindaValido);
-  });
-  ligarAcao(el("logToggle"), alternarLog);
-  // Com os botoes ja vivos, o resto pode falhar sem deixar o painel inutil.
-  preencherFormulario(DEFAULT_CONFIG);
-  estado("pronto", "ok");
-  registrar("Painel pronto.", "vazio");
-
-  void (async () => {
-    if (!aindaValido()) return;
-
+export const motorBrollLocal: MotorBroll = {
+  iniciar: async (para) => {
+    comecar(para);
+    let config = DEFAULT_CONFIG;
     try {
       const salva = await comLimite("ler configuracao", readJson(CONFIG_FILE), 5000);
-      if (!aindaValido()) return;
-      if (salva !== null) preencherFormulario(parseConfig(salva));
+      if (salva !== null) config = parseConfig(salva);
     } catch (e) {
-      if (!aindaValido()) return;
       registrar(`Configuracao nao carregou, usando padrao. ${mensagemDeErro(e)}`, "aviso");
     }
-    if (!aindaValido()) return;
-    await mesclarCanonicoNoDisco(aindaValido);
-    if (!aindaValido()) return;
-    await carregarSinonimos(aindaValido);
-    if (!aindaValido()) return;
-    await relerSequencia(aindaValido);
-  })();
-}
+    await mesclarCanonicoNoDisco();
+    await carregarSinonimos();
+    return config;
+  },
+  ler: async (pasta) => {
+    const info = await comLimite("ler sequencia", getSequenceInfo());
+    // O resto e o que a tela confere antes da analise: sem cada leitura, so mostra menos.
+    const acima = await comLimite("ler B-rolls da timeline", lerBrollsAcimaDeV1(), 30000).catch(() => []);
+    const naPasta = pasta.trim()
+      ? await comLimite("listar pasta de B-rolls", listarPastaBrolls(pasta.trim()), 30000).then((a) => a.length, () => null)
+      : null;
+    const clipes = await comLimite("ler clipes de V1", lerClipes(0), 30000).catch(() => []);
+    const nomes = [...new Set(clipes.map((c) => c.sourceName))];
+    const comTranscricao =
+      nomes.length === 0
+        ? 0
+        : await comLimite("ler transcricoes", lerTranscricoes(nomes), 60000).then((t) => t.transcricoes.size, () => 0);
+    return {
+      nome: info.name,
+      duracaoS: info.durationSeconds,
+      formato: `${info.width}x${info.height}`,
+      fps: info.fps,
+      naTimeline: acima.map((c) => ({ inicio: c.startSeconds, fim: c.endSeconds, arquivo: c.sourceName })),
+      naPasta,
+      clipesV1: clipes.length,
+      midias: nomes.length,
+      comTranscricao,
+      aprendizado: await somarAprendizado().catch(() => ({ mantidos: 0, apagados: 0, ligacoes: 0 })),
+    };
+  },
+  analisar: analisarSequencia,
+  aprender: aprenderDaTimeline,
+  irPara: (segundos) => comLimite("ir para", irPara(segundos), 5000),
+  tirar: async (b, config) => {
+    if (!(await comLimite("tirar B-roll", tirarBroll(b, config.videoTrackIndex, config.audioTrackIndex), 30000))) {
+      throw new Error("Não achei esse B-roll na timeline: ele já foi apagado ou mexido.");
+    }
+  },
+  trocar: trocarTake,
+};
