@@ -157,7 +157,9 @@ export function mount(root: HTMLElement, motor: MotorBroll): void {
     const e = await motor.ler();
     if (!vivo()) return;
     mostrarSequencia(e);
-    prog(`${e.formato} · ${String(Math.round(e.fps * 100) / 100).replace(".", ",")} fps · ${tempo(e.duracaoS)} · ${e.naTimeline.length} B-roll(s) acima da V1`);
+    // O fps vem 0 quando o Premiere nao conta a taxa por onde o B-roll le (so informacao).
+    const fps = e.fps > 0 ? ` · ${String(Math.round(e.fps * 100) / 100).replace(".", ",")} fps` : "";
+    prog(`${e.formato}${fps} · ${tempo(e.duracaoS)} · ${e.naTimeline.length} B-roll(s) acima da V1`);
     pill("pronto", "ok");
   });
 
