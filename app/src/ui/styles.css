@@ -75,8 +75,9 @@ button:disabled { opacity: .45; cursor: default; }
 .tela { flex: 1; overflow: auto; padding: 24px; }
 /* O AutoEdit e a tela do painel num quadro proprio: as classes dela (.tela,
    .card...) nao batem nas do programa. */
-#autoedit { padding: 0; overflow: hidden; }
-#autoeditQuadro { display: block; width: 100%; height: calc(100vh - 49px); border: 0; background: #0d0f13; }
+#autoedit, .tela-quadro { padding: 0; overflow: hidden; }
+#autoeditQuadro, .quadro { display: block; width: 100%; height: calc(100vh - 49px); border: 0; background: #0d0f13; }
+.h-link { padding: 0; border: 0; background: none; color: var(--azul); font: inherit; cursor: pointer; text-decoration: underline; }
 
 /* ------------------------------------------------------------------ hall */
 .grupo + .grupo { margin-top: 28px; }

@@ -7,14 +7,15 @@
  *   POST /resposta  { id, ok, valor | erro } de cada pedido
  *   POST /evento    o que o AutoEdit conta enquanto roda (etapa, variacoes...)
  *
- * Programa fechado: o plugin espera mais entre as tentativas (ate 5 s) e nao
- * avisa nada. Precisa de "network.domains": "all" (UXP_ARMADILHAS 3a).
+ * Programa fechado: o plugin espera mais entre as tentativas (ate 5 s), nao
+ * le o Premiere para elas e nao avisa nada. Precisa de "network.domains": "all" (UXP_ARMADILHAS 3a).
  */
 
 import { comLimite, writeJson } from "../ferramentas/auto-broll/src/premiere.ts";
 import type { Empresa } from "../ferramentas/pro-captions/src/preset.ts";
 import type { OpcoesEditar } from "./editar.ts";
 import { motorLocal } from "./motor-local.ts";
+import { motorPausasLocal } from "./motor-pausas-local.ts";
 
 declare function require(id: string): unknown;
 
@@ -60,6 +61,19 @@ async function atender(p: Pedido): Promise<unknown> {
           alvo: (indices) => evento({ tipo: "alvo", indices }),
         }
       );
+    // SilenceCut
+    case "pausas:ler":
+      return motorPausasLocal.ler();
+    case "pausas:previa":
+      return motorPausasLocal.previa(p.args[0] as number);
+    case "pausas:cortar":
+      return motorPausasLocal.cortar(p.args[0] as number, (texto) => evento({ tipo: "progresso", texto }));
+    case "pausas:desfazer":
+      return motorPausasLocal.desfazer();
+    case "pausas:preparar":
+      return motorPausasLocal.preparar();
+    case "pausas:guardarLog":
+      return motorPausasLocal.guardarLog(p.args[0] as string[]);
     default:
       throw new Error(`pedido desconhecido: ${p.nome}`);
   }
@@ -97,9 +111,13 @@ export function ligarPonteApp(): void {
     };
   };
 
+  // Programa fechado: a tentativa leva o ultimo estado lido, sem perguntar nada
+  // ao Premiere; a leitura volta quando o programa responde.
+  let ultimo: Awaited<ReturnType<typeof ler>> | null = null;
   const passo = async () => {
     try {
-      const r = await enviar("/premiere", await ler());
+      ultimo = falhas > 0 && ultimo ? { ...ultimo, quando: Date.now() } : await ler();
+      const r = await enviar("/premiere", ultimo);
       const corpo = (await r.json().catch(() => ({}))) as { pedidos?: Pedido[] };
       for (const p of corpo.pedidos ?? []) responder(p);
       falhas = 0;

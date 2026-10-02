@@ -7,6 +7,7 @@
 
 import type { Empresa } from "../../../ferramentas/pro-captions/src/preset.ts";
 import type { AoVivo, Etapa, EstadoSequencia, MotorEditar, Registrar, ResumoVariacao } from "../../../src/editar.ts";
+import type { MotorPausas, Previa, Sequencia } from "../../../src/silencecut.ts";
 import type { ProApi } from "../api.ts";
 
 type Evento =
@@ -52,6 +53,36 @@ export function motorRemoto(pro: ProApi): MotorEditar {
       } finally {
         ouvinte = null;
       }
+    },
+  };
+}
+
+/** O SilenceCut visto do programa: o corte e a leitura sao do plugin, a tela e daqui. */
+export function motorPausasRemoto(pro: ProApi): MotorPausas {
+  let ouvinte: ((texto: string) => void) | null = null;
+  pro.aoEventoPremiere((e) => {
+    const ev = e as { tipo?: unknown; texto?: unknown } | null;
+    if (ev?.tipo === "progresso" && typeof ev.texto === "string") ouvinte?.(ev.texto);
+  });
+  const pedir = (nome: string, args: readonly unknown[]): Promise<unknown> =>
+    pro.pedirPremiere(nome, args).catch((e) => {
+      throw limpa(e);
+    });
+  return {
+    ler: () => pedir("pausas:ler", []) as Promise<Sequencia>,
+    previa: (margemS) => pedir("pausas:previa", [margemS]) as Promise<Previa>,
+    cortar: async (margemS, progresso) => {
+      ouvinte = progresso;
+      try {
+        return (await pedir("pausas:cortar", [margemS])) as { ok: boolean; linhas: readonly string[] };
+      } finally {
+        ouvinte = null;
+      }
+    },
+    desfazer: () => pedir("pausas:desfazer", []) as Promise<readonly string[]>,
+    preparar: () => pedir("pausas:preparar", []) as Promise<boolean>,
+    guardarLog: async (linhas) => {
+      await pedir("pausas:guardarLog", [linhas]);
     },
   };
 }

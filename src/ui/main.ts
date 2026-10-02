@@ -20,6 +20,8 @@ import { motorLocal } from "../motor-local.ts";
 
 import htmlPausas from "./pausas.html";
 import { mount as mountPausas } from "./pausas-mount.ts";
+import { motorPausasLocal } from "../motor-pausas-local.ts";
+import cssTelas from "./telas.css";
 
 import htmlAutocut from "./autocut.html";
 import { mount as mountAutocut } from "./autocut-mount.ts";
@@ -137,8 +139,8 @@ function montarSeletor(root: HTMLElement): void {
 
 const REGISTRO: Readonly<Record<Ferramenta, Tela>> = {
   seletor: { html: htmlSeletor, css: cssSeletor, montar: montarSeletor },
-  editar: { html: htmlEditar, css: cssBroll, montar: (root) => mountEditar(root, motorLocal) },
-  pausas: { html: htmlPausas, css: cssBroll, montar: mountPausas },
+  editar: { html: htmlEditar, css: `${cssBroll}\n${cssTelas}`, montar: (root) => mountEditar(root, motorLocal) },
+  pausas: { html: htmlPausas, css: `${cssBroll}\n${cssTelas}`, montar: (root) => mountPausas(root, motorPausasLocal) },
   broll: { html: extrairCorpo(htmlBrollBruto), css: cssBroll, montar: mountBroll },
   captions: { html: extrairCorpo(htmlCaptionsBruto), css: cssCaptions, montar: mountCaptions },
   // Telas nossas usam a folha da familia do Auto B-roll (topo, secao, badge,

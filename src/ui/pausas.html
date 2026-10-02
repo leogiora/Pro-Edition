@@ -1,73 +1,155 @@
-<!-- Fragmento: o shell injeta isto direto em document.body, depois da folha da
-     familia (ferramentas/auto-broll/src/ui/styles.css). Aqui fica so o acento
-     desta ferramenta e o que nao existe na folha.
-
-     Botoes sao sp-button, nao <button>: o <button> nativo ignora o CSS no UXP.
-     Sem CSS Grid, sem gap, sem var() (ver
-     ferramentas/auto-broll/docs/UXP_ARMADILHAS.md). -->
+<!-- SilenceCut, no layout das telas novas (estilo comum em telas.css). A mesma
+     tela no painel e no programa; o motor e que muda (src/silencecut.ts).
+     UXP: sem grid, sem gap, sem var(); clicavel e div[role=button]. -->
 <style>
-  .marca-nome::before {
-    background-color: #67c7e2;
+  .sc-rotulo {
+    margin-bottom: 5px;
+    font-size: 11px;
+    color: #9098a6;
   }
 
-  .cod-pausa {
-    color: #67c7e2;
+  .sc-barras {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    margin: 10px 0 4px 0;
   }
 
-  .log {
-    height: 200px;
-    margin: 0;
+  .sc-barra-linha {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    margin: 3px 0;
+    font-size: 11px;
+    color: #9098a6;
+  }
+
+  .sc-barra-rot {
+    flex: none;
+    width: 48px;
+  }
+
+  .sc-barra {
+    display: flex;
+    flex-direction: row;
+    flex: 1 1 auto;
+    height: 10px;
+    border-radius: 3px;
+    overflow: hidden;
+    background-color: #101318;
+  }
+
+  .sc-barra-tempo {
+    flex: none;
+    width: 44px;
+    margin-left: 8px;
+    text-align: right;
+  }
+
+  .sc-cheio-antes { background-color: #5f6774; }
+  .sc-cheio-depois { background-color: #4ecb8d; }
+
+  .tl-seg.sc-corta { background-color: #ff7d71; }
+  .tl-seg.sc-fica { background-color: #5f6774; }
+
+  .sc-lista {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    margin-top: 8px;
+  }
+
+  .sc-corte {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    padding: 4px 6px;
+    border-bottom: 1px solid #1a1e26;
+    font-size: 12px;
+    color: #c9ced8;
+  }
+
+  .sc-corte-tempo {
+    flex: none;
+    width: 44px;
+    color: #9098a6;
+  }
+
+  .sc-corte-dur {
+    flex: none;
+    width: 46px;
+    color: #ff7d71;
+  }
+
+  .sc-corte-palavras {
+    flex: 1 1 auto;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .sc-confira {
+    flex: none;
+    margin-left: 6px;
+    padding: 0 6px;
+    border-radius: 8px;
+    font-size: 11px;
+    background-color: #3a2c14;
+    color: #eeab4c;
+  }
+
+  .sc-mais {
+    padding: 6px;
+    font-size: 11px;
+    color: #5f6774;
   }
 </style>
 
-<header class="topo">
-  <div class="marca">
-    <span class="marca-nome">SilenceCut</span>
-  </div>
-  <div id="apEstado" class="badge">carregando</div>
+<header class="ed-topo">
+  <span class="ed-titulo">SilenceCut <span id="scSeq" class="ed-seq">· lendo…</span></span>
+  <span id="scPill" class="pill" data-tom="ativo">lendo</span>
 </header>
 
-<main class="conteudo">
-  <section class="secao">
-    <div class="secao-cabeca">
-      <span class="cod">SEQ</span>
-      <span class="secao-rotulo">Sequência ativa</span>
-    </div>
-    <div class="secao-corpo">
-      <div id="apSeqNome" class="seq-nome" data-vazio="sim">Nenhuma sequência selecionada</div>
-      <div id="apDica" class="dica">Abra a gravação bruta: um clipe na V1 com o áudio na A1.</div>
-    </div>
-  </section>
-
-  <section class="secao">
-    <div class="secao-cabeca">
-      <span class="cod cod-pausa">A1</span>
-      <span class="secao-rotulo">Corte das pausas</span>
-    </div>
-    <div class="secao-corpo">
-      <label class="campo">
-        <span class="campo-rotulo">Margem de segurança (segundos)</span>
-        <sp-textfield id="apMargem" value="0,08"></sp-textfield>
-        <span class="campo-nota">O que fica de silêncio de cada lado da palavra. Menor = mais colado.</span>
-      </label>
-    </div>
-  </section>
-
-  <div class="acao">
-    <sp-button id="apAnalisar" variant="secondary">Analisar</sp-button>
-    <sp-button id="apCortar" variant="cta">Cortar pausas</sp-button>
-    <sp-button id="apDesfazer" variant="secondary">Desfazer</sp-button>
-    <!-- Temporario: sai quando o corte estiver calibrado (Task 10). -->
-    <sp-button id="apDiag" variant="secondary" quiet>Diagnóstico</sp-button>
+<main id="scRolagem" class="conteudo">
+  <div class="bloco">
+    <div class="sc-rotulo">Silêncio que fica de cada lado da palavra (menor = mais colado)</div>
+    <div id="scMargens" class="chips"></div>
+    <div class="prog-linha"><span id="scProg" class="prog-txt">lendo a sequência…</span></div>
   </div>
 
-  <section class="secao secao-log">
-    <div class="secao-cabeca">
-      <span class="cod">LOG</span>
-      <span class="secao-rotulo">Registro</span>
+  <div class="det">
+    <div class="mets">
+      <div class="met"><span class="met-rot">Pausas</span><span id="scMetPausas" class="met-val" style="color: #ff7d71">–</span></div>
+      <div class="met"><span class="met-rot">Cortado</span><span id="scMetMenos" class="met-val" style="color: #4ecb8d">–</span></div>
+      <div class="met"><span class="met-rot">Para conferir</span><span id="scMetConfira" class="met-val" style="color: #eeab4c">–</span></div>
     </div>
-    <div class="secao-corpo">
-      <pre id="apLog" class="log">Lendo a sequência...</pre>
+
+    <div class="sc-barras">
+      <div class="sc-barra-linha">
+        <span class="sc-barra-rot">antes</span>
+        <span class="sc-barra"><span class="sc-cheio-antes" style="flex-grow: 1"></span></span>
+        <span id="scAntes" class="sc-barra-tempo">–</span>
+      </div>
+      <div class="sc-barra-linha">
+        <span class="sc-barra-rot">depois</span>
+        <span class="sc-barra"><span id="scDepoisCheio" class="sc-cheio-depois" style="flex-grow: 1"></span><span id="scDepoisResto" style="flex-grow: 0"></span></span>
+        <span id="scDepois" class="sc-barra-tempo">–</span>
+      </div>
     </div>
-  </section>
+
+    <div class="tl-linha"><span class="tl-rot">V1</span><div id="scFaixa" class="tl-faixa"></div></div>
+
+    <div id="scLista" class="sc-lista"></div>
+
+    <div id="scFeed" class="feed"></div>
+    <div id="scVerLog" class="ver-log" role="button" tabindex="0">ver o registro completo</div>
+    <pre id="scLog" class="log" style="display: none"></pre>
+  </div>
 </main>
+
+<footer class="rodape">
+  <div id="scCortar" class="btn-pri" role="button" tabindex="0"><span id="scIcoCortar" class="btn-ico"></span>Cortar pausas</div>
+  <div id="scPrevia" class="btn-sec btn-selecao" role="button" tabindex="0"><span id="scIcoPrevia" class="btn-ico"></span>Ver prévia</div>
+  <div id="scDesfazer" class="btn-redondo" role="button" tabindex="0" title="Desfazer o último corte" aria-label="Desfazer o último corte"><span id="scIcoDesfazer" class="btn-ico-so"></span></div>
+</footer>

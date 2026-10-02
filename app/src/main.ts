@@ -138,7 +138,14 @@ ipcMain.handle("escolher", async (evento, tipo: keyof typeof FILTROS) => {
 });
 
 /** Prazo de cada pedido ao plugin: o AutoEdit inteiro pode levar mais de uma hora numa sequencia longa. */
-const PRAZO_MS: Readonly<Record<string, number>> = { editar: 3 * 60 * 60 * 1000, lerEstado: 60_000 };
+const PRAZO_MS: Readonly<Record<string, number>> = {
+  editar: 3 * 60 * 60 * 1000,
+  lerEstado: 60_000,
+  "pausas:cortar": 60 * 60 * 1000,
+  "pausas:previa": 10 * 60 * 1000,
+  "pausas:preparar": 10 * 60 * 1000,
+  "pausas:ler": 60_000,
+};
 ipcMain.handle("premiere:pedir", (_e, nome: string, args: unknown[]) => ponte.pedir(nome, args, PRAZO_MS[nome] ?? 15_000));
 
 ipcMain.handle("chave:tem", async () => (await cfg.chave()) !== null);
