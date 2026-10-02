@@ -38,6 +38,8 @@ export interface EstadoBroll {
   /** Midias da V1 e quantas tem transcricao do Premiere. */
   readonly midias: number;
   readonly comTranscricao: number;
+  /** In/out marcados na sequencia: o Aprender (e a insercao) ficam so nele. */
+  readonly inOut: { readonly inicio: number; readonly fim: number } | null;
   readonly aprendizado: Aprendizado;
 }
 
