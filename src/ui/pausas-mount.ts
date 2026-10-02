@@ -112,7 +112,9 @@ export function mount(root: HTMLElement, motor: MotorPausas): void {
   const desenharPrevia = () => {
     const p = previa;
     pega("scMetPausas").textContent = p ? String(p.cortes.length) : "–";
-    pega("scMetMenos").textContent = p ? `−${tempo(p.antesS - p.depoisS)}` : "–";
+    // Abaixo de um minuto em segundos com decimal: "0:09 → 0:06" com "−0:02" parecia conta errada.
+    const menos = p ? p.antesS - p.depoisS : 0;
+    pega("scMetMenos").textContent = p ? `−${menos < 60 ? `${virgula(menos)} s` : tempo(menos)}` : "–";
     const confira = p ? p.cortes.filter((c) => c.confira).length : 0;
     pega("scMetConfira").textContent = p ? String(confira) : "–";
     pega("scAntes").textContent = p ? tempo(p.antesS) : "–";
