@@ -40,6 +40,24 @@
       "perMachine": false,
       "createDesktopShortcut": true,
       "shortcutName": "Cutline"
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        }
+      ],
+      "icon": "scripts/icone-mac.png",
+      "category": "public.app-category.video",
+      "identity": "-",
+      "hardenedRuntime": false
+    },
+    "dmg": {
+      "title": "Cutline"
     }
   }
 }

@@ -30,6 +30,19 @@ commit e aparece ao lado do nome, no topo do programa. Para a abertura em vídeo
 coloque `src/ui/abertura.mp4` e rode o build: ela toca ao abrir e some no fim
 (ou num clique). Sem o arquivo, o programa abre direto.
 
+### Mac
+
+O `.dmg` só sai num Mac: o GitHub monta os dois instaladores a cada push no
+`main` (`.github/workflows/instaladores.yml`) e publica em **Releases**
+("Cutline 0.2.<commits>"). Baixe o `arm64` para Mac com chip Apple (M1 em
+diante) ou o `x64` para Mac Intel, abra e arraste o Cutline para Aplicativos.
+
+O programa não tem certificado da Apple: na primeira vez o Mac diz que não
+pode verificar o desenvolvedor. Ajustes do Sistema → Privacidade e Segurança →
+**Abrir Mesmo Assim** (ou, no Terminal, `xattr -cr /Applications/Cutline.app`).
+Uma vez: `brew install ffmpeg`. O painel no Premiere do Mac instala pelo
+`instalar/INSTALAR-mac.command`.
+
 O ffmpeg não vai dentro do instalador de propósito: o build completo tem
 222 MB por executável (ffmpeg + ffprobe = 444 MB). Se isso virar problema,
 empacotar um build "essentials" em `extraResources` e apontar

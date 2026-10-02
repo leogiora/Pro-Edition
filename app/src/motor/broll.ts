@@ -8,6 +8,7 @@
 
 import { existsSync } from "node:fs";
 import { readdir, readFile, stat, writeFile } from "node:fs/promises";
+import { homedir } from "node:os";
 import { basename, dirname, join } from "node:path";
 
 import { ligacoesFirmes, parseAssociacoes, parseMemoria, type Memoria } from "../../../ferramentas/auto-broll/src/aprendizado.ts";
@@ -23,11 +24,13 @@ import type { Config } from "./config.ts";
 import { falaDosArquivos } from "./fala.ts";
 import { sondar } from "./midia.ts";
 
-const PASTA_PADRAO = join(process.env.USERPROFILE ?? "C:\\Users\\leogi", "Downloads", "Brolls - 2026");
+const PASTA_PADRAO = join(homedir(), "Downloads", "Brolls - 2026");
 
 /** A pasta de dados do painel com o aprendizado mais recente (Premiere 25 ou 26, Pro Edition ou Auto B-roll). */
 export async function pastaDoPainel(): Promise<string | null> {
-  const base = join(process.env.APPDATA ?? "", "Adobe", "UXP", "PluginsStorage", "PPRO");
+  // Windows: %APPDATA%; Mac: ~/Library/Application Support.
+  const dados = process.platform === "darwin" ? join(homedir(), "Library", "Application Support") : (process.env.APPDATA ?? "");
+  const base = join(dados, "Adobe", "UXP", "PluginsStorage", "PPRO");
   let melhor: { pasta: string; quando: number } | null = null;
   for (const versao of await readdir(base).catch(() => [] as string[])) {
     for (const plugin of ["com.leogi.proedition", "com.leogi.autobroll"]) {
